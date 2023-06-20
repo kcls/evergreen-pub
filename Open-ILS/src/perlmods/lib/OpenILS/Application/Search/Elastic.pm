@@ -247,7 +247,7 @@ sub bib_search {
 
     return {
         ids => $ids,
-        count => $results->{hits}->{total},
+        count => $results->{hits}->{total}->{value},
         suggest => $results->{suggest},
         facets => format_facets($results->{aggregations}),
         cache_key => $cache_key,
