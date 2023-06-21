@@ -294,7 +294,7 @@ sub connect {
 
     eval { 
         $self->{es} = Search::Elasticsearch->new(
-            client => '6_0::Direct',
+            #client => '6_0::Direct',
             nodes  => \@nodes
         );
     };
