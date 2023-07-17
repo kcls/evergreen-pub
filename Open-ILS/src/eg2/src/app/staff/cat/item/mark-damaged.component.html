@@ -1,0 +1,207 @@
+<eg-staff-banner i18n-bannerText bannerText="Mark Item Damaged">
+</eg-staff-banner>
+
+<eg-patron-penalty-dialog #penaltyDialog></eg-patron-penalty-dialog>
+
+<div class="mt-3 mb-3 p-2 form-validated" *ngIf="item && bibSummary">
+  <div class="row">
+      <div class="col-lg-1" i18n>Barcode:</div>
+      <div class="col-lg-11 fw-bold">{{item.barcode()}}</div>
+  </div>
+  <div class="row mt-1">
+    <div class="col-lg-1" i18n>Title:</div>
+    <div class="col-lg-11">{{bibSummary.display.title}}</div>
+  </div>
+  <div class="row mt-1">
+      <div class="col-lg-1" i18n>Author:</div>
+      <div class="col-lg-11">{{bibSummary.display.author}}</div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-12">
+      <button [disabled]="noPatronToNotify || circ" type="button" 
+        class="btn btn-warning" (click)="cancel()" i18n>Cancel</button>
+      <button [disabled]="noPatronToNotify || circ || alreadyDamaged" type="button" 
+        class="btn btn-success ms-2" (click)="markDamaged({})" i18n>Mark Damaged</button>
+      <button *ngIf="noPatronToNotify || circ" type="button" 
+        class="btn btn-outline-dark ms-2" (click)="cancel()" i18n>Close</button>
+    </div>
+  </div>
+
+  <div class="alert alert-danger p-2 m-3 " *ngIf="alreadyDamaged">
+    <span i18n>Item Is Already Marked Damaged</span>
+  </div>
+
+  <div class="alert alert-info p-2 m-3 " *ngIf="noPatronToNotify">
+    <span i18n>Item was not checked out.  No patron to charge/notify</span>
+  </div>
+
+  <hr class="mt-2 mb-2"/>
+
+  <div class="row" *ngIf="chargeResponse && !printDetails">
+    <div class="col-lg-8 offset-lg-2">
+      <div class="card mt-3 ms-10 me-10">
+        <div class="card-header" i18n>
+          Item was previously checked out
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item" i18n>
+              Item was last checked out by patron
+              <a routerLink="/staff/circ/patron/{{chargeResponse.circ.usr().id()}}/checkout">
+                {{chargeResponse.circ.usr().family_name()}},
+                {{chargeResponse.circ.usr().first_given_name()}} 
+                ({{chargeResponse.circ.usr().usrname()}})
+              </a>.
+            </li>
+            <li class="list-group-item" i18n>
+              Item was due
+              {{chargeResponse.circ.due_date() | formatValue:'timestamp'}} 
+              and returned 
+              {{chargeResponse.circ.checkin_time() | date:'MM/dd/yy H:mm a'}}.
+            </li>
+            <li class="list-group-item">
+              <span i18n>
+                Calculated fine amount is 
+                <span class="fw-bold text-danger">
+                  {{chargeResponse.charge | currency}}
+                </span>
+              </span>
+            </li>
+            <ng-container *ngIf="amountChangeRequested">
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-3" i18n>Billing Type</div>
+                  <div class="col-lg-6">
+                    <eg-combobox 
+                      placeholder="Billing Type..." i18n-placeholder
+                      [startId]="newBtype" [required]="true"
+                      (onChange)="newBtype = $event ? $event.id : null"
+                      [entries]="billingTypes"></eg-combobox>
+                  </div>
+                </div>  
+              </li>
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-3" i18n>Charge Amount</div>
+                  <div class="col-lg-6">
+                    <input class="form-control" type="number" step="0.01" min="0"
+                    [required]="true" [(ngModel)]="newCharge"/>
+                  </div>
+                </div>  
+              </li>
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-3" i8n>Damage to Item</div>
+                  <div class="col-lg-6">
+                    <textarea class="form-control" rows="3"
+                      [required]="true" [(ngModel)]="damageNote"></textarea>
+                  </div>
+                </div>  
+              </li>
+            </ng-container><!-- amount change requested -->
+            <li class="list-group-item">
+              <div class="row">
+                <div class="col-lg-3" i18n>Staff Initials</div>
+                <div class="col-lg-3">
+                  <input type="text" i18n-placeholder placeholder="Initials" size="6"    
+                    [(ngModel)]="dibs" class="form-control" [required]="true"/>          
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-2 mb-2">
+        <ng-container *ngIf="chargeResponse">
+          <button type="button" class="btn btn-warning" 
+            (click)="cancel()" i18n>Cancel</button>
+          <button class="btn btn-secondary ms-2" 
+            (click)="markDamaged({apply_fines:'noapply'})" i18n>No Charge</button>
+          <button class="btn btn-success ms-2" 
+            [disabled]="disableOk()"
+            (click)="markDamaged({apply_fines:'apply'})" i18n>OK</button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="item && circ">
+  <hr class="mb-2"/>
+  <div class="row mb-2 form-validated">
+    <div class="col-lg-4">
+      <div class="form-group">
+        <label for="alert-message" i18n>Item Alert Message</label>
+        <eg-help-popover placement="right" 
+          i18n-helpText helpText="Modify the item alert message">
+        </eg-help-popover>
+        <textarea id="alert-message" [(ngModel)]="itemAlert" 
+          required rows="3" class="form-control mt-2"></textarea>
+      </div>
+      <button class="btn btn-info mt-2" (click)="updateAlertMessage()" i18n>
+        Update Alert Message
+      </button>
+    </div>
+    <div class="col-lg-4">
+      <label i18n>Damage Description for Letter</label> 
+      <eg-help-popover placement="right" 
+        i18n-helpText helpText="Modify the message which displays in the printed letter">
+      </eg-help-popover>
+      <textarea class="form-control mt-2" (ngModelChange)="refreshPrintDetails()"
+        [(ngModel)]="damageNote" required rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="circ">
+  <hr class="mb-2"/>
+  <div class="row">
+    <div class="col-lg-12">
+      <!-- avoid link underline since it's inside a button -->
+      <a style="text-decoration: none;"
+        routerLink="/staff/circ/patron/{{circ.usr().id()}}/checkout" target="_blank">
+        <button class="btn btn-outline-primary label-with-material-icon" i18n>
+          <span>Retrieve Patron</span>
+          <span class="material-icons">person</span>
+        </button>
+      </a>
+      <!--
+      <button class="btn btn-outline-primary label-with-material-icon ms-3" (click)="prepareLetter()" i18n>
+        <span>Update Letter</span>
+        <span class="material-icons">refresh</span>
+      </button>
+      -->
+      <button *ngIf="printPreviewHtml" 
+        (click)="printLetter()" 
+        class="btn btn-outline-success label-with-material-icon ms-3" i18n>
+        <span>Print Letter</span>
+        <span class="material-icons">print</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!--
+<ng-container *ngIf="printPreviewHtml">
+  <div>
+    <div class="row">
+      <div class="col-lg-12">
+        <button (click)="printLetter()" 
+          class="btn btn-outline-success label-with-material-icon ms-3" i18n>
+          <span>Print Letter</span>
+          <span class="material-icons">print</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+-->
+
+<div class="row">
+  <div class="col-lg-12 mt-5">
+    <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
+    <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
+      id="print-preview-pane"></div> 
+  </div>
+</div>

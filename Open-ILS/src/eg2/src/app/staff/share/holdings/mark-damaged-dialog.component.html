@@ -76,14 +76,23 @@
             </li>
             <li class="list-group-item">
               <div class="row">
-                <div class="col-lg-3" i18n>Note</div>
+                <div class="col-lg-3" i8n>Damage to Item</div>
                 <div class="col-lg-6">
                   <textarea class="form-control" rows="3"
-                    [(ngModel)]="newNote"></textarea>
+                    [required]="true" [(ngModel)]="newNote"></textarea>
                 </div>
               </div>  
             </li>
           </ng-container><!-- amount change requested -->
+          <li class="list-group-item">
+            <div class="row">
+              <div class="col-lg-3" i18n>Staff Initials</div>
+              <div class="col-lg-3">
+                <input type="text" i18n-placeholder placeholder="Initials" size="6"    
+                  [(ngModel)]="dibs" class="form-control" [required]="true"/>          
+              </div>
+            </div>
+          </li>
         </ul>
       </div>
     </div>
@@ -98,12 +107,14 @@
     <ng-container *ngIf="chargeResponse">
       <button type="button" class="btn btn-warning" 
         (click)="close(false)" i18n>Cancel</button>
+      <!--
       <button class="btn btn-info me-2" 
         (click)="amountChangeRequested = true" i18n>Change Amount</button>
+      -->
       <button class="btn btn-secondary me-2" 
         (click)="markDamaged({apply_fines:'noapply'})" i18n>No Charge</button>
       <button class="btn btn-success me-2" 
-        [disabled]="amountChangeRequested && (!newBtype || !newCharge)"
+        [disabled]="disableOk()"
         (click)="markDamaged({apply_fines:'apply'})" i18n>OK</button>
     </ng-container>
   </div>

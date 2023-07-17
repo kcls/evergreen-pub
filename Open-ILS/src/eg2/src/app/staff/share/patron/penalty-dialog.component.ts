@@ -36,9 +36,11 @@ export class PatronPenaltyDialogComponent
     ALERT_NOTE = 20;
     SILENT_NOTE = 21;
     STAFF_CHR = 25;
+    noteRows = 3;
 
     penalty: IdlObject; // modifying an existing penalty
     penaltyTypes: IdlObject[];
+    startPatronMessage = 0;
     patronMessage = 0;
     patronMessages: IdlObject[];
     penaltyTypeFromSelect = '';
@@ -46,9 +48,12 @@ export class PatronPenaltyDialogComponent
     patron: IdlObject;
     dataLoaded = false;
     requireInitials = false;
+    startInitials = '';
     initials: string;
+    startNoteText = '';
     noteText = '';
     defaultType = this.SILENT_NOTE;
+    appendToPatronMessage = '';
 
     @ViewChild('successMsg', {static: false}) successMsg: StringComponent;
     @ViewChild('errorMsg', {static: false}) errorMsg: StringComponent;
@@ -78,8 +83,12 @@ export class PatronPenaltyDialogComponent
         this.penaltyTypeFromButton = 0;
         this.penaltyTypeFromSelect = '';
         this.patronMessage = 0;
-        this.initials = '';
-        this.noteText = '';
+        this.noteRows = 3;
+        this.initials = this.startInitials || '';
+        this.noteText = this.startNoteText || '';
+
+        this.startInitials = '';
+        this.startNoteText = '';
 
         if (this.penalty) { // Modifying an existing penalty
             const pen = this.penalty;
@@ -126,6 +135,22 @@ export class PatronPenaltyDialogComponent
                     }
                     return m1.weight() < m2.weight() ? -1 : 1;
                 });
+
+                if (this.startPatronMessage) {
+                    const m = messages.filter(
+                        m => Number(m.id()) === Number(this.startPatronMessage))[0];
+                    if (m) {
+                        this.noteText = m.message();
+                        if (this.appendToPatronMessage) {
+                            this.noteText += " " + this.appendToPatronMessage;
+
+                            const matches = this.noteText.match(/\n/g);
+                            if (matches && matches.length > this.noteRows) {
+                                this.noteRows = matches.length;
+                            }
+                        }
+                    }
+                }
             }));
         }));
     }

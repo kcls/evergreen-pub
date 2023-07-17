@@ -38,8 +38,10 @@ import {TransferItemsComponent
 import {TransferHoldingsComponent
     } from '@eg/staff/share/holdings/transfer-holdings.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
+/*
 import {MarkDamagedDialogComponent
     } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
+    */
 import {MarkMissingDialogComponent
     } from '@eg/staff/share/holdings/mark-missing-dialog.component';
 import {AnonCacheService} from '@eg/share/util/anon-cache.service';
@@ -84,8 +86,10 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
 
     @ViewChild('barcodeSelect') private barcodeSelect: BarcodeSelectComponent;
 
+    /*
     @ViewChild('markDamagedDialog')
         private markDamagedDialog: MarkDamagedDialogComponent;
+        */
     @ViewChild('markMissingDialog')
         private markMissingDialog: MarkMissingDialogComponent;
     @ViewChild('copyAlertsDialog')
@@ -806,6 +810,15 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
 
         if (copyIds.length === 0) { return; }
 
+        let copyId = copyIds[0];
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/cat/item/damaged/${copyId}/`);
+
+        window.open(url);
+
+
+        /*
         let modified = false;
 
         from(copyIds).pipe(concatMap(copyId => {
@@ -815,6 +828,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
             .pipe(tap(ok => { if (ok) { modified = true; } }));
 
         })).toPromise().then(_ => this.refreshSelectCopies(copies));
+        */
     }
 
 
