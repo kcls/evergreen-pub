@@ -6,3 +6,4 @@
 0001-patron-edit-dibs [0000-kcls-base-schema-3.9] 2023-12-13T16:14:10Z berick <berick@kcls-311> # patron edit dibs
 0002-3.9-to-3.11-upgrade [0001-patron-edit-dibs] 2023-12-05T21:52:00Z berick <berick@kcls-repos> # 3.11 Upgrade
 0003-patron-requests [0002-3.9-to-3.11-upgrade] 2023-12-13T21:14:41Z berick <berick@kcls-311> # patron reqs
+ZZZZ-damaged-item-letter [0003-patron-requests] 2024-02-22T15:19:56Z berick <berick@kcls-311> # Damaged Item Letter

@@ -17,8 +17,6 @@ import {GridToolbarCheckboxComponent
     } from '@eg/share/grid/grid-toolbar-checkbox.component';
 import {StoreService} from '@eg/core/store.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
-import {MarkDamagedDialogComponent
-    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
     } from '@eg/staff/share/holdings/mark-missing-dialog.component';
 import {AnonCacheService} from '@eg/share/util/anon-cache.service';
@@ -109,8 +107,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
         private emptyCallNumsCheckbox: GridToolbarCheckboxComponent;
     @ViewChild('emptyLibsCheckbox', { static: true })
         private emptyLibsCheckbox: GridToolbarCheckboxComponent;
-    @ViewChild('markDamagedDialog', { static: true })
-        private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('markMissingDialog', { static: true })
         private markMissingDialog: MarkMissingDialogComponent;
     @ViewChild('copyAlertsDialog', { static: true })
@@ -777,33 +773,17 @@ export class HoldingsMaintenanceComponent implements OnInit {
     }
 
 
-    async showMarkDamagedDialog(rows: HoldingsEntry[]) {
+    showMarkDamaged(rows: HoldingsEntry[]) {
         const copyIds = this.selectedCopyIds(rows, 14 /* ignore damaged */);
 
         if (copyIds.length === 0) { return; }
 
-        let rowsModified = false;
+        const copyId = copyIds[0];
 
-        const markNext = async(ids: number[]) => {
-            if (ids.length === 0) {
-                return Promise.resolve();
-            }
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/cat/item/damaged/${copyId}/`);
 
-            this.markDamagedDialog.copyId = ids.pop();
-            return this.markDamagedDialog.open({size: 'lg'}).subscribe(
-                ok => {
-                    if (ok) { rowsModified = true; }
-                    return markNext(ids);
-                },
-                dismiss => markNext(ids)
-            );
-        };
-
-        await markNext(copyIds);
-        if (rowsModified) {
-            this.refreshHoldings = true;
-            this.holdingsGrid.reload();
-        }
+        window.open(url);
     }
 
     showMarkMissingDialog(rows: any[]) {

@@ -1352,6 +1352,11 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     method => 'mark_item',
+    api_name => 'open-ils.circ.mark_item_damaged.details',
+    signature   => q/Same as above but returns more info in response/
+);
+__PACKAGE__->register_method(
+    method => 'mark_item',
     api_name => 'open-ils.circ.mark_item_missing',
     signature   => q/
         Changes the status of a copy to "missing". Requires MARK_ITEM_MISSING permission.
@@ -1466,8 +1471,20 @@ sub mark_item {
     # caller may proceed if either perm is allowed
     return $e->die_event unless $e->allowed([$perm, 'UPDATE_COPY'], $owning_lib);
 
+    my $missing_pieces_stat = $U->ou_ancestor_setting_value(
+        $owning_lib, 'circ.missing_pieces.copy_status', $e);
+
+    # Check the item in if this is a mark-damaged call and the item
+    # was last marked as missing pieces.
+    my $damage_checkin_ok = (
+        $missing_pieces_stat
+        && $copy->status->id() ==  $missing_pieces_stat
+        && ($self->api_name =~ /damaged/)
+    );
+
     # Copy status checks.
-    if ($copy->status->id() == OILS_COPY_STATUS_CHECKED_OUT ||
+    if ($damage_checkin_ok ||
+        $copy->status->id() == OILS_COPY_STATUS_CHECKED_OUT ||
         $copy->status->id() == OILS_COPY_STATUS_LOST ||
         $copy->status->id() == OILS_COPY_STATUS_LONG_OVERDUE) {
 
@@ -1524,8 +1541,9 @@ sub mark_item {
     $e->xact_begin;
 
     # Handle extra mark damaged charges, etc.
+    my $damaged_details = {};
     if ($self->api_name =~ /damaged/) {
-        $evt = handle_mark_damaged($e, $copy, $owning_lib, $args);
+        $evt = handle_mark_damaged($e, $copy, $owning_lib, $args, $damaged_details);
         return $evt if $evt;
     }
 
@@ -1546,6 +1564,8 @@ sub mark_item {
 
     $logger->debug("resetting holds that target the marked copy");
     OpenILS::Application::Circ::Holds->_reset_hold($e->requestor, $_) for @$holds;
+
+    return $damaged_details if $self->api_name =~ /damaged.details/;
 
     return 1;
 }
@@ -1621,7 +1641,8 @@ sub handle_pending_refund {
 
 
 sub handle_mark_damaged {
-    my($e, $copy, $owning_lib, $args) = @_;
+    my($e, $copy, $owning_lib, $args, $damaged_details) = @_;
+    $damaged_details ||= {};
 
     my $apply = $args->{apply_fines} || '';
     return undef if $apply eq 'noapply';
@@ -1636,11 +1657,18 @@ sub handle_mark_damaged {
         {   limit => 1, 
             order_by => {circ => "xact_start DESC"},
             flesh => 2,
-            flesh_fields => {circ => ['target_copy', 'usr'], au => ['card']}
+            flesh_fields => {
+                circ => ['target_copy', 'usr'], 
+                au => ['card', 'billing_address', 'mailing_address']
+            }
         }
     ])->[0];
 
     return undef unless $circ;
+
+    $damaged_details->{circ} = $circ;
+    # Only return the note value if staff entered a custom note.
+    $damaged_details->{note} = $new_note;
 
     my ($changes, $evt) = handle_pending_refund($e, $circ->id, $args);
     return $evt if $evt;
@@ -1662,6 +1690,7 @@ sub handle_mark_damaged {
     if($apply) {
         
         if($new_amount and $new_btype) {
+            $damaged_details->{bill_amount} = $new_amount;
 
             # Allow staff to override the amount to charge for a damaged item
             # Consider the case where the item is only partially damaged
@@ -1675,12 +1704,16 @@ sub handle_mark_damaged {
         } else {
 
             if($charge_price and $copy_price) {
+                $damaged_details->{bill_amount} = $copy_price;
+
                 my $evt = OpenILS::Application::Circ::CircCommon->create_bill(
                     $e, $copy_price, 7, 'Damaged Item', $circ->id);
                 return $evt if $evt;
             }
 
             if($proc_fee) {
+                $damaged_details->{proc_fee} = $proc_fee;
+
                 my $evt = OpenILS::Application::Circ::CircCommon->create_bill(
                     $e, $proc_fee, 8, 'Damaged Item Processing Fee', $circ->id);
                 return $evt if $evt;
@@ -1702,6 +1735,20 @@ sub handle_mark_damaged {
 
         my $evt2 = OpenILS::Utils::Penalty->calculate_penalties($e, $circ->usr->id, $e->requestor->ws_ou);
         return $evt2 if $evt2;
+
+        # Create a patron alert penalty to also track the damaged note.
+        # Rolling this back in lieu of manual penalty creation.
+#        my $pen_type = 20; # Alert Note
+#        my $sp = $U->create_penalty_message(
+#            $e, 
+#            20, # Alert Note
+#            $circ->usr, 
+#            $e->requestor->ws_ou,
+#            'Damaged Item',
+#            $new_note
+#        );
+#
+#        return $U->is_event($sp) ? $sp : undef;
 
     } else {
         return OpenILS::Event->new('DAMAGE_CHARGE', 

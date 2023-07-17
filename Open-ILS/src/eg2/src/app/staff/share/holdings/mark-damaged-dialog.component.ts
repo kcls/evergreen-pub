@@ -16,6 +16,7 @@ import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {PauseRefundDialogComponent} from '@eg/staff/share/holdings/pause-refund-dialog.component';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {BillingService} from '@eg/staff/share/billing/billing.service';
+import {PrintService} from '@eg/share/print/print.service';
 
 /**
  * Dialog for marking items damaged and asessing related bills.
@@ -39,11 +40,12 @@ export class MarkDamagedDialogComponent
     billingTypes: ComboboxEntry[];
 
     // Overide the API suggested charge amount
-    amountChangeRequested: boolean;
+    amountChangeRequested = true; // KCLS JBAS-3129
     newCharge: number;
     newNote: string;
     newBtype: number;
     pauseArgs: any = {};
+    dibs = '';
 
     @ViewChild('successMsg', {static: false}) private successMsg: StringComponent;
     @ViewChild('errorMsg', {static: false}) private errorMsg: StringComponent;
@@ -65,6 +67,7 @@ export class MarkDamagedDialogComponent
         private billing: BillingService,
         private bib: BibRecordService,
         private store: ServerStoreService,
+        private printer: PrintService,
         private auth: AuthService) {
         super(modal); // required for subclassing
     }
@@ -123,7 +126,7 @@ export class MarkDamagedDialogComponent
         this.chargeResponse = null;
         this.newCharge = null;
         this.newNote = null;
-        this.amountChangeRequested = false;
+        //this.amountChangeRequested = false; // KCLS JBAS-3129
         this.pauseArgs = {};
     }
 
@@ -151,19 +154,22 @@ export class MarkDamagedDialogComponent
         }
 
         this.net.request(
-            'open-ils.circ', 'open-ils.circ.mark_item_damaged',
+            'open-ils.circ', 'open-ils.circ.mark_item_damaged.details',
             this.auth.token(), this.copyId, args
         ).subscribe(
             result => {
                 console.debug('Mark damaged returned', result);
 
-                if (Number(result) === 1) {
+                const evt = this.evt.parse(result);
+
+                if (result && !evt) {
+                    // Result is a hash of detail info.
                     this.successMsg.current().then(msg => this.toast.success(msg));
                     this.close(true);
+                    this.printLetter(result);
                     return;
                 }
 
-                const evt = this.evt.parse(result);
 
                 if (evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING') {
                     if (this.autoRefundsActive) {
@@ -180,7 +186,7 @@ export class MarkDamagedDialogComponent
                 }
 
                 if (evt.textcode === 'DAMAGE_CHARGE') {
-                    // More info needed from staff on how to hangle charges.
+                    // More info needed from staff on how to handle charges.
                     this.chargeResponse = evt.payload;
                     this.newCharge = this.chargeResponse.charge;
                 } else {
@@ -193,6 +199,29 @@ export class MarkDamagedDialogComponent
                 console.error(err);
             }
         );
+    }
+
+    disableOk(): boolean {
+        if (!this.dibs) { return true; }
+        return this.amountChangeRequested && (!this.newBtype || !this.newCharge);
+    }
+
+    printLetter(details: any) {
+        if (!details || !details.circ) { return; } // No one to notify.
+
+        this.printer.print({
+            printContext: 'default',
+            templateName: 'damaged_item_letter',
+            contextData: {
+                circulation: details.circ,
+                copy: this.copy,
+                patron: details.circ.usr(),
+                note: details.note,
+                cost: parseFloat(details.bill_amount).toFixed(2),
+                title: this.bibSummary.display.title,
+                dibs: this.dibs,
+            }
+        });
     }
 }
 
