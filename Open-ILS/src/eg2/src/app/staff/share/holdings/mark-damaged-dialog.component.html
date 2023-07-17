@@ -86,6 +86,15 @@
               </div>  
             </li>
           </ng-container><!-- amount change requested -->
+          <li class="list-group-item">
+            <div class="row">
+              <div class="col-lg-3" i18n>Staff Initials</div>
+              <div class="col-lg-3">
+                <input type="text" i18n-placeholder placeholder="Initials" size="6"    
+                  [(ngModel)]="dibs" class="form-control" [required]="true"/>          
+              </div>
+            </div>
+          </li>
         </ul>
       </div>
     </div>
@@ -105,7 +114,7 @@
       <button class="btn btn-secondary mr-2" 
         (click)="markDamaged({apply_fines:'noapply'})" i18n>No Charge</button>
       <button class="btn btn-success mr-2" 
-        [disabled]="amountChangeRequested && (!newBtype || !newCharge)"
+        [disabled]="disableOk()"
         (click)="markDamaged({apply_fines:'apply'})" i18n>OK</button>
     </ng-container>
   </div>
