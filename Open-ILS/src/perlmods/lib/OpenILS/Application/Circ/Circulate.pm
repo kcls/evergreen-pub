@@ -517,6 +517,7 @@ my @AUTOLOAD_FIELDS = qw/
     dont_change_lost_zero
     lost_bill_options
     needs_lost_bill_handling
+    confirmed_lostpaid_checkin
 /;
 
 
@@ -2826,6 +2827,9 @@ sub do_checkin {
             );
     }
 
+    # Sets bail_on_events if needed/true.
+    return if $self->lostpaid_checkin_needs_confirmation($stat);
+
     # LOST (and to some extent, LONGOVERDUE) may optionally be handled
     # differently if they are already paid for.  We need to check for this
     # early since overdue generation is potentially affected.
@@ -3181,6 +3185,56 @@ sub do_checkin {
 
     $self->checkin_flesh_events;
     return;
+}
+
+sub lostpaid_checkin_needs_confirmation {
+    my ($self, $copy_status) = @_;
+    return 0 if $self->confirmed_lostpaid_checkin;
+    return $self->checkin_circ_is_lostpaid($copy_status);
+}
+
+# Not necessarily the same as "refundable", which depends on the item.
+sub checkin_circ_is_lostpaid {
+    my ($self, $copy_status) = @_;
+
+    # Short-circuit as much as we can.
+    return 0 if (
+        $copy_status != OILS_COPY_STATUS_LOST && 
+        $copy_status != OILS_COPY_STATUS_LOST_AND_PAID
+    );
+
+    # Caller already confirmed?
+    return 0 if $self->confirmed_lostpaid_checkin;
+
+    return 0 unless my $circ = $self->circ;
+    return 0 if $circ->stop_fines ne 'LOST';
+    return 0 if $circ->checkin_time;
+
+    my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
+    my $is_refundable = $U->circ_is_refundable($circ->id, $self->editor);
+
+    if (!$is_refundable) {
+        # If the xact is not refundable (likely because of the item type
+        # / circ modifier), treat it as "lost and paid" if the last
+        # billing type is for lost materials and there is at least one
+        # non-voided payment.  Note the xact balance may not be zero or
+        # negative at this point.
+
+        # todo: fetch the actual billing btype to comparing labels.
+        return 0 if $sum->last_billing_type ne 'Lost Materials'; 
+        return 0 if $sum->total_paid == 0;
+    }
+
+    $self->bail_on_events(
+        OpenILS::Event->new('LOSTPAID_CHECKIN', {
+            payload => {
+                is_refundable => $is_refundable,
+                money_summary => $sum,
+            }
+        }) 
+    );
+
+    return 1;
 }
 
 sub finish_fines_and_voiding {
