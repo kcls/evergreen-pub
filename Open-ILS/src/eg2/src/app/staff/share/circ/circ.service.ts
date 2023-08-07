@@ -1049,6 +1049,11 @@ export class CircService {
                 this.audio.play('error.checkin.not_found');
                 return this.handleCheckinUncatAlert(result);
 
+            case 'LOSTPAID_CHECKIN':
+                this.components.lostPaidConfirmDialog.checkin = result;
+                return this.components.lostPaidConfirmDialog.open().toPromise()
+                .then(_ => result);
+
             default:
                 this.audio.play('error.checkin.unknown');
                 console.warn(
