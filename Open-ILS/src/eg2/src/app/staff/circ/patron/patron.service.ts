@@ -11,6 +11,7 @@ import {ServerStoreService} from '@eg/core/server-store.service';
 import {CircService, CircDisplayInfo} from '@eg/staff/share/circ/circ.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {Router} from '@angular/router';
+import {EventService} from '@eg/core/event.service';
 
 export interface BillGridEntry extends CircDisplayInfo {
     xact: IdlObject; // mbt
@@ -71,6 +72,7 @@ export class PatronContextService {
         private router: Router,
         private store: StoreService,
         private serverStore: ServerStoreService,
+        private evt: EventService,
         private org: OrgService,
         private auth: AuthService,
         private net: NetService,
@@ -241,8 +243,7 @@ export class PatronContextService {
     }
 
     printLostPaid(xactId: number): Promise<any> {
-
-        if (!xactId) { return; }
+        if (!xactId) { return Promise.resolve(); }
 
         return this.net.request('open-ils.circ',
             'open-ils.circ.refundable_payment.receipt.by_xact.html',

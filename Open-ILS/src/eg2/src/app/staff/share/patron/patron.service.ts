@@ -9,6 +9,8 @@ import {AuthService} from '@eg/core/auth.service';
 import {Observable} from 'rxjs';
 import {BarcodeSelectComponent} from '@eg/staff/share/barcodes/barcode-select.component';
 import {ServerStoreService} from '@eg/core/server-store.service';
+import {PrintService} from '@eg/share/print/print.service';
+import {Location} from '@angular/common';
 
 export class PatronStats {
     fines = {
@@ -81,11 +83,13 @@ export class PatronService {
     surveys: IdlObject[];
 
     constructor(
+        private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
         private evt: EventService,
         private pcrud: PcrudService,
         private auth: AuthService,
+        private printer: PrintService,
         private store: ServerStoreService
     ) {}
 
@@ -438,6 +442,22 @@ export class PatronService {
         }
 
         return 'NO_PENALTIES';
+    }
+
+    printRefundLetter(xactId?: number, payId?: number): Promise<any> {
+        let url;
+
+        if (xactId) {
+            url = this.ngLocation.prepareExternalUrl(
+                `/staff/circ/checkin/lostpaid/letter/circ/${xactId}`);
+        } else if (payId) {
+             url = this.ngLocation.prepareExternalUrl(
+                `/staff/circ/checkin/lostpaid/letter/payment/${payId}`);
+        } else {
+            return Promise.resolve();
+        }
+
+        window.open(url);
     }
 }
 
