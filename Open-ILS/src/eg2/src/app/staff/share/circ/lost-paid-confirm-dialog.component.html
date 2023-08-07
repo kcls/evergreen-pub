@@ -1,0 +1,20 @@
+<ng-template #dialogContent>
+  <div class="modal-header bg-info">
+    <h4>
+      <strong i18n>Lost & Paid Confirmation</strong><br/>
+    </h4>
+    <button type="button" class="close"
+      i18n-aria-label aria-label="Close" (click)="close()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <b>BOO!</b>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-success" (click)="print()" i18n>Print</button>
+    <button type="button" class="btn btn-warning" (click)="close()" i18n>Do Not Print</button>
+  </div>
+</ng-template>
+
+
