@@ -3226,11 +3226,9 @@ sub checkin_circ_is_lostpaid {
     }
 
     $self->bail_on_events(
-        OpenILS::Event->new('LOSTPAID_CHECKIN', {
-            payload => {
-                is_refundable => $is_refundable,
-                money_summary => $sum,
-            }
+        OpenILS::Event->new('LOSTPAID_CHECKIN', payload => {
+            is_refundable => $is_refundable,
+            money_summary => $sum,
         }) 
     );
 
