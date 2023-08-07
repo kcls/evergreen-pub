@@ -1,5 +1,6 @@
 import {Component, ViewChild, OnInit, AfterViewInit, HostListener} from '@angular/core';
-import {Location} from '@angular/common';
+import {Location} from '@angular/common'; // TODO use this.win to open
+import {NgZone} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {empty, from} from 'rxjs';
 import {concatMap, tap} from 'rxjs/operators';
@@ -31,7 +32,10 @@ import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {AnonCacheService} from '@eg/share/util/anon-cache.service';
 import {DateSelectNativeComponent
     } from '@eg/share/date-select-native/date-select-native.component';
+import {BroadcastService} from '@eg/share/util/broadcast.service';
+import {WinService} from '@eg/core/win.service';
 
+declare var decodeJS: (thing: any) => any;
 
 interface CheckinGridEntry extends CheckinResult {
     // May need to extend...
@@ -96,6 +100,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
     constructor(
         private router: Router,
         private route: ActivatedRoute,
+        private ngZone: NgZone,
         private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
@@ -107,6 +112,8 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         private printer: PrintService,
         private holdings: HoldingsService,
         private anonCache: AnonCacheService,
+        private win: WinService,
+        private broadcaster: BroadcastService,
         public patronService: PatronService
     ) {}
 
@@ -143,6 +150,17 @@ export class CheckinComponent implements OnInit, AfterViewInit {
                 this.modifiers.auto_print_holds_transits = true;
             }
         }).then(_ => this.circ.applySettings());
+
+        this.broadcaster.listen('eg.checkin.lostpaid.result').subscribe(dataRaw => {
+            console.debug('Broadcast received: ', dataRaw);
+            const data = decodeJS(dataRaw);
+            console.debug(data);
+            if (data && data.window === this.win.getId()) {
+                this.ngZone.run(() => { // force change detection
+                    this.gridifyResult(data.result);
+                });
+            }
+        });
     }
 
     ngAfterViewInit() {

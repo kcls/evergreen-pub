@@ -15894,34 +15894,8 @@ SELECT  usr,
 				suppress_controller="open-ils.reporter-store"  reporter:label="State"/>
 			<field name="usr_post_code" reporter:datatype="text" 
 				suppress_controller="open-ils.reporter-store"  reporter:label="Post Code"/>
+			<field name="dibs" reporter:datatype="text" reporter:label="Staff Initials"/>
 		</fields>
-	</class>
-
-	<!-- create a minimal class to model pending refundable transactions.
-			All the caller really needs is the ID and filter org unit, from 
-			there can fetch summaries, etc. -->
-	<class id="merx" controller="open-ils.cstore open-ils.pcrud"
-		oils_obj:fieldmapper="money::eligible_refundable_xact" 
-		reporter:label="Eligible Refundable Transaction"
-		oils_persist:readonly="true">
-    <oils_persist:source_definition><![CDATA[
-			SELECT id, patron_home_ou, xact FROM money.eligible_refundable_xact
-		]]></oils_persist:source_definition>
-		<fields oils_persist:primary="id">
-			<field name="id" reporter:datatype="id" reporter:label="ID"/>
-			<field name="patron_home_ou" reporter:datatype="link" 
-				reporter:label="Patron Home Library"/>
-			<field name="xact" reporter:datatype="link" reporter:label="Transaction"/>
-		</fields>
-		<links>
-			<link field="patron_home_ou" reltype="has_a" key="id" map="" class="aou"/>
-			<link field="xact" reltype="has_a" key="id" map="" class="mbt"/>
-		</links>
-		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
-			<actions>
-				<retrieve permission="MANAGE_REFUNDABLE_XACT" global_required="true"/>
-			</actions>
-		</permacrud>
 	</class>
 
 	<class id="mrxs" controller="open-ils.cstore open-ils.pcrud" 
@@ -15977,6 +15951,7 @@ SELECT  usr,
 			<field name="call_number" reporter:datatype="text" reporter:label="Call Number"/>
 			<field name="title" reporter:datatype="text" reporter:label="Title"/>
 			<field name="refundable_payments" reporter:datatype="link" oils_persist:virtual="true"/>
+			<field name="dibs" reporter:datatype="text" reporter:label="Staff Initials"/>
 		</fields>
 		<links>
 			<link field="xact" reltype="has_a" key="id" map="" class="mbt"/>
@@ -15986,7 +15961,7 @@ SELECT  usr,
 			<link field="approved_by" reltype="has_a" key="id" map="" class="au"/>
 			<link field="rejected_by" reltype="has_a" key="id" map="" class="au"/>
 			<link field="paused_by" reltype="has_a" key="id" map="" class="au"/>
-			<link name="refund_session" reltype="has_a" key="id" map="" class="mrses"/>
+			<link field="refund_session" reltype="has_a" key="id" map="" class="mrses"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
@@ -16038,6 +16013,7 @@ SELECT  usr,
 			<field name="payment_type" reporter:datatype="text" reporter:label="Payment Type"/>
 			<field name="workstation" reporter:datatype="text" reporter:label="Payment Workstation"/>
 			<field name="cc_order_number" reporter:datatype="text" reporter:label="Credit Card Transaction #"/>
+			<field name="cc_processor" reporter:datatype="text" reporter:label="Credit Card Processor"/>
 		</fields>
 		<links>
 			<link field="payment" reltype="has_a" key="id" map="" class="mp"/>

@@ -10,6 +10,7 @@ use OpenILS::Const qw/:const/;
 use OpenILS::Application::AppUtils;
 use DateTime;
 my $U = "OpenILS::Application::AppUtils";
+my $RFC = 'OpenILS::Application::Circ::RefundableCommon';
 
 my %scripts;
 my $booking_status;
@@ -517,6 +518,11 @@ my @AUTOLOAD_FIELDS = qw/
     dont_change_lost_zero
     lost_bill_options
     needs_lost_bill_handling
+    confirmed_lostpaid_checkin
+    lostpaid_item_condition_ok
+    lostpaid_checkin_result
+    lostpaid_staff_initials
+    lostpaid_checkin_skip_processing
 /;
 
 
@@ -2826,6 +2832,9 @@ sub do_checkin {
             );
     }
 
+    # Sets bail_on_events if needed/true.
+    return if $self->lostpaid_checkin_needs_confirmation($stat);
+
     # LOST (and to some extent, LONGOVERDUE) may optionally be handled
     # differently if they are already paid for.  We need to check for this
     # early since overdue generation is potentially affected.
@@ -2909,7 +2918,7 @@ sub do_checkin {
     # handle the overridable events 
     $self->override_events unless $self->is_renewal;
     return if $self->bail_out;
-    
+
     # ----------------------------------------------------------
     # KCLS KMAIN-49 KCM-3 overwrite old transit info
     # Check to see if there is a hold transit with a cancelled hold
@@ -3059,7 +3068,6 @@ sub do_checkin {
    # Circulations and transits are now closed where necessary.  Now go on to see if
    # this copy can fulfill a hold or needs to be routed to a different location
    # ------------------------------------------------------------------------------
-
     my $needed_for_something = 0; # formerly "needed_for_hold"
 
     if(!$self->noop) { # /not/ a no-op checkin, capture for hold or put item into transit
@@ -3176,11 +3184,263 @@ sub do_checkin {
 
     $self->finish_fines_and_voiding;
 
+    if ($self->confirmed_lostpaid_checkin && !$self->lostpaid_checkin_skip_processing) {
+        # Lost/Paid checkin and the user has confirmed we should continue.
+        my $evt = $self->process_lostpaid_checkin;
+        $self->bail_on_events($evt) if $evt;
+    }
+
     OpenILS::Utils::Penalty->calculate_penalties(
         $self->editor, $self->patron->id, $self->circ_lib) if $self->patron;
 
     $self->checkin_flesh_events;
     return;
+}
+
+# Returns true if the checkin time (now) of the transaction is 
+# within range of the max return interval to receive a refund
+# on a lostpaid item.
+sub lostpaid_circ_returned_in_time {
+    my ($self, $mbts) = @_;
+
+    my $return_interval_flag = 
+        $self->editor->retrieve_config_global_flag('circ.lostpaid.refund.max_return.interval');
+
+    my $return_interval = 
+        ($return_interval_flag && $U->is_true($return_interval_flag->enabled)) ?
+        $return_interval_flag->value :
+        '6 months';
+
+    $return_interval = OpenILS::Utils::DateTime->interval_to_seconds($return_interval);
+
+    my $pay_date = DateTime::Format::ISO8601
+        ->new
+        ->parse_datetime(clean_ISO8601($mbts->last_payment_ts));
+
+    my $cutoff = DateTime->now->subtract(seconds => $return_interval);
+
+    return $pay_date > $cutoff;
+}
+
+
+# At this point, the item has been checked in within the lost-return
+# interval and the caller has confirmed we should proceed with resolving
+# the transaction (processing the refund / discarding the item / zeroing
+# the negative balance transaction).
+#
+# Item is in circulating condition
+#   Item is refundable?
+#       Process refund
+#   Else
+#       Zero the final transaction if balance < 0.
+# Else
+#   Item is refundable?
+#       Mark refundable transaction as rejected / damaged item
+#   Mark item as Discard/Weed (delete?)
+#   Zero the final transaction if balance < 0.
+#
+# Returns undef on success, Event on error
+sub process_lostpaid_checkin {
+    my $self = shift;
+    my $e = $self->editor;
+    return undef unless my $circ = $self->circ;
+    my $circ_id = $circ->id;
+
+    $logger->info("circulator: processing lostpaid checkin for circ $circ_id");
+
+    my $mrx = $e->search_money_refundable_xact({
+        xact => $circ->id,
+        # If somewhow the refund was preemptively rejected, treat
+        # it like it's not refundable.
+        reject_date => undef,
+    })->[0];
+
+    my $mbts = $e->retrieve_money_billable_transaction_summary($circ->id);
+
+    # Make some initial assumptions about why the transaction is not
+    # refundable.  The note is replaced (or ignored) below depending
+    # on new information.
+    my $zero_note;
+    if ($mbts->last_payment_type =~ /cash_payment|check_payment|credit_card_payment/) {
+        $zero_note = 'Item type is not refundable';
+    } else {
+        $zero_note = 'Payment type is not refundable';
+    }
+
+    if ($self->lostpaid_item_condition_ok) {
+        $logger->info("circulator: circ $circ_id is in good condition");
+
+        if ($mrx) {
+
+            if ($self->lostpaid_circ_returned_in_time($mbts)) {
+
+                $logger->info("circulator: circ $circ_id is eligible for refund");
+
+                my $results = [];
+                my $evt = $RFC->process_refund(
+                    $e, undef, $mrx->id, 0, $results, $self->lostpaid_staff_initials);
+
+                return $evt if $evt;
+
+                $logger->info("circulator: refund result: " . 
+                    OpenSRF::Utils::JSON->perl2JSON($results));
+
+                $self->lostpaid_checkin_result({
+                    refunded_xact => $circ->id, 
+                    refund_actions => $results
+                });
+
+                return undef;
+
+            } else {
+
+                $logger->info("circulator: circ $circ_id is NOT eligible for ".
+                    "refund with last payment date of " . $mbts->last_payment_ts);
+
+                $zero_note = 'Item was returned too late for a refund';
+
+                $self->lostpaid_checkin_result({exceeds_max_return_date => 1});
+            }
+
+        } else {
+            # $zero_note set above.
+            $logger->info("circualtor: lost/paid item is not refundable");
+            $self->lostpaid_checkin_result({item_not_refundable => 1});
+        }
+
+    } else {
+        $logger->info("circulator: circ $circ_id is not in good condition");
+
+        if ($mrx) {
+            $logger->info("circulator: circ $circ_id setting as non-refundable re: condition");
+
+            # Call out that item could be refunded were it in better condition.
+            $zero_note = 'Not eligible for refund due to item condition';
+
+            # Refundable, but no longer in circulating condition.
+            $mrx->reject_date('now');
+            $mrx->rejected_by($e->requestor->id);
+            $mrx->notes($zero_note);
+
+            return $e->die_event unless $e->update_money_refundable_xact($mrx);
+        }
+
+        $logger->info("circulator: circ $circ_id discarding damaged item");
+
+        # Set item as Discard
+        my $copy = $self->copy;
+        $copy->status(OILS_COPY_STATUS_DISCARD);
+        $copy->edit_date('now');
+        $copy->editor($e->requestor->id);
+
+        $copy = $e->update_asset_copy($copy) or return $e->die_event;
+
+        $self->lostpaid_checkin_result({item_discarded => $copy});
+    }
+
+    # If we're here, we did not process a refund.  We may need
+    # to zero the balance of the transaction.
+
+    my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
+    return undef if !$sum || $sum->balance_owed >= 0;
+
+    $logger->info("circulator: circ $circ_id adjusting bills to zero");
+
+    my $res = $CC->adjust_bills_to_zero_manual_impl($e, [$circ->id], $zero_note);
+    return $res if $U->is_event($res);
+
+    # may have item_discarded from above
+    my $result = $self->lostpaid_checkin_result || {};
+
+    $result->{transaction_zeroed} = 
+        $self->editor->retrieve_money_billable_transaction_summary($circ->id);
+
+    $self->lostpaid_checkin_result($result);
+
+    return undef;
+}
+
+sub lostpaid_checkin_needs_confirmation {
+    my ($self, $copy_status) = @_;
+
+    if ($self->confirmed_lostpaid_checkin) {
+        # Caller has confirmed we should proceed with the lostpaid checkin,
+        # but they have also indicate the item is no longer in good
+        # condition.  Set noop=true to avoid hold targeting or transiting
+        # of the item going forward.
+        $self->noop(!$self->lostpaid_item_condition_ok);
+        return 0;
+    }
+
+    return $self->checkin_circ_is_lostpaid($copy_status);
+}
+
+# Not necessarily the same as "refundable", which depends on the item.
+sub checkin_circ_is_lostpaid {
+    my ($self, $copy_status) = @_;
+
+    # Short-circuit as much as we can.
+    return 0 if (
+        $copy_status != OILS_COPY_STATUS_LOST && 
+        $copy_status != OILS_COPY_STATUS_LOST_AND_PAID
+    );
+
+    # Caller already confirmed?
+    return 0 if $self->confirmed_lostpaid_checkin;
+
+    return 0 unless my $circ = $self->circ;
+    return 0 if $circ->stop_fines ne 'LOST';
+    return 0 if $circ->checkin_time;
+
+    my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
+    my $mrx = $self->editor->search_money_refundable_xact({xact => $circ->id})->[0];
+
+    # Presence of a refundable transaction entry is our proof this 
+    # circulation is ostensibly refundable.  We still have to verify
+    # the return date is in range.
+    my $is_refundable = $mrx && !$mrx->reject_date;
+
+    my $not_refundable_reason = '';
+
+    if ($is_refundable) {
+        # Is the item getting checked in within the required time range?
+
+        if (!$self->lostpaid_circ_returned_in_time($sum)) {
+            $is_refundable = 0;
+            $not_refundable_reason = 'return_date';
+        }
+
+    } else {
+        # If the xact is not refundable (because of the item or payment
+        # type), treat it as "lost and paid" if the last billing type
+        # is for lost materials and there is at least one non-voided
+        # payment.  Note the xact balance may not be zero or negative at
+        # this point.
+
+        # TODO: fetch the actual billing btype so we can avoid comparing labels.
+        return 0 if $sum->last_billing_type ne 'Lost Materials'; 
+        return 0 if $sum->total_paid == 0;
+
+        if (!$sum->last_payment_type) {
+            $not_refundable_reason = 'no_payments';
+        } elsif ($sum->last_payment_type =~ /cash_payment|check_payment|credit_card_payment/) {
+            $not_refundable_reason = 'item_type';
+        } else {
+            $not_refundable_reason = 'payment_type';
+        }
+    }
+
+    $self->bail_on_events(
+        OpenILS::Event->new('LOSTPAID_CHECKIN', payload => {
+            is_refundable => $is_refundable,
+            not_refundable_reason => $not_refundable_reason,
+            money_summary => $sum,
+        }) 
+    );
+
+    $self->checkin_flesh_events;
+
+    return 1;
 }
 
 sub finish_fines_and_voiding {
@@ -4229,6 +4489,7 @@ sub checkin_flesh_events {
     for my $evt (@{$self->events}) {
 
         my $payload         = {};
+
         $payload->{copy}    = $U->unflesh_copy($self->copy);
         $payload->{volume}  = $self->volume;
         $payload->{record}  = $record,
@@ -4239,6 +4500,16 @@ sub checkin_flesh_events {
         $payload->{patron}  = $self->patron;
         $payload->{reservation} = $self->reservation
             unless (not $self->reservation or $self->reservation->cancel_time);
+        $payload->{lostpaid_checkin_result} = $self->lostpaid_checkin_result;
+
+        if ($evt->{payload}) {
+            # Extract these from the lostpaid event so we don't lose them.
+            $payload->{is_refundable} = $evt->{payload}->{is_refundable};
+            $payload->{not_refundable_reason} = $evt->{payload}->{not_refundable_reason};
+            $payload->{money_summary} = $evt->{payload}->{money_summary};
+            $payload->{circ_modifier} = 
+                $self->editor->retrieve_config_circ_modifier($self->copy->circ_modifier);
+        }
 
         $evt->{payload}     = $payload;
     }

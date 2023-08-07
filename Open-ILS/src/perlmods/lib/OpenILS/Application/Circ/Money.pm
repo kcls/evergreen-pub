@@ -1075,136 +1075,21 @@ __PACKAGE__->register_method(
     }
 );
 
-sub _rebill_xact {
-    my ($e, $xact, $note) = @_;
-
-    my $xact_id = $xact->id;
-    # the plan: rebill voided billings until we get a positive balance
-    #
-    # step 1: get the voided/adjusted billings
-    my $billings = $e->search_money_billing([
-        {
-            xact => $xact_id,
-        },
-        {
-            order_by => {mb => 'amount desc'},
-            flesh => 1,
-            flesh_fields => {mb => ['adjustments']},
-        }
-    ]);
-    my @billings = grep { $U->is_true($_->voided) or @{$_->adjustments} } @$billings;
-
-    my $xact_balance = $xact->balance_owed;
-    $logger->debug("rebilling for xact $xact_id with balance $xact_balance");
-
-    my $rebill_amount = 0;
-    my @rebill_ids;
-    # step 2: generate new bills just like the old ones
-    for my $billing (@billings) {
-        my $amount = 0;
-        if ($U->is_true($billing->voided)) {
-            $amount = $billing->amount;
-        } else { # adjusted billing
-            map { $amount = $U->fpsum($amount, $_->amount) } @{$billing->adjustments};
-        }
-
-        my $evt = $CC->create_bill(
-            $e,
-            $amount,
-            $billing->btype,
-            $billing->billing_type,
-            $xact_id,
-            $note || 
-                "System: MANUAL ADJUSTMENT, BILLING #".$billing->id." REINSTATED\n(PREV: ".$billing->note.")",
-            $billing->period_start(),
-            $billing->period_end()
-        );
-        return $evt if $evt;
-        $rebill_amount += $billing->amount;
-
-        # if we have a postive (or zero) balance now, stop
-        last if ($xact_balance + $rebill_amount >= 0);
-    }
-}
-
-sub _is_fully_adjusted {
-    my ($billing) = @_;
-
-    my $amount_adj = 0;
-    map { $amount_adj = $U->fpsum($amount_adj, $_->amount) } @{$billing->adjustments};
-
-    return $billing->amount == $amount_adj;
-}
-
 sub adjust_bills_to_zero_manual {
     my ($self, $client, $auth, $xact_ids, $note) = @_;
 
     my $e = new_editor(xact => 1, authtoken => $auth);
     return $e->die_event unless $e->checkauth;
 
-    $note = "Adjusted to Zero: $note" if $note;
+    my $res = $CC->adjust_bills_to_zero_manual_impl($e, $xact_ids, $note);
 
-    # in case a bare ID is passed
-    $xact_ids = [$xact_ids] unless ref $xact_ids;
-
-    my @modified;
-    for my $xact_id (@$xact_ids) {
-
-        my $xact =
-            $e->retrieve_money_billable_transaction_summary([
-                $xact_id,
-                {flesh => 1, flesh_fields => {mbts => ['usr']}}
-            ]) or return $e->die_event;
-
-        if ($xact->balance_owed == 0) {
-            # zero already, all done
-            next;
-        }
-
-        return $e->die_event unless
-            $e->allowed('ADJUST_BILLS', $xact->usr->home_ou);
-
-        if ($xact->balance_owed < 0) {
-            my $evt = _rebill_xact($e, $xact, $note);
-            return $evt if $evt;
-            # refetch xact to get new balance
-            $xact =
-                $e->retrieve_money_billable_transaction_summary([
-                    $xact_id,
-                    {flesh => 1, flesh_fields => {mbts => ['usr']}}
-                ]) or return $e->die_event;
-        }
-
-        if ($xact->balance_owed > 0) {
-            # it's positive and needs to be adjusted
-            # (it either started positive, or we rebilled it positive)
-            my $billings = $e->search_money_billing([
-                {
-                    xact => $xact_id,
-                },
-                {
-                    order_by => {mb => 'amount desc'},
-                    flesh => 1,
-                    flesh_fields => {mb => ['adjustments']},
-                }
-            ]);
-
-            my @billings_to_zero = grep { !$U->is_true($_->voided) or !_is_fully_adjusted($_) } @$billings;
-            $CC->adjust_bills_to_zero($e, \@billings_to_zero, $note || "System: MANUAL ADJUSTMENT");
-        }
-
-        push(@modified, $xact->id);
-
-        # now we see if we can close the transaction
-        # same logic as make_payments();
-        my $close_xact_fail = $CC->maybe_close_xact($e, $xact_id);
-        if ($close_xact_fail) {
-            return $close_xact_fail->{evt};
-        }
+    if ($U->is_event($res)) {
+        $e->rollback;
+    } else {
+        $e->commit;
     }
 
-    $e->commit;
-    return \@modified;
+    return $res;
 }
 
 

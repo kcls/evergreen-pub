@@ -1,0 +1,61 @@
+[%- 
+  USE date;
+  USE format; 
+  SET money = format('%.02f'); 
+-%]
+Transaction Total Refund Due,Circulation ID,Patron ID,Patron Barcode,Juvenile,Guardian,Item Barcode,Title,Patron First Name,Patron Middle Name,Patron Last Name,Street1,Street2,City,State,Post Code,Payment ID,Payment Amount,Payment Time, Payment Type,Credit Card Order Number,Credit Card Approval Code,Credit Card Processor,Credit Card Vendor,Receipt Code
+[%- FOR refund IN refunds %]
+[% 
+money(refund.refund_amount)
+%],[% 
+refund.xact_id 
+%],[% 
+refund.usr_id
+%],[% 
+refund.patron_barcode 
+%],[% 
+refund.usr_is_juvenile
+%],[% 
+refund.guardian
+%],[% 
+refund.item_barcode
+%],[% 
+refund.title 
+%],[% 
+refund.usr_first_name
+%],[% 
+refund.usr_middle_name
+%],[% 
+refund.usr_family_name
+%],[% 
+refund.usr_street1
+%],[% 
+refund.usr_street2
+%],[% 
+refund.usr_city
+%],[% 
+refund.usr_state
+%],[% 
+refund.usr_post_code
+%],[% 
+refund.pay_id
+%],[% 
+money(refund.pay_amount)
+%],[% 
+date.format(refund.payment_ts, '%x %I:%M %p')
+%],[% 
+refund.pay_type
+%],[% 
+refund.cc_order_number
+%],[% 
+refund.cc_approval_code
+%],[% 
+refund.cc_processor
+%],[% 
+refund.cc_vendor
+%],[% 
+refund.receipt_code
+%]
+[%- END %]
+
+
