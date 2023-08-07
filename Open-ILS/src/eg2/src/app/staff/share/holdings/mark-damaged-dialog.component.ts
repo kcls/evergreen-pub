@@ -40,7 +40,7 @@ export class MarkDamagedDialogComponent
     billingTypes: ComboboxEntry[];
 
     // Overide the API suggested charge amount
-    amountChangeRequested: boolean;
+    amountChangeRequested = true; // KCLS JBAS-3129
     newCharge: number;
     newNote: string;
     newBtype: number;
@@ -126,7 +126,7 @@ export class MarkDamagedDialogComponent
         this.chargeResponse = null;
         this.newCharge = null;
         this.newNote = null;
-        this.amountChangeRequested = false;
+        //this.amountChangeRequested = false; // KCLS JBAS-3129
         this.pauseArgs = {};
     }
 
