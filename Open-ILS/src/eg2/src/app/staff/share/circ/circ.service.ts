@@ -13,11 +13,13 @@ import {CircEventsComponent} from './events-dialog.component';
 import {CircComponentsComponent} from './components.component';
 import {StringService} from '@eg/share/string/string.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
+import {StoreService} from '@eg/core/store.service';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {WorkLogService, WorkLogEntry} from '@eg/staff/share/worklog/worklog.service';
 import {PermService} from '@eg/core/perm.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {ToastService} from '@eg/share/toast/toast.service';
+import {WinService} from '@eg/core/win.service';
 
 export interface CircDisplayInfo {
     title?: string;
@@ -203,11 +205,20 @@ export interface CheckinParams {
     do_inventory_update?: boolean;
     no_precat_alert?: boolean;
     retarget_mode?: string;
+    confirmed_lostpaid_checkin?: boolean;
+    lostpaid_item_condition_ok?: boolean;
+    lostpaid_checkin_skip_processing?: boolean;
+    lostpaid_staff_initials?: string;
+
 
     // internal / local values that are moved from the API request.
     _override?: boolean;
     _worklog?: WorkLogEntry;
     _checkbarcode?: boolean;
+
+    // If set, avoid opening a new window to process the
+    // checkin, becuase we're already on said window.
+    _lostpaid_checkin_in_progress?: boolean;
 }
 
 export interface CheckinResult extends CircResultCommon {
@@ -250,6 +261,7 @@ export class CircService {
         private net: NetService,
         private pcrud: PcrudService,
         private serverStore: ServerStoreService,
+        private store: StoreService,
         private strings: StringService,
         private printer: PrintService,
         private auth: AuthService,
@@ -258,6 +270,7 @@ export class CircService {
         private perms: PermService,
         private bib: BibRecordService,
         private toast: ToastService
+        private win: WinService
     ) {}
 
     applySettings(): Promise<any> {
@@ -1052,10 +1065,30 @@ export class CircService {
                 this.audio.play('error.checkin.not_found');
                 return this.handleCheckinUncatAlert(result);
 
+            case 'LOSTPAID_CHECKIN':
+                return this.handleLostPaidCheckin(result);
+
             default:
                 this.audio.play('error.checkin.unknown');
                 console.warn(
                     'Unhandled checkin response : ' + result.firstEvent.textcode);
+        }
+
+        return Promise.resolve(result);
+    }
+
+    // Checkin resulted in a requirement to confirm a lost/paid checkin.
+    handleLostPaidCheckin(result: CheckinResult): Promise<CheckinResult> {
+
+        if (!result.params._lostpaid_checkin_in_progress) {
+            // Track the original checkin params in local storage so the
+            // newly opened browser tab will be able to execute the checkin
+            // with the same params.
+            this.store.setLocalItem('circ.lostpaid.params', result.params);
+
+            const winId = this.win.getId();
+            const path = `/staff/circ/checkin/lostpaid/${result.copy.id()}?window=${winId}`;
+            this.win.open(path);
         }
 
         return Promise.resolve(result);

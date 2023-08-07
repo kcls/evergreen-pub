@@ -224,8 +224,11 @@ export class EditComponent implements OnInit {
 
     fieldDoc: {[cls: string]: {[field: string]: string}} = {};
 
+    closeOnSave = false;
+
     constructor(
         private router: Router,
+        private route: ActivatedRoute,
         private org: OrgService,
         private net: NetService,
         private auth: AuthService,
@@ -245,6 +248,7 @@ export class EditComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        this.closeOnSave = Boolean(this.route.snapshot.queryParamMap.get('closeOnSave'));
         this.load();
     }
 
@@ -1650,10 +1654,16 @@ export class EditComponent implements OnInit {
             return;
         }
 
+        // Let errbody know we modified a patron
+        this.broadcaster.broadcast('eg.circ.patron.edit', this.modifiedPatron.id());
+
         if (clone) {
             this.context.summary = null;
             this.router.navigate(
                 ['/staff/circ/patron/register/clone', this.modifiedPatron.id()]);
+
+        } else if (this.closeOnSave) {
+            window.close();
 
         } else {
             // Full refresh to force reload of modified patron data.
