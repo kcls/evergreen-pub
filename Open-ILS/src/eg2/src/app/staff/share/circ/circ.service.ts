@@ -1050,9 +1050,16 @@ export class CircService {
                 return this.handleCheckinUncatAlert(result);
 
             case 'LOSTPAID_CHECKIN':
-                this.components.lostPaidConfirmDialog.checkin = result;
-                return this.components.lostPaidConfirmDialog.open().toPromise()
-                .then(_ => result);
+                // try/catch here because errors within components don't
+                // always bubble up to the console for some reason, which
+                // makes debugging difficult.
+                try {
+                    this.components.lostPaidConfirmDialog.checkin = result;
+                    return this.components.lostPaidConfirmDialog.open().toPromise()
+                    .then(_ => result);
+                } catch(E) {
+                    console.error('lostpaid dialog error', E);
+                }
 
             default:
                 this.audio.play('error.checkin.unknown');
