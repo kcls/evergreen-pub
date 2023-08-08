@@ -1,19 +1,56 @@
 <ng-template #dialogContent>
   <div class="modal-header bg-info">
     <h4>
-      <strong i18n>Lost & Paid Confirmation</strong><br/>
+      <strong i18n>Confirm Checkin of Lost &amp; Paid Item</strong>
     </h4>
     <button type="button" class="close"
       i18n-aria-label aria-label="Close" (click)="close()">
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
-  <div class="modal-body">
-    <b>BOO!</b>
+  <div class="modal-body form-validated">
+    <div class="row p-2 mt-2 border-bottom">
+      <div class="col-lg-4" i18n>
+        <label for="patron-name" class="font-weight-bold">Patron</label>
+      </div>
+      <div class="col-lg-8">
+        <a target="_blank" id="patron-name"
+          routerLink="/staff/circ/patron/{{checkin.patron.id()}}/checkout">
+          {{checkin.patron.family_name()}},
+          {{checkin.patron.first_given_name()}}
+          {{checkin.patron.second_given_name()}}
+        </a>
+      </div>
+    </div>
+
+    <div class="row p-2 mt-2">
+      <div class="col-lg-4" i18n>
+        <label class="font-weight-bold" for="condition-select">Item Condition</label>
+      </div>
+      <div class="col-lg-8">
+        <select id="condition-select" name="condition-select" 
+          class="form-control" [required]="true" [(ngModel)]="itemCondition">
+          <option value="" disabled i18n>Select Condition...</option>
+          <option value="good" i18n>Good Condition</option>
+          <option value="bad" i18n>Not Good Condition</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row p-2 mt-2">
+      <div class="col-lg-4">
+        <label class="font-weight-bold" for="note-dibs" i18n>Staff Initials</label>
+      </div>
+      <div class="col-lg-3">
+        <input type="text" class="form-control" [(ngModel)]="dibs" id="dibs-input"
+          [required]="true" i18n-placeholder placeholder="Initials..."/>
+      </div>
+    </div>
+
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-success" (click)="print()" i18n>Print</button>
-    <button type="button" class="btn btn-warning" (click)="close()" i18n>Do Not Print</button>
+    <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
+    <button type="button" class="btn btn-success" (click)="checkin()" i18n>Resume Checkin</button>
   </div>
 </ng-template>
 

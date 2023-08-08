@@ -22,6 +22,9 @@ import {PrintService} from '@eg/share/print/print.service';
 export class LostPaidConfirmDialogComponent extends DialogComponent {
 
     checkin: CheckinResult;
+    itemCondition = '';
+
+
     /*
     noAutoPrint: {[template: string]: boolean} = {};
     slip: string;

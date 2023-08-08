@@ -3232,6 +3232,8 @@ sub checkin_circ_is_lostpaid {
         }) 
     );
 
+    $self->checkin_flesh_events;
+
     return 1;
 }
 
