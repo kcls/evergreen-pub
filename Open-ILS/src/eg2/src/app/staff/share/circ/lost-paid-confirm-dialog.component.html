@@ -9,6 +9,14 @@
     </button>
   </div>
   <div class="modal-body form-validated">
+    <div class="row p-2 mt-2" *ngIf="checkin.record">
+      <div class="col-lg-12">
+        <a target="_blank" 
+          routerLink="/staff/catalog/record/{{checkin.record.id()}}">
+          {{checkin.record.title()}}
+        </a>
+      </div>
+    </div>
     <div class="row p-2 mt-2 border-bottom">
       <div class="col-lg-4" i18n>
         <label for="patron-name" class="font-weight-bold">Patron</label>
