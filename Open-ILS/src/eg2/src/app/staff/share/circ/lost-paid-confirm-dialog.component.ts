@@ -9,7 +9,7 @@ import {StringComponent} from '@eg/share/string/string.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
-import {CheckinResult} from './circ.service';
+import {CheckinResult, CheckinParams} from './circ.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PrintService} from '@eg/share/print/print.service';
 
@@ -21,63 +21,21 @@ import {PrintService} from '@eg/share/print/print.service';
 })
 export class LostPaidConfirmDialogComponent extends DialogComponent {
 
-    checkin: CheckinResult;
+    checkinResult: CheckinResult;
     itemCondition = '';
-
-
-    /*
-    noAutoPrint: {[template: string]: boolean} = {};
-    slip: string;
-    today = new Date();
 
     constructor(
         private modal: NgbModal,
         private pcrud: PcrudService,
         private org: OrgService,
         private circ: CircService,
-        private printer: PrintService,
-        private serverStore: ServerStoreService) {
+        private printer: PrintService) {
         super(modal);
     }
 
+
+    /*
     open(ops?: NgbModalOptions): Observable<any> {
-        // Depending on various settings, the dialog may never open.
-        // But in some cases we still have to collect the data
-        // for printing.
-
-        return from(this.applySettings())
-
-        .pipe(concatMap(exit => {
-
-            console.debug('Route Dialog applySettings() returned', exit);
-
-            return from(
-                this.collectData().then(exit2 => {
-                    // If either applySettings or collectData() tell us
-                    // to exit, make it so.
-                    console.debug(
-                        'Route Dialog collectData() completed with ', (exit || exit2));
-                    return exit || exit2;
-                })
-            );
-        }))
-
-        .pipe(concatMap(exit => {
-            if (exit) {
-                return of(exit);
-            } else {
-                return from(this.headlessPrint());
-            }
-        }))
-
-        .pipe(concatMap(exit => {
-            console.debug('Route Dialog headlessPrint() returned', exit);
-            if (exit) {
-                return of(exit);
-            } else {
-                return super.open(ops);
-            }
-        }));
     }
 
     print(): Promise<any> {
@@ -89,9 +47,26 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
 
         this.close();
 
-        // TODO printer.print() should return a promise
         return Promise.resolve();
     }
     */
+
+    checkin() {
+        // TODO show progress inline
+
+        let params: CheckinParams = this.checkinResult.params;
+        params.confirmed_lostpaid_checkin = true;
+
+        console.debug('Checking item in with params: ', params);
+        alert('not yet implemented');
+
+        /*
+        this.circ.checkin(params)
+        .then(result => {
+            console.debug('Lost/Paid checkin returned: ', result);
+            // TODO print refund actions taken letter.
+        });
+        */
+    }
 }
 

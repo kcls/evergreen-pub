@@ -202,6 +202,7 @@ export interface CheckinParams {
     do_inventory_update?: boolean;
     no_precat_alert?: boolean;
     retarget_mode?: string;
+    confirmed_lostpaid_checkin?: boolean;
 
     // internal / local values that are moved from the API request.
     _override?: boolean;
@@ -1050,16 +1051,7 @@ export class CircService {
                 return this.handleCheckinUncatAlert(result);
 
             case 'LOSTPAID_CHECKIN':
-                // try/catch here because errors within components don't
-                // always bubble up to the console for some reason, which
-                // makes debugging difficult.
-                try {
-                    this.components.lostPaidConfirmDialog.checkin = result;
-                    return this.components.lostPaidConfirmDialog.open().toPromise()
-                    .then(_ => result);
-                } catch(E) {
-                    console.error('lostpaid dialog error', E);
-                }
+                return this.handleLostPaidCheckin(result);
 
             default:
                 this.audio.play('error.checkin.unknown');
@@ -1068,6 +1060,19 @@ export class CircService {
         }
 
         return Promise.resolve(result);
+    }
+
+    // Checkin resulted in a requirement to confirm a lost/paid checkin.
+    handleLostPaidCheckin(result: CheckinResult): Promise<CheckinResult> {
+        // try/catch here because errors within components don't always
+        // bubble up to the console, which makes debugging difficult.
+        this.components.lostPaidConfirmDialog.checkinResult = result;
+        try {
+            return this.components.lostPaidConfirmDialog.open().toPromise();
+        } catch(E) {
+            console.error('lostpaid dialog error', E);
+            throw(E);
+        }
     }
 
     addWorkLog(action: string, result: CircResultCommon) {
