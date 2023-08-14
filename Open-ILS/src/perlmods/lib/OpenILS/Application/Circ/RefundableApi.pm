@@ -189,6 +189,57 @@ sub update_refundable_xact {
 }
 
 __PACKAGE__->register_method(
+    method    => 'refund_summary_data',
+    api_name  => 'open-ils.circ.refundable_payment.letter.by_xact.data',
+    signature => {
+        desc   => q/Collect data needed to print a refund summary/,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Billable Transaction ID', type => 'number'}
+        ],
+        return => {
+            desc => 'Hash of refund summary data'
+        }
+    }
+);
+
+sub refund_summary_data {
+    my ($self, $client, $auth, $xact_id) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+
+    my $ref_xact = $e->search_money_refundable_xact_summary([
+        {xact => $xact_id}, 
+        {flesh => 1, flesh_fields => {mrxs => ['usr']}}
+    ])->[0] or return $e->event;
+
+    return $e->event unless 
+        $e->allowed('VIEW_USER_TRANSACTIONS', $ref_xact->usr->home_ou);
+
+    my $ref_actions = $e->search_money_refund_action([{
+        refundable_xact => $ref_xact->id
+    }, {
+        flesh => 7, 
+        flesh_fields => {
+            mract => ['payment'],
+            mp => ['xact'],
+            xact => ['circulation'],
+            circ => ['target_copy'],
+            acp => ['call_number'],
+            acn => ['record'],
+            bre => ['simple_record']
+        }
+    }]);
+
+    return {
+        refundable_xact => $ref_xact,
+        refund_actions => $ref_actions,
+    };
+}
+
+
+__PACKAGE__->register_method(
     method    => 'generate_refundable_payment_receipt',
     api_name  => 'open-ils.circ.refundable_payment.receipt.html',
     signature => {
