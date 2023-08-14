@@ -1068,7 +1068,7 @@ export class CircService {
         // bubble up to the console, which makes debugging difficult.
         this.components.lostPaidConfirmDialog.checkinResult = result;
         try {
-            return this.components.lostPaidConfirmDialog.open().toPromise();
+            return this.components.lostPaidConfirmDialog.open({size: 'lg'}).toPromise();
         } catch(E) {
             console.error('lostpaid dialog error', E);
             throw(E);
