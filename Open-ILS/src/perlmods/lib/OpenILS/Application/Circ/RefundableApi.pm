@@ -214,6 +214,9 @@ sub refund_summary_data {
         {flesh => 1, flesh_fields => {mrxs => ['usr']}}
     ])->[0] or return $e->event;
 
+    return OpenILS::Event->new('XACT_NOT_REFUNDED')
+        unless defined $ref_xact->refund_amount; # can be $0.00
+
     return $e->event unless 
         $e->allowed('VIEW_USER_TRANSACTIONS', $ref_xact->usr->home_ou);
 
