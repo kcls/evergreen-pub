@@ -241,8 +241,7 @@ export class PatronContextService {
     }
 
     printLostPaid(xactId: number): Promise<any> {
-
-        if (!xactId) { return; }
+        if (!xactId) { return Promise.resolve(); }
 
         return this.net.request('open-ils.circ',
             'open-ils.circ.refundable_payment.receipt.by_xact.html',
@@ -265,6 +264,21 @@ export class PatronContextService {
 
             this.printer.print({
                 text: html,
+                contentType: 'text/html',
+                printContext: 'default'
+            });
+        });
+    }
+
+    printRefundSummary(xactId: number): Promise<any> {
+        if (!xactId) { return Promise.resolve(); }
+        return this.net.request('open-ils.circ',
+            'open-ils.circ.refundable_payment.letter.by_xact.data',
+            this.auth.token(), xactId
+        ).toPromise().then(data => {
+            this.printer.print({
+                templateName: 'refund_summary',
+                contextData: data,
                 contentType: 'text/html',
                 printContext: 'default'
             });

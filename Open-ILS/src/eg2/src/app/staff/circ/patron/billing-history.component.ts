@@ -258,11 +258,19 @@ export class BillingHistoryComponent implements OnInit {
         rows.forEach(row => {
             promise = promise.then(_ => {
                 this.progress.open();
-                return this.context.printLostPaidByPayment(row.id)
+                return this.context.printLostPaid(row['xact.id'])
                 .then(_ => this.progress.close());
             });
         });
     }
+
+    printRefundSummary(rows: any[]) {
+        const xactId = rows.map(row => row['xact.id'])[0];
+        if (!xactId) { return; }
+        this.progress.open();
+        this.context.printRefundSummary(xactId).then(_ => this.progress.close());
+    }
+
 }
 
 
