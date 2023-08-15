@@ -10,6 +10,7 @@ use OpenILS::Const qw/:const/;
 use OpenILS::Application::AppUtils;
 use DateTime;
 my $U = "OpenILS::Application::AppUtils";
+my $RFC = 'OpenILS::Application::Circ::RefundableCommon';
 
 my %scripts;
 my $booking_status;
@@ -519,6 +520,7 @@ my @AUTOLOAD_FIELDS = qw/
     needs_lost_bill_handling
     confirmed_lostpaid_checkin
     lostpaid_item_condition_ok
+    lostpaid_refund_result
 /;
 
 
@@ -3208,36 +3210,57 @@ sub do_checkin {
 # Returns undef on success, Event on error
 sub process_lostpaid_checkin {
     my $self = shift;
+    my $e = $self->editor;
     return undef unless my $circ = $self->circ;
 
-    my $mrx = $self->editor->search_money_refundable_xact({xact => $circ->id})->[0];
-    my $needs_zeroing = 0;
+    my $mrx = $e->search_money_refundable_xact({
+        xact => $circ->id,
+        # If somewhow the refund was preemptively rejected, treat
+        # it like it's not refundable.
+        reject_date => undef,
+    })->[0];
 
     if ($self->lostpaid_item_condition_ok) {
         if ($mrx) {
 
-            my $result = $U->simplereq(
-                "open-ils.circ",
-                "open-ils.circ.refundable_xact.refund",
-                $self->editor->authtoken,
-                $mrx->id
-            );
+            my $results = [];
+            my $evt = $RFC->process_refund($e, undef, $mrx->id, 0, $results);
 
-            # TODO self->refund_applied / track mrx id / circ id.
-        } else {
-            $needs_zeroing = 1;
+            return $evt if $evt;
+
+            $logger->info("Refund result: " .  OpenSRF::Utils::JSON->perl2JSON($results));
+
+            $self->lostpaid_refund_result($results);
+
+            return undef;
         }
     } else {
+
         if ($mrx) {
-            # TODO mark as refund rejected
+            # Refundable, but no longer in circulating condition.
+            $mrx->reject_date('now');
+            $mrx->rejected_by($e->requestor->id);
+            $mrx->note('Not eligible for refund due to item condition');
+
+            return $e->event unless $e->update_money_refundable_xact($mrx);
         }
-        # Mark as Discard/Weed
-        $needs_zeroing = 1;
+
+        # Set item as Discard
+        my $copy = $self->copy;
+        $copy->status(OILS_COPY_STATUS_DISCARD);
+        $copy->edit_date('now');
+        $copy->editor($e->requestor->id);
+
+        $e->update_asset_copy($copy) or return $e->event;
     }
 
-    if ($needs_zeroing) {
-        # TODO
-    }
+    # If we're here, we did not process a refund.  We may need
+    # to zero the balance of the transaction.
+
+    my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
+    return undef if !$sum || $sum->balance_owed >= 0;
+
+    # TODO zero the balance
 
     return undef;
 }
@@ -3270,7 +3293,7 @@ sub checkin_circ_is_lostpaid {
 
     # Presence of a refundable transaction entry is our proof this 
     # circulation is refundable.
-    my $is_refundable = defined $mrx;
+    my $is_refundable = $mrx && !$mrx->reject_date;
 
     if (!$is_refundable) {
         # If the xact is not refundable (likely because of the item type
