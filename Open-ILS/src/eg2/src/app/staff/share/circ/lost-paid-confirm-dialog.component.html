@@ -89,6 +89,10 @@
       </div>
     </div>
 
+    <div class="row p-2 mt-1" *ngIf="processing">
+      <eg-progress-inline></eg-progress-inline>
+    </div>
+
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>

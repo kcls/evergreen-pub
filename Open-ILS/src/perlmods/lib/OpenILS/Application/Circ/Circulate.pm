@@ -518,6 +518,7 @@ my @AUTOLOAD_FIELDS = qw/
     lost_bill_options
     needs_lost_bill_handling
     confirmed_lostpaid_checkin
+    lostpaid_item_condition_ok
 /;
 
 
@@ -2913,7 +2914,7 @@ sub do_checkin {
     # handle the overridable events 
     $self->override_events unless $self->is_renewal;
     return if $self->bail_out;
-    
+
     # ----------------------------------------------------------
     # KCLS KMAIN-49 KCM-3 overwrite old transit info
     # Check to see if there is a hold transit with a cancelled hold
@@ -3063,7 +3064,6 @@ sub do_checkin {
    # Circulations and transits are now closed where necessary.  Now go on to see if
    # this copy can fulfill a hold or needs to be routed to a different location
    # ------------------------------------------------------------------------------
-
     my $needed_for_something = 0; # formerly "needed_for_hold"
 
     if(!$self->noop) { # /not/ a no-op checkin, capture for hold or put item into transit
@@ -3180,11 +3180,66 @@ sub do_checkin {
 
     $self->finish_fines_and_voiding;
 
+    if ($self->confirmed_lostpaid_checkin) {
+        # Lost/Paid checkin and the user has confirmed we should continue.
+        my $evt = $self->process_lostpaid_checkin;
+        $self->bail_on_events($evt) if $evt;
+    }
+
     OpenILS::Utils::Penalty->calculate_penalties(
         $self->editor, $self->patron->id, $self->circ_lib) if $self->patron;
 
     $self->checkin_flesh_events;
     return;
+}
+
+
+# Item is in circulating condition
+#   Item is refundable?
+#       Process refund
+#   Else
+#       Zero the final transaction if balance < 0.
+# Else
+#   Item is refundable?
+#       Mark refundable transaction as rejected / damaged item
+#   Mark item as Discard/Weed (delete?)
+#   Zero the final transaction if balance < 0.
+#
+# Returns undef on success, Event on error
+sub process_lostpaid_checkin {
+    my $self = shift;
+    return undef unless my $circ = $self->circ;
+
+    my $mrx = $self->editor->search_money_refundable_xact({xact => $circ->id})->[0];
+    my $needs_zeroing = 0;
+
+    if ($self->lostpaid_item_condition_ok) {
+        if ($mrx) {
+
+            my $result = $U->simplereq(
+                "open-ils.circ",
+                "open-ils.circ.refundable_xact.refund",
+                $self->editor->authtoken,
+                $mrx->id
+            );
+
+            # TODO self->refund_applied / track mrx id / circ id.
+        } else {
+            $needs_zeroing = 1;
+        }
+    } else {
+        if ($mrx) {
+            # TODO mark as refund rejected
+        }
+        # Mark as Discard/Weed
+        $needs_zeroing = 1;
+    }
+
+    if ($needs_zeroing) {
+        # TODO
+    }
+
+    return undef;
 }
 
 sub lostpaid_checkin_needs_confirmation {
@@ -3211,7 +3266,11 @@ sub checkin_circ_is_lostpaid {
     return 0 if $circ->checkin_time;
 
     my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
-    my $is_refundable = $U->circ_is_refundable($circ->id, $self->editor);
+    my $mrx = $self->editor->search_money_refundable_xact({xact => $circ->id})->[0];
+
+    # Presence of a refundable transaction entry is our proof this 
+    # circulation is refundable.
+    my $is_refundable = defined $mrx;
 
     if (!$is_refundable) {
         # If the xact is not refundable (likely because of the item type
@@ -3220,7 +3279,7 @@ sub checkin_circ_is_lostpaid {
         # non-voided payment.  Note the xact balance may not be zero or
         # negative at this point.
 
-        # todo: fetch the actual billing btype to comparing labels.
+        # TODO: fetch the actual billing btype so we can avoid comparing labels.
         return 0 if $sum->last_billing_type ne 'Lost Materials'; 
         return 0 if $sum->total_paid == 0;
     }
