@@ -24,6 +24,7 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
     checkinResult: CheckinResult;
     itemCondition = '';
     initials = '';
+    processing = false;
 
     constructor(
         private modal: NgbModal,
@@ -56,8 +57,6 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
     */
 
     checkin() {
-        // TODO show progress inline
-
         // TODO if item is not in good condition pass flag to
         // checkin telling server to skip the refund and
         // put the item into Discard/Weed status.
@@ -66,8 +65,11 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
         // TODO teach the API to zero non-zero balances when
         // a refund is not happening.
 
+        this.processing = true;
+
         let params: CheckinParams = this.checkinResult.params;
         params.confirmed_lostpaid_checkin = true;
+        params.lostpaid_item_condition_ok = this.itemCondition === 'good';
 
         console.debug('Checking item in with params: ', params);
         alert('not yet implemented');
