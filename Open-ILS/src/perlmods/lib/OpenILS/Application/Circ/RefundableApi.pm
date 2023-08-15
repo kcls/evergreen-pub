@@ -469,171 +469,16 @@ sub process_refund_api {
     return $e->die_event unless $e->checkauth;
     return $e->die_event unless $e->allowed('MANAGE_REFUNDABLE_XACT');
 
-    # All refund actions require a session 'pon which to hang actions.
-    my $refses = Fieldmapper::money::refund_session->new;
-    $e->create_money_refund_session($refses) or return $e->die_event;
-
-    my $evt = process_refund($client, $e, $refses->id, $mrx_id, $simulate);
+    my $results = [];
+    my $evt = $RFC->process_refund($e, undef, $mrx_id, $simulate, $results);
 
     return $evt if $evt;
 
     if ($simulate) { $e->rollback; } else { $e->commit; }
 
-    return undef;
-}
-
-# Applies a negative refund payment ('credit') equal to the refundable
-# amount paid on the refundable transaction.  Then distributes the
-# credited amount to positive-balance transactions in the form of
-# payment ('debits'), starting with the refundable transaction, until
-# the credit is exhausted or no positive-balance transactions remain.
-sub process_refund {
-    my ($client, $e, $ses_id, $mrx_id, $simulate) = @_;
-    my $evt;
-
-    my $mrx = $e->retrieve_money_refundable_xact($mrx_id)
-        or return $e->die_event;
-
-    return OpenILS::Event->new('REFUND_ALREADY_PROCESSED', {mrx_id => $mrx_id})
-        if $mrx->refund_session;
-
-    my $mrxs = $e->retrieve_money_refundable_xact_summary($mrx_id)
-        or return $e->die_event;
-
-    # Total amount of money we have to work with for refunds
-    # from this transaction.
-    my $refund_amount = $mrxs->refundable_paid;
-
-    my $payment = Fieldmapper::money::cash_payment->new;
-    $payment->xact($mrxs->xact);
-    $payment->amount(-$refund_amount);
-    $payment->amount_collected($payment->amount);
-    $payment->note("L/P/R Crediting Refundable Payment");
-    $payment->accepting_usr($e->requestor->id);
-
-    $e->create_money_cash_payment($payment) or return $e->die_event;
-
-    my $action = Fieldmapper::money::refund_action->new;
-    $action->session($ses_id);
-    $action->action('credit');
-    $action->payment($payment->id);
-    $action->refundable_xact($mrx_id);
-
-    $e->create_money_refund_action($action) or return $e->die_event;
-
-    my $mus = $e->retrieve_money_user_summary($mrxs->usr);
-    my $mbts = $e->retrieve_money_billable_transaction_summary($mrxs->xact);
-
-    $client->respond({
-        mrx_id => $mrx_id,
-        action_id => $action->id,
-        payment => $payment, 
-        patron_balance => $mus->balance_owed,
-        xact_balance => $mbts->balance_owed,
-        refund_remaining => $refund_amount,
-        session => $ses_id,
-        zeroing => 1
-    });
-
-    $logger->info("refund: [mrx=$mrx_id] patron has $refund_amount ".
-        "in refundable money and owes us ".  $mus->balance_owed);
-
-    # Refundable credit card payments require special handling.
-    my $is_cc = $e->search_money_refundable_payment_summary({
-        refundable_xact => $mrx_id,
-        payment_type => 'credit_card_payment'
-    })->[0];
-
-    my @xacts = $RFC->find_xacts_to_refund($e, $mrxs, $refund_amount, $is_cc);
-
-    for my $mobts (@xacts) {
-
-        if ($mobts->{balance_owed} <= 0) {
-            # The first xact in the list will always be the mobts for
-            # the mrxs we are currently processing.  If no more refunds
-            # can be applied to the transaction, because it has a non-
-            # positive balance, all that's left is to close the
-            # transaction if we can.
-            $RFC->close_xact_if_possible($e, $mrxs->xact) or return $e->die_event;
-            next;
-        }
-
-        ($refund_amount, $evt) = apply_refund_money_to_one_xact(
-            $client, $e, $ses_id, $mrxs, $mobts, $refund_amount);
-
-        return $evt if $evt;
-
-        $RFC->close_xact_if_possible($e, $mobts->{id}) or return $e->die_event;
-
-        $mus = $e->retrieve_money_user_summary($mrxs->usr);
-
-        $logger->info("refund: post-refund action state: user_balance=".
-            $mus->balance_owed."; refund_amount=$refund_amount");
-
-        last unless $refund_amount > 0;
-    }
-
-    # Stamp the final amount owed to the patron.
-    $mrx->refund_session($ses_id);
-    $mrx->refund_amount($refund_amount);
-    $e->update_money_refundable_xact($mrx) or return $e->die_event;
-
-    $client->respond({
-        mrx_id => $mrx_id,
-        session => $ses_id,
-        refund_due => $refund_amount,
-        patron_balance => $mus->balance_owed
-    });
+    $client->respond($_) for @$results;
 
     return undef;
-}
-
-# Create payments toward a transaction using money credited
-# to the user via refundable payment.
-sub apply_refund_money_to_one_xact {
-    my ($client, $e, $ses_id, $mrxs, $mobts, $refund_amount) = @_;
-
-    my $pay_amount = $mobts->{balance_owed}; 
-    # Avoid over-recovery
-    $pay_amount = $refund_amount if $pay_amount > $refund_amount;
-
-    my $xact_id = $mobts->{id};
-
-    $logger->info("refund: applying payment ".
-        "amount of $pay_amount to transaction $xact_id for session $ses_id");
-
-    my $payment = Fieldmapper::money::cash_payment->new;
-    $payment->xact($xact_id);
-    $payment->amount($pay_amount);
-    $payment->amount_collected($payment->amount);
-    $payment->note("L/P/R Refund for Transaction #".$mrxs->xact);
-    $payment->accepting_usr($e->requestor->id);
-
-    $e->create_money_cash_payment($payment) or return (undef, $e->die_event);
-
-    my $action = Fieldmapper::money::refund_action->new;
-    $action->session($ses_id);
-    $action->action('debit');
-    $action->payment($payment->id);
-    $action->refundable_xact($mrxs->id);
-
-    $e->create_money_refund_action($action) or return (undef, $e->die_event);
-
-    $refund_amount = $U->fpdiff($refund_amount, $pay_amount);
-
-    my $mus = $e->retrieve_money_user_summary($mrxs->usr);
-    my $mbts = $e->retrieve_money_billable_transaction_summary($xact_id);
-
-    $client->respond({
-        mrx_id => $mrxs->id,
-        action_id => $action->id,
-        payment => $payment,
-        patron_balance => $mus->balance_owed,
-        xact_balance => $mbts->balance_owed,
-        refund_remaining => $refund_amount
-    });
-
-    return ($refund_amount);
 }
 
 __PACKAGE__->register_method(
@@ -688,8 +533,10 @@ sub batch_process_refunds {
 
         if (xact_can_be_processed($e, $org_id, $mrx_id)) {
 
-            my $evt = process_refund(
-                $client, $e, $refses->id, $mrx_id, $simulate);
+            my $results = [];
+            my $evt = $RFC->process_refund($e, $refses->id, $mrx_id, $simulate, $results);
+
+            $client->respond($_) for @$results;
 
             return $evt if $evt;
 
