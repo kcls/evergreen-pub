@@ -2694,8 +2694,14 @@ sub org_operates_on_date {
 
 # TODO: Move this into the database
 my @NO_REFUND_CIRC_MODIFIERS = (1, 7, 45, 46, 66, 40, 41, 47, 48); 
+# Returns true if the item/circ meet the criteria for refundability.
+# By default, this version also makes sure the item is not yet checked in -- this
+# is needed by the Money code when creating refundable payments
+# at payment time.
+#
+# Setting $skip_checked_in will bypass the "is checked in" test.
 sub circ_is_refundable {
-    my ($class, $circ_id, $e) = @_;
+    my ($class, $circ_id, $e, $skip_checked_in) = @_;
 
     $e ||= OpenILS::Utils::CStoreEditor->new;
 
@@ -2706,7 +2712,7 @@ sub circ_is_refundable {
     my $copy = $circ->target_copy;
 
     return 0 if $circ->stop_fines ne 'LOST';
-    return 0 if $circ->checkin_time;
+    return 0 if $circ->checkin_time && !$skip_checked_in;
     return 0 if $copy->call_number == -1;
     return 0 if grep {$_ == $copy->circ_modifier} @NO_REFUND_CIRC_MODIFIERS;
 
