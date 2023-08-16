@@ -354,7 +354,8 @@ a:hover {
       </div>
       <hr/>
       <input type='hidden' id='register-success' value='yep'/>
-      [% IF kiosk %]
+      <!-- experiment always showing requirement docs -->
+      [% IF 1 OR kiosk %]
         <h3>Verification Requirements</h3>
 
         <div id='kiosk-verification-reqs'>
