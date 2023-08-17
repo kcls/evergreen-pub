@@ -520,7 +520,7 @@ my @AUTOLOAD_FIELDS = qw/
     needs_lost_bill_handling
     confirmed_lostpaid_checkin
     lostpaid_item_condition_ok
-    lostpaid_refund_result
+    lostpaid_checkin_result
 /;
 
 
@@ -3232,7 +3232,10 @@ sub process_lostpaid_checkin {
 
             $logger->info("Refund result: " .  OpenSRF::Utils::JSON->perl2JSON($results));
 
-            $self->lostpaid_refund_result($results);
+            $self->lostpaid_checkin_result({
+                refunded_xact => $circ->id, 
+                refund_actions => $results
+            });
 
             return undef;
         }
@@ -3248,6 +3251,7 @@ sub process_lostpaid_checkin {
             $mrx->note('Not eligible for refund due to item condition');
 
             return $e->event unless $e->update_money_refundable_xact($mrx);
+
         }
 
         # Set item as Discard
@@ -3256,7 +3260,9 @@ sub process_lostpaid_checkin {
         $copy->edit_date('now');
         $copy->editor($e->requestor->id);
 
-        $e->update_asset_copy($copy) or return $e->event;
+        $copy = $e->update_asset_copy($copy) or return $e->event;
+
+        $self->lostpaid_checkin_result({item_discarded => $copy});
     }
 
     # If we're here, we did not process a refund.  We may need
@@ -3267,6 +3273,9 @@ sub process_lostpaid_checkin {
 
     my $res = $CC->adjust_bills_to_zero_manual_impl($e, [$circ->id], $zero_note);
     return $res if $U->is_event($res);
+
+    $self->lostpaid_checkin_result({transaction_zeroed => 
+        $self->editor->retrieve_money_billable_transaction_summary($circ->id)});
 
     return undef;
 }
@@ -4381,6 +4390,7 @@ sub checkin_flesh_events {
         $payload->{patron}  = $self->patron;
         $payload->{reservation} = $self->reservation
             unless (not $self->reservation or $self->reservation->cancel_time);
+        $payload->{lostpaid_checkin_result} = $self->lostpaid_checkin_result;
 
         $evt->{payload}     = $payload;
     }
