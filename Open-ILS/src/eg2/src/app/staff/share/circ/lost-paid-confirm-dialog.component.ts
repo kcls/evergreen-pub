@@ -12,6 +12,7 @@ import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {CheckinResult, CheckinParams} from './circ.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PrintService} from '@eg/share/print/print.service';
+import {PatronService} from '@eg/staff/share/patron/patron.service';
 
 /** Route Item Dialog */
 
@@ -31,6 +32,7 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
         private pcrud: PcrudService,
         private org: OrgService,
         private circ: CircService,
+        public patronService: PatronService,
         private printer: PrintService) {
         super(modal);
     }
@@ -72,15 +74,33 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
         params.lostpaid_item_condition_ok = this.itemCondition === 'good';
 
         console.debug('Checking item in with params: ', params);
-        alert('not yet implemented');
 
-        /*
         this.circ.checkin(params)
         .then(result => {
+
             console.debug('Lost/Paid checkin returned: ', result);
-            // TODO print refund actions taken letter.
-        });
-        */
+
+            const lpr = result.firstEvent.payload.lostpaid_checkin_result;
+
+            console.debug('Lost/Paid result', lpr);
+
+            if (lpr.refund_actions) {
+                // Refund succeeded.  Print the summary.
+                return this.patronService.printRefundSummary(lpr.refunded_xact);
+            } else {
+
+                if (lpr.item_discarded) {
+                    // TODO alert staff
+                    console.debug('Item Was Discarded');
+                }
+
+                if (lpr.transaction_zeroed) {
+                    // TODO alert staff
+                    console.debug('Transaction was zeroed');
+                }
+            }
+
+        }).finally(() => this.processing = false);
     }
 }
 

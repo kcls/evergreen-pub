@@ -268,9 +268,8 @@ export class BillingHistoryComponent implements OnInit {
         const xactId = rows.map(row => row['xact.id'])[0];
         if (!xactId) { return; }
         this.progress.open();
-        this.context.printRefundSummary(xactId).then(_ => this.progress.close());
+        this.patronService.printRefundSummary(xactId).then(_ => this.progress.close());
     }
-
 }
 
 
