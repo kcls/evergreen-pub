@@ -41,6 +41,7 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
     open(ops?: NgbModalOptions): Observable<any> {
         this.itemCondition = '';
         this.initials = '';
+        this.processing = false;
         return super.open(ops);
     }
 
@@ -58,15 +59,14 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
     }
     */
 
-    checkin() {
-        // TODO if item is not in good condition pass flag to
-        // checkin telling server to skip the refund and
-        // put the item into Discard/Weed status.
+    refundable(): boolean {
+        return this.checkinResult.firstEvent &&
+            this.checkinResult.firstEvent.payload &&
+            this.checkinResult.firstEvent.payload &&
+            this.checkinResult.firstEvent.payload.is_refundable;
+    }
 
-
-        // TODO teach the API to zero non-zero balances when
-        // a refund is not happening.
-
+    checkin(skipRefund?: boolean) { // TODO
         this.processing = true;
 
         let params: CheckinParams = this.checkinResult.params;
@@ -100,7 +100,7 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
                 }
             }
 
-        }).finally(() => this.processing = false);
+        }).then(_ => this.close());
     }
 }
 
