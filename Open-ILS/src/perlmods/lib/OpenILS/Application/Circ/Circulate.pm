@@ -3282,7 +3282,16 @@ sub process_lostpaid_checkin {
 
 sub lostpaid_checkin_needs_confirmation {
     my ($self, $copy_status) = @_;
-    return 0 if $self->confirmed_lostpaid_checkin;
+
+    if ($self->confirmed_lostpaid_checkin) {
+        # Caller has confirmed we should proceed with the lostpaid checkin,
+        # but they have also indicate the item is no longer in good
+        # condition.  Set noop=true to avoid hold targeting or transiting
+        # of the item going forward.
+        $self->noop(!$self->lostpaid_item_condition_ok);
+        return 0;
+    }
+
     return $self->checkin_circ_is_lostpaid($copy_status);
 }
 
@@ -4380,6 +4389,7 @@ sub checkin_flesh_events {
     for my $evt (@{$self->events}) {
 
         my $payload         = {};
+
         $payload->{copy}    = $U->unflesh_copy($self->copy);
         $payload->{volume}  = $self->volume;
         $payload->{record}  = $record,
@@ -4391,6 +4401,12 @@ sub checkin_flesh_events {
         $payload->{reservation} = $self->reservation
             unless (not $self->reservation or $self->reservation->cancel_time);
         $payload->{lostpaid_checkin_result} = $self->lostpaid_checkin_result;
+
+        if ($evt->{payload}) {
+            # Extract these from the lostpaid event so we don't lose them.
+            $payload->{is_refundable} = $evt->{payload}->{is_refundable};
+            $payload->{money_summary} = $evt->{payload}->{money_summary};
+        }
 
         $evt->{payload}     = $payload;
     }
