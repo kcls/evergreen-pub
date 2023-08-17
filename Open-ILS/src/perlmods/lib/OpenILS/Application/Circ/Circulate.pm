@@ -3220,6 +3220,8 @@ sub process_lostpaid_checkin {
         reject_date => undef,
     })->[0];
 
+    my $zero_note = 'Item is not eligible for refund';
+
     if ($self->lostpaid_item_condition_ok) {
         if ($mrx) {
 
@@ -3237,6 +3239,9 @@ sub process_lostpaid_checkin {
     } else {
 
         if ($mrx) {
+            # Call out that item could be refunded were it in better condition.
+            $zero_note = 'Not eligible for refund due to item condition';
+
             # Refundable, but no longer in circulating condition.
             $mrx->reject_date('now');
             $mrx->rejected_by($e->requestor->id);
@@ -3260,7 +3265,8 @@ sub process_lostpaid_checkin {
     my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
     return undef if !$sum || $sum->balance_owed >= 0;
 
-    # TODO zero the balance
+    my $res = $CC->adjust_bills_to_zero_manual_impl($e, [$circ->id], $zero_note);
+    return $res if $U->is_event($res);
 
     return undef;
 }
