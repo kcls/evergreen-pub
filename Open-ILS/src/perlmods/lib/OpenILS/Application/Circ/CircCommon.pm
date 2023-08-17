@@ -1123,4 +1123,81 @@ sub _has_refundable_payments {
     return 0;
 }
 
+sub _is_fully_adjusted {
+    my ($billing) = @_;
+
+    my $amount_adj = 0;
+    map { $amount_adj = $U->fpsum($amount_adj, $_->amount) } @{$billing->adjustments};
+
+    return $billing->amount == $amount_adj;
+}
+
+sub adjust_bills_to_zero_manual_impl {
+    my ($class, $e, $xact_ids, $note) = @_;
+
+    $note = "Adjusted to Zero: $note" if $note;
+
+    # in case a bare ID is passed
+    $xact_ids = [$xact_ids] unless ref $xact_ids;
+
+    my @modified;
+    for my $xact_id (@$xact_ids) {
+
+        my $xact =
+            $e->retrieve_money_billable_transaction_summary([
+                $xact_id,
+                {flesh => 1, flesh_fields => {mbts => ['usr']}}
+            ]) or return $e->die_event;
+
+        if ($xact->balance_owed == 0) {
+            # zero already, all done
+            next;
+        }
+
+        return $e->die_event unless
+            $e->allowed('ADJUST_BILLS', $xact->usr->home_ou);
+
+        if ($xact->balance_owed < 0) {
+            my $evt = _rebill_xact($e, $xact, $note);
+            return $evt if $evt;
+            # refetch xact to get new balance
+            $xact =
+                $e->retrieve_money_billable_transaction_summary([
+                    $xact_id,
+                    {flesh => 1, flesh_fields => {mbts => ['usr']}}
+                ]) or return $e->die_event;
+        }
+
+        if ($xact->balance_owed > 0) {
+            # it's positive and needs to be adjusted
+            # (it either started positive, or we rebilled it positive)
+            my $billings = $e->search_money_billing([
+                {
+                    xact => $xact_id,
+                },
+                {
+                    order_by => {mb => 'amount desc'},
+                    flesh => 1,
+                    flesh_fields => {mb => ['adjustments']},
+                }
+            ]);
+
+            my @billings_to_zero = grep { !$U->is_true($_->voided) or !_is_fully_adjusted($_) } @$billings;
+            $class->adjust_bills_to_zero($e, \@billings_to_zero, $note || "System: MANUAL ADJUSTMENT");
+        }
+
+        push(@modified, $xact->id);
+
+        # now we see if we can close the transaction
+        # same logic as make_payments();
+        my $close_xact_fail = $class->maybe_close_xact($e, $xact_id);
+        if ($close_xact_fail) {
+            return $close_xact_fail->{evt};
+        }
+    }
+
+    return \@modified;
+}
+
+
 1;
