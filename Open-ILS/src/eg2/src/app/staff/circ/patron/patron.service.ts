@@ -271,29 +271,6 @@ export class PatronContextService {
             });
         });
     }
-
-    printRefundSummary(xactId: number): Promise<any> {
-        if (!xactId) { return Promise.resolve(); }
-        return this.net.request(
-            'open-ils.circ',
-            'open-ils.circ.refundable_payment.letter.by_xact.data',
-            this.auth.token(), xactId
-        ).toPromise().then(data => {
-            let evt = this.evt.parse(data);
-
-            if (evt) {
-                console.error(evt);
-                return;
-            }
-
-            this.printer.print({
-                templateName: 'refund_summary',
-                contextData: data,
-                contentType: 'text/html',
-                printContext: 'default'
-            });
-        });
-    }
 }
 
 
