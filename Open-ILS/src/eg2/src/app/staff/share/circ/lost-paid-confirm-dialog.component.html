@@ -9,6 +9,15 @@
     </button>
   </div>
   <div class="modal-body form-validated">
+    <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
+      <div class="col-lg-4 font-weight-bold" i18n>Item Barcode:</div>
+      <div class="col-lg-8">
+        <a target="_blank" 
+          routerLink="/staff/cat/item/{{checkinResult.copy.id()}}/summary">
+          {{checkinResult.copy.barcode()}}
+        </a>
+      </div>
+    </div>
     <div class="row p-2 mt-1" *ngIf="checkinResult.record">
       <div class="col-lg-4 font-weight-bold" i18n>Title:</div>
       <div class="col-lg-8">
@@ -79,6 +88,13 @@
             *ngIf="refundable() && itemCondition === 'good'" i18n>
             This item is eligible for refund.
           </ng-container>
+          <ng-container 
+            *ngIf="refundable() && itemCondition !== 'good'" i18n>
+            This item will <u>not</u> be refunded since it is not
+            in good condition.  If checking the item in results in
+            a negative transaction balance, the balance will be
+            automatically zero'ed.
+          </ng-container>
           <ng-container *ngIf="!refundable()" i18n>
             This item is <u>not</u> eligible for refund.  If checking
             the item in results in a negative transaction balance, the
@@ -95,7 +111,14 @@
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
-    <button type="button" class="btn btn-success" (click)="checkin()" i18n>Resume Checkin</button>
+    <button type="button" class="btn btn-success" (click)="checkin()">
+      <ng-container *ngIf="refundable() && itemCondition === 'good'" i18n>
+        Checkin &amp; Process Refund
+      </ng-container>
+      <ng-container *ngIf="!refundable() || itemCondition !== 'good'" i18n>
+        Checkin &amp; Mark Item Discard/Weed.
+      </ng-container>
+    </button>
   </div>
 </ng-template>
 

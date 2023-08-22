@@ -227,7 +227,7 @@ sub refund_summary_data {
         flesh_fields => {
             mract => ['payment'],
             mp => ['xact'],
-            mbt => ['circulation'],
+            mbt => ['circulation', 'summary'],
             circ => ['target_copy'],
             acp => ['call_number'],
             acn => ['record'],

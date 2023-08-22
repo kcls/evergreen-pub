@@ -1075,58 +1075,6 @@ __PACKAGE__->register_method(
     }
 );
 
-sub _rebill_xact {
-    my ($e, $xact, $note) = @_;
-
-    my $xact_id = $xact->id;
-    # the plan: rebill voided billings until we get a positive balance
-    #
-    # step 1: get the voided/adjusted billings
-    my $billings = $e->search_money_billing([
-        {
-            xact => $xact_id,
-        },
-        {
-            order_by => {mb => 'amount desc'},
-            flesh => 1,
-            flesh_fields => {mb => ['adjustments']},
-        }
-    ]);
-    my @billings = grep { $U->is_true($_->voided) or @{$_->adjustments} } @$billings;
-
-    my $xact_balance = $xact->balance_owed;
-    $logger->debug("rebilling for xact $xact_id with balance $xact_balance");
-
-    my $rebill_amount = 0;
-    my @rebill_ids;
-    # step 2: generate new bills just like the old ones
-    for my $billing (@billings) {
-        my $amount = 0;
-        if ($U->is_true($billing->voided)) {
-            $amount = $billing->amount;
-        } else { # adjusted billing
-            map { $amount = $U->fpsum($amount, $_->amount) } @{$billing->adjustments};
-        }
-
-        my $evt = $CC->create_bill(
-            $e,
-            $amount,
-            $billing->btype,
-            $billing->billing_type,
-            $xact_id,
-            $note || 
-                "System: MANUAL ADJUSTMENT, BILLING #".$billing->id." REINSTATED\n(PREV: ".$billing->note.")",
-            $billing->period_start(),
-            $billing->period_end()
-        );
-        return $evt if $evt;
-        $rebill_amount += $billing->amount;
-
-        # if we have a postive (or zero) balance now, stop
-        last if ($xact_balance + $rebill_amount >= 0);
-    }
-}
-
 sub adjust_bills_to_zero_manual {
     my ($self, $client, $auth, $xact_ids, $note) = @_;
 
