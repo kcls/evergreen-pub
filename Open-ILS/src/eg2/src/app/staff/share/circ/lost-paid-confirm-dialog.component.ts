@@ -45,20 +45,6 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
         return super.open(ops);
     }
 
-    /*
-    print(): Promise<any> {
-        this.printer.print({
-            templateName: this.slip,
-            contextData: {checkin: this.checkin},
-            printContext: 'default'
-        });
-
-        this.close();
-
-        return Promise.resolve();
-    }
-    */
-
     refundable(): boolean {
         return this.checkinResult.firstEvent &&
             this.checkinResult.firstEvent.payload &&

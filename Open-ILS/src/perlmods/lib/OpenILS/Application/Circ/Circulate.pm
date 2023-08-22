@@ -3248,7 +3248,7 @@ sub process_lostpaid_checkin {
             # Refundable, but no longer in circulating condition.
             $mrx->reject_date('now');
             $mrx->rejected_by($e->requestor->id);
-            $mrx->note('Not eligible for refund due to item condition');
+            $mrx->notes('Not eligible for refund due to item condition');
 
             return $e->event unless $e->update_money_refundable_xact($mrx);
 
