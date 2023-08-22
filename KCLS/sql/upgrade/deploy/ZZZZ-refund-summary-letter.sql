@@ -38,14 +38,17 @@ $TEMPLATE$
   <tr>
     <th>Transaction</th>
     <th>Title</th>
+    <th>Last Billing Type</th>
     <th>Action</th>
     <th>Amount</th>
   </tr>
   [% FOR action IN refund_actions %]
-  [% SET copy = action.payment.xact.circulation.target_copy %]
+  [% SET xact = action.payment.xact %]
+  [% SET copy = xact.circulation.target_copy %]
   <tr>
     <td>#[% action.payment.xact.id %]</td>
     <td>[% copy.call_number.record.simple_record.title %]</td>
+    <td>[% xact.summary.last_billing_type %]
     <td>[% action.action %]</td>
     <td>[% money(Math.abs(action.payment.amount)) %]</td>
   </tr>
