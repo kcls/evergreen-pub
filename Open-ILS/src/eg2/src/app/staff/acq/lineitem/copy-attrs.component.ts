@@ -138,6 +138,7 @@ export class LineitemCopyAttrsComponent implements OnInit {
             case 'cn_label':
             case 'barcode':
             case 'collection_code':
+                entry = (entry || '').trim();
                 this.copy[field](entry);
                 break;
 
