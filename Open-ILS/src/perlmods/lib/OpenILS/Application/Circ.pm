@@ -1471,8 +1471,20 @@ sub mark_item {
     # caller may proceed if either perm is allowed
     return $e->die_event unless $e->allowed([$perm, 'UPDATE_COPY'], $owning_lib);
 
+    my $missing_pieces_stat = $U->ou_ancestor_setting_value(
+        $owning_lib, 'circ.missing_pieces.copy_status', $e);
+
+    # Check the item in if this is a mark-damaged call and the item
+    # was last marked as missing pieces.
+    my $damage_checkin_ok = (
+        $missing_pieces_stat
+        && $copy->status->id() ==  $missing_pieces_stat
+        && ($self->api_name =~ /damaged/)
+    );
+
     # Copy status checks.
-    if ($copy->status->id() == OILS_COPY_STATUS_CHECKED_OUT ||
+    if ($damage_checkin_ok ||
+        $copy->status->id() == OILS_COPY_STATUS_CHECKED_OUT ||
         $copy->status->id() == OILS_COPY_STATUS_LOST ||
         $copy->status->id() == OILS_COPY_STATUS_LONG_OVERDUE) {
 
