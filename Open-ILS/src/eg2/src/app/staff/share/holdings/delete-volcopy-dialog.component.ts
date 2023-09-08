@@ -1,4 +1,4 @@
-import {Component, OnInit, Input, ViewChild, Renderer2} from '@angular/core';
+import {Component, OnInit, Input, ViewChild, Injector} from '@angular/core';
 import {Observable, throwError} from 'rxjs';
 import {IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
@@ -10,6 +10,7 @@ import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {StringComponent} from '@eg/share/string/string.component';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
+import {CircService} from '@eg/staff/share/circ/circ.service';
 
 
 /**
@@ -50,13 +51,17 @@ export class DeleteHoldingDialogComponent
     @ViewChild('confirmOverride', {static: false})
         private confirmOverride: ConfirmDialogComponent;
 
+    @ViewChild('confirmCheckin')
+        private confirmCheckin: ConfirmDialogComponent;
+
+
     constructor(
         private modal: NgbModal, // required for passing to parent
         private toast: ToastService,
         private net: NetService,
         private pcrud: PcrudService,
         private evt: EventService,
-        private renderer: Renderer2,
+        private injector: Injector,
         private auth: AuthService) {
         super(modal); // required for subclassing
     }
@@ -130,6 +135,7 @@ export class DeleteHoldingDialogComponent
     }
 
     handleDeleteEvent(evt: EgEvent, override?: boolean): Promise<any> {
+        console.log('Delete returned event', evt.source);
 
         if (override) { // override failed
             console.warn(evt);
@@ -138,6 +144,53 @@ export class DeleteHoldingDialogComponent
         }
 
         this.deleteEventDesc = evt.desc;
+
+        if (evt.textcode === "COPY_DELETE_WARNING" && evt.source && evt.source.copy) {
+            if (Number(evt.source.copy.status()) === 1) { // Checked Out
+                return this.confirmCheckin.open().toPromise().then(confirmed => {
+
+                    if (!confirmed) {
+                        // Prevent deletion of checked out items.
+                        this.numFailed++;
+                        this.errorMsg.current().then(msg => this.toast.warning(msg));
+                        this.close(this.numSucceeded > 0);
+
+                        return;
+                    }
+
+                    // Circular dep.
+                    const circ = this.injector.get(CircService);
+
+                    return circ.checkin({
+                        copy_id: evt.source.copy.id(),
+                        noop: true
+                    }).then(result => {
+                        if (result.success) {
+                            let stat = result.copy.status();
+                            if (typeof stat === 'object') { stat = stat.id(); }
+
+                            // Set the status of our copy of the copy to
+                            // the status reported by the server.
+                            this.callNums.forEach(callNum => {
+                                callNum.copies().forEach(c => {
+                                    if (Number(c.id()) === Number(evt.source.copy.id())) {
+                                        console.debug('Updating local copy stat to', stat);
+                                        c.status(stat);
+                                    }
+                                })
+                            });
+
+                            return this.deleteHoldings();
+
+                        } else {
+                            this.numFailed++;
+                            this.toast.warning('' + result.firstEvent);
+                            this.close(this.numSucceeded > 0);
+                        }
+                    })
+                });
+            }
+        }
 
         return this.confirmOverride.open().toPromise().then(confirmed => {
             if (confirmed) {

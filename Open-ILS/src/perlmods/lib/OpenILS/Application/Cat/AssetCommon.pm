@@ -508,7 +508,8 @@ sub delete_copy {
         if ($override->{all} || grep { $_ eq 'COPY_DELETE_WARNING' } @{$override->{events}}) {
             return $editor->event unless $editor->allowed('COPY_DELETE_WARNING.override', $class->copy_perm_org($vol, $copy))
         } else {
-            return OpenILS::Event->new('COPY_DELETE_WARNING', payload => $copy->id )
+            # Adding copy as a standalone entry so API is backwards compat.
+            return OpenILS::Event->new('COPY_DELETE_WARNING', payload => $copy->id, copy => $copy )
         }
     }
 

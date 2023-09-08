@@ -1508,7 +1508,7 @@ sub mark_item {
         if ($args->{handle_copy_delete_warning}) {
             $evt = $e->event unless $e->allowed(['COPY_DELETE_WARNING.override'], $owning_lib);
         } else {
-            $evt = OpenILS::Event->new('COPY_DELETE_WARNING');
+            $evt = OpenILS::Event->new('COPY_DELETE_WARNING', payload => {copy => $copy});
         }
     }
     return $evt if $evt;
