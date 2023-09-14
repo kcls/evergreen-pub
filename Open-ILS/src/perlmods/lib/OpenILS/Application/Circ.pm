@@ -1736,6 +1736,20 @@ sub handle_mark_damaged {
         my $evt2 = OpenILS::Utils::Penalty->calculate_penalties($e, $circ->usr->id, $e->requestor->ws_ou);
         return $evt2 if $evt2;
 
+        # Create a patron alert penalty to also track the damaged note.
+        my $pen_type = 20; # Alert Note
+        my $pen_org = $U->get_org_tree->id; # root org. I know...
+        my $sp = $U->create_penalty_message(
+            $e, 
+            20, # Alert Note
+            $circ->usr, 
+            $U->get_org_tree->id, # Root Org / global
+            'Damaged Item',
+            $new_note
+        );
+
+        return $U->is_event($sp) ? $sp : undef;
+
     } else {
         return OpenILS::Event->new('DAMAGE_CHARGE', 
             payload => {
