@@ -1738,12 +1738,11 @@ sub handle_mark_damaged {
 
         # Create a patron alert penalty to also track the damaged note.
         my $pen_type = 20; # Alert Note
-        my $pen_org = $U->get_org_tree->id; # root org. I know...
         my $sp = $U->create_penalty_message(
             $e, 
             20, # Alert Note
             $circ->usr, 
-            $U->get_org_tree->id, # Root Org / global
+            $e->requestor->ws_ou,
             'Damaged Item',
             $new_note
         );

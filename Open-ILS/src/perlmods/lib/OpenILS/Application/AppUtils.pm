@@ -2664,10 +2664,16 @@ sub marc_xml_to_doc {
 sub create_penalty_message {
     my ($class, $e, $pen_type, $user_id, $org_id, $title, $message) = @_;
 
+    $pen_type = $e->retrieve_config_standing_penalty($pen_type)
+        or return $e->die_event;
+
+    my $depth = $pen_type->org_depth || 0;
+    $org_id = $class->org_unit_ancestor_at_depth($org_id, $depth);
+
     my $penalty = Fieldmapper::actor::user_standing_penalty->new;
     $penalty->usr($user_id);
     $penalty->org_unit($org_id);
-    $penalty->standing_penalty($pen_type);
+    $penalty->standing_penalty($pen_type->id);
     $penalty->staff($e->requestor->id);
 
     my $aum = Fieldmapper::actor::usr_message->new;
