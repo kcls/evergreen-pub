@@ -4406,6 +4406,8 @@ sub checkin_flesh_events {
             # Extract these from the lostpaid event so we don't lose them.
             $payload->{is_refundable} = $evt->{payload}->{is_refundable};
             $payload->{money_summary} = $evt->{payload}->{money_summary};
+            $payload->{circ_modifier} = 
+                $e->retrieve_config_circ_modifier($self->copy->circ_modifier);
         }
 
         $evt->{payload}     = $payload;
