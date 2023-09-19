@@ -72,6 +72,11 @@ $TEMPLATE$
 $TEMPLATE$
 );
 
+INSERT INTO permission.perm_list (code, description) VALUES (
+    'CHECKIN_BYPASS_REFUND',
+    'Allows a user to check in refundable item without automatically processing the refund'
+);
+
 
 END IF; END $INSERT$;                                                          
 

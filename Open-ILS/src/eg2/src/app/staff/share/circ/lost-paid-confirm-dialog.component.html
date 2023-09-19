@@ -40,7 +40,7 @@
         </a>
       </div>
     </div>
-    <div class="row p-2 mt-1">
+    <div class="row p-2 mt-2">
       <div class="col-lg-2 font-weight-bold" i18n>Checked Out:</div>
       <div class="col-lg-2">{{checkinResult.circ.xact_start() | egDate}}</div>
       <div class="col-lg-2 font-weight-bold" i18n>Due Date:</div>
@@ -64,7 +64,7 @@
         </ng-container>
       </div>
     </div>
-    <div class="row p-2 mt-1">
+    <div class="row p-2 mt-2">
       <div class="col-lg-4">
         <label class="font-weight-bold" for="condition-select" i18n>
           Is item in circulating condition?
@@ -126,7 +126,11 @@
 
   </div>
   <div class="modal-footer d-flex">
+    <button *ngIf="hasCheckinBypassPerms" type="button" class="btn btn-danger" 
+      (click)="checkin(true)" i18n>Standard Checkin / No Extra Processing</button>
+
     <div class="flex-1"></div>
+
     <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
     <button type="button" class="btn btn-success" (click)="checkin()" 
       [disabled]="!initials || itemCondition === null">
@@ -137,7 +141,7 @@
         Checkin &amp; Process Refund
       </ng-container>
       <ng-container *ngIf="!refundable() || itemCondition === 'bad'" i18n>
-        Checkin &amp; Mark Item Discard/Weed.
+        Checkin &amp; Mark Item Discard/Weed
       </ng-container>
     </button>
   </div>

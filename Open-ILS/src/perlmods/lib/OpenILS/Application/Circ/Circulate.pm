@@ -521,6 +521,7 @@ my @AUTOLOAD_FIELDS = qw/
     confirmed_lostpaid_checkin
     lostpaid_item_condition_ok
     lostpaid_checkin_result
+    lostpaid_checkin_skip_processing
 /;
 
 
@@ -3182,7 +3183,7 @@ sub do_checkin {
 
     $self->finish_fines_and_voiding;
 
-    if ($self->confirmed_lostpaid_checkin) {
+    if ($self->confirmed_lostpaid_checkin && $self->lostpaid_checkin_skip_processing) {
         # Lost/Paid checkin and the user has confirmed we should continue.
         my $evt = $self->process_lostpaid_checkin;
         $self->bail_on_events($evt) if $evt;
@@ -4407,7 +4408,7 @@ sub checkin_flesh_events {
             $payload->{is_refundable} = $evt->{payload}->{is_refundable};
             $payload->{money_summary} = $evt->{payload}->{money_summary};
             $payload->{circ_modifier} = 
-                $e->retrieve_config_circ_modifier($self->copy->circ_modifier);
+                $self->editor->retrieve_config_circ_modifier($self->copy->circ_modifier);
         }
 
         $evt->{payload}     = $payload;
