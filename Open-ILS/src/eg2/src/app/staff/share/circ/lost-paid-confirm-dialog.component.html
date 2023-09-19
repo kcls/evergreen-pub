@@ -41,12 +41,28 @@
       </div>
     </div>
     <div class="row p-2 mt-1">
-      <div class="col-lg-4 font-weight-bold" i18n>Checked Out:</div>
-      <div class="col-lg-8">{{checkinResult.circ.xact_start() | egDateTime}}</div>
+      <div class="col-lg-2 font-weight-bold" i18n>Checked Out:</div>
+      <div class="col-lg-2">{{checkinResult.circ.xact_start() | egDate}}</div>
+      <div class="col-lg-2 font-weight-bold" i18n>Due Date:</div>
+      <div class="col-lg-2">{{checkinResult.circ.due_date() | egDate}}</div>
+      <div class="col-lg-2 font-weight-bold" i18n>Item Type:</div>
+      <div class="col-lg-2">{{checkinResult.firstEvent.payload.circ_modifier.name()}}</div>
     </div>
-    <div class="row p-2 mt-1">
-      <div class="col-lg-4 font-weight-bold" i18n>Marked Lost:</div>
-      <div class="col-lg-8">{{checkinResult.circ.stop_fines_time() | egDateTime}}</div>
+    <div class="row p-2 mt-1 border-bottom">
+      <div class="col-lg-2 font-weight-bold" i18n>Marked Lost:</div>
+      <div class="col-lg-2">{{checkinResult.circ.stop_fines_time() | egDate}}</div>
+      <div class="col-lg-2 font-weight-bold" i18n>Last Payment:</div>
+      <div class="col-lg-2">{{moneySummary().last_payment_ts() | egDate}}</div>
+      <div class="col-lg-2 font-weight-bold" i18n>Payment Type:</div>
+      <div class="col-lg-2">
+        <ng-container [ngSwitch]="moneySummary().last_payment_type()">
+          <ng-container *ngSwitchCase="'cash_payment'" i18n>Cash</ng-container>
+          <ng-container *ngSwitchCase="'check_payment'" i18n>Check</ng-container>
+          <ng-container *ngSwitchCase="'credit_card_payment'" i18n>Credit Card</ng-container>
+          <ng-container *ngSwitchCase="'forgive_payment'" i18n>Forgive</ng-container>
+          <ng-container *ngSwitchDefault>{{moneySummary().last_payment_type()}}</ng-container>
+        </ng-container>
+      </div>
     </div>
     <div class="row p-2 mt-1">
       <div class="col-lg-4">
@@ -109,13 +125,18 @@
     </div>
 
   </div>
-  <div class="modal-footer">
+  <div class="modal-footer d-flex">
+    <div class="flex-1"></div>
     <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
-    <button type="button" class="btn btn-success" (click)="checkin()">
+    <button type="button" class="btn btn-success" (click)="checkin()" 
+      [disabled]="!initials || itemCondition === null">
+      <ng-container *ngIf="itemCondition === null" i18n>
+        Checkin
+      </ng-container>
       <ng-container *ngIf="refundable() && itemCondition === 'good'" i18n>
         Checkin &amp; Process Refund
       </ng-container>
-      <ng-container *ngIf="!refundable() || itemCondition !== 'good'" i18n>
+      <ng-container *ngIf="!refundable() || itemCondition === 'bad'" i18n>
         Checkin &amp; Mark Item Discard/Weed.
       </ng-container>
     </button>

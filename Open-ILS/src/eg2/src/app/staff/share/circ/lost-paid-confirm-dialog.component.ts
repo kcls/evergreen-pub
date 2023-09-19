@@ -23,7 +23,7 @@ import {PatronService} from '@eg/staff/share/patron/patron.service';
 export class LostPaidConfirmDialogComponent extends DialogComponent {
 
     checkinResult: CheckinResult;
-    itemCondition = '';
+    itemCondition: string | null = null;
     initials = '';
     processing = false;
 
@@ -39,7 +39,7 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
 
 
     open(ops?: NgbModalOptions): Observable<any> {
-        this.itemCondition = '';
+        this.itemCondition = null;
         this.initials = '';
         this.processing = false;
         return super.open(ops);
@@ -50,6 +50,10 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
             this.checkinResult.firstEvent.payload &&
             this.checkinResult.firstEvent.payload &&
             this.checkinResult.firstEvent.payload.is_refundable;
+    }
+
+    moneySummary(): string {
+        return this.checkinResult.firstEvent?.payload?.money_summary || {};
     }
 
     checkin(skipRefund?: boolean) { // TODO

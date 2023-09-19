@@ -174,5 +174,17 @@ export class BillStatementComponent implements OnInit {
 
         return (billed - voided) / 100;
     }
+
+    lineIsRegPayment(line: any): boolean {
+        return line.type !== 'billing' && line.amount >= 0;
+    }
+
+    lineIsRefundPayment(line: any): boolean {
+        return line.type !== 'billing' && line.amount < 0;
+    }
+
+    lineIsNonPayment(line: any): boolean {
+        return line.type === 'billing';
+    }
 }
 
