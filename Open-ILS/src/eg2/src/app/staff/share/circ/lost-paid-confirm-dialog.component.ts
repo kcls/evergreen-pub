@@ -13,6 +13,7 @@ import {CheckinResult, CheckinParams} from './circ.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
+import {PermService} from '@eg/core/perm.service';
 
 /** Route Item Dialog */
 
@@ -26,12 +27,14 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
     itemCondition: string | null = null;
     initials = '';
     processing = false;
+    hasCheckinBypassPerms: boolean | null = null;
 
     constructor(
         private modal: NgbModal,
         private pcrud: PcrudService,
         private org: OrgService,
         private circ: CircService,
+        private perms: PermService,
         public patronService: PatronService,
         private printer: PrintService) {
         super(modal);
@@ -42,6 +45,12 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
         this.itemCondition = null;
         this.initials = '';
         this.processing = false;
+
+        if (this.hasCheckinBypassPerms === null) {
+            this.perms.hasWorkPermHere('CHECKIN_BYPASS_REFUND')
+            .then(map => this.hasCheckinBypassPerms = map['CHECKIN_BYPASS_REFUND']);
+        }
+
         return super.open(ops);
     }
 
@@ -56,11 +65,12 @@ export class LostPaidConfirmDialogComponent extends DialogComponent {
         return this.checkinResult.firstEvent?.payload?.money_summary || {};
     }
 
-    checkin(skipRefund?: boolean) { // TODO
+    checkin(skipRefund?: boolean) {
         this.processing = true;
 
         let params: CheckinParams = this.checkinResult.params;
         params.confirmed_lostpaid_checkin = true;
+        params.lostpaid_checkin_skip_processing = skipRefund;
         params.lostpaid_item_condition_ok = this.itemCondition === 'good';
 
         console.debug('Checking item in with params: ', params);

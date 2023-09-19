@@ -204,6 +204,7 @@ export interface CheckinParams {
     retarget_mode?: string;
     confirmed_lostpaid_checkin?: boolean;
     lostpaid_item_condition_ok?: boolean;
+    lostpaid_checkin_skip_processing?: boolean;
 
     // internal / local values that are moved from the API request.
     _override?: boolean;
