@@ -19,10 +19,15 @@
   </div>
 </div>
 
+<div class="row" *ngIf="loading">
+  <div class="col-lg-6 offset-lg-3">
+    <eg-progress-inline #loadProgress></eg-progress-inline>            
+  </div>
+</div>
 
 <eg-grid #grid [dataSource]="gridDataSource" [disablePaging]="true"
   persistKey="circ.pending_patrons.list" [sortable]="true" [useLocalSort]="true"
-  (onRowActivate)="openPatron($event)">
+  (onRowActivate)="openPatron($event)" [disableLoadProgress]="true">
 
   <eg-grid-toolbar-action
     i18n-label label="Load Patron" (onClick)="openPatron($event)">
