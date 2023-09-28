@@ -104,6 +104,8 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
 
     @Input() disablePaging: boolean;
 
+    @Input() disableLoadProgress = false;
+
     // result filtering
     //
     // filterable: true if the result filtering controls

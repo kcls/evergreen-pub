@@ -20,7 +20,7 @@
 
   <ng-container *ngIf="dataSource.data.length == 0">
     <div class="row">
-      <ng-container *ngIf="dataSource.requestingData">
+      <ng-container *ngIf="dataSource.requestingData && !disableLoadProgress">
         <div class="col-lg-6 offset-lg-3 text-center mt-3">
           <eg-progress-inline></eg-progress-inline>
         </div>
