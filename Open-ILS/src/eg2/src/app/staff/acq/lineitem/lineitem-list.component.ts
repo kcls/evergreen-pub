@@ -12,7 +12,7 @@ import {ServerStoreService} from '@eg/core/server-store.service';
 import {StoreService} from '@eg/core/store.service';
 import {LineitemService} from './lineitem.service';
 import {PoService} from '../po/po.service';
-import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
+import {ComboboxComponent, ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {CancelDialogComponent} from './cancel-dialog.component';
 import {PicklistDialogComponent} from './pl-dialog.component';
@@ -91,6 +91,9 @@ export class LineitemListComponent implements OnInit {
     @ViewChild('transferConfirm') transferConfirm: ConfirmDialogComponent;
     @ViewChild('batchUpdateCopiesDialog') batchUpdateCopiesDialog: BatchUpdateCopiesDialogComponent;
     @ViewChild('batchProgress') batchProgress: ProgressInlineComponent;
+    @ViewChild('distribFormCbox') private distribFormCbox: ComboboxComponent;
+
+    distribFormulas: ComboboxEntry[];
 
     constructor(
         private router: Router,
@@ -132,6 +135,9 @@ export class LineitemListComponent implements OnInit {
             this.pager.setLimit(count || 20);
             this.load();
         });
+
+        this.liService.fetchDistributionFormulas()
+          .then(formulas => this.distribFormulas = formulas);
     }
 
    // order was activated as some point in past

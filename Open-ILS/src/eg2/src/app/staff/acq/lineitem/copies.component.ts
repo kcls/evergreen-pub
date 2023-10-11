@@ -75,37 +75,8 @@ export class LineitemCopiesComponent implements OnInit, AfterViewInit {
     }
 
     fetchFormulas(): Promise<any> {
-
-        return this.pcrud.search('acqdf',
-            {owner: this.org.fullPath(this.auth.user().ws_ou(), true)},
-            {}, {atomic: true}
-        ).toPromise().then(forms => {
-
-            // Sort the distribution formulas numerically first, followed
-            // by asciibetically.  E.g. 10A, 10B, 12A, 106A
-            const buckets: any = {};
-            forms.forEach(df => {
-                const match = df.name().match(/(\d+)/);
-                const prefix = match ? df.name().match(/(\d+)/)[0] : '-';
-
-                if (!buckets[prefix]) { buckets[prefix] = []; }
-                buckets[prefix].push(df);
-            });
-
-            let formulas: ComboboxEntry[] = [];
-            const keys = Object.keys(buckets)
-              .sort((k1, k2) => Number(k1) < Number(k2) ? -1 : 1);
-
-            keys.forEach(key => {
-                formulas = formulas.concat(
-                    buckets[key]
-                      .sort((f1, f2) => f1.name() < f2.name() ? -1 : 1)
-                      .map(f => ({id: f.id(), label: f.name()}))
-                );
-            });
-
-            this.distribFormulas = formulas;
-        });
+        return this.liService.fetchDistributionFormulas()
+          .then(formulas => this.distribFormulas = formulas);
     }
 
     load(params?: FleshCacheParams): Promise<any> {
