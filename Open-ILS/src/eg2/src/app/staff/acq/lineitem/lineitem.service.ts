@@ -3,6 +3,7 @@ import {throwError, Observable, from, concat, empty} from 'rxjs';
 import {switchMap, map, tap, merge} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
+import {OrgService} from '@eg/core/org.service';
 import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
@@ -75,6 +76,7 @@ export class LineitemService {
         private idl: IdlService,
         private evt: EventService,
         private net: NetService,
+        private org: OrgService,
         private auth: AuthService,
         private pcrud: PcrudService,
         private loc: ItemLocationService
@@ -383,6 +385,40 @@ export class LineitemService {
         } else if (lineitem.state() === 'on-order') {
             return 'on-order';
         } else { return 'pre-order'; }
+    }
+
+    fetchDistributionFormulas(): Promise<ComboboxEntry[]> {
+
+        return this.pcrud.search('acqdf',
+            {owner: this.org.fullPath(this.auth.user().ws_ou(), true)},
+            {}, {atomic: true}
+        ).toPromise().then(forms => {
+
+            // Sort the distribution formulas numerically first, followed
+            // by asciibetically.  E.g. 10A, 10B, 12A, 106A
+            const buckets: any = {};
+            forms.forEach(df => {
+                const match = df.name().match(/(\d+)/);
+                const prefix = match ? df.name().match(/(\d+)/)[0] : '-';
+
+                if (!buckets[prefix]) { buckets[prefix] = []; }
+                buckets[prefix].push(df);
+            });
+
+            let formulas: ComboboxEntry[] = [];
+            const keys = Object.keys(buckets)
+              .sort((k1, k2) => Number(k1) < Number(k2) ? -1 : 1);
+
+            keys.forEach(key => {
+                formulas = formulas.concat(
+                    buckets[key]
+                      .sort((f1, f2) => f1.name() < f2.name() ? -1 : 1)
+                      .map(f => ({id: f.id(), label: f.name()}))
+                );
+            });
+
+            return formulas;
+        });
     }
 }
 
