@@ -2,12 +2,12 @@
     and the batch copy editor component -->
 
 <div class="div d-flex batch-copy-row" *ngIf="copy">
-  <div class="pr-1 pt-2 text-secondary">
+  <div class="pr-1 pt-2 text-secondary" *ngIf="!isGlobal">
     <!-- ensure the rowIndex for the first 100 copies vertically
          aligns with an invisible 0 for 1..9 -->
     {{rowIndex &gt; 0 ? rowIndex : ''}}<span *ngIf="rowIndex < 10" class="invisible">0</span>
   </div>
-  <div class="flex-1 p-1">
+  <div class="flex-1 p-1" *ngIf="!isGlobal">
     <eg-org-select-manual #owningLibSelect placeholder="Owning Branch..." 
       [required]="!batchMode"
       i18n-placeholder [disabled]="fieldIsDisabled('owning_lib')"
@@ -15,6 +15,20 @@
       (keyUpEnter)="focusNext('copy-org-select', rowIndex)"
       (valueChange)="valueChange('owning_lib', $event)">
     </eg-org-select-manual>
+  </div>  
+  <!--
+  <div class="flex-1 p-1" *ngIf="isGlobal">
+    <input class="form-control" 
+      placeholder="Item Count" i18n-placeholder
+      [(ngModel)]="batchCopyCount" type="text"/>
+  </div>  
+  -->
+  <div class="flex-1 p-1" *ngIf="isGlobal">
+    <eg-combobox 
+      placeholder="Distribution Formula" i18n-placeholder
+      [entries]="distribFormulas" [startsWith]="true"
+      #distribFormCbox domId="distrib-formula-cbox">
+    </eg-combobox>
   </div>  
   <div class="flex-1 p-1">
     <eg-item-location-select [readOnly]="fieldIsDisabled('location')"
@@ -100,7 +114,7 @@
       </ng-container>
     </ng-container>
   </div>
-  <ng-container *ngIf="!embedded && !gatherParamsOnly">
+  <ng-container *ngIf="!embedded && !gatherParamsOnly && !isGlobal">
     <div class="flex-2 p-1 pr-2 pl-2">
       <ng-container *ngIf="!batchMode">
         <ng-container *ngIf="disposition() == 'pre-order'">

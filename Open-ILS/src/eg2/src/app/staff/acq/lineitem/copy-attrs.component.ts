@@ -4,7 +4,7 @@ import {Pager} from '@eg/share/util/pager';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
-import {LineitemService, COPY_ORDER_DISPOSITION} from './lineitem.service';
+import {LineitemService, COPY_ORDER_DISPOSITION, BatchUpdateChanges} from './lineitem.service';
 import {ComboboxComponent, ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {ItemLocationService} from '@eg/share/item-location-select/item-location-select.service';
 import {ItemLocationSelectComponent} from '@eg/share/item-location-select/item-location-select.component';
@@ -27,6 +27,15 @@ export class LineitemCopyAttrsComponent implements OnInit {
 
     @Input() hideCollectionCode = false;
     @Input() hideCallNumber = false;
+
+    @Input() isGlobal = false;
+
+    batchCopyCount = '';
+
+    distribFormulas: ComboboxEntry[];
+
+    @ViewChild('distribFormCbox') private distribFormCbox: ComboboxComponent;
+
 
     callNumberEntries: ComboboxEntry[] = [];
     _callNumberOptions = [];
@@ -76,6 +85,7 @@ export class LineitemCopyAttrsComponent implements OnInit {
     @Input() embedded = false;
 
     // Emits an 'acqlid' object;
+    @Output() batchApplyAltRequested: EventEmitter<BatchUpdateChanges> = new EventEmitter<BatchUpdateChanges>();
     @Output() batchApplyRequested: EventEmitter<IdlObject> = new EventEmitter<IdlObject>();
     @Output() deleteRequested: EventEmitter<IdlObject> = new EventEmitter<IdlObject>();
     @Output() receiveRequested: EventEmitter<IdlObject> = new EventEmitter<IdlObject>();
@@ -98,6 +108,10 @@ export class LineitemCopyAttrsComponent implements OnInit {
 
     ngOnInit() {
 
+        this.liService.fetchDistributionFormulas()
+          .then(formulas => this.distribFormulas = formulas);
+
+
         if (this.gatherParamsOnly) {
             this.batchMode = false;
             this.batchAdd = false;
@@ -106,7 +120,7 @@ export class LineitemCopyAttrsComponent implements OnInit {
         if (this.batchMode || this.gatherParamsOnly) { // stub batch copy
             this.copy = this.idl.create('acqlid');
             this.copy.isnew(true);
-			this.templateCopy.emit(this.copy);
+            this.templateCopy.emit(this.copy);
 
         } else {
 
@@ -128,8 +142,6 @@ export class LineitemCopyAttrsComponent implements OnInit {
     }
 
     valueChange(field: string, entry: any) {
-        console.log('Changing attr ' + field + ' to ', entry);
-
         const announce: any = {};
         this.copy.ischanged(true);
 
@@ -208,6 +220,13 @@ export class LineitemCopyAttrsComponent implements OnInit {
 
     batchUpateClick() {
         this.batchApplyRequested.emit(this.copy);
+
+        this.batchApplyAltRequested.emit({
+            copy: this.copy,
+            distributionFormula: Number(this.distribFormCbox.selectedId),
+            itemCount: Number(this.batchCopyCount),
+        });
+
         if (this.resetOnSubmit) {
             this.copy = this.idl.create('acqlid');
             if (this.locationSelector) {
@@ -219,6 +238,10 @@ export class LineitemCopyAttrsComponent implements OnInit {
             if (this.callNumberSelector) {
                 this.callNumberSelector.selected = null;
             }
+            if (this.distribFormCbox) {
+                this.distribFormCbox.selected = null;
+            }
+            this.batchCopyCount = '';
         }
     }
 }

@@ -14,6 +14,12 @@ const COPY_ORDER_DISPOSITIONS:
     'canceled' | 'delayed' | 'received' | 'on-order' | 'pre-order' = null;
 export type COPY_ORDER_DISPOSITION = typeof COPY_ORDER_DISPOSITIONS;
 
+export interface BatchUpdateChanges {
+    copy: IdlObject,
+    distributionFormula: number | null,
+    itemCount: number | null,
+}
+
 export interface BatchLineitemStruct {
     id: number;
     lineitem: IdlObject;
