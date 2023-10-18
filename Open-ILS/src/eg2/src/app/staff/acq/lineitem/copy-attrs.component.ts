@@ -28,6 +28,15 @@ export class LineitemCopyAttrsComponent implements OnInit {
     @Input() hideCollectionCode = false;
     @Input() hideCallNumber = false;
 
+    @Input() isGlobal = false;
+
+    batchCopyCount = '';
+
+    distribFormulas: ComboboxEntry[];
+
+    @ViewChild('distribFormCbox') private distribFormCbox: ComboboxComponent;
+
+
     callNumberEntries: ComboboxEntry[] = [];
     _callNumberOptions = [];
     @Input() set callNumberOptions(list: string[]) {
@@ -98,6 +107,10 @@ export class LineitemCopyAttrsComponent implements OnInit {
 
     ngOnInit() {
 
+        this.liService.fetchDistributionFormulas()
+          .then(formulas => this.distribFormulas = formulas);
+
+
         if (this.gatherParamsOnly) {
             this.batchMode = false;
             this.batchAdd = false;
@@ -106,7 +119,7 @@ export class LineitemCopyAttrsComponent implements OnInit {
         if (this.batchMode || this.gatherParamsOnly) { // stub batch copy
             this.copy = this.idl.create('acqlid');
             this.copy.isnew(true);
-			this.templateCopy.emit(this.copy);
+            this.templateCopy.emit(this.copy);
 
         } else {
 
@@ -219,6 +232,10 @@ export class LineitemCopyAttrsComponent implements OnInit {
             if (this.callNumberSelector) {
                 this.callNumberSelector.selected = null;
             }
+            if (this.distribFormCbox) {
+                this.distribFormCbox.selected = null;
+            }
+            this.batchCopyCount = '';
         }
     }
 }

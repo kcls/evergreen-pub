@@ -41,6 +41,7 @@ export class LineitemListComponent implements OnInit {
     recordId: number = null; // lineitems related to a bib.
     lineitemId: number = null;
     onOrderCallNumbers = [];
+    batchCopyCount = 0;
 
     loading = false;
     pager: Pager = new Pager();
@@ -724,6 +725,7 @@ export class LineitemListComponent implements OnInit {
     }
 
 
+    // UNUSED
     batchUpdateCopiesOnLineitems() {
         const ids = Object.keys(this.selected).filter(id => this.selected[id]);
 
