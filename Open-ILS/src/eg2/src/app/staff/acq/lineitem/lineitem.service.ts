@@ -28,6 +28,12 @@ const ORDER_IDENT_ATTRS = [
     'upc'
 ];
 
+export interface BatchUpdateChanges {
+    copy: IdlObject,
+    distributionFormula: number | null,
+    itemCount: number | null,
+}
+
 export interface BatchLineitemStruct {
     id: number;
     lineitem: IdlObject;

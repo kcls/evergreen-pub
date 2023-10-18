@@ -10,7 +10,7 @@ import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {StoreService} from '@eg/core/store.service';
-import {LineitemService} from './lineitem.service';
+import {LineitemService, COPY_ORDER_DISPOSITION, BatchUpdateChanges} from './lineitem.service';
 import {PoService} from '../po/po.service';
 import {ComboboxComponent, ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
@@ -679,9 +679,11 @@ export class LineitemListComponent implements OnInit {
         });
     }
 
-    batchUpdateCopiesOnLineitemsInline(copy: IdlObject) {
+    batchUpdateCopiesOnLineitemsInline(batchChanges: BatchUpdateChanges) {
         const ids = Object.keys(this.selected).filter(id => this.selected[id]);
         if (ids.length === 0) { return; }
+
+        const copy = batchChanges.copy;
 
         this.batchSaving = true;
 
@@ -691,16 +693,24 @@ export class LineitemListComponent implements OnInit {
             if (val) { changes[field] = val; }
         });
 
-        if (Object.keys(changes).length === 0) {
+        if (batchChanges.itemCount > 0) {
+            changes.item_count = batchChanges.itemCount;
+        }
+
+        let formula = batchChanges.distributionFormula || null;
+
+        if (!formula && Object.keys(changes).length === 0) {
             this.batchSaving = false;
             return;
         }
+
+        console.debug('Batch changes', changes, 'formula = ', formula);
 
         this.net.request(
             'open-ils.acq',
             'open-ils.acq.lineitem.batch_update',
             this.auth.token(), { lineitems: ids },
-            changes
+            changes, formula
         ).subscribe(
             response => {
                 const evt = this.evt.parse(response);

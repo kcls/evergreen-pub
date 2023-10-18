@@ -157,6 +157,9 @@ sub pick_winning_change {
     }
 
     if ($dist_formula) {
+        # Formulas have no cn_label
+        return if $field eq 'cn_label';
+
         my $hit;
 
         my $count_over_entries = 0;
