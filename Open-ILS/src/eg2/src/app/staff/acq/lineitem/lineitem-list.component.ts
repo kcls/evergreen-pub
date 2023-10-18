@@ -20,6 +20,7 @@ import {PcrudService} from '@eg/core/pcrud.service';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {BatchUpdateCopiesDialogComponent} from './batch-update-copies-dialog.component';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
+import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
 
 const DELETABLE_STATES = [
     'new', 'selector-ready', 'order-ready', 'approved', 'pending-order'
@@ -93,6 +94,7 @@ export class LineitemListComponent implements OnInit {
     @ViewChild('batchUpdateCopiesDialog') batchUpdateCopiesDialog: BatchUpdateCopiesDialogComponent;
     @ViewChild('batchProgress') batchProgress: ProgressInlineComponent;
     @ViewChild('distribFormCbox') private distribFormCbox: ComboboxComponent;
+    @ViewChild('distribFormItemCountTooLow') distribFormItemCountTooLow: AlertDialogComponent;
 
     distribFormulas: ComboboxEntry[];
 
@@ -714,7 +716,13 @@ export class LineitemListComponent implements OnInit {
         ).subscribe(
             response => {
                 const evt = this.evt.parse(response);
-                if (!evt) {
+                if (evt) {
+                    if (evt.textcode === 'ACQ_COPY_COUNT_TOO_LOW') {
+                        this.distribFormItemCountTooLow.open().toPromise();
+                    } else {
+                        alert(evt);
+                    }
+                } else {
                     delete this.liService.liCache[response];
                     this.batchProgress.value++;
                 }

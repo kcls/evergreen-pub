@@ -9,6 +9,11 @@
     bib record #{{curTransferTarget}} ({{curTransferTitle}})?">
 </eg-confirm-dialog>
 <eg-acq-batch-update-copies-dialog #batchUpdateCopiesDialog></eg-acq-batch-update-copies-dialog>
+<eg-alert-dialog #distribFormItemCountTooLow
+  dialogBody="A distribution formula may not be used to reduce the number of copies on a line-item."
+  i18n-dialogBody>
+</eg-alert-dialog>
+
 
 
 <div class="row row-cols-auto mt-3" *ngIf="poId || picklistId">
