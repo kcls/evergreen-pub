@@ -6,8 +6,8 @@
 
 SUBDIRS = . tests
 
-AM_CFLAGS = $(DEF_CFLAGS) -DOSRF_LOG_PARAMS -I@top_srcdir@/include/
-AM_LDFLAGS = $(DEF_LDFLAGS) $(DBI_LIBS) -lopensrf
+AM_CFLAGS = $(DEF_CFLAGS) -DOSRF_LOG_PARAMS -I@top_srcdir@/include/ -I @HIREDIS_HEADERS@
+AM_LDFLAGS = $(DEF_LDFLAGS) -L$(DBI_LIBS) -lopensrf
 
 bin_PROGRAMS = oils_dataloader dump_idl idlval test_json_query test_qstore
 oils_dataloader_SOURCES = oils_dataloader.c
