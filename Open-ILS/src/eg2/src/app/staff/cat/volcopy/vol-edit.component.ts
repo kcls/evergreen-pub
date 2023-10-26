@@ -254,6 +254,10 @@ export class VolEditComponent implements OnInit {
             value = -1;
         }
 
+        if (typeof value === 'string') {
+            value = (value || '').trim();
+        }
+
         if (vol[key]() !== value) {
             vol[key](value);
             vol.ischanged(true);
