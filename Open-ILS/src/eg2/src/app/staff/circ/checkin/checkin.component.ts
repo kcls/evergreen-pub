@@ -267,6 +267,20 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         });
     }
 
+
+    printSelectedReceipts(rows: CheckinGridEntry[]) {
+        const indexes = rows.map(r => r.index);
+        const checkins = this.checkins.filter(c => indexes.includes(c.index));
+
+        if (checkins.length == 0) { return; }
+
+        this.printer.print({
+            printContext: 'default',
+            templateName: 'checkin',
+            contextData: {checkins: checkins}
+        });
+    }
+
     hasAlerts(): boolean {
         return (
             Boolean(this.backdate) ||
