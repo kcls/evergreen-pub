@@ -290,7 +290,11 @@ a:hover {
     <div>
       <p>
         Get access to all the 
+        [% IF kiosk %]
+        services
+        [% ELSE %]
         <a href="https://kcls.org/library-cards/#allaccess">services</a> 
+        [% END %]
         that are available from the King County Library System. 
       </p>
       <p>
@@ -298,9 +302,13 @@ a:hover {
       </p>
       <p>
         You’ll need to 
+        [% IF kiosk %]
+          bring proof of address and photo ID that shows your date of birth
+        [% ELSE %]
         <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
           bring proof of address and photo ID that shows your date of birth
         </a>
+        [% END %]
         to a library to activate your card. (Parents or guardians can help 
         with this for applicants younger than age 18.)  
       </p>
@@ -308,10 +316,15 @@ a:hover {
         Reasonable accommodation for individuals with disabilities is available 
         upon request. Accommodations include modifications to policies, 
         programs, appropriate equipment, and services. Contact your 
+        [% IF kiosk %]
+        community library
+        [% ELSE %]
         community library or visit 
         <a href="https://kcls.org/accessibility/">https://kcls.org/accessibility/</a>
+        [% END %]
         to request accommodation. 
       </p>
+      [% IF !kiosk %]
       <p>
         <a href="https://kcls.org/faq/library-cards/">
           Learn about All-Access cards in our frequently asked questions. 
@@ -320,6 +333,7 @@ a:hover {
       <p>
         Read our <a href="https://kcls.bibliocommons.com/info/privacy">Privacy Policy</a>
       </p>
+      [% END %]
     </div>
 
     [% IF ctx.register.success %]
