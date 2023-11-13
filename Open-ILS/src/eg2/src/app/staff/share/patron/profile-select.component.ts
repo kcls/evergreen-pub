@@ -122,7 +122,20 @@ export class ProfileSelectComponent implements ControlValueAccessor, OnInit {
 
             groups = groups.filter(g => g.org() === closestOrg.id());
 
-            // Translate the display entries into a 'pgt' tree
+            // Sort the groups that don't have a parent, cuz the
+            // main sorting code sorts on the assumption there's
+            // a single root node.
+
+            let roots = groups.filter(g => g.parent() === null);
+            const children = groups.filter(g => g.parent() !== null);
+
+            roots = roots.sort((a, b) => {
+                if (a.position() < b.position()) { return -1; }
+                if (a.position() > b.position()) { return 1; }
+                return 0;
+            });
+
+            groups = roots.concat(children);
 
             const tree: IdlObject[] = [];
 
@@ -130,6 +143,7 @@ export class ProfileSelectComponent implements ControlValueAccessor, OnInit {
                 const grp = display.grp();
                 const displayParent = groups.filter(g => g.id() === display.parent())[0];
                 grp.parent(displayParent ? displayParent.grp().id() : null);
+                grp._display = display;
                 tree.push(grp);
             });
 
