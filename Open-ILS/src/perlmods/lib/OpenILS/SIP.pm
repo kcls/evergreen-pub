@@ -8,6 +8,7 @@ use warnings; use strict;
 use Sys::Syslog qw(syslog);
 use Time::HiRes q/time/;
 
+use OpenILS::Const qw/:const/;
 use OpenILS::SIP::Item;
 use OpenILS::SIP::Patron;
 use OpenILS::SIP::Transaction;
@@ -469,7 +470,28 @@ sub checkin {
         return $xact;
     }
 
-    $xact->do_checkin( $self, $inst_id, $trans_date, $return_date, $current_loc, $item_props );
+    # SIP accounts which have checkin_requires_transit will only 
+    # check items in if they are not currently checked out (misnomer, i know).
+    my $login = $self->{login};
+    my $wants_transit = $login->{checkin_requires_transit} || '';
+    my $status = $item->{copy}->status;
+    if (lc($wants_transit) eq 'true' && $status->id == OILS_COPY_STATUS_CHECKED_OUT) {
+
+        $xact->ok(0);
+        $xact->alert(1);
+        $xact->alert_type('99');
+        $xact->screen_msg("Item Is Currently Checked Out");
+
+        my $username = $login->{id};
+        my $stat = $status->name;
+        syslog('LOG_WARNING', "Item $item_id cannot be checked in by ".
+            "$username; Item is checked out; status=$stat");
+
+        return $xact;
+    }
+
+    $xact->do_checkin($self, $inst_id, $trans_date, 
+        $return_date, $current_loc, $item_props, $cancel);
     
     if ($xact->ok) {
         $xact->patron($self->find_patron(usr => $xact->{circ_user_id}, slim_user => 1)) if $xact->{circ_user_id};
@@ -495,7 +517,8 @@ sub end_patron_session {
 
 sub pay_fee {
     my ($self, $patron_id, $patron_pwd, $fee_amt, $fee_type,
-    $pay_type, $fee_id, $trans_id, $currency) = @_;
+        $pay_type, $fee_id, $trans_id, $currency, $check_number, 
+        $register_login) = @_;
 
     $self->verify_session;
 
@@ -517,6 +540,8 @@ sub pay_fee {
     $xact->sip_payment_type($pay_type);
     # We don't presently use this, but we might in the future.
     $xact->patron_password($patron_pwd);
+    $xact->check_number($check_number);
+    $xact->register_login($register_login);
 
     $xact->do_fee_payment();
 

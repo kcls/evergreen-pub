@@ -1,0 +1,537 @@
+<eg-staff-banner *ngIf="tab == 'list'" ti18n-bannerText 
+  bannerText="Item Search" bannerStyle="alert-success border border-dark">
+</eg-staff-banner>
+
+<eg-staff-banner *ngIf="tab == 'summary'" i18n-bannerText 
+  bannerText="Item Search Detail" bannerStyle="alert-success border border-dark">
+</eg-staff-banner>
+
+<eg-circ-components></eg-circ-components>
+<eg-worklog-strings-components></eg-worklog-strings-components> 
+<eg-progress-dialog #progressDialog></eg-progress-dialog>
+<eg-barcode-select #barcodeSelect></eg-barcode-select>
+<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
+<eg-mark-missing-dialog #markMissingDialog></eg-mark-missing-dialog>
+<eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
+<eg-replace-barcode-dialog #replaceBarcode></eg-replace-barcode-dialog>
+<eg-delete-holding-dialog #deleteHolding></eg-delete-holding-dialog>
+<eg-bucket-dialog #bucketDialog></eg-bucket-dialog>
+<eg-conjoined-items-dialog #conjoinedDialog></eg-conjoined-items-dialog>
+<eg-make-bookable-dialog #makeBookableDialog></eg-make-bookable-dialog>
+<eg-transfer-items #transferItems></eg-transfer-items>
+<eg-transfer-holdings #transferHoldings></eg-transfer-holdings>
+<eg-cancel-transit-dialog #cancelTransitDialog></eg-cancel-transit-dialog>
+<eg-mark-items-dialog #markItemsDialog></eg-mark-items-dialog>
+<eg-alert-dialog #transferAlert
+  i18n-dialogTitle i18n-dialogBody
+  dialogTitle="No Target Selected"
+  dialogBody="Please select a suitable transfer target"></eg-alert-dialog>
+
+<eg-string key="staff.cat.item.no-acq" i18n-text 
+  text="There is no corresponding purchase order for this item.">
+</eg-string>
+
+<eg-string #itemModified i18n-text text="Item Successfully Modified"></eg-string>
+
+<a class="d-none" (click)="viewWorksheet()"
+  egAccessKey keyCtx="item" i18n-keySpec i18n-keyDesc
+  keySpec="alt+w" keyDesc="View Worksheet">
+</a>
+
+<div class="row mb-3">
+  <div class="col-lg-12 form-inline d-flex">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" id='barcode-label' i18n>Barcode</span>
+      </div>
+      <input type="text" class="form-control" id="item-barcode-input" 
+        (keyup.enter)="getItemFromBarcodeInput()" [(ngModel)]="itemBarcode" 
+        aria-describedby="barcode-label"/>
+    </div>
+    <button class="btn btn-outline-dark mr-1" 
+      (click)="getItemFromBarcodeInput()" i18n>Submit</button>
+    <eg-help-popover placement="top" i18n-helpText 
+      helpText="Single barcode or list of barcodes separated with commas.">
+    </eg-help-popover>
+
+    <span class="ml-2 mr-2 font-weight-bold" i18n>-- OR --</span>
+
+    <eg-help-popover placement="top" i18n-helpText 
+      helpText="File Format: One barcode per line. 
+        All whitespace and commas will be removed before processing.">
+    </eg-help-popover>
+
+    <input #fileSelector (change)="fileSelected($event)" 
+      id="upload-file" required class="ml-2" type="file"/>
+
+    <div class="flex-1"></div>
+
+    <button *ngIf="tab == 'list'" 
+      class="btn btn-outline-dark mr-2" (click)="showDetails()">
+      Detail View
+    </button>
+
+    <button *ngIf="tab != 'list'" 
+      class="btn btn-outline-dark mr-2" (click)="showList()">
+      List View
+    </button>
+
+    <button class="btn btn-outline-dark mr-2" (click)="printList()">
+      Print
+    </button>
+
+    <!-- ACTIONS MENU -->
+    <eg-grouped-menu i18n-label label="Actions" *ngIf="item && tab != 'list'">
+
+      <!-- Un-grouped -->
+      <eg-grouped-menu-entry i18n-label label="Request Items"
+        (entryClicked)="requestItems([item])">
+      </eg-grouped-menu-entry>
+      <!--
+      <eg-grouped-menu-entry i18n-label 
+        label="Link as Conjoined to Marked Bib Record"
+        (entryClicked)="openConjoinedDialog([item])">
+      </eg-grouped-menu-entry>
+      -->
+
+      <eg-grouped-menu-entry i18n-label label="Update Inventory"
+        (entryClicked)="updateInventory([item])">
+      </eg-grouped-menu-entry>
+
+      <eg-grouped-menu-entry i18n-label label="View Worksheet"
+        (entryClicked)="viewWorksheet([item])">
+      </eg-grouped-menu-entry>
+
+      <eg-grouped-menu-entry i18n-label label="Print Labels"
+        (entryClicked)="printLabels([item])">
+      </eg-grouped-menu-entry>
+
+      <eg-grouped-menu-entry i18n-label label="Print ILL Return Receipt"
+        (entryClicked)="printIllReturnReceipt([item])">
+      </eg-grouped-menu-entry>
+
+      <!-- Add -->
+      <eg-grouped-menu-entry i18n-label label="Add Item To Bucket" 
+        i18n-group group="Add" (entryClicked)="addItemToBucket([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Add Record To Bucket" 
+        i18n-group group="Add" (entryClicked)="addRecordToBucket([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry
+        i18n-group group="Add" i18n-label label="Add Items"
+        (entryClicked)="addItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry
+        i18n-group group="Add" i18n-label label="Add Call Numbers and Items"
+        (entryClicked)="addVols([item])">
+      </eg-grouped-menu-entry>
+      <!--
+      <eg-grouped-menu-entry
+        i18n-group group="Add" i18n-label label="Add Item Alerts"
+        (entryClicked)="itemAlerts([item], 'create')">
+      </eg-grouped-menu-entry>
+      -->
+
+      <!-- Edit -->
+      <eg-grouped-menu-entry i18n-label label="Delete Items"
+        i18n-group group="Edit" (entryClicked)="deleteItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Edit Call Numbers"
+        i18n-group group="Edit" (entryClicked)="editVols([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Edit Items"
+        i18n-group group="Edit" (entryClicked)="editItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Edit Call Numbers and Items"
+        i18n-group group="Edit" (entryClicked)="editVolsAndItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Replace Barcodes"
+        i18n-group group="Edit" (entryClicked)="replaceBarcodes([item])">
+      </eg-grouped-menu-entry>
+      <!--
+      <eg-grouped-menu-entry
+        i18n-group group="Edit" i18n-label label="Manage Item Alerts"
+        (entryClicked)="itemAlerts([item], 'manage')">
+      </eg-grouped-menu-entry>
+      -->
+
+      <!-- Mark -->
+      <eg-grouped-menu-entry i18n-label label="Mark Item as Damaged"
+        i18n-group group="Mark" (entryClicked)="markDamaged([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Mark Item as Discard/Weed"
+        i18n-group group="Mark" (entryClicked)="discardWeed([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Mark Item as Missing"
+        i18n-group group="Mark" (entryClicked)="markMissing([item])">
+      </eg-grouped-menu-entry>
+
+      <!-- Show -->
+      <eg-grouped-menu-entry i18n-label label="Show Record Holds"
+        i18n-group group="Show" (entryClicked)="showRecordHolds([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Show In Catalog"
+        i18n-group group="Show" (entryClicked)="showInCatalog([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Show Originating Acquisition"
+        i18n-group group="Show" (entryClicked)="showAcq([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Show Last Few Circulations"
+        i18n-group group="Show" (entryClicked)="showCircHistory([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Show Last Patron"
+        i18n-group group="Show" (entryClicked)="showLastPatron([item])">
+      </eg-grouped-menu-entry>
+
+      <!-- Booking -->
+      <!--
+      <eg-grouped-menu-entry i18n-label label="Make Items Bookable"
+        i18n-group group="Booking" (entryClicked)="makeItemsBookable([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Book Item Now"
+        i18n-group group="Booking" (entryClicked)="bookItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Manage Reservations"
+        i18n-group group="Booking" (entryClicked)="manageReservations([item])">
+      </eg-grouped-menu-entry>
+      -->
+
+      <!-- Circulation -->
+      <eg-grouped-menu-entry i18n-label label="Check In Items"
+        i18n-group group="Circulation" (entryClicked)="checkinItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Renew Items"
+        i18n-group group="Circulation" (entryClicked)="renewItems([item])">
+      </eg-grouped-menu-entry>
+      <eg-grouped-menu-entry i18n-label label="Cancel Transit"
+        i18n-group group="Circulation" (entryClicked)="cancelTransits([item])">
+      </eg-grouped-menu-entry>
+
+      <!-- Transfer -->
+      <eg-grouped-menu-entry i18n-label 
+        label="Transfer Items to Previously Marked Library"
+        i18n-group group="Transfer" (entryClicked)="transferItemsToLib([item])">
+      </eg-grouped-menu-entry>
+
+      <eg-grouped-menu-entry i18n-label 
+        label="Transfer Items to Previously Marked Call Number"
+        i18n-group group="Transfer" (entryClicked)="transferItemsToCn([item])">
+      </eg-grouped-menu-entry>
+
+    </eg-grouped-menu>
+
+  </div>
+</div>
+
+<div class="row" *ngIf="noSuchItem">
+  <div class="col-lg-6 offset-lg-3 alert alert-danger" i18n>
+    Item not found: <b>{{noSuchItem}}</b>
+  </div>
+</div>
+
+
+<ng-template #callNumberTemplate let-r="row">
+  {{r.call_number().prefix().label()}}
+  {{r.call_number().label()}}
+  {{r.call_number().suffix().label()}}
+</ng-template>
+
+<ng-template #titleTemplate let-r="row">
+  <ng-container *ngIf="r.call_number().id() == -1">
+    {{r.dummy_title()}}
+  </ng-container>
+  <ng-container *ngIf="r.call_number().id() > 0">
+    <a target="_blank"
+      routerLink="/staff/catalog/record/{{r.call_number().record().id()}}">
+      {{r.call_number().record().simple_record().title()}}
+    </a>
+  </ng-container>
+</ng-template>
+
+
+<eg-grid *ngIf="tab == 'list'" #grid [dataSource]="dataSource" idlClass="acp"
+  (onRowActivate)="showDetails($event)" [cellTextGenerator]="cellTextGenerator"
+  [useLocalSort]="true" [sortable]="true" [showDeclaredFieldsOnly]="true"
+  [rowFlairIsEnabled]="true" [rowFlairCallback]="rowFlair" [stickyHeader]="true"
+  [disablePaging]="true" persistKey="cat.item.status.list">
+
+  <eg-grid-toolbar-button i18n-label label="Clear List" (onClick)="clearList()">
+  </eg-grid-toolbar-button>
+
+  <!-- Un-grouped -->
+  <eg-grid-toolbar-action i18n-label label="Request Items"
+    (onClick)="requestItems($event)">
+  </eg-grid-toolbar-action>
+
+  <!--
+  <eg-grid-toolbar-action i18n-label 
+    label="Link as Conjoined to Marked Bib Record"
+    (onClick)="openConjoinedDialog($event)">
+  </eg-grid-toolbar-action>
+  -->
+
+  <eg-grid-toolbar-action i18n-label label="Update Inventory"
+    (onClick)="updateInventory($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="View Worksheet"
+    (onClick)="viewWorksheet($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Print Labels"
+    (onClick)="printLabels($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Print ILL Return Receipt"
+    (onClick)="printIllReturnReceipt($event)">
+  </eg-grid-toolbar-action>
+
+  <!-- Add -->
+  <eg-grid-toolbar-action i18n-label label="Add Item To Bucket" 
+    i18n-group group="Add" (onClick)="addItemToBucket($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Add Record To Bucket" 
+    i18n-group group="Add" (onClick)="addRecordToBucket($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action
+    i18n-group group="Add" i18n-label label="Add Items"
+    (onClick)="addItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action
+    i18n-group group="Add" i18n-label label="Add Call Numbers and Items"
+    (onClick)="addVols($event)">
+  </eg-grid-toolbar-action>
+  <!--
+  <eg-grid-toolbar-action
+    i18n-group group="Add" i18n-label label="Add Item Alerts"
+    (onClick)="itemAlerts($event, 'create')">
+  </eg-grid-toolbar-action>
+  -->
+
+  <!-- Edit -->
+  <eg-grid-toolbar-action i18n-label label="Delete Items"
+    i18n-group group="Edit" (onClick)="deleteItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Edit Call Numbers"
+    i18n-group group="Edit" (onClick)="editVols($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Edit Items"
+    i18n-group group="Edit" (onClick)="editItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Edit Call Numbers and Items"
+    i18n-group group="Edit" (onClick)="editVolsAndItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Replace Barcodes"
+    i18n-group group="Edit" (onClick)="replaceBarcodes($event)">
+  </eg-grid-toolbar-action>
+  <!--
+  <eg-grid-toolbar-action
+    i18n-group group="Edit" i18n-label label="Manage Item Alerts"
+    (onClick)="itemAlerts($event, 'manage')">
+  </eg-grid-toolbar-action>
+  -->
+
+  <!-- Mark -->
+  <eg-grid-toolbar-action i18n-label label="Mark Item as Damaged"
+    i18n-group group="Mark" (onClick)="markDamaged($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Mark Item as Discard/Weed"
+    i18n-group group="Mark" (onClick)="discardWeed($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Mark Item as Missing"
+    i18n-group group="Mark" (onClick)="markMissing($event)">
+  </eg-grid-toolbar-action>
+
+  <!-- Show -->
+  <eg-grid-toolbar-action i18n-label label="Show Record Holds"
+    i18n-group group="Show" (onClick)="showRecordHolds($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Show In Catalog"
+    i18n-group group="Show" (onClick)="showInCatalog($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Show Originating Acquisition"
+    i18n-group group="Show" (onClick)="showAcq($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Show Last Few Circulations"
+    i18n-group group="Show" (onClick)="showCircHistory($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Show Last Patron"
+    i18n-group group="Show" (onClick)="showLastPatron($event)">
+  </eg-grid-toolbar-action>
+
+  <!-- Booking -->
+  <!--
+  <eg-grid-toolbar-action i18n-label label="Make Items Bookable"
+    i18n-group group="Booking" (onClick)="makeItemsBookable($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Book Item Now"
+    i18n-group group="Booking" (onClick)="bookItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Manage Reservations"
+    i18n-group group="Booking" (onClick)="manageReservations($event)">
+  </eg-grid-toolbar-action>
+  -->
+
+  <!-- Circulation -->
+  <eg-grid-toolbar-action i18n-label label="Check In Items"
+    i18n-group group="Circulation" (onClick)="checkinItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Renew Items"
+    i18n-group group="Circulation" (onClick)="renewItems($event)">
+  </eg-grid-toolbar-action>
+  <eg-grid-toolbar-action i18n-label label="Cancel Transit"
+    i18n-group group="Circulation" (onClick)="cancelTransits($event)">
+  </eg-grid-toolbar-action>
+
+  <!-- Transfer -->
+  <eg-grid-toolbar-action i18n-label 
+    label="Transfer Items to Previously Marked Library"
+    i18n-group group="Transfer" (onClick)="transferItemsToLib($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label 
+    label="Transfer Items to Previously Marked Call Number"
+    i18n-group group="Transfer" (onClick)="transferItemsToCn($event)">
+  </eg-grid-toolbar-action>
+
+  <!-- columns -->
+
+  <eg-grid-column path="_index" [index]="true" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="id" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="alert_message"></eg-grid-column>
+  <eg-grid-column path="barcode"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Call Number" name="call_number_label" 
+    path="call_number.label"
+    [cellTemplate]="callNumberTemplate"></eg-grid-column>
+
+  <eg-grid-column path="circ_lib.shortname" label="Circulating Library" i18n-label>
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Location" path="location.name">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Item Status" path="status.name">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Title" name="title" 
+    path="call_number.record.simple_record.title"
+    [cellTemplate]="titleTemplate"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Due Date" path="_circ.due_date"
+    timezoneContextOrg="_circ.circ_lib" dateOnlyIntervalField="_circ.duration"
+    datatype="timestamp">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Remaining Renewals" 
+    path="_circ.renewal_remaining"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Checkout/Renewal Workstation"
+    path="_circ.workstation.name"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Checkout Location"
+    path="_circ.circ_lib.shortname"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Checkout Date" 
+    datatype="timestamp" [hidden]="true"
+    path="_circ.xact_start"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Checkin Time" 
+    datatype="timestamp" [datePlusTime]="true" [hidden]="true"
+    path="_circ.checkin_time"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Checkin Scan Time" 
+    datatype="timestamp" [datePlusTime]="true" [hidden]="true"
+    path="_circ.checkin_scan_time"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Checkin Workstation" [hidden]="true"
+    path="_circ.checkin_workstation.name"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Owning Library" [hidden]="true"
+    path="call_number.owning_lib.shortname"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Destination Status" [hidden]="true"
+    path="_transit_status.name"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Transit Source" [hidden]="true"
+    path="_transit_source.shortname"></eg-grid-column>
+
+  <eg-grid-column i18n-label label="Transit Destination" [hidden]="true"
+    path="_transit_dest.shortname"></eg-grid-column>
+
+  <ng-template #capturedHoldTmpl let-row="row">
+    <ng-container *ngIf="row._transit_status && row._transit_status.id() === 8">
+      <span class="badge badge-success">&#x2713;</span> 
+      <span> - {{row._transit_dest.shortname()}}</span>
+    </ng-container>
+  </ng-template>
+
+  <eg-grid-column i18n-label label="Hold Transit?" [hidden]="true"
+    name="is_captured_hold" [cellTemplate]="capturedHoldTmpl"></eg-grid-column>
+
+  <eg-grid-column path="call_number.*" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="call_number.record.*" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="call_number.record.simple_record.*" [hidden]="true">
+  </eg-grid-column>
+
+</eg-grid>
+
+<div *ngIf="tab != 'list' && item">
+
+  <div class="row" *ngIf="item.deleted() == 't'">
+    <div class="col-lg-4 offset-lg-4 alert alert-danger" i18n>
+      This item has been marked as Deleted.
+    </div>
+  </div>
+
+  <div class="mt-2 mb-4">
+    <eg-bib-summary [recordId]="item.call_number().record().id()">
+    </eg-bib-summary>
+  </div>
+
+  <ul ngbNav #itemNav="ngbNav" class="nav-tabs"
+    [activeId]="tab" (navChange)="tabChange($event)">
+    <li ngbNavItem="summary">
+      <a ngbNavLink i18n>Quick Summary</a>
+      <ng-template ngbNavContent>
+        <eg-item-summary [item]="item"></eg-item-summary>
+      </ng-template>
+    </li>
+    <li ngbNavItem="recent-history">
+      <a ngbNavLink i18n>Recent Circ History</a>
+      <ng-template ngbNavContent>
+        <eg-item-recent-history [item]="item"></eg-item-recent-history>
+      </ng-template>
+    </li>
+    <li ngbNavItem="circ-history">
+      <a ngbNavLink i18n>Circ History List</a>
+      <ng-template ngbNavContent>
+        <eg-item-circ-history [item]="item"></eg-item-circ-history>
+      </ng-template>
+    </li>
+    <li ngbNavItem="holds-transits">
+      <a ngbNavLink i18n>Holds / Transits</a>
+      <ng-template ngbNavContent>
+        <eg-item-holds-transits [item]="item"></eg-item-holds-transits>
+      </ng-template>
+    </li>
+    <li ngbNavItem="cat">
+      <a ngbNavLink i18n>Cataloging Info</a>
+      <ng-template ngbNavContent>
+        <eg-marc-html [recordId]="item.call_number().record()" recordType="bib">
+        </eg-marc-html>
+      </ng-template>
+    </li>
+    <li ngbNavItem="triggered-events">
+      <a ngbNavLink i18n>Triggered Events</a>
+      <ng-template ngbNavContent>
+        <eg-triggered-events persistKey="cat.item.events" 
+          targetType="copy" [targetId]="item.id()">
+        </eg-triggered-events>
+      </ng-template>
+    </li>
+  </ul>
+  <div [ngbNavOutlet]="itemNav"></div>
+
+</div>
+

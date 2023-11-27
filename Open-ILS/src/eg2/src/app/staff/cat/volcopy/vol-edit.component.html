@@ -10,25 +10,8 @@
   dialogBody="Delete {{deleteCopyCount}} Item(s)?">
 </eg-confirm-dialog>
 
-<div *ngIf="!volcopy.defaults.visible.batch_actions"
-  class="bg-faint mb-2 p-1 border border-dark rounded">
-  <button class="btn btn-sm btn-outline-dark label-with-material-icon" 
-    (click)="toggleBatchVisibility()">
-    <span i18n>Batch Actions</span>
-    <span class="material-icons">unfold_more</span>
-  </button>
-</div>
-
-<div *ngIf="volcopy.defaults.visible.batch_actions" 
-  class="row d-flex bg-faint mb-2 pb-1 pt-1 border border-dark rounded">
-  <div class="p-1" [ngStyle]="{flex: flexAt(1)}">
-    <div><label class="font-weight-bold" i18n>&nbsp;</label></div>
-    <button class="btn btn-sm btn-outline-dark label-with-material-icon" 
-      (click)="toggleBatchVisibility()">
-      <span i18n>Batch Actions</span>
-      <span class="material-icons">unfold_less</span>
-    </button>
-  </div>
+<div class="row d-flex bg-faint mb-2 pb-1 pt-1 border border-dark rounded">
+  <div class="p-1" [ngStyle]="{flex: flexAt(1)}"></div>
   <div class="p-1" [ngStyle]="{flex: flexAt(3)}">
     <ng-container *ngIf="displayColumn('classification')">
       <div><label class="font-weight-bold" i18n>Classification</label></div>
@@ -91,10 +74,21 @@
     </div>
   </div>
   <!-- needed for consistent column widths -->
-  <div class="p-1" [ngStyle]="{flex: flexAt(8)}"></div>
-  <div class="p-1" [ngStyle]="{flex: flexAt(9)}"></div>
-  <div class="p-1" [ngStyle]="{flex: flexAt(10)}"></div>
-  <div class="p-1" [ngStyle]="{flex: flexAt(11)}"></div>
+  <!-- KCLS Generate Barcodes here throws the alignment off a wee
+      bit when other columns are un-hidden, but that seems unklikely
+      for us, let it ride for now. -->
+  <div class="p-1 pl-4 pr-2" [ngStyle]="{flex: flexAt(8) + flexAt(9) + flexAt(10) + flexAt(11)}">
+    <ng-container *ngIf="volcopy.defaults.hidden.generate_barcodes !== true">
+      <div><label class="font-weight-bold" i18n>&nbsp;</label></div>
+      <div class="w-100 d-flex justify-content-end">
+        <button class="btn btn-sm btn-outline-dark label-with-material-icon"
+          (click)="volcopy.genBarcodesRequested.emit()">
+          <span i18n>Generate Barcodes</span>
+          <span class="material-icons">refresh</span>
+        </button>
+      </div>
+    </ng-container>
+  </div>
 </div>
 
 <div class="row d-flex mt-2 mb-2">
@@ -305,8 +299,9 @@
           <ng-container *ngIf="copyIdx == 0">
             <input class="form-control form-control-sm" type="text"
               spellcheck="false"
-              [required]="requireCNL"
-              [ngClass]="{invalid: !volNode.target.label() && requireCNL}"
+              [required]="true"
+              [disabled]="!canEditVolLabel(volNode.target)"
+              [ngClass]="{invalid: !volNode.target.label()}"
               [ngModel]="volNode.target.label()"
               (change)="applyVolValue(volNode.target, 'label', $event.target.value)">
           </ng-container>

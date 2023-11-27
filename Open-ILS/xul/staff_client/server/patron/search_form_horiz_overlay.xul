@@ -123,6 +123,12 @@
                 value="&staff.patron_search_form.post_code.label;" 
                 accesskey="&staff.patron_search_form.post_code.accesskey;"/>
             <textbox id="post_code" group="1" context="clipboard" tabindex="8"/>
+            <spacer flex="1"/>
+            <spacer flex="1"/>
+            <label id="psl6d" control="egid"
+                value="&staff.patron_search_form.egid.label;"
+                accesskey="&staff.patron_search_form.egid.accesskey;"/>
+            <textbox id="egid" group="0" context="clipboard" tabindex="16"/>
         </row>
     </rows>
 </grid>

@@ -106,12 +106,16 @@
         <div class="flex-1"><label for="thaw_date" i18n>Activate Date:</label></div>
       </div>
       <div class="col-lg-4">
-        <eg-date-select
+        <!-- No idea why we need ngModelOptions here since we are passing
+              a fieldName value, but it's really unhappy without it -->
+        <eg-date-select-native
           domId="thaw_date"
+          fieldName="thaw_date"
           [disabled]="isBatch() && !activeFields.thaw_date"
-          (onChangeAsIso)="hold.thaw_date($event)"
-          [initialIso]="hold.thaw_date()">
-        </eg-date-select>
+          [ngModel]="hold.thaw_date()"
+          [ngModelOptions]="{standalone: true}"
+          (ngModelChange)="applyDateValue('thaw_date', $event)">
+        </eg-date-select-native>
       </div>
       <div class="col-lg-2 d-flex">
         <div class="" *ngIf="isBatch()">
@@ -124,12 +128,15 @@
         <div class="flex-1"><label for="request_time" i18n>Request Date:</label></div>
       </div>
       <div class="col-lg-4">
-        <eg-date-select
+        <eg-date-select-native
           domId="request_time"
+          fieldName="request_time"
+          [noFuture]="true"
           [disabled]="isBatch() && !activeFields.request_time"
-          (onChangeAsIso)="hold.request_time($event)"
-          [initialIso]="hold.request_time()">
-        </eg-date-select>
+          [ngModel]="hold.request_time()"
+          [ngModelOptions]="{standalone: true}"
+          (ngModelChange)="applyDateValue('request_time', $event)">
+        </eg-date-select-native>
       </div>
     </div>
 
@@ -145,12 +152,15 @@
         <div class="flex-1"><label for="expire_time" i18n>Expire Date:</label></div>
       </div>
       <div class="col-lg-4">
-        <eg-date-select
+        <eg-date-select-native
           domId="expire_time"
+          fieldName="expire_time"
+          [noPast]="true"
           [disabled]="isBatch() && !activeFields.expire_time"
-          (onChangeAsIso)="hold.expire_time($event)"
-          [initialIso]="hold.expire_time()">
-        </eg-date-select>
+          [ngModel]="hold.expire_time()"
+          [ngModelOptions]="{standalone: true}"
+          (ngModelChange)="applyDateValue('expire_time', $event)">
+        </eg-date-select-native>
       </div>
       <div class="col-lg-2 d-flex">
         <div class="" *ngIf="isBatch()">
@@ -163,12 +173,15 @@
         <div class="flex-1"><label for="shelf_expire_time" i18n>Shelf Expire Date:</label></div>
       </div>
       <div class="col-lg-4">
-        <eg-date-select
+        <eg-date-select-native
           domId="shelf_expire_time"
-          [disabled]="isBatch() && !activeFields.shelf_expire_time"
-          (onChangeAsIso)="hold.shelf_expire_time($event)"
-          [initialIso]="hold.shelf_expire_time()">
-        </eg-date-select>
+          fieldName="shelf_expire_time"
+          [noPast]="true"
+          [disabled]="(isBatch() && !activeFields.shelf_expire_time) || (!isBatch() && !hold.shelf_time())"
+          [ngModel]="hold.shelf_expire_time()"
+          [ngModelOptions]="{standalone: true}"
+          (ngModelChange)="applyDateValue('shelf_expire_time', $event)">
+        </eg-date-select-native>
       </div>
     </div>
   </div><!-- modify dates group border -->
@@ -261,7 +274,8 @@
       <button type="button" class="btn btn-warning" (click)="exit()" i18n>
         Cancel
       </button>
-      <button type="button" class="btn btn-success ml-2" (click)="save()" i18n>
+      <button type="button" class="btn btn-success ml-2" 
+        [disabled]="hasInvalidValues" (click)="save()" i18n>
         Apply
       </button>
     </div>

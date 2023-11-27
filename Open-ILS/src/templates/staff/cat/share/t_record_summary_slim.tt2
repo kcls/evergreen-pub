@@ -109,6 +109,11 @@
   </div><!-- flex-row -->
 
   <div class="flex-row">
+    <div class="flex-cell strong-text">[% l('Cataloging Date:') %]</div>
+    <div class="flex-cell flex-3">{{record.cataloging_date() | date:'shortDate'}}</div>
+  </div><!-- flex-row -->
+
+  <div class="flex-row">
     <div class="flex-cell strong-text">[% l('Record Owner:') %]</div>
     <div class="flex-cell flex-3">{{record.owner().shortname()}}</div>
   </div><!-- flex-row -->

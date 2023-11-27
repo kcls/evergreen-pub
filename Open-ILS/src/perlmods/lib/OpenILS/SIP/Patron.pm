@@ -359,15 +359,18 @@ sub charge_ok {
     my $u = $self->{user};
     my $circ_is_blocked = 0;
 
-    return 1 if $self->patron_status_always_permit_loans_set();
-
     # compute expiration date for borrowing privileges
     my $expire = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($u->expire_date));
 
-    $circ_is_blocked =
-        (($u->barred eq 't') or
-          (@{$u->standing_penalties} and grep { ( $_->block_list // '') =~ /CIRC/ } @{$u->standing_penalties}) or
-          (CORE::time > $expire->epoch));
+    return 0 if CORE::time > $expire->epoch;
+
+    return 1 if $self->patron_status_always_permit_loans_set();
+
+    $circ_is_blocked = (
+        ($u->barred eq 't') or
+        (@{$u->standing_penalties} and 
+            grep { ( $_->block_list // '') =~ /CIRC/ } @{$u->standing_penalties})
+    );
 
     return
         !$circ_is_blocked &&
@@ -380,15 +383,18 @@ sub renew_ok {
     my $u = $self->{user};
     my $renew_is_blocked = 0;
 
-    return 1 if $self->patron_status_always_permit_loans_set();
-
     # compute expiration date for borrowing privileges
     my $expire = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($u->expire_date));
 
-    $renew_is_blocked =
-        (($u->barred eq 't') or
-         (@{$u->standing_penalties} and grep { ( $_->block_list // '') =~ /RENEW/ } @{$u->standing_penalties}) or
-         (CORE::time > $expire->epoch));
+    return 0 if CORE::time > $expire->epoch;
+
+    return 1 if $self->patron_status_always_permit_loans_set();
+
+    $renew_is_blocked = (
+        ($u->barred eq 't') or
+        (@{$u->standing_penalties} and 
+            grep { ( $_->block_list // '') =~ /RENEW/ } @{$u->standing_penalties})
+    );
 
     return
         !$renew_is_blocked &&
@@ -398,8 +404,18 @@ sub renew_ok {
 
 sub recall_ok {
     my $self = shift;
+    my $u = $self->{user};
+
+    # compute expiration date for borrowing privileges
+    my $expire = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($u->expire_date));
+
+    return 0 if CORE::time > $expire->epoch;
+
+    return 1 if $self->patron_status_always_permit_loans_set();
+
     return $self->charge_ok if 
         OpenILS::SIP->get_option_value('patron_calculate_recal_ok');
+
     return 0;
 }
 
@@ -411,10 +427,15 @@ sub hold_ok {
     # compute expiration date for borrowing privileges
     my $expire = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($u->expire_date));
 
-    $hold_is_blocked =
-        (($u->barred eq 't') or
-         (@{$u->standing_penalties} and grep { ( $_->block_list // '') =~ /HOLD/ } @{$u->standing_penalties}) or
-         (CORE::time > $expire->epoch));
+    return 0 if CORE::time > $expire->epoch;
+
+    return 1 if $self->patron_status_always_permit_loans_set();
+
+    $hold_is_blocked = (
+        ($u->barred eq 't') or
+        (@{$u->standing_penalties} and 
+            grep { ( $_->block_list // '') =~ /HOLD/ } @{$u->standing_penalties})
+    );
 
     return
         !$hold_is_blocked &&
@@ -498,6 +519,7 @@ sub too_many_charged {      # not implemented
 
 sub too_many_overdue { 
     my $self = shift;
+    return 0 if $self->patron_status_always_permit_loans_set();
     return scalar( # PATRON_EXCEEDS_OVERDUE_COUNT
         grep { $_->id == OILS_PENALTY_PATRON_EXCEEDS_OVERDUE_COUNT } @{$self->{user}->standing_penalties}
     );
@@ -523,6 +545,7 @@ sub too_many_lost {
 
 sub excessive_fines { 
     my $self = shift;
+    return 0 if $self->patron_status_always_permit_loans_set();
     return scalar( # PATRON_EXCEEDS_FINES
         grep { $_->id == OILS_PENALTY_PATRON_EXCEEDS_FINES } @{$self->{user}->standing_penalties}
     );
@@ -915,7 +938,7 @@ sub fine_items {
 
         my $fee_type;
 
-        if ($xact->last_billing_type =~ /^Lost/) {
+        if ($xact->last_billing_type eq 'Lost Materials') {
             $fee_type = 'LOST';
         } elsif ($xact->last_billing_type =~ /^Overdue/) {
             $fee_type = 'FINE';
@@ -975,7 +998,7 @@ sub fine_items {
             if ($xact->xact_type eq 'circulation') {
                 $line .= "$title";
             } else {
-                $line .= $xact->last_billing_note;
+                $line .= $xact->last_billing_type;
             }
 
         } elsif ($AV_format eq "swyer_b") {

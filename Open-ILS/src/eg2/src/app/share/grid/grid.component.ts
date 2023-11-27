@@ -116,9 +116,35 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     // "sticky", i.e., remain visible if if the table is long
     // and the user has scrolled far enough that the header
     // would go out of view
-    @Input() stickyHeader: boolean;
+    _stickyHeader = false;
+    @Input() set stickyHeader(v: boolean) {
+        this._stickyHeader = this.context.stickyGridHeader = v;
+    }
+
+    get stickyHeader(): boolean {
+        return this._stickyHeader;
+    }
 
     @Input() cellTextGenerator: GridCellTextGenerator;
+
+    // Disable tooltips for all grid columns
+    @Input() disableTooltips: boolean;
+
+    // Reduces some overall padding, etc.
+    @Input() tightDisplay = false;
+
+    // If set, appears along the top left side of the grid.
+    @Input() toolbarLabel: string;
+
+    // If true, showing/hiding columns will force the data source to
+    // refresh the current page of data.
+    @Input() reloadOnColumnChange = false;
+
+    // Sometimes we want to load settings from a setting the user
+    // cannot save settings back to (e.g. org unit settings).
+    // Over time, this should be replaced with logic to detect if
+    // the user can write configs back to the setting.
+    @Input() disableSaveSettings = false;
 
     context: GridContext;
 
@@ -126,6 +152,9 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     // They are defined here for ease of access to the caller.
     @Output() onRowActivate: EventEmitter<any>;
     @Output() onRowClick: EventEmitter<any>;
+
+    // Emits an array of grid row indexes on any row selection change.
+    @Output() rowSelectionChange: EventEmitter<string[]>;
 
     @ViewChild('toolbar', { static: true }) toolbar: GridToolbarComponent;
 
@@ -139,6 +168,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
             new GridContext(this.idl, this.org, this.store, this.format);
         this.onRowActivate = new EventEmitter<any>();
         this.onRowClick = new EventEmitter<any>();
+        this.rowSelectionChange = new EventEmitter<string[]>();
     }
 
     ngOnInit() {
@@ -161,17 +191,25 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
         this.context.rowFlairIsEnabled = this.rowFlairIsEnabled  === true;
         this.context.showDeclaredFieldsOnly = this.showDeclaredFieldsOnly;
         this.context.rowFlairCallback = this.rowFlairCallback;
+        this.context.toolbarLabel = this.toolbarLabel;
         this.context.disablePaging = this.disablePaging === true;
         this.context.cellTextGenerator = this.cellTextGenerator;
         this.context.ignoredFields = [];
+        this.context.disableTooltips = this.disableTooltips;
+        this.context.reloadOnColumnChange = this.reloadOnColumnChange;
 
         if (this.showFields) {
+            // Stripping spaces allows users to add newlines to
+            // long lists of field names without consequence.
+            this.showFields = this.showFields.replace(/\s+/g, '');
             this.context.defaultVisibleFields = this.showFields.split(',');
         }
         if (this.hideFields) {
+            this.hideFields = this.hideFields.replace(/\s+/g, '');
             this.context.defaultHiddenFields = this.hideFields.split(',');
         }
         if (this.ignoreFields) {
+            this.ignoreFields = this.ignoreFields.replace(/\s+/g, '');
             this.context.ignoredFields = this.ignoreFields.split(',');
         }
 
@@ -180,7 +218,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         if (this.pageSize) {
-            this.context.pager.limit = this.pageSize;
+            this.context.pager.limit = Number(this.pageSize);
         }
 
         // TS doesn't seem to like: let foo = bar || () => '';
@@ -204,6 +242,10 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
                 return '';
             };
 
+        this.context.rowSelector.selectionChange.subscribe(
+            keys => this.rowSelectionChange.emit(keys)
+        );
+
         if (this.showLinkSelectors) {
             console.debug(
                 'showLinkSelectors is deprecated and no longer has any effect');
@@ -217,6 +259,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        this.context.rowSelector.selectionChange.unsubscribe();
         this.context.destroy();
     }
 

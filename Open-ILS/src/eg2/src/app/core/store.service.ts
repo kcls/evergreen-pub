@@ -54,7 +54,9 @@ export class StoreService {
      * Add a an app-local login session key
      */
     addLoginSessionKey(key: string): void {
-        this.loginSessionKeys.push(key);
+        if (!this.loginSessionKeys.includes(key)) {
+            this.loginSessionKeys.push(key);
+        }
     }
 
     setLocalItem(key: string, val: any, isJson?: boolean): void {
@@ -133,6 +135,10 @@ export class StoreService {
     // collide with a workstation in Hatch.  If none exist in Hatch,
     // copy the localStorage workstations over wholesale.
     mergeWorkstations(): Promise<any> {
+
+        // We don't need this anymore -- get outta here.
+        return Promise.resolve();
+
         const existing = this.getLocalItem(WS_ALL_KEY);
 
         if (!existing || existing.length === 0) {
@@ -175,10 +181,13 @@ export class StoreService {
                     // value to migrate to Hatch
                     name = this.getLocalItem(WS_DEF_KEY);
                     if (name) {
+                        // Avoid workstation merges
+                        /*
                         console.debug(
                             'Migrating default workstation to Hatch ' + name);
                         return this.hatch.setItem(WS_DEF_KEY, name)
                         .then(ok => name);
+                        */
                     } else {
                         return null;
                     }

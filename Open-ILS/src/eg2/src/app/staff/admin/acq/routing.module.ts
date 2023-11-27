@@ -3,10 +3,14 @@ import {RouterModule, Routes} from '@angular/router';
 import {AdminAcqSplashComponent} from './admin-acq-splash.component';
 import {BasicAdminPageComponent} from '@eg/staff/admin/basic-admin-page.component';
 import {ClaimingAdminComponent} from './claiming-admin.component';
+import {OnOrderCnsComponent} from './on-order-cns.component';
 
 const routes: Routes = [{
     path: 'splash',
     component: AdminAcqSplashComponent
+}, {
+    path: 'on-order-cns',
+    component: OnOrderCnsComponent
 }, {
     path: 'edi_account',
     component: BasicAdminPageComponent,

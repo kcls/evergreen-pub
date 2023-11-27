@@ -7,8 +7,12 @@
     grid-controls="gridControls"
     dateformat="{{$root.egDateAndTimeFormat}}"
     persist-key="circ.patron.billhistory_payments">
+
     <eg-grid-action 
       label="[% l('Full Details') %]" handler="showFullDetails"></eg-grid-action>
+
+    <eg-grid-action label="[% l('Reprint Lost/Paid Receipt') %]" 
+      handler="printLostPaidReceipt"></eg-grid-action>
 
     <eg-grid-field path="amount" label="[% l('Amount') %]"></eg-grid-field>
     <eg-grid-field path="id" label="[% l('Payment ID') %]" required></eg-grid-field>

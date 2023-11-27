@@ -87,6 +87,7 @@ sub build_invoice_impl {
 
             if ($entry->isnew) {
                 $e->create_acq_invoice_entry($entry) or return $e->die_event;
+                return $evt if $evt = create_li_invoice_note($e, $entry);
                 return $evt if $evt = uncancel_copies_as_needed($e, $entry);
                 return $evt if $evt = update_entry_debits(
                     $e, $entry, 'unlinked', $inv_closing, $inv_reopening);
@@ -421,6 +422,22 @@ sub update_entry_debits {
         update_copy_cost($e, $debit, $amount) or return $e->die_event;
     }
 
+    return undef;
+}
+
+# adds a note to the lineitem linked to the selected entry 
+# indicating the lineitem was invoiced.
+sub create_li_invoice_note {
+    my ($e, $entry) = @_;
+    my $note = Fieldmapper::acq::lineitem_note->new;
+    $note->lineitem($entry->lineitem);
+    # $e->requestor is unset when using EDI
+    $e->requestor($e->search_actor_user({usrname => 'admin'})->[0])
+        unless $e->requestor;
+    $note->creator($e->requestor->id);
+    $note->editor($e->requestor->id);
+    $note->value('invoiced: ' . $e->requestor->usrname);
+    $e->create_acq_lineitem_note($note) or return $e->die_event;
     return undef;
 }
 

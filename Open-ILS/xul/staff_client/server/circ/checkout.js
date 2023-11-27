@@ -237,10 +237,14 @@ circ.checkout.prototype = {
                                     }
                                 }
                                 if (document.getElementById('checkout_auto').checked) {
-                                    obj.print(true);
+									if(obj.list.row_count.total > 0) {
+										obj.print(true);
+									}
                                     obj.refresh_checkout_tab(1000);
                                 } else {
-                                    obj.print(false);
+									if(obj.list.row_count.total > 0) {
+										obj.print(false);
+									}
                                     obj.refresh_checkout_tab(1000);
                                 }
                             } catch(E) {
@@ -768,7 +772,7 @@ circ.checkout.prototype = {
                         '/xul/server/skin/media/images/book_question.png'
                     ) ) {
 
-                        obj.data.dummy_title = ''; obj.data.dummy_author = ''; obj.data.stash('dummy_title','dummy_author');
+                        obj.data.dummy_title = ''; obj.data.dummy_author = ''; obj.data.dummy_barcode = params.barcode; obj.data.stash('dummy_title','dummy_author', 'dummy_barcode');
                         JSAN.use('util.window'); var win = new util.window();
                         win.open(urls.XUL_PRE_CAT, 'dummy_fields', 'chrome,resizable,modal');
                         obj.data.stash_retrieve();

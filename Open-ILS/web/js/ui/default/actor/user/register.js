@@ -323,6 +323,8 @@ function load() {
         }, true);
     });
 
+    if (stageUser) processStageUserValues();
+
     lock_ready = true;
 }
 
@@ -688,12 +690,16 @@ function uEditLoadStageUser(stageUname) {
         patron['usrname']('');
     }
 
+    // Map the old field from staged user to the new field.
+    patron.guardian(patron.ident_value2());
+    patron.ident_value2(null);
+
     // copy the data into our new address objects
     // TODO: uses the first mailing address only
     if(data.mailing_addresses.length) {
 
         var mail_addr = new fieldmapper.aua();
-        mail_addr.id(-1); // virtual ID
+        mail_addr.id(uEditAddrVirtId--); // virtual ID
         mail_addr.usr(-1);
         mail_addr.isnew(1);
         patron.mailing_address(mail_addr);
@@ -715,7 +721,7 @@ function uEditLoadStageUser(stageUname) {
     if(data.billing_addresses.length) {
 
         var bill_addr = new fieldmapper.aua();
-        bill_addr.id(-2); // virtual ID
+        bill_addr.id(uEditAddrVirtId--); // virtual ID
         bill_addr.usr(-1);
         bill_addr.isnew(1);
         patron.billing_address(bill_addr);
@@ -732,6 +738,14 @@ function uEditLoadStageUser(stageUname) {
         }
     }
 
+    // if either mailing or billing addresses are not provided,
+    // use each for the other as a fall-back.
+    if (patron.mailing_address() && !patron.billing_address()) {
+        patron.billing_address(patron.mailing_address());
+    } else if (patron.billing_address() && !patron.mailing_address()) {
+        patron.mailing_address(patron.billing_address());
+    }
+
     // TODO: uses the first card only
     if(data.cards.length) {
         var card = new fieldmapper.ac();
@@ -742,6 +756,19 @@ function uEditLoadStageUser(stageUname) {
             patron.usrname(card.barcode());
         }
     }
+
+    // Copy stat cat data
+    dojo.forEach(data.statcats, function(stat_cat) {
+        // avoid creating maps for empty values.
+        if (stat_cat.value() == null || stat_cat.value() == '') 
+            return;
+        var entry = new fieldmapper.actscecm();
+        entry.isnew(true);
+        entry.stat_cat(stat_cat.statcat());
+        entry.stat_cat_entry(stat_cat.value());
+        entry.target_usr(patron.id());
+        patron.stat_cat_entries().push(entry);
+    });
 
     return patron;
 }
@@ -828,7 +855,7 @@ function uEditFetchUserSettings(userId) {
     /* fetch any user setting types we need + any that offer opt-in */
     userSettingTypes = pcrud.search('cust', {
         '-or' : [
-            {name:['circ.holds_behind_desk', 'circ.collections.exempt', 'opac.hold_notify', 'opac.default_phone', 'opac.default_pickup_location', 'opac.default_sms_carrier', 'opac.default_sms_notify']}, 
+            {name:['circ.holds_behind_desk', 'opac.hold_notify', 'opac.default_pickup_location', 'opac.default_sms_carrier', 'opac.default_sms_notify']},
             {name : {
                 'in': {
                     select : {atevdef : ['opt_in_setting']}, 
@@ -969,8 +996,8 @@ function uEditDrawSettingRow(tbody, dividerRow, template, stype) {
             dojo.connect(select, 'onChange', function(newVal) { userSettingsToUpdate[stype.name()] = newVal; });
             break;
         case 'opac.default_sms_notify':
-            if(!orgSettings['sms.enable']) return; // Skip when SMS is disabled
-        case 'opac.default_phone':
+            //if(!orgSettings['sms.enable']) return; // Skip when SMS is disabled
+        // case 'opac.default_phone':
             var tb = new dijit.form.TextBox({scrollOnFocus:false}, getByName(row, 'widget'));
             tb.attr('value', userSettings[stype.name()]);
             dojo.connect(tb, 'onChange', function(newVal) { userSettingsToUpdate[stype.name()] = newVal; });
@@ -986,9 +1013,9 @@ function uEditDrawSettingRow(tbody, dividerRow, template, stype) {
             var cb = new dijit.form.CheckBox({scrollOnFocus:false}, getByName(row, 'widget'));
             cb.attr('value', userSettings[stype.name()]);
             dojo.connect(cb, 'onChange', function(newVal) { userSettingsToUpdate[stype.name()] = newVal; });
-            if(stype.name() == 'circ.collections.exempt') {
+            /* if(stype.name() == 'circ.collections.exempt') {
                 checkCollectionsExemptPerm(cb);
-            }
+            } */
     }
     tbody.insertBefore(row, dividerRow.nextSibling);
     openils.Util.show(row, 'table-row');
@@ -1315,6 +1342,15 @@ function fleshFMRow(row, fmcls, args) {
                     w.attr('disabled', true);
                 }
             }
+            // call the dobLoaded function only after both dob and
+            // guardian widgets have been created.  And then only
+            // if this is an existing patron.
+            if (!patron.isnew()) {
+                if (fmfield == 'guardian' || 
+                   (fmfield == 'dob' && findWidget('au', 'guardian'))) { 
+                    dobLoaded(ww) ;
+                }
+            }
         }
     );
 
@@ -1329,10 +1365,121 @@ function fleshFMRow(row, fmcls, args) {
     return widget;
 }
 
+// JBAS-1132
+// When loading a staged user, force the on-change handler to run for
+// various fields, since their values are applied at load- time instead
+// of via manual changing.
+// All staged user values of concern are simple text values, whose
+// widgets are loaded synchronously.  No need to setTimeout or 
+// track loaded fields, etc. before calling this function.
+// Force on-change to run for:
+//  * duplicate value searches
+//  * setting default password from phone
+function processStageUserValues() {
+
+    dojo.forEach(
+        ['family_name', 'email', 'ident_value', 'guardian',
+            'dob', 'day_phone', 'evening_phone', 'other_phone'],
+        function(field) {
+            var val = findWidget('au', field).widget.attr('value');
+            if (val) {
+                findWidget('au', field).widget.attr('value', '');
+                findWidget('au', field).widget.attr('value', val);
+            }
+        }
+    );
+
+    dojo.forEach(
+        patron.addresses(),
+        function(addr) {
+            var callback = function(w) { return w._addr == addr.id() };
+            // post_code fires zip code alerts
+            // street1 fires dupe-address checks, address alerts
+            dojo.forEach(['post_code', 'street1'], function(field) {
+                var widg = findWidget('aua', field, callback).widget;
+                var val = widg.attr('value');
+                if (val) {
+                    widg.attr('value', '');
+                    widg.attr('value', val);
+                }
+            });
+        }
+    );
+}
+
 function trimGrpTree(autoWidget) {
     var store = autoWidget.widget.store;
     if(!store) return;
-    // remove all groups that this user are not allowed to edit, 
+
+    // group ID by sorted position
+    var id_pos = [
+        13,   //Full Privileges
+        17,   //Limited Checkout
+        26,   //Online Registration
+        90,   //PC Only Ineligible
+        15,   //Recip Limit Holds
+        23,   //Recip Limit Holds & CKO
+        25,   //Recip Limit Holds No PC
+        28,   //Parental Limit 10
+        27,   //Parental Limit 5
+        30,   //Parental No - PC & CKO
+        92,   //One Year - Full
+        93,   //One Year - Limit Holds
+        38,   //KCLS Staff
+        39,   //Branch Work
+        16,   //No CKO
+        31,   //Deceased
+        32,   //Summer Bus Student
+        1002, //ADA Circ Limit Holds
+        1003, //ADA Circulation
+        35,   //Outreach Service
+        34,   //Outreach Staff Only
+        1004, //Outreach SI Limit
+        901,  //Student Ecard
+        903,  //Teacher Ecard
+        902,  //Classroom Databases
+        951,  //Temporary Ecard
+        952,  //Ecard
+        40,   //ILL
+        89,   //CMS Recall 89
+        91,   //Enumclaw Migration
+        1001, //ADA - SC Approved
+        74,   //Data Review
+        3,    //Staff
+        888   //SIP
+    ];
+
+    // avoid removing the child nodes for these groups, since
+    // we are displaying them as-is (unsorted).
+    var keep_children = {
+        3 : true,
+        888 : true
+    };
+
+    var sorted_groups = [];
+    function sort_groups(node) {
+        if (!node) return;
+
+        dojo.forEach(node.children(), function(child) {
+            var idx = id_pos.indexOf(Number(child.id()));
+
+            if (idx > -1) { // custom sorting applied
+                var cloned = child.clone();
+                sorted_groups[idx] = cloned;
+                if (!keep_children[cloned.id()])
+                    cloned.children([]);
+            }
+            sort_groups(child);
+        });
+    }
+
+    var tree = autoWidget.widget.tree[0];
+    sort_groups(tree);
+    tree.children(sorted_groups);
+
+    autoWidget.widget.startup();
+
+    // remove all groups that this user are not allowed to edit,
     // except the profile group of an existing user
     store.fetch({onItem : 
         function(item) {
@@ -1406,7 +1553,7 @@ function checkClaimsNoCheckoutCountPerm() {
     );
 }
 
-var collectExemptCBox;
+/* var collectExemptCBox;
 function checkCollectionsExemptPerm(cbox) {
     if(cbox) collectExemptCBox = cbox;
     new openils.User().getPermOrgList(
@@ -1421,7 +1568,7 @@ function checkCollectionsExemptPerm(cbox) {
         true, 
         true
     );
-}
+} */
 
 function usePhonePw(newVal) {
     var newPw = false;
@@ -1444,6 +1591,30 @@ function usePhonePw(newVal) {
         return null;
     }
 }
+
+function dobIsJuvenile(newDob) {
+    var juvInterval = 
+        orgSettings['global.juvenile_age_threshold'] || '18 years';
+
+    var base = new Date();
+    base.setTime(base.getTime() - 
+        Number(openils.Util.intervalToSeconds(juvInterval) + '000'));
+
+    return newDob > base;
+}
+
+// onload handler for DoB widget.  Sets or clears the 'required' 
+// flag on the parent/guardian (guardian) field based on
+// the user's existing DoB value.
+// Param "ww" will contain the guardian widget if it's not 
+// yet globally available (i.e. it's currently being built);
+function dobLoaded(ww) {
+    if (!patron.dob()) return;
+    var guardian = findWidget('au', 'guardian') || ww;
+    var newDob = dojo.date.stamp.fromISOString(patron.dob());
+    guardian.widget.attr('required', dobIsJuvenile(newDob));
+}
+
 
 function attachWidgetEvents(fmcls, fmfield, widget) {
 
@@ -1480,6 +1651,9 @@ function attachWidgetEvents(fmcls, fmfield, widget) {
             widget.widget.isValid = function() {
                 if(this.attr('disabled') || this.attr('readOnly')) {
                     return true;
+                }
+                if(!this.attr('value')) {
+                    return false;
                 }
                 if(orgSettings['ui.patron.edit.ac.barcode.regex']) { // This serves as a master "on" for these checks
                     // No spaces
@@ -1522,6 +1696,20 @@ function attachWidgetEvents(fmcls, fmfield, widget) {
                     );
                 }
             );
+
+            // when creating a new patron, a backspace in the barcode
+            // entry field clears the barcode and username values.
+            if (patron.isnew()) {
+                dojo.connect(widget.widget, "onKeyPress", 
+                    function(event) {
+                        if (event.keyCode != 8) return // 8 = Backspace Key
+                        findWidget('au', 'usrname').widget.attr('value', '');
+                        findWidget('ac', 'barcode').widget.attr('value', '');
+                        findWidget('ac', 'barcode').widget.attr('required', true);
+                    }
+                );
+            }
+
             return;
         }
     }
@@ -1594,41 +1782,63 @@ function attachWidgetEvents(fmcls, fmfield, widget) {
                 return;
 
             case 'profile': // when the profile changes, update the expire date
-                dojo.connect(widget.widget, 'onChange', 
-                    function() {
-                        var self = this;
-                        var expireWidget = findWidget('au', 'expire_date');
-                        function found(items) {
-                            if(items.length == 0) return;
-                            var item = items[0];
-                            var interval = self.store.getValue(item, 'perm_interval');
-                            expireWidget.widget.attr('value', dojo.date.add(new Date(), 
-                                'second', openils.Util.intervalToSeconds(interval)));
-                        }
-                        this.store.fetch({onComplete:found, query:{id:this.attr('value')}});
+
+                function profileChangedHandler(self) {
+                    var expireWidget = findWidget('au', 'expire_date');
+                    function found(items) {
+                        if(items.length == 0) return;
+                        var item = items[0];
+                        var interval = self.store.getValue(item, 'perm_interval');
+                        expireWidget.widget.attr('value', dojo.date.add(new Date(), 
+                            'second', openils.Util.intervalToSeconds(interval)));
                     }
-                );
+                    self.store.fetch({onComplete:found, query:{id:self.attr('value')}});
+                }
+
+                // Force the handler to run if a profile was set on the
+                // staged user.  Otherwise it won't run unless the profile
+                // is manually altered.  Run it in a timeout so the expire
+                // widget has a chance to render before we reference it.
+                if (stageUser && stageUser.profile) {
+                    setTimeout(function() {
+                        profileChangedHandler(widget.widget)}, 300);
+                }
+
+                dojo.connect(widget.widget, 'onChange', 
+                    function() {profileChangedHandler(this) });
                 return;
 
             case 'dob':
                 widget.widget.isValid = function() {
+                    // KCLS requires DoB.
+                    // We're not just using ui.patron.edit.au.dob.require,
+                    // because when the DoB is unset, we also want to
+                    // clear the juvenile flag.
+                    if(!this.attr('value')) {
+                        findWidget('au', 'juvenile').widget.attr('value', false);
+                        return false;
+                    }
+
+                    // DoB year <= 999 suggests human error; reject it.
+                    if(this.attr('value').getFullYear().toString().length < 4) {
+                        findWidget('au', 'juvenile').widget.attr('value', false);
+                        return false;
+                    }
+
+                    // DoB cannot be in the future
                     return this.attr("value") < new Date();
                 };
                 dojo.connect(widget.widget, 'onChange',
                     function(newDob) {
                         if(!newDob) return;
+
                         var oldDob = patron.dob();
                         if(dojo.date.stamp.fromISOString(oldDob) == newDob) return;
 
-                        var juvInterval = orgSettings['global.juvenile_age_threshold'] || '18 years';
-                        var juvWidget = findWidget('au', 'juvenile');
-                        var base = new Date();
-                        base.setTime(base.getTime() - Number(openils.Util.intervalToSeconds(juvInterval) + '000'));
+                        var attrVal = dobIsJuvenile(newDob);
 
-                        if(newDob <= base) // older than global.juvenile_age_threshold
-                            juvWidget.widget.attr('value', false);
-                        else
-                            juvWidget.widget.attr('value', true);
+                        findWidget('au', 'juvenile').widget.attr('value', attrVal);
+                        findWidget('au', 'guardian').widget.attr('required', attrVal);
                     }
                 );
                 return;
@@ -1645,7 +1855,7 @@ function attachWidgetEvents(fmcls, fmfield, widget) {
                 return;
 
             case 'ident_value':
-            case 'ident_value2':
+            //case 'ident_value2':
                 dojo.connect(widget.widget, 'onChange',
                     function(newVal) { uEditDupeSearch('ident', newVal); });
                 return;
@@ -1679,7 +1889,7 @@ function attachWidgetEvents(fmcls, fmfield, widget) {
                     function(newVal) { 
                         checkClaimsReturnCountPerm(); 
                         checkClaimsNoCheckoutCountPerm();
-                        checkCollectionsExemptPerm();
+                        /* checkCollectionsExemptPerm(); */
                     }
                 );
                 return;
@@ -1828,6 +2038,9 @@ function uEditAddressAlertSearch(args, addrId) {
 function uEditDupeSearch(type, value) {
     if(!value) return;
     var search;
+
+    console.debug('running dupe search for ' + type + ' : ' + value);
+
     switch(type) {
 
         case 'name':
@@ -1909,7 +2122,7 @@ function uEditDupeSearch(type, value) {
 
                     openils.Util.show(link);
                     link.onclick = function() {
-                        search.search_sort = js2JSON(["penalties", "family_name", "first_given_name"]);
+                        search.search_sort = js2JSON(["family_name", "first_given_name"]);
                         search.include_inactive = "true";
                         if(window.xulG)
                             window.xulG.spawn_search(search);
@@ -2048,7 +2261,9 @@ function _uEditSave(doClone) {
                     val = w.attr('displayedValue');
                 }
 
+                var map_exists = false;
                 if(map) {
+                    map_exists = true;
                     if(map.stat_cat_entry() == val) 
                         break;
                     if(val == null) {
@@ -2067,10 +2282,16 @@ function _uEditSave(doClone) {
                 map.stat_cat(w._statcat);
                 map.stat_cat_entry(val);
                 map.target_usr(patron.id());
-                var t = patron.stat_cat_entries();
+
+                if (!map_exists) {
+                    // only add the stat cat to the list if it's not
+                    // already in the list.
+                    var t = patron.stat_cat_entries();
                     if (!t) { t = []; }
                     t.push(map);
                     patron.stat_cat_entries(t);
+                }
+
                 break;
         }
     }
@@ -2161,6 +2382,9 @@ function uEditRemoveStage() {
 
 function uEditFinishSave(newPatron, doClone) {
 
+    if (xulG && xulG.params)
+      delete xulG.params.stage; // don't try to re-register
+
     if(doClone && cloneUser == null)
         cloneUser = newPatron.id();
 
@@ -2178,7 +2402,8 @@ function uEditFinishSave(newPatron, doClone) {
 
 		uEditRefresh();
 	}
-
+    var data = openils.XUL.getStash();
+    data.last_patron = newPatron.id();
 	uEditRefreshXUL(newPatron);
 }
 
@@ -2429,6 +2654,19 @@ function printable_output() {
                     function(m){
                         return (m.id() == w._statcat) })[0];
                 label = stat.name();
+
+                if (!openils.Util.isTrue(stat.allow_freetext())) {
+                    // Non-free-text stat cats are FilteringSelect's with
+                    // stat_cat_entry values.
+                    w.store.fetch({
+                        onComplete: function(items) {
+                            if (!items[0]) return;
+                            val = w.store.getValue(items[0], 'value');
+                        },
+                        query: {id: val+''}
+                    });
+                }
+
             } else if (w._wtype == 'survey') {
                 var survey = surveys.filter(
                     function(m){
@@ -2442,6 +2680,21 @@ function printable_output() {
             }
         } else {
             label = w.idlField.label;
+            // map the patron's home library, profile, and net access level
+            // values to their display names by pulling the objects from
+            // the widget data store.
+            if (w.idlField.name == 'net_access_level' ||
+                w.idlField.name == 'profile' ||
+                w.idlField.name == 'home_ou') {
+
+                w.widget.store.fetch({
+                    onComplete : function(items) {
+                        if (!items[0]) return
+                        val = w.widget.store.getValue(items[0], 'name');
+                    },
+                    query : {id : val+''}
+                });
+            }
         }
         if (temp != w._wtype) {
             temp = w._wtype;

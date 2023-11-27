@@ -33,46 +33,71 @@
     </div>
   </div>
 
-  <div class="row" *ngFor="let result of results">
-    <div *ngIf="result.value" 
-      class="col-lg-12 card tight-card mb-2 bg-light">
-      <div class="col-lg-8">
-        <div class="card-body">
-          <ng-container *ngIf="result.sources > 0">
-            <a routerLink="/staff/catalog/search"
-              [queryParams]="searchByBrowseEntryParams(result)">
-                {{result.value}} ({{result.sources}})
-            </a>
-          </ng-container>
-          <ng-container *ngIf="result.sources == 0">
-            <span>{{result.value}}</span>
-          </ng-container>
-          <div class="row" *ngFor="let heading of result.compiledHeadings">
-            <div class="col-lg-10 offset-lg-1" i18n>
-              <span class="font-italic">
-                <ng-container *ngIf="!heading.type || heading.type == 'variant'">
-                    See
-                </ng-container>
-                <ng-container *ngIf="heading.type == 'broader'">
-                    Broader term
-                </ng-container>
-                <ng-container *ngIf="heading.type == 'narrower'">
-                    Narrower term
-                </ng-container>
-                <ng-container *ngIf="heading.type == 'other'">
-                    Related term
-                </ng-container>
-              </span>
-              <a routerLink="/staff/catalog/browse"
-                [queryParams]="newBrowseFromHeadingParams(heading)">
-                {{heading.heading}} ({{heading.target_count}})
+  <ng-container *ngFor="let result of results; let index = index">
+    <div *ngIf="result.value" class="col-lg-12 card tight-card heading-row mb-2">
+      <div class="card-body _p-1">
+        <div class="row">
+          <div class="col-lg-11">
+            <span class="font-weight-bold font-italic mr-2">{{index}}.</span>
+            <ng-container *ngIf="result.sources > 0">
+              <a routerLink="/staff/catalog/search" target="_blank"
+                [queryParams]="searchByBrowseEntryParams(result)">
+                  {{result.value}}
               </a>
-            </div>
+            </ng-container>
+            <ng-container *ngIf="result.sources == 0">
+              <span>{{result.value}}</span>
+            </ng-container>
+          </div>
+          <div *ngIf="result.sources > 0" class="col-lg-1">
+            ({{result.sources}})
           </div>
         </div>
-      </div>
+        <div class="row" *ngFor="let note of result.authNotes">
+          <div class="col-lg-11"  i18n>Note: {{note}}</div>
+        </div>
+
+        <ng-container *ngFor="let heading of result.compiledHeadings">
+          <div class="row">
+            <div class="col-lg-10 offset-lg-1">
+              <div *ngIf="heading.history_reference">
+                {{heading.history_reference}}
+              </div>
+              <div *ngIf="heading.complex_see_also">
+                {{heading.complex_see_also}}
+              </div>
+              <div>
+                <span class="font-italic mr-2">
+                  <ng-container *ngIf="heading.relationship_designation">
+                    {{heading.relationship_designation}}
+                  </ng-container>
+                  <ng-container *ngIf="!heading.relationship_designation" i18n>
+                    <ng-container [ngSwitch]="heading.related_type">
+                      <ng-container *ngSwitchCase="'broader'">Broader term</ng-container>
+                      <ng-container *ngSwitchCase="'narrower'">Narrower term</ng-container>
+                      <ng-container *ngSwitchCase="'other'">Related Term</ng-container>
+                      <ng-container *ngSwitchDefault>See</ng-container>
+                    </ng-container>
+                  </ng-container>
+                </span>
+                <a routerLink="/staff/catalog/browse"
+                  [queryParams]="newBrowseFromHeadingParams(heading)">
+                  {{heading.heading}}
+                </a>
+              </div>
+            </div>
+            <div class="col-lg-1">({{heading.target_count}})</div>
+          </div>
+          <div class="row" *ngFor="let note of heading.notes">
+            <div class="col-lg-10 offset-lg-1"  i18n>Note: {{note}}</div>
+          </div>
+          <div class="row" *ngFor="let note of heading.seeNotes">
+            <div class="col-lg-10 offset-lg-1"  i18n>Note: {{note}}</div>
+          </div>
+        </ng-container>
+      </div><!-- card body -->
     </div>
-  </div>
+  </ng-container>
 
   <div class="row mb-2">
     <div class="col-lg-3">

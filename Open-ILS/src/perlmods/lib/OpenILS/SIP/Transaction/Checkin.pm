@@ -65,8 +65,8 @@ sub load_override_events {
 
 my %org_sn_cache;
 sub do_checkin {
-    my $self = shift;
-    my ($sip_handler, $inst_id, $trans_date, $return_date, $current_loc, $item_props) = @_; # most unused
+    my ($self, $sip_handler, $inst_id, $trans_date, 
+        $return_date, $current_loc, $item_props, $cancel) = @_;
 
     unless($self->{item}) {
         $self->ok(0);
@@ -81,6 +81,7 @@ sub do_checkin {
 
     my $args = {barcode => $self->{item}->id};
     $args->{hold_as_transit} = 1 if $hold_as_transit;
+    $args->{revert_hold_fulfillment} = 1 if $cancel;
 
     if($return_date) {
         # SIP date format is YYYYMMDD.  Translate to ISO8601
@@ -101,7 +102,9 @@ sub do_checkin {
         $args->{circ_lib} = $phys_location = $org_id if defined $org_id;
     }
 
-    my $override = 0;
+    my $override_all = OpenILS::SIP->get_option_value('checkin_override_all') || '';
+    my $override = $override_all eq 'true';
+
     my ($resp, $txt, $code);
 
     while(1) {

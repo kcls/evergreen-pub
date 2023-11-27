@@ -1,0 +1,174 @@
+
+<div class="row pt-3" *ngIf="circInfo">
+  <div class="col-lg-6">
+    <div *ngIf="!circInfo.prevCircSummary" class="alert alert-info" i18n>
+      No Previous Circ Group
+    </div>
+    <div class="well-table" *ngIf="item && !loading && circInfo.prevCircSummary">
+      <h3 i18n>Previous Circ Group</h3>
+      <div class="well-row">
+        <div class="well-label" i18n>Patron</div>
+        <div class="well-value">
+          <ng-container *ngIf="circInfo.prevCircUser">
+            <a i18n
+              routerLink="/staff/circ/patron/{{circInfo.prevCircUser.id()}}">
+              {{circInfo.prevCircUser.family_name()}}, 
+              {{circInfo.prevCircUser.first_given_name()}}, 
+              {{circInfo.prevCircUser.second_given_name()}}
+            </a>
+          </ng-container>
+          <ng-container *ngIf="!circInfo.prevCircUser">
+              <span i18n>&lt;Aged Circulation&gt;</span>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Total Circs</div>
+        <div class="well-value">{{circInfo.prevCircSummary.num_circs()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkout Date</div>
+        <div class="well-value">
+          {{circInfo.prevCircSummary.start_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkout Workstation</div>
+        <div class="well-value">{{circInfo.prevCircSummary.checkout_workstation()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Last Renewed On</div>
+        <div class="well-value">
+          {{circInfo.prevCircSummary.last_renewal_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Renewal Workstation</div>
+        <div class="well-value">{{circInfo.prevCircSummary.last_renewal_workstation()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Stop Fines Reason</div>
+        <div class="well-value">{{circInfo.prevCircSummary.last_stop_fines()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Stop Fines Time</div>
+        <div class="well-value">
+          {{circInfo.prevCircSummary.last_stop_fines_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkin Time</div>
+        <div class="well-value">
+          {{circInfo.prevCircSummary.last_checkin_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkin Scan Time</div>
+        <div class="well-value">
+          {{circInfo.prevCircSummary.last_checkin_scan_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkin Workstation</div>
+        <div class="well-value">
+          {{circInfo.prevCircSummary.last_checkin_workstation()}}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div *ngIf="!circInfo.circSummary" class="alert alert-info" i18n>
+      No Recent Circ Group
+    </div>
+    <div class="well-table" *ngIf="item && !loading && circInfo.currentCirc">
+      <h3 i18n>Most Recent Circ Group</h3>
+      <div class="well-row">
+        <div class="well-label" i18n>Patron</div>
+        <div class="well-value">
+          <a i18n
+            routerLink="/staff/circ/patron/{{circInfo.currentCirc.usr().id()}}">
+            {{circInfo.currentCirc.usr().family_name()}}, 
+            {{circInfo.currentCirc.usr().first_given_name()}}, 
+            {{circInfo.currentCirc.usr().second_given_name()}}
+          </a>
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Total Circs</div>
+        <div class="well-value">{{circInfo.circSummary.num_circs()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkout Date</div>
+        <div class="well-value">
+          {{circInfo.circSummary.start_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkout Workstation</div>
+        <div class="well-value">{{circInfo.circSummary.checkout_workstation()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Last Renewed On</div>
+        <div class="well-value">
+          {{circInfo.circSummary.last_renewal_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Renewal Workstation</div>
+        <div class="well-value">{{circInfo.circSummary.last_renewal_workstation()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Stop Fines Reason</div>
+        <div class="well-value">{{circInfo.currentCirc.stop_fines()}}</div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Stop Fines Time</div>
+        <div class="well-value">
+          {{circInfo.currentCirc.stop_fines_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkin Time</div>
+        <div class="well-value">
+          {{circInfo.currentCirc.checkin_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkin Scan Time</div>
+        <div class="well-value">
+          {{circInfo.currentCirc.checkin_scan_time() | egDateTime}}
+        </div>
+      </div>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Checkin Workstation</div>
+        <div class="well-value">
+          <ng-container *ngIf="circInfo.currentCirc.checkin_workstation()">
+            {{circInfo.currentCirc.checkin_workstation().name()}}
+          </ng-container>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+

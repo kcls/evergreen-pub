@@ -561,6 +561,25 @@ function($scope,  $q , $routeParams,  bucketSvc,  egCore,  $window,
         setQuery : function(q) {
             if (q) query = q;
             return query;
+        },
+        itemRetrieved: function(item) {
+            // De-JSON-ify a wide display entry field.
+            // We don't use egBibDisplay.mwdeJSONToJS() since this
+            // is not a full "mwde" object.  Instead it's a single
+            // non-multi-field, JSON-encoded value.
+            item['biblio_record.wide_display_entry.edition'] =
+                item['biblio_record.wide_display_entry.edition'] ?
+                JSON.parse(item['biblio_record.wide_display_entry.edition']) :
+                '';
+
+            // Clean up PG text[] cruft
+            if (item.isbn) {
+                item.isbn = item.isbn.replace(/(^\{|\}$)/g, '');
+            }
+
+            if (item.issn) {
+                item.issn = item.issn.replace(/(^\{|\}$)/g, '');
+            }
         }
     };
 
@@ -618,9 +637,10 @@ function($scope,  $q , $routeParams,  bucketSvc,  egCore,  $window,
                 $scope.merge_profile = null;
                 $scope.lead = { marc_xml : null };
                 $scope.editing_inplace = false;
-                $scope.showHoldings = false;
+                $scope.showHoldings = {};
                 angular.forEach(records, function(rec) {
                     $scope.records.push({ id : rec.id });
+                    $scope.showHoldings[rec.id] = 'record';
                 });
                 $scope.ok = function() {
                     $uibModalInstance.close({
@@ -767,6 +787,11 @@ function($scope,  $q , $routeParams,  bucketSvc,  egCore,  $window,
         $timeout(function() { $window.open(url, '_blank') });
     }
 
+    $scope.altBatchEdit = function() {
+        var url = '/eg2/staff/cat/marcsr/bucket/' + $scope.bucketId;
+        $timeout(function() { $window.open(url, '_blank') });
+    }
+
     $scope.detachRecords = function(records) {
         bucketSvc.bucketNeedsRefresh = true;
 
@@ -808,12 +833,16 @@ function($scope,  $q , $routeParams,  bucketSvc,  egCore,  $window,
             '',
             {}
         ).result.then(function() {
-            var promises = [];
+            let results = [];
+            var promise = $q.when();
             angular.forEach(records, function(rec) {
-                promises.push(bucketSvc.deleteRecordFromCatalog(rec.id));
+                promise = promise.then(function(res) {
+                    if (res) { results.push(res); }
+                    return bucketSvc.deleteRecordFromCatalog(rec.id);
+                });
             });
             bucketSvc.bucketNeedsRefresh = true;
-            return $q.all(promises).then(function(results) {
+            return promise.then(function() {
                 var failures = results.filter(function(result) {
                     return egCore.evt.parse(result);
                 }).map(function(result) {

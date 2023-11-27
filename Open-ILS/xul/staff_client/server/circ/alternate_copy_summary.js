@@ -3,6 +3,11 @@ var network;
 var data;
 var transit_list;
 var hold_list;
+var obj = this;
+var print_list = "";
+var namey = [];
+var value = [];
+var count = 0;
 
 function my_init() {
     try {
@@ -68,6 +73,25 @@ function my_init() {
             function () { xulG.from_item_details_new = false; load_item(); },
             1000
         );
+		JSAN.use('util.controller'); obj.controller = new util.controller();
+        obj.controller.init(
+            {
+                control_map : {
+                    'cmd_alternate_copy_summary_print' : [
+                        ['command'],
+                        function() {
+                            try {
+                                JSAN.use('util.print');
+                                var print = new util.print('default');
+                                print.simple(print_list, {'content_type':'text/plain'});
+                            } catch(E) {
+                                obj.error.standard_unexpected_error_alert('print',E);
+                            }
+                        }
+                    ],
+                }
+            }
+        );
 
     } catch(E) {
         try { error.standard_unexpected_error_alert('main/test.xul',E); } catch(F) { alert(E); }
@@ -90,6 +114,127 @@ function set(name,value,data) {
         }
         nodes[i].value = value; 
     }
+}
+
+function fill_print(name){
+    var print_item = document.getElementsByAttribute('name',name);
+    var replace;
+    switch(replace = print_item.item(0).getAttribute('name')){
+        case 'barcode':
+            replace = 'Barcode\t\t\t';
+            break;
+        case 'copy_circ_lib':
+            replace = 'Circ Library\t\t';
+            break;
+        case 'call_number':
+            replace = 'Item Call #\t\t';
+            break;
+        case 'copy_status':
+            replace = 'Status\t\t\t';
+            break;
+        case 'price':
+            replace = 'Price\t\t\t';
+            break;
+        case 'owning_lib':
+            replace = 'Owning Library\t\t';
+            break;
+        case 'renewal_type':
+            replace = 'Renewal Type\t\t';
+            break;
+        case 'due_date':
+            replace = 'Due Date\t\t';
+            break;
+        case 'isbn':
+            replace = 'ISBN\t\t\t';
+            break;
+        case 'location':
+            replace = 'Copy Location\t\t';
+            break;
+        case 'total_circ_count':
+            replace = 'Total Circs\t\t';
+            break;
+        case 'xact_start':
+            replace = 'Checkout Date\t\t';
+            break;
+        case 'copy_create_date':
+            replace = 'Date Created\t\t';
+            break;
+        case 'loan_duration':
+            replace = 'Loan Duration\t\t';
+            break;
+        case 'total_circ_count_curr_year':
+            replace = 'Total Circs - Current Year';
+            break;
+        case 'checkout_workstation':
+            replace = 'Checkout Workstation\t';
+            break;
+        case 'copy_active_date':
+            replace = 'Date Active\t\t';
+            break;
+        case 'fine_level':
+            replace = 'Fine Level\t\t';
+            break;
+        case 'total_circ_count_prev_year':
+            replace = 'Total Circs - Prev Year\t';
+            break;
+        case 'duration_rule':
+            replace = 'Duration Rule\t\t';
+            break;
+        case 'status_changed_time':
+            replace = 'Status Changed\t\t';
+            break;
+        case 'ref':
+            replace = 'Reference\t\t';
+            break;
+        case 'renewal_workstation':
+            replace = 'Renewal Workstation\t';
+            break;
+        case 'recurring_fine_rule':
+            replace = 'Recurring Fine Rule\t';
+            break;
+        case 'copy_id':
+            replace = 'Copy ID\t\t\t';
+            break;
+        case 'opac_visible':
+            replace = 'OPAC Visible\t\t';
+            break;
+        case 'renewal_remaining':
+            replace = 'Remaining Renewals\t';
+            break;
+        case 'max_fine_rule':
+            replace = 'Max Fine Rule\t\t';
+            break;
+        case 'tcn':
+            replace = 'TCN\t\t\t';
+            break;
+        case 'holdable':
+            replace = 'Holdable\t\t';
+            break;
+        case 'checkin_time':
+            replace = 'Checkin Time\t\t';
+            break;
+        case 'floating':
+            replace = 'Floating\t\t';
+            break;
+        case 'circulate':
+            replace = 'Circulate\t\t';
+            break;
+        case 'checkin_scan_time':
+            replace = 'Checkin Scan Time\t';
+            break;
+        case 'circ_modifier':
+            replace = 'Circ Modifier\t\t';
+            break;
+        case 'checkin_workstation':
+            replace = 'Checkin Workstation\t';
+            break;
+        default:
+            replace = '';
+    }
+    namey[count] = replace;
+    value[count] = print_item.item(0).getAttribute('value');
+    print_list += namey[count] + '\t: ' + value[count] + "\n";
+    count++;
 }
 
 function set_tooltip(name,value) { 
@@ -254,7 +399,8 @@ function load_item() {
             set("opac_visible", get_localized_bool( details.copy.opac_visible() )); 
             set("price", details.copy.price()); 
             set_tooltip("price" , "Replacement Amount charged to Patron");
-            set("cost", details.copy.cost());
+            // KCLS JBAS-2012 hide cost data
+            // set("cost", details.copy.cost());
             set_tooltip("cost" , "Acquisition Amount paid by Library");
             set("ref", get_localized_bool( details.copy.ref() )); 
             var copy_status = typeof details.copy.status() == 'object' ? details.copy.status() : data.hash.ccs[ details.copy.status() ];
@@ -341,9 +487,11 @@ function load_item() {
         set("target_copy", '');
         set("hold_transit_copy", '');
 
+        // KMAIN-1921 Clear the list even if item isn't applicable - avoid ghost data
+        transit_list.clear();
+
         if (details.transit) {
 
-            transit_list.clear();
             transit_list.append( { 'row' : { 'my' : { 'atc' : details.transit, } } });
 
             //Set transit caption back to default of "In Transit"
@@ -367,6 +515,8 @@ function load_item() {
             set("source_send_time", util.date.formatted_date( details.transit.source_send_time(), '%{localized}' )); 
             set("target_copy", details.transit.target_copy()); 
             set("hold_transit_copy", details.transit.hold_transit_copy()); 
+            $('transit_caption').setAttribute('label', // KMAIN-1921
+                $('circStrings').getString('staff.circ.in_transit_caption'));
         } else {
             transit_list.clear();
             $('transit_caption').setAttribute('label', $('circStrings').getString('staff.circ.copy_details.not_transit'));
@@ -633,7 +783,6 @@ function load_item() {
         set_tooltip("selection_ou", '');
         set("target", '');
         set("hold_usr", '');
-        set("hold_patron_name", '');
         set("cancel_time", '');
         set("notify_time", '');
         set("notify_count", '');
@@ -647,12 +796,16 @@ function load_item() {
         set("cancel_note", '');
         set("notes", '');
 
+
+        // KMAIN-1921 Clear the list even if the item isn't applicable - avoid ghost data
+        $('hold_patron_name').setAttribute('value', '');
+        hold_list.clear();
+
         if (details.hold) {
             var better_fleshed_hold_blob = network.simple_request('FM_AHR_BLOB_RETRIEVE.authoritative',[ ses(), details.hold.id() ]);
             var status_robj = better_fleshed_hold_blob.status;
             JSAN.use('circ.util');
 
-            hold_list.clear();
             hold_list.append( { 'row' : { 'my' : { 'ahr' : better_fleshed_hold_blob.hold, 'acp' : details.copy, 'status' : status_robj, } } });
             
             //Set hold_caption back to default of "Captured for Hold"
@@ -707,6 +860,8 @@ function load_item() {
             set("cancel_cause", details.hold.cancel_cause()); 
             set("cancel_note", details.hold.cancel_note()); 
             set("notes", details.hold.notes()); 
+            $('hold_caption').setAttribute('label', // KMAIN-1921
+                $('circStrings').getString('staff.circ.captured_hold_caption'));
         } else {
             // Clear the hold list and remove patron name from hold screen
             hold_list.clear();
@@ -724,6 +879,46 @@ function load_item() {
             var d = new util.deck('cat_deck');
             d.reset_iframe( urls.XUL_MARC_VIEW, {}, { 'docid' : details.mvr ? details.mvr.doc_id() : -1 } );
         }
+
+        function fill_prints(){
+            fill_print('barcode');
+            fill_print('price');
+            fill_print('isbn');
+            fill_print('copy_create_date');
+            fill_print('copy_active_date');
+            fill_print('status_changed_time');
+            fill_print('copy_id');
+            fill_print('tcn');
+            fill_print('floating');
+            fill_print('copy_circ_lib');
+            fill_print('owning_lib');
+            fill_print('location');
+            fill_print('loan_duration');
+            fill_print('fine_level');
+            fill_print('ref');
+            fill_print('opac_visible');
+            fill_print('holdable');
+            fill_print('circulate');
+            fill_print('circ_modifier');
+            fill_print('call_number');
+            fill_print('renewal_type');
+            fill_print('total_circ_count');
+            fill_print('total_circ_count_curr_year');
+            fill_print('total_circ_count_prev_year');
+            fill_print('renewal_workstation');
+            fill_print('renewal_remaining');
+            fill_print('copy_status');
+            fill_print('due_date');
+            fill_print('xact_start');
+            fill_print('checkout_workstation');
+            fill_print('duration_rule');
+            fill_print('recurring_fine_rule');
+            fill_print('max_fine_rule');
+            fill_print('checkin_time');
+            fill_print('checkin_scan_time');
+            fill_print('checkin_workstation');
+        }
+        setTimeout(fill_prints, 1000);
 
     } catch(E) {
         alert(E);

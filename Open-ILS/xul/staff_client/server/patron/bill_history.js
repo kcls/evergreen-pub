@@ -200,6 +200,7 @@ function init_payments_list() {
             );
             payments_tally_selected();
             $('payments_details').disabled = g.payments_list_selection.length == 0;
+            $('print_selected').disabled = g.payments_list_selection.length == 0;
             $('copy_details_from_payments').disabled = g.payments_list_selection.length == 0;
         },
         'retrieve_row' : function(params) {
@@ -256,7 +257,7 @@ function my_init() {
             gen_handle_details('payments'),
             false
         );
-
+        
         window.bill_history_event_listeners.add($('copy_details'), 
             'command',
             gen_handle_copy_details('bills'),
@@ -378,17 +379,95 @@ function gen_handle_copy_details(which_list) {
     };
 }
 
-function print_bills() {
+function print_bills(selected) {
     try {
+        if(selected == true) var list = g.bill_list.dump_selected_with_keys(0);
         var template = 'bills_historical';
         JSAN.use('patron.util');
         var params = { 
+            'list' : list,
             'patron' : patron.util.retrieve_fleshed_au_via_id(ses(),g.patron_id,null), 
             'template' : template
         };
         g.bill_list.print(params);
     } catch(E) {
         g.error.standard_unexpected_error_alert($("patronStrings").getString('staff.patron.bill_history.print_bills.print_error'), E);
+    }
+}
+
+function print_bills_from_history(selected) {
+    try {
+        if(selected == true) var list = g.payments_list.dump_selected_with_keys(0);
+        var params = {
+            'list': list,
+            'patron' : patron.util.retrieve_fleshed_au_via_id(ses(), g.patron_id),
+            'printer_context' : 'receipt',
+            'template' : 'bill_payment_basic'
+        };
+
+        g.payments_list.print(params);
+
+    } catch(E) {
+        alert("Error printing payments:  " + E.toSource());
+    }
+}
+
+function print_lostpaid_from_history() {
+    var selected = g.payments_list.dump_selected_with_keys(0);
+    var pay_ids = selected.map(function(sel) { return sel.mp_id });
+
+    // Temporarily override the forced silent print option for lost &
+    // paid receipts where we /always/ want to show the print dialog.
+    var prefs = Components.classes['@mozilla.org/preferences-service;1']
+        .getService(Components.interfaces['nsIPrefBranch']);
+
+    var silentPrintApplied = (
+        prefs.prefHasUserValue('print.always_print_silent')
+        && prefs.getBoolPref('print.always_print_silent')
+    );
+
+    if (silentPrintApplied) {
+        // Note setting the value to 'false' does not work.
+        prefs.clearUserPref('print.always_print_silent');
+    }
+
+    for (var i = 0; i < pay_ids.length; i++) {
+        pay_id = pay_ids[i];
+
+        var receipt = g.network.request(
+            'open-ils.circ', 
+            'open-ils.circ.refundable_payment.receipt.by_pay.html',
+            [ses(), pay_id]
+        );
+
+        if (receipt && 
+            receipt.textcode == 'MONEY_REFUNDABLE_PAYMENT_SUMMARY_NOT_FOUND') {
+            alert('Cannot generate lost/paid receipt for payment #' + pay_id);
+            continue;
+        }
+
+        if (!receipt || !receipt.template_output()) {
+            return alert(
+                'Error creating refundable payment receipt for payment ' + pay_id);
+        }
+
+        var html = receipt.template_output().data();
+        JSAN.use('util.print'); 
+        var print = new util.print('default');
+
+
+        print.simple(html , {
+            no_prompt: false, // always prompt for lost payment receipts
+            content_type: 'text/html'
+        });
+    }
+
+    if (silentPrintApplied) {
+        // Re-apply the silent print preference after the
+        // current thread is done.
+        setTimeout(function() {
+            prefs.setBoolPref('print.always_print_silent', true);
+        }, 200);
     }
 }
 

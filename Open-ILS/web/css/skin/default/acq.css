@@ -166,10 +166,6 @@ label[for="attr_search_type_scalar"] { vertical-align: top; }
 span[name="worksheet"] { padding: 0 6px; }
 #acq-lit-li-claim-dia-lid-list-init { margin-left: 8px; }
 
-#acq-batch-update { padding: 20px 0; }
-#acq-batch-update th { font-weight: bold; }
-#acq-batch-update td { white-space: nowrap; padding-right: 0.5em; }
-
 #acq-worksheet-contents thead th { font-weight: bold; background-color: #ccc; text-align: center; border-bottom: 1px #000 solid; border-right: 1px #000 solid; padding: 0 6px; }
 #acq-worksheet-contents tbody td { text-align: left; vertical-align: top; border: 1px #999 inset; padding: 0 2px; }
 
@@ -215,13 +211,11 @@ span[name="notes_alert_flag"] {color: #c00;font-weight: bold;font-size: 110%;mar
 .acq-inoice-item-extra-info { padding-left: 10px; }
 .acq-inoice-item-info { font-weight: bold; }
 .acq-invoice-row td { border-bottom: 1px solid #e0e0e0; }
-.acq-invoice-invalid-amount  { color: red; font-weight: bold; }
+.acq-invoice-invalid-amount input { color: red; font-weight: bold; }
 .acq-link-invoice-dialog td,.acq-link-invoice-dialog th {padding-top: 10px;}
 .acq-invoice-paid-col {background : #E0E0E0; text-align: center;}
 .acq-invoice-center-col { text-align: center; }
 .acq-invoice-money { width: 7em; }
-#acq-invoice-entry-thead th { white-space: nowrap; }
-#acq-invoice-item-thead th { white-space: nowrap; }
 
 .acq-lineitem-summary { font-weight: bold; }
 .acq-lineitem-summary-extra { padding-left: 10px; }

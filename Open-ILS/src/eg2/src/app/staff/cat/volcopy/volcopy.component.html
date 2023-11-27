@@ -1,4 +1,4 @@
-<eg-staff-banner bannerText="Holdings Editor" i18n-bannerText></eg-staff-banner>
+<eg-staff-banner bannerText="Copy Editor" i18n-bannerText></eg-staff-banner>
 
 <eg-confirm-dialog #pendingChangesDialog
   i18n-dialogTitle dialogTitle="Unsaved Changes Confirmation" 
@@ -94,12 +94,12 @@
         </ng-container>
 
         <div class="flex-1"> </div>
-        <button class="btn btn-outline-dark" (click)="save(false, true)" 
+        <button class="btn btn-outline-dark" (click)="save()" 
           [ngClass]="{'border-danger': isNotSaveable()}"
-          [disabled]="isNotSaveable()" i18n>Apply All &amp; Save</button>
-        <button class="btn btn-outline-dark ml-2" (click)="save(true, true)"
+          [disabled]="isNotSaveable()" i18n>Modify Copies</button>
+        <button class="btn btn-outline-dark ml-2" (click)="save(true)"
           [ngClass]="{'border-danger': isNotSaveable()}"
-          [disabled]="isNotSaveable()" i18n>Apply All, Save &amp; Exit</button>
+          [disabled]="isNotSaveable()" i18n>Modify Copies &amp; Exit</button>
       </div>
     </div>
   </ng-container>

@@ -10,6 +10,7 @@ import {GridComponent} from '@eg/share/grid/grid.component';
 import {BroadcastService} from '@eg/share/util/broadcast.service';
 import {CourseService} from '@eg/staff/share/course.service';
 import {PermService} from '@eg/core/perm.service';
+import {ServerStoreService} from '@eg/core/server-store.service';
 
 @Component({
   selector: 'eg-catalog-copies',
@@ -23,7 +24,9 @@ export class CopiesComponent implements OnInit {
     editableCopyLibs: number[] = [];
     gridDataSource: GridDataSource;
     copyContext: any; // grid context
-    @ViewChild('copyGrid', { static: true }) copyGrid: GridComponent;
+    limitToViable: boolean = null;
+
+    @ViewChild('copyGrid') copyGrid: GridComponent;
 
     @Input() set recordId(id: number) {
         this.recId = id;
@@ -42,6 +45,7 @@ export class CopiesComponent implements OnInit {
         private org: OrgService,
         private staffCat: StaffCatalogService,
         private broadcaster: BroadcastService,
+        private store: ServerStoreService,
         private perm: PermService
     ) {
         this.gridDataSource = new GridDataSource();
@@ -49,9 +53,15 @@ export class CopiesComponent implements OnInit {
 
     ngOnInit() {
         this.initDone = true;
+
+        /* KCLS does not use
         this.course.isOptedIn().then(res => {
             this.usingCourseModule = res;
         });
+        */
+
+        this.store.getItem('cat.item_table.limit_to_viable')
+        .then(limit => this.limitToViable = Boolean(limit));
 
         this.perm.hasWorkPermAt(['UPDATE_COPY'], true)
             .then(result => {
@@ -81,7 +91,11 @@ export class CopiesComponent implements OnInit {
             callnumber: row => (`${row.call_number_prefix_label} ` +
                 `${row.call_number_label} ${row.call_number_suffix_label}`).trim(),
             holdable: row => this.copyContext.holdable(row),
-            barcode: row => row.barcode
+            barcode: row => row.barcode,
+            circ_modifier: row => {
+                return row.circ_modifier_code ?
+                    `${row.circ_modifier_code} : ${row.circ_modifier_name}` : '';
+            }
         };
 
         this.broadcaster.listen('eg.holdings.update').subscribe(data => {
@@ -89,6 +103,12 @@ export class CopiesComponent implements OnInit {
                 this.copyGrid.reload();
             }
         });
+    }
+
+    toggleLimitToViable(val: boolean) {
+        this.limitToViable = val;
+        this.store.setItem('cat.item_table.limit_to_viable', val);
+        this.copyGrid.reload();
     }
 
     orgName(orgId: number): string {
@@ -112,7 +132,8 @@ export class CopiesComponent implements OnInit {
             copy_depth,
             pager.limit,
             pager.offset,
-            this.staffCat.prefOrg ? this.staffCat.prefOrg.id() : null
+            this.staffCat.prefOrg ? this.staffCat.prefOrg.id() : null,
+            this.limitToViable
         ).pipe(map(copy => {
             this.org.settings('circ.course_materials_opt_in').then(res => {
                 if (res['circ.course_materials_opt_in']) {

@@ -667,8 +667,8 @@ function ResultManager(liPager, poGrid, plGrid, invGrid) {
                     "flesh_notes": true
                 },
                 "revealer": function() {
-                    self.liPager.show();
                     progressDialog.show(true);
+                    self.liPager.show();
                 },
                 "finisher": function() {
                     self.liPager.batch_length = self.count_results;
@@ -924,8 +924,7 @@ function URIManager() {
         "po": {
             "search_object": {
                 "acqpo": [
-                    {"ordering_agency": openils.User.user.ws_ou()},
-                    {"state": "on-order"}
+                    {"id": ""}
                 ]
             },
             "half_search": true,
@@ -950,8 +949,7 @@ function URIManager() {
         "inv": {
             "search_object": {
                 "acqinv": [
-                    {"close_date": null},
-                    {"receiver": openils.User.user.ws_ou()}
+                    {"inv_ident": ""}
                 ]
             },
             "half_search": true,

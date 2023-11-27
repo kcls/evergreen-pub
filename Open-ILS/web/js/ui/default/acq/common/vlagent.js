@@ -3,7 +3,14 @@ dojo.require('openils.PermaCrud');
 dojo.require('openils.XUL');
 dojo.require('dojox.form.CheckedMultiSelect');
 
-var xulStorage;
+var xulStorage
+if (openils.XUL.localStorage) {
+    xulStorage = openils.XUL.localStorage();
+} else {
+    // use browser localStorage outside of the XUL interface.
+    xulStorage = localStorage;
+}
+
 var storekey = 'eg.acq.upload.';
 var osetkey = 'acq.upload.default.';
 var persistOrgSettings;
@@ -278,16 +285,19 @@ function VLAgent(args) {
         if (resp.complete) {
 
             if(resp.picklist) {
-                res.picklist_url = oilsBasePath + '/acq/picklist/view/' + resp.picklist.id();
+                //res.picklist_url = oilsBasePath + '/acq/picklist/view/' + resp.picklist.id();
+                res.picklist_url = '/eg2/staff/acq/picklist/' + resp.picklist.id();
             } 
 
             if(resp.purchase_order) {
-                res.po_url = oilsBasePath + '/acq/po/view/' + resp.purchase_order.id();
+                //res.po_url = oilsBasePath + '/acq/po/view/' + resp.purchase_order.id();
+                res.po_url = '/eg2/staff/acq/po/' + resp.purchase_order.id();
             }
 
             if (resp.queue) {
                 var newQid = resp.queue.id();
-                res.queue_url = oilsBasePath + '/vandelay/vandelay?qtype=bib&qid=' + newQid;
+                //res.queue_url = oilsBasePath + '/vandelay/vandelay?qtype=bib&qid=' + newQid;
+                res.queue_url = '/eg2/staff/cat/vandelay/queue/bib/' + newQid;
 
                 var qInput = this.getDijit('queue_name');
 

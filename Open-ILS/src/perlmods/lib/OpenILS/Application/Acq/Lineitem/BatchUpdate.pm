@@ -283,7 +283,7 @@ sub lineitem_batch_update_impl {
     # called for in $changes, other than the 'item_count' field (handled above).
 
     my %fund_cache;
-    my @fields = qw/owning_lib fund location collection_code circ_modifier/;
+    my @fields = qw/owning_lib fund location collection_code circ_modifier cn_label/;
     foreach my $jub (@$lineitems) {
         # We use the counting style of loop below because we need to know our
         # position for dist_formula application.
@@ -376,6 +376,8 @@ sub lineitem_batch_update_impl {
 __PACKAGE__->register_method(
     method => "lineitem_batch_update_api",
     api_name => "open-ils.acq.lineitem.batch_update",
+    stream => 1,
+    max_bundle_count => 1,
     signature => {
         desc => "Apply changes to the lineitem details realted to specified lineitems in batch",
         params => [
@@ -397,6 +399,8 @@ __PACKAGE__->register_method(
 __PACKAGE__->register_method(
     method => "lineitem_batch_update_api",
     api_name => "open-ils.acq.lineitem.batch_update.dry_run",
+    stream => 1,
+    max_bundle_count => 1,
     signature => {
         desc => "Impotent version of open-ils.acq.lineitem.batch_update that always ends in a rollback",
         params => "See open-ils.acq.lineitem.batch_update",

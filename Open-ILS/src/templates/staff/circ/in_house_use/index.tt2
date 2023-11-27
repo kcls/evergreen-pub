@@ -75,7 +75,7 @@
 
   <eg-grid-field label="[% l('# of Uses') %]"   path='num_uses' visible></eg-grid-field>
   <eg-grid-field label="[% l('Barcode') %]"     path='copy.barcode' visible>
-    <a href="./cat/item/{{item.copy.id()}}/summary" target="_self">
+    <a href="/eg2/staff/cat/item/{{item.copy.id()}}/summary">
     {{item.copy.barcode()}} 
     </a>
   </eg-grid-field>

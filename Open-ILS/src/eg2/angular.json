@@ -8,12 +8,7 @@
       "sourceRoot": "src",
       "projectType": "application",
       "i18n": {
-        "sourceLocale": "en-US",
-        "locales": {
-          "cs-CZ": {
-            "translation": "src/locale/messages.cs-CZ.xtb"
-          }
-        }
+        "sourceLocale": "en-US"
       },
       "architect": {
         "build": {
@@ -39,6 +34,7 @@
             ],
             "allowedCommonJsDependencies": [
               "file-saver",
+              "elastic-builder",
               "moment",
               "moment-timezone"
             ],

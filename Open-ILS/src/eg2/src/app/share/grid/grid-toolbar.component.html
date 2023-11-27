@@ -4,6 +4,9 @@
 <div class="eg-grid-toolbar mb-2">
 
   <div class="btn-toolbar">
+    <span class="font-weight-bold mr-2" *ngIf="gridContext.toolbarLabel">
+      {{gridContext.toolbarLabel}}
+    </span>
 
     <!-- buttons -->
     <div class="btn-grp" *ngIf="gridContext.toolbarButtons.length || gridContext.isFilterable">
@@ -27,6 +30,7 @@
         <label class="form-check-label">
           <input class="form-check-input" type="checkbox"
             [(ngModel)]="cb.isChecked"
+            [disabled]="cb.disabled"
             (click)="cb.onChange.emit($event.target.checked)"/>
             {{cb.label}}
         </label>
@@ -77,7 +81,7 @@
     </button>
     <div class="dropdown-menu" ngbDropdownMenu>
       <a class="dropdown-item"
-        *ngFor="let count of [5, 10, 25, 50, 100]"
+        *ngFor="let count of [5, 10, 25, 50, 100, 500, 1000, 10000]"
         (click)="gridContext.pager.setLimit(count)">
         <span class="ml-2">{{count}}</span>
       </a>
@@ -98,7 +102,7 @@
       class="material-icons mat-icon-in-button">expand_less</span>
   </button>
 
-  <eg-grid-column-config #columnConfDialog [columnSet]="gridContext.columnSet">
+  <eg-grid-column-config #columnConfDialog [gridContext]="gridContext">
   </eg-grid-column-config>
   <div ngbDropdown placement="bottom-right">
     <button ngbDropdownToggle class="btn btn-outline-dark no-dropdown-caret">
@@ -117,6 +121,7 @@
         <span class="ml-2" i18n>Manage Column Widths</span>
       </a>
       <button class="dropdown-item label-with-material-icon"
+        *ngIf="!disableSaveSettings"
         [disabled]="gridContext.toolbarActions.length === 0"
         (click)="toolbarActionsEditor.open().subscribe()">
         <span class="material-icons">menu</span>
@@ -129,7 +134,7 @@
         <span class="ml-2" i18n>Save Grid Settings</span>
       </a>
       <a class="dropdown-item label-with-material-icon"
-        (click)="gridContext.columnSet.reset()">
+        (click)="gridContext.resetColumns()">
         <span class="material-icons">restore</span>
         <span class="ml-2" i18n>Reset Columns</span>
       </a>
@@ -148,7 +153,7 @@
       <div class="dropdown-divider"></div>
 
       <a class="dropdown-item label-with-material-icon"
-        (click)="col.visible=!col.visible"
+        (click)="toggleVisibility(col)"
         *ngFor="let col of gridContext.columnSet.sortForColPicker()">
         <span *ngIf="col.visible" class="badge badge-success">&#x2713;</span>
         <span *ngIf="!col.visible" class="badge badge-warning">&#x2717;</span>

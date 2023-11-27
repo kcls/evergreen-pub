@@ -121,9 +121,26 @@ sub find_holds_to_target {
         [{class => 'ahr', field => 'request_time', direction => 'DESC'}]
         if $self->{newest_first};
 
-    my $holds = $self->editor->json_query($query, {substream => 1});
+    # KCLS JBAS-1741
+    # Fetch hold IDs in pages so that multiple IDs can be packaged per
+    # message, saving a lot of osrf message boilerplate bulk, without
+    # creating individual messages so large/extensive ejabberd is too
+    # busy to allow other messages through, causing delays / timeouts in
+    # other services.
+    my @ids;
+    $query->{offset} = 0;
+    $query->{limit} = 10000;
+    while (1) {
+        my $holds = $self->editor->json_query($query, {timeout => 600});
+        push(@ids, map {$_->{id}} @$holds);
 
-    return map {$_->{id}} @$holds;
+        # all done if number of holds retrieved is less than the limit.
+        last if @$holds < $query->{limit};
+
+        $query->{offset} += $query->{limit};
+    }
+
+    return @ids;
 }
 
 sub editor {
@@ -1095,6 +1112,12 @@ sub target_by_org_loops {
     # lib has been targeted max_loops times.  Otherwise, the hold goes
     # back to waiting for another copy (or retargets its current copy).
     return undef if $max_tried < $max_loops;
+
+    if (@{$self->recall_copies}) { # KCLS
+        $self->log_hold("Skipping max-loops cancellation because ".
+            "there is at least one checked out copy in circulation");
+        return undef;
+    }
 
     # At least one lib has been targeted max-loops times and zero 
     # other copies are targetable.  All options have been exhausted.

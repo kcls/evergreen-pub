@@ -74,6 +74,7 @@ CREATE TABLE acq.provider (
     code                TEXT    NOT NULL,
     holding_tag         TEXT,
     san                 TEXT,
+    buyer_san           TEXT,
     edi_default         INT,          -- REFERENCES acq.edi_account (id) DEFERRABLE INITIALLY DEFERRED
 	active              BOOL    NOT NULL DEFAULT TRUE,
 	prepayment_required BOOL    NOT NULL DEFAULT FALSE,
@@ -805,7 +806,8 @@ CREATE TABLE acq.edi_message (
 									     'ORDRSP',
 									     'INVOIC',
 									     'OSTENQ',
-									     'OSTRPT'
+									     'OSTRPT',
+                                         'DESADV'
 									 ))
 );
 CREATE INDEX edi_message_account_status_idx ON acq.edi_message (account,status);

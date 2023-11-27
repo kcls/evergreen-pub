@@ -1091,7 +1091,10 @@ function($uibModal , $interpolate , egCore) {
 
             // optional name of settings key for persisting
             // the last selected org unit
-            stickySetting : '@'
+            stickySetting : '@',
+
+            // Sticky setting as server setting
+            remoteStickySetting: '@'
         },
 
         templateUrl : './share/t_org_select',
@@ -1134,11 +1137,31 @@ function($uibModal , $interpolate , egCore) {
                     }).map(function(org) {
                         return formatName(org);
                     });
-    
-                    // Apply default values
-    
-                    if ($scope.stickySetting) {
-                        var orgId = egCore.hatch.getLocalItem($scope.stickySetting);
+
+                    var promise = $q.when(null);
+
+                    if ($scope.remoteStickySetting) {
+                        promise = egCore.hatch.getItem(
+                            'eg.orgselect.' + $scope.remoteStickySetting);
+                    }
+
+                    promise.then(function(orgId) {
+                        console.log('Read sticky setting org ID:', orgId);
+
+                        if (!orgId) {
+                            // A value may have been applied while we 
+                            // were talking to the internet.
+                            orgId = $scope.selected ? $scope.selected.id() : null;
+                        }
+
+                        if (!orgId && $scope.stickySetting) {
+                            orgId = egCore.hatch.getLocalItem($scope.stickySetting);
+                        }
+
+                        if (!orgId && !$scope.nodefault && egCore.auth.user()) {
+                            orgId = egCore.auth.user().ws_ou();
+                        }
+
                         if (orgId) {
                             var org = egCore.org.get(orgId);
                             if (org) {
@@ -1146,16 +1169,10 @@ function($uibModal , $interpolate , egCore) {
                                 $scope.selectedName = org.shortname();
                             }
                         }
-                    }
-    
-                    if (!$scope.selected && !$scope.nodefault && egCore.auth.user()) {
-                        var org = egCore.org.get(egCore.auth.user().ws_ou());
-                        $scope.selected = org;
-                        $scope.selectedName = org.shortname();
-                    }
-    
-                    fire_orgsel_onchange(); // no-op if nothing is selected
-                    watch_external_changes();
+
+                        fire_orgsel_onchange(); // no-op if nothing is selected
+                        watch_external_changes();
+                    });
                 }
             );
 
@@ -1169,8 +1186,8 @@ function($uibModal , $interpolate , egCore) {
             function fire_orgsel_onchange() {
                 if (!$scope.selected || !$scope.onchange) return;
                 $timeout(function() {
-                    console.debug(
-                        'egOrgSelector onchange('+$scope.selected.id()+')');
+                    var id = $scope.selected ? $scope.selected.id() : null;
+                    console.debug('egOrgSelector onchange('+ id +')');
                     $scope.onchange($scope.selected)
                 });
             }
@@ -1233,6 +1250,12 @@ function($uibModal , $interpolate , egCore) {
                 if ($scope.selected && $scope.stickySetting) {
                     egCore.hatch.setLocalItem(
                         $scope.stickySetting, $scope.selected.id());
+                }
+
+                if ($scope.remoteStickySetting) {
+                    egCore.hatch.setItem(
+                        'eg.orgselect.' + $scope.remoteStickySetting, 
+                        $scope.selected.id());
                 }
 
                 fire_orgsel_onchange();

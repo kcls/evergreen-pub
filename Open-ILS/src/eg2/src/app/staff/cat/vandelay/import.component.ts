@@ -52,6 +52,7 @@ interface ImportOptions {
     fall_through_merge_profile?: any;
     strip_field_groups?: number[];
     match_quality_ratio: number;
+    set_cat_date: boolean; // KCLS JBAS-2315
     exit_early: boolean;
 }
 
@@ -109,6 +110,7 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
     selectedTemplate: string;
     formTemplates: {[name: string]: any};
     newTemplateName: string;
+    templateInputMatch: boolean;
 
     @ViewChild('fileSelector', { static: false }) private fileSelector;
     @ViewChild('uploadProgress', { static: true })
@@ -363,7 +365,8 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
     // Required form data varies depending on context.
     hasNeededData(): boolean {
         if (this.vandelay.importSelection) {
-            return this.importActionSelected();
+            // No additional form data required
+            return true;
         } else {
             return this.selectedQueue &&
                 Boolean(this.recordType) && Boolean(this.selectedFile);
@@ -423,6 +426,11 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Extract selected queue ID or create a new queue when requested.
     resolveQueue(): Promise<number> {
+
+        if (this.startQueueId) {
+            // Only happens when the queue is predefined / readonly
+            return Promise.resolve(this.startQueueId);
+        }
 
         if (this.selectedQueue.freetext) {
             // Free text queue selector means create a new entry.
@@ -542,16 +550,25 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
 
     importRecords(): Promise<any> {
 
-        if (!this.importActionSelected()) {
-            return Promise.resolve();
-        }
-
         const selection = this.vandelay.importSelection;
 
-        if (selection && !selection.importQueue) {
-            return this.importRecordQueue(selection.recordIds);
-        } else {
+        if (selection) {
+            // Additional import actions are optional
+
+            if (selection.importQueue) {
+                return this.importRecordQueue();
+
+            } else {
+                // Import selected records only
+                return this.importRecordQueue(selection.recordIds);
+            }
+
+        } else if (this.importActionSelected()) {
+            // Importing a new queue requires at least one import action.
+
             return this.importRecordQueue();
+        } else {
+            return Promise.resolve();
         }
     }
 
@@ -610,11 +627,20 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
             fall_through_merge_profile: this.selectedFallThruMergeProfile,
             strip_field_groups: this.selectedTrashGroups,
             match_quality_ratio: this.minQualityRatio,
+            // KCLS JBAS-2315 On the server, cat date setting is limited
+            // to newly created records, so we just pass it always.
+            set_cat_date: true,
             exit_early: true
         };
 
         if (this.vandelay.importSelection) {
-            options.overlay_map = this.vandelay.importSelection.overlayMap;
+            options.overlay_map = {};
+            Object.keys(this.vandelay.importSelection.overlayMap)
+            .forEach(qrId => {
+                const id = Number(qrId);
+                options.overlay_map[id] =
+                    this.vandelay.importSelection.overlayMap[id].eg_record();
+            });
         }
 
         return options;
@@ -637,6 +663,7 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
         console.debug('Saving import profile', template);
 
         this.formTemplates[this.selectedTemplate] = template;
+        this.templateInputMatch = true;
         return this.store.setItem(TEMPLATE_SETTING_NAME, this.formTemplates);
     }
 
@@ -661,13 +688,14 @@ export class ImportComponent implements OnInit, AfterViewInit, OnDestroy {
         this.selectedTemplate = entry.label; // label == name
 
         if (entry.freetext) {
+            this.templateInputMatch = false;
             // User is entering a new template name.
             // Nothing to apply.
             return;
         }
 
         // User selected an existing template, apply it to the form.
-
+        this.templateInputMatch = true;
         const template = this.formTemplates[entry.id];
 
         // Copy the template values into "this"

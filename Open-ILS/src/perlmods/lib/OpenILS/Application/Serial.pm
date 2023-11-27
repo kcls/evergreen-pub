@@ -3779,13 +3779,13 @@ sub get_items_by {
             "from" => {
                 "sitem" => {
                     "siss" => {},
-                    "sstr" => {"join" => {"sdist" => {}}}
+                    "sstr" => {"join" => {"sdist" => {"join" => {"aou" => {}}}}}
                 }
             },
             "where" => {
                 %{$where{$by}}, $receivable ? ("date_received" => undef) : ()
             },
-            "order_by" => {"sitem" => ["id"]}
+            "order_by" => {"aou" => ["shortname"]}
         }
     ) or return $e->die_event;
 

@@ -589,8 +589,9 @@ circ.checkin.prototype = {
         try {
             var textbox = obj.controller.view.checkin_barcode_entry_textbox;
             var async = false;
-            var async_checkbox = document.getElementById('async_checkin');
-            if (async_checkbox) { async = async_checkbox.getAttribute('checked') == 'true'; }
+            //KCLS jbas-567
+            //var async_checkbox = document.getElementById('async_checkin');
+            //if (async_checkbox) { async = async_checkbox.getAttribute('checked') == 'true'; }
             var barcode = textbox.value;
             if (async) {
                 textbox.value = ''; textbox.focus();
@@ -766,8 +767,9 @@ circ.checkin.prototype = {
 
     'on_checkin' : function() {
         var async = false;
-        var async_checkbox = document.getElementById('async_checkin');
-        if (async_checkbox) { async = async_checkbox.getAttribute('checked') == 'true'; }
+        //KCLS jbas-567
+        //var async_checkbox = document.getElementById('async_checkin');
+        //if (async_checkbox) { async = async_checkbox.getAttribute('checked') == 'true'; }
         if (!async) {
             this.controller.view.checkin_barcode_entry_textbox.disabled = false;
             this.controller.view.checkin_barcode_entry_textbox.select();
@@ -778,8 +780,9 @@ circ.checkin.prototype = {
 
     'on_failure' : function() {
         var async = false;
-        var async_checkbox = document.getElementById('async_checkin');
-        if (async_checkbox) { async = async_checkbox.getAttribute('checked') == 'true'; }
+        //KCLS jbas-567
+        //var async_checkbox = document.getElementById('async_checkin');
+        //if (async_checkbox) { async = async_checkbox.getAttribute('checked') == 'true'; }
         if (!async) {
             this.controller.view.checkin_barcode_entry_textbox.disabled = false;
             this.controller.view.checkin_barcode_entry_textbox.select();

@@ -15,7 +15,7 @@
         </div>
         <div class="panel-body">
           <div>
-            <a target="_self" href="./circ/patron/bcsearch">
+            <a href="/eg2/staff/circ/patron/bcsearch">
               <img src="[% ctx.media_prefix %]/images/portal/forward.png" alt="" role="presentation"/>
               [% l('Check Out Items') %]
             </a>
@@ -27,7 +27,7 @@
             </a>
           </div>
           <div>
-            <a target="_self" href="./circ/patron/search">
+            <a href="/eg2/staff/circ/patron/search">
               <img src="[% ctx.media_prefix %]/images/portal/retreivepatron.png" alt="" role="presentation"/>
               [% l('Search For Patron By Name') %]
             </a>
@@ -79,7 +79,7 @@
         </div>
         <div class="panel-body">
           <div>
-            <a target="_top" href="http://docs.evergreen-ils.org/">
+            <a target="_blank" href="https://kclsorg.sharepoint.com/sites/Evergreen">
               <img src="[% ctx.media_prefix %]/images/portal/helpdesk.png" alt="" role="presentation"/>
               [% l('Evergreen Documentation') %]
             </a>

@@ -1,0 +1,63 @@
+
+<eg-staff-banner bannerText="Manage Patron Refunds"></eg-staff-banner>
+
+<div class="row mb-3">
+  <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <div class="input-group-text">Patron Home Library</div>
+      </div>
+      <eg-org-select (onChange)="orgChanged($event)"
+        [initialOrg]="contextOrg()"></eg-org-select>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <div class="input-group-text">Patron Barcode</div>
+      </div>
+      <input type="text" [(ngModel)]="patronBarcode" 
+        (keyup.enter)="searchPatron()"/>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <div class="input-group-text">Receipt Code</div>
+      </div>
+      <input type="text" [(ngModel)]="receiptCode"
+        (keyup.enter)="searchPatron()"/>
+    </div>
+  </div>
+</div>
+
+<ng-template #userBarcode let-row="row">
+  <a routerLink="/staff/circ/patron/{{row.usr()}}/checkout">{{row.usr_barcode()}}</a>
+</ng-template>
+
+<ng-template #copyBarcode let-row="row">
+  <a routerLink="/staff/cat/item/{{row.copy()}}">{{row.copy_barcode()}}</a>
+</ng-template>
+
+<eg-grid #grid idlClass="mrxs" [dataSource]="dataSource"
+  [showDeclaredFieldsOnly]="true"
+  (onRowActivate)="showDetails($event)"
+  [sortable]="true" persistKey="circ.refunds">
+
+  <!--
+  <eg-grid-toolbar-checkbox i18n-label label="Include Approved"
+    (onChange)="applyFilter('approved')"></eg-grid-toolbar-checkbox>
+
+  <eg-grid-toolbar-checkbox i18n-label label="Include Exported"
+    (onChange)="applyFilter('exported')"></eg-grid-toolbar-checkbox>
+  -->
+
+  <eg-grid-column path="xact" i18n-label label="Xact #" flex="1"></eg-grid-column>
+  <eg-grid-column path="refundable_paid" i18n-label label="Refundable Amount Paid"></eg-grid-column>
+  <eg-grid-column path="total_paid"></eg-grid-column>
+  <eg-grid-column path="balance_owed"></eg-grid-column>
+  <eg-grid-column path="usr_barcode" [cellTemplate]="userBarcode"></eg-grid-column>
+  <eg-grid-column path="usr_family_name"></eg-grid-column>
+  <eg-grid-column path="copy_barcode" [cellTemplate]="copyBarcode"></eg-grid-column>
+  <eg-grid-column path="title" flex="3"></eg-grid-column>
+</eg-grid>

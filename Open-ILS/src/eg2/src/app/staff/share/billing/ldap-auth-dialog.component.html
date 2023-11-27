@@ -1,0 +1,31 @@
+<ng-template #dialogContent>
+  <div class="modal-header bg-info">
+    <h4 class="modal-title" i18n>Please enter your KCLS login credentials.</h4>
+    <button type="button" class="close"
+      i18n-aria-label aria-label="Close" (click)="close()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body" *ngIf="args">
+    <div>
+      <i>(hint: your username is the first part of your KCLS email address)</i>
+    </div>
+    <div class="row mt-3">
+      <div class="col-lg-4"><label i18n>Username:</label></div>
+      <div class="col-lg-8">
+        <input type="text" [(ngModel)]="args.username" class="form-control"/>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4"><label i18n>Password:</label></div>
+      <div class="col-lg-8">
+        <input type="password" [(ngModel)]="args.password" class="form-control"/>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-success" 
+      [disabled]="!args.username || !args.password" (click)="close(args)" i18n>Submit</button>
+    <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel</button>
+  </div>
+</ng-template>

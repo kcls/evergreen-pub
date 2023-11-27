@@ -10,19 +10,30 @@
 
 <ng-container *ngIf="!readOnly">
 
-  <input type="text" 
-    class="form-control"
-    [attr.id]="domId.length ? domId : null"
-    [placeholder]="placeholder"
-    [disabled]="disabled"
-    [(ngModel)]="selected" 
-    [ngbTypeahead]="filter"
-    [resultTemplate]="displayTemplate"
-    [inputFormatter]="formatter"
-    (click)="click$.next($event.target.value)"
-    (selectItem)="orgChanged($event)"
-    container="body"
-    #instance="ngbTypeahead"
-  />
+  <div class="d-flex">
+    <input type="text" 
+      class="form-control"
+      [ngClass]="{'form-control-sm': smallFormControl}"
+      [attr.id]="domId.length ? domId : null"
+      [name]="name"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [required]="required"
+      [(ngModel)]="selected" 
+      [ngbTypeahead]="filter"
+      [resultTemplate]="displayTemplate"
+      [inputFormatter]="formatter"
+      (blur)="handleBlur()"
+      (click)="click$.next($event.target.value)"
+      (keyup.enter)="keyUpEnter.emit()"
+      (selectItem)="orgChanged($event)"
+      container="body"
+      #instance="ngbTypeahead"
+    />
+    <div class="d-flex flex-column icons" (click)="openMe($event)">
+      <span class="material-icons">keyboard_arrow_up</span>
+      <span class="material-icons">keyboard_arrow_down</span>
+    </div>
+  </div>
 
 </ng-container>

@@ -23,6 +23,7 @@ my $U = "OpenILS::Application::AppUtils";
 my $CC = "OpenILS::Application::Circ::CircCommon";
 
 use OpenSRF::EX qw(:try);
+use OpenSRF::Utils::JSON;
 use OpenILS::Perm;
 use Data::Dumper;
 use OpenILS::Event;
@@ -34,6 +35,9 @@ $Data::Dumper::Indent = 0;
 use OpenILS::Const qw/:const/;
 use OpenILS::Utils::DateTime qw/:datetime/;
 use DateTime::Format::ISO8601;
+use OpenILS::Application::Circ::RefundableCommon;
+my $RFC = 'OpenILS::Application::Circ::RefundableCommon';
+
 my $parser = DateTime::Format::ISO8601->new;
 
 sub get_processor_settings {
@@ -201,6 +205,22 @@ __PACKAGE__->register_method(
                         [trans_id, amt], 
                         [...]
                     ], 
+                    refundable_args : {
+                        secondary_auth_key : $key,
+                        transactions : [
+                            {xact : id},
+                            ...
+                        ]
+                    },
+                    secondary_auth_username
+                        -- Used for tracking refundable payment info
+                        -- for payments made via 3rd-party register or kiosk
+                        -- where staff cannot enter secondary auth info.
+                    secondary_auth_key
+                        -- Used when staff authorizes via secondary auth
+                        -- but it's not related specifcially to refundable
+                        -- payments.
+
                 }/, type => 'hash'
             },
             {
@@ -274,11 +294,31 @@ sub make_payments {
     my $drawer = $e->requestor->wsid;
     my $note = $payments->{note};
     my $cc_args = $payments->{cc_args};
+    my $refundable_args = $payments->{refundable_args} || {};
+    my $secondary_auth_username = $payments->{secondary_auth_username};
+    my $secondary_auth_key = $payments->{secondary_auth_key};
     my $check_number = $payments->{check_number};
     my $total_paid = 0;
     my $this_ou = $e->requestor->ws_ou || $e->requestor->home_ou;
     my %orgs;
 
+    # Should we perform the refundability check ourselves?  Needed
+    # in cases where the caller is not able to check/verify (e.g. credit
+    # card payments, external cash registers).
+    my $check_refundable = (
+        $type eq 'cash_payment' ||
+        $type eq 'check_payment' ||
+        $type eq 'credit_card_payment'
+    );
+
+    if ($refundable_args->{transactions}) {
+        # User has already performed the refundable check.
+        $check_refundable = 0;
+
+        return OpenILS::Event->new('BAD_PARAMS', note => 
+            'Secondary auth key required for refundable payment tracking')
+            unless $refundable_args->{secondary_auth_key};
+    }
 
     # unless/until determined by payment processor API
     my ($approval_code, $cc_processor, $cc_order_number) = (undef,undef,undef, undef);
@@ -393,6 +433,28 @@ sub make_payments {
             $payobj->note($cc_args->{note});
         }
 
+
+        if ($secondary_auth_key) {
+            # If we have a valid secondary auth key, append the staff
+            # email to the payment note.
+
+            my $auth_info = $RFC->get_ldap_auth_entry($secondary_auth_key);
+
+            if (!$auth_info) {
+                return OpenILS::Event->new(
+                    'BAD_PARAMS', note => 'A secondary authentication key was ' . 
+                        'provided but no record of the authentication can be found. ' .
+                        'It is possible the transaction timed out'
+                );
+            }
+
+            my $note = 'Applied by ' . $auth_info->{staff_email};
+            $note .= ' : ' . $payobj->note if $payobj->note;
+
+            $payobj->note($note);
+        }
+
+
         if ($payobj->has_field('accepting_usr')) { $payobj->accepting_usr($e->requestor->id); }
         if ($payobj->has_field('cash_drawer')) { $payobj->cash_drawer($drawer); }
         if ($payobj->has_field('check_number')) { $payobj->check_number($check_number); }
@@ -460,6 +522,10 @@ sub make_payments {
             return OpenILS::Event->new(
                 'BAD_PARAMS', note => 'Need approval code'
             ) if not $cc_args->{approval_code};
+
+            # Out of band processors send completed payment info via cc_args.
+            $cc_processor = $cc_args->{processor};
+            $cc_order_number = $cc_args->{order_number};
         }
     }
 
@@ -507,6 +573,26 @@ sub make_payments {
         }
 
         push(@payment_ids, $payment->id);
+
+        if ($check_refundable && $U->circ_is_refundable($transid, $e)) {
+
+            $logger->info(
+                "Payment ".$payment->id." tracked as potentially refundable");
+
+            $refundable_args->{transactions} = [] 
+                unless $refundable_args->{transactions};
+
+            push(@{$refundable_args->{transactions}}, {xact => $transid});
+        }
+
+
+        if ($refundable_args->{transactions}) {
+            # If this is one of the refundable payments, add the payment
+            # ID to the set of per-payment options provided by the caller.
+            my ($ref_data) = grep 
+                {$_->{xact} == $transid} @{$refundable_args->{transactions}};
+            $ref_data->{payment_id} = $payment->id if $ref_data;
+        }
     }
 
     my $evt = _update_patron_credit($e, $patron, $credit);
@@ -528,6 +614,30 @@ sub make_payments {
         }
     }
 
+    my $refundable_payments = [];
+    if ($refundable_args->{transactions}) {
+        my $authkey = $refundable_args->{secondary_auth_key};
+
+        if (!$authkey) {
+            # For 3rd-party payments, there will be no auth key.
+            # Generate a dummy key for the refundable API.
+            my $sa = $secondary_auth_username || 'SELF-SERVICE';
+            $authkey = $RFC->create_ldap_auth_entry($sa, $sa, $sa);
+        }
+
+        for my $pay_args (@{$refundable_args->{transactions}}) {
+            my $pay_id = $pay_args->{payment_id};
+            my $evt = $RFC->create_refundable_payment(
+                    $e, $authkey, $pay_id, $pay_args, $refundable_payments);
+
+            if ($evt) {
+                $logger->error(
+                    "Error tracking refundable payment data for payment $pay_id");
+                return $e->die_event;
+            }
+        }
+    }
+
     # update the user to create a new last_xact_id
     $e->update_actor_user($patron) or return $e->die_event;
     $patron = $e->retrieve_actor_user($patron) or return $e->die_event;
@@ -538,7 +648,12 @@ sub make_payments {
     $U->simplereq('open-ils.auth', 'open-ils.auth.session.reset_timeout', $auth, 1)
         if $user_id == $e->requestor->id;
 
-    return {last_xact_id => $patron->last_xact_id, payments => \@payment_ids};
+    $U->log_user_activity($user_id, '', 'payment');
+    return {
+        last_xact_id => $patron->last_xact_id, 
+        payments => \@payment_ids,
+        refundable_payments => $refundable_payments
+    };
 }
 
 sub _recording_failure {
@@ -898,7 +1013,8 @@ __PACKAGE__->register_method(
             /,
         params => [
             {desc => 'Authtoken', type => 'string'},
-            {desc => 'Array of transaction IDs', type => 'array'}
+            {desc => 'Array of transaction IDs', type => 'array'},
+            {desc => 'Note (Optional)', type => 'string'}
         ],
         return => {
             desc => q/Array of IDs for each transaction updated,
@@ -908,7 +1024,7 @@ __PACKAGE__->register_method(
 );
 
 sub _rebill_xact {
-    my ($e, $xact) = @_;
+    my ($e, $xact, $note) = @_;
 
     my $xact_id = $xact->id;
     # the plan: rebill voided billings until we get a positive balance
@@ -939,13 +1055,15 @@ sub _rebill_xact {
         } else { # adjusted billing
             map { $amount = $U->fpsum($amount, $_->amount) } @{$billing->adjustments};
         }
+
         my $evt = $CC->create_bill(
             $e,
             $amount,
             $billing->btype,
             $billing->billing_type,
             $xact_id,
-            "System: MANUAL ADJUSTMENT, BILLING #".$billing->id." REINSTATED\n(PREV: ".$billing->note.")",
+            $note || 
+                "System: MANUAL ADJUSTMENT, BILLING #".$billing->id." REINSTATED\n(PREV: ".$billing->note.")",
             $billing->period_start(),
             $billing->period_end()
         );
@@ -967,10 +1085,12 @@ sub _is_fully_adjusted {
 }
 
 sub adjust_bills_to_zero_manual {
-    my ($self, $client, $auth, $xact_ids) = @_;
+    my ($self, $client, $auth, $xact_ids, $note) = @_;
 
     my $e = new_editor(xact => 1, authtoken => $auth);
     return $e->die_event unless $e->checkauth;
+
+    $note = "Adjusted to Zero: $note" if $note;
 
     # in case a bare ID is passed
     $xact_ids = [$xact_ids] unless ref $xact_ids;
@@ -993,7 +1113,7 @@ sub adjust_bills_to_zero_manual {
             $e->allowed('ADJUST_BILLS', $xact->usr->home_ou);
 
         if ($xact->balance_owed < 0) {
-            my $evt = _rebill_xact($e, $xact);
+            my $evt = _rebill_xact($e, $xact, $note);
             return $evt if $evt;
             # refetch xact to get new balance
             $xact =
@@ -1018,7 +1138,7 @@ sub adjust_bills_to_zero_manual {
             ]);
 
             my @billings_to_zero = grep { !$U->is_true($_->voided) or !_is_fully_adjusted($_) } @$billings;
-            $CC->adjust_bills_to_zero($e, \@billings_to_zero, "System: MANUAL ADJUSTMENT");
+            $CC->adjust_bills_to_zero($e, \@billings_to_zero, $note || "System: MANUAL ADJUSTMENT");
         }
 
         push(@modified, $xact->id);
@@ -1361,8 +1481,44 @@ sub retrieve_statement {
         $line->{note} = $line->{note} ? [split(/\n/, $line->{note})] : [];
     }
 
+    my $xact = $e->retrieve_money_billable_transaction([
+        $xact_id, {
+            flesh => 5,
+            flesh_fields => {
+                mbt =>  [qw/circulation grocery/],
+                circ => [qw/target_copy/],
+                acp =>  [qw/call_number location status age_protect total_circ_count/],
+                acn =>  [qw/record prefix suffix/],
+                bre =>  [qw/wide_display_entry/]
+            },
+            select => {bre => ['id']} 
+        }
+    ]);
+
+    my $title;
+    my $billing_location;
+    my $title_id;
+    if ($xact->circulation) {
+        $billing_location = $xact->circulation->circ_lib;
+        my $copy = $xact->circulation->target_copy;
+        if ($copy->call_number->id == -1) {
+            $title = $copy->dummy_title;
+        } else {
+            $title_id = $copy->call_number->record->id;
+            $title = OpenSRF::Utils::JSON->JSON2perl(
+                $copy->call_number->record->wide_display_entry->title);
+        }
+    } else {
+        $billing_location = $xact->grocery->billing_location;
+        $title = $xact->grocery->note;
+    }
+
     return {
         xact_id => $xact_id,
+        xact => $xact,
+        title => $title,
+        title_id => $title_id,
+        billing_location => $billing_location,
         summary => {
             balance_due => $totals{billing} - ($totals{payment} + $totals{account_adjustment} + $totals{void}),
             billing_total => $totals{billing},

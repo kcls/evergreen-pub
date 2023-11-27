@@ -24,6 +24,9 @@ use OpenILS::Application::Acq::EDI;
 use OpenILS::Utils::Cronscript;
 use File::Spec;
 
+# Force passive FTP so we don't have to keep setting it manually.
+$ENV{FTP_PASSIVE} = 1;
+
 my $defaults = {
     "account=i"  => 0,
     "provider=i" => 0,

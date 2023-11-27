@@ -210,6 +210,16 @@ function($scope , $window , $location , egCore , egConfirmDialog) {
         }
     });
 
+    $scope.results_sort = 'pubdate';
+    egCore.hatch.getItem('eg.search.browse_sort_default').then(function(val) {
+        $scope.results_sort = val;
+    });
+    $scope.$watch('results_sort', function(newVal, oldVal) {
+        if (typeof newVal != 'undefined' && newVal != oldVal) {
+            egCore.hatch.setItem('eg.search.browse_sort_default', newVal);
+        }
+    });
+
     $scope.apply_sound = function() {
         if ($scope.disable_sound) {
             egCore.hatch.setItem('eg.audio.disable', true);
@@ -240,6 +250,11 @@ function($scope , egCore) {
     $scope.setContext = function(ctx) { 
         $scope.context = ctx; 
         $scope.isTestView = false;
+
+        let conf = $scope.printConfig[ctx];
+        if (conf && conf.printer) {
+            loadPrinterOptions(conf.printer);
+        }
     }
     $scope.setContext('default');
 
@@ -291,7 +306,7 @@ function($scope , egCore) {
     }
 
     function loadPrinterOptions(name) {
-        if (name == 'hatch_file_writer') {
+        if (name == 'hatch_file_writer' || name == 'hatch_browser_printing') {
             $scope.printerOptions = {};
         } else {
             egCore.hatch.getPrinterOptions(name).then(
@@ -334,6 +349,14 @@ function($scope , egCore) {
         );
     }
 
+    $scope.useBrowserPrinting = function() {
+        return (
+            $scope.printConfig[$scope.context] &&
+            $scope.printConfig[$scope.context].printer == 'hatch_browser_printing'
+        );
+    }
+
+
     // Load startup data....
     // Don't bother talking to Hatch if it's not there.
     if (!egCore.hatch.hatchAvailable) return;
@@ -348,6 +371,8 @@ function($scope , egCore) {
             // Human-friendly label is set in the template.
             name: 'hatch_file_writer' 
         });
+
+        printers.push({name: 'hatch_browser_printing'});
 
         var def = $scope.getPrinterByAttr('is-default', true);
         if (!def && printers.length) def = printers[0];

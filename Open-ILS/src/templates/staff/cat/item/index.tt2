@@ -108,6 +108,7 @@
         <li><a href ng-click="renew()">[% l('Renew Items') %]</a></li>
         <li><a href ng-click="cancel_transit()">[% l('Cancel Transit') %]</a></li>
         <li><a href ng-click="update_inventory()">[% l('Update Inventory') %]</a></li>
+        <li><a href ng-click="update_items()">[% l('Update Items') %]</a></li>
 
         <p><b>[% l('Show') %]</b></p>
         <li><a href ng-click="show_triggered_events()">[% l('Show Triggered Events') %]</a></li>

@@ -19,6 +19,14 @@
 
 <div class="row d-flex p-2 m-2">
 
+  <ng-container *ngIf="record && record.id">
+    <button *ngIf="!record.deleted" class="btn btn-warning" 
+      [disabled]="inPlaceMode" (click)="deleteRecord()" i18n>Delete Record</button>
+    <button *ngIf="record.deleted" class="btn btn-info" 
+      [disabled]="inPlaceMode" (click)="undeleteRecord()" i18n>Undelete Record</button>
+  </ng-container>
+
+  <!-- KCLS JBAS-2613
   <ng-container *ngIf="recordType === 'biblio'">
     <div class="form-check">
       <input class="form-check-input" type="checkbox"
@@ -37,6 +45,7 @@
         [(ngModel)]="fastItemBarcode" placeholder="Barcode" i18n-placeholder/>
     </div>
   </ng-container>
+  -->
 
   <div class="flex-1"></div>
 
@@ -59,17 +68,35 @@
     </div>
   </ng-container>
 
-  <div class="pr-3 mr-3 border-right">
+  <div class="">
     <button class="btn btn-success" (click)="saveRecord()"
-      [disabled]="(record && record.deleted) || record.id == -1" i18n>Save Changes</button>
+      [disabled]="!record || record.deleted || record.id == -1" i18n>Save Changes</button>
+  </div>
+</div>
+
+<!-- cataloging date selector -->
+<div class="row d-flex p-2 m-2" *ngIf="record && record.id">
+  <div class="flex-1"></div>
+
+  <span class="font-italic pr-2" *ngIf="saveCount > 0" i18n>
+    Record saved {{saveCount}} time(s).
+  </span>
+
+  <div class="mr-2">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" i18n>Cataloging Date</span>
+      </div>
+      <eg-date-select #catDateSelect [(ngModel)]="catDate">
+      </eg-date-select>
+    </div>
   </div>
 
-  <ng-container *ngIf="record && record.id">
-    <button *ngIf="!record.deleted && record.id != -1" class="btn btn-warning" 
-      [disabled]="inPlaceMode" (click)="deleteRecord()" i18n>Delete Record</button>
-    <button *ngIf="record.deleted" class="btn btn-info" 
-      [disabled]="inPlaceMode" (click)="undeleteRecord()" i18n>Undelete Record</button>
-  </ng-container>
+  <button class="btn btn-outline-dark mr-2" [disabled]="catDate == origCatDate" 
+    (click)="setCatDate();" i18n>Apply Date</button>
+
+  <button class="btn btn-outline-dark" [disabled]="!origCatDate" 
+    (click)="catDateSelect.reset(); setCatDate(true)" i18n>Clear Date</button>
 </div>
 
 <ng-container *ngIf="dataSaving">
@@ -107,7 +134,7 @@
 
 <div class="row d-flex p-2 m-2 flex-row-reverse">
   <button class="btn btn-success" (click)="saveRecord()"
-    [disabled]="(record && record.deleted) || record.id == -1" i18n>Save Changes</button>
+    [disabled]="!record || record.deleted || record.id == -1" i18n>Save Changes</button>
 </div>
 
 

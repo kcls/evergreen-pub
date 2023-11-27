@@ -4,7 +4,6 @@
 <eg-admin-page idlClass="ccvm" [templateFields]="[{name: 'Composite Definition', template: compDefTmpl}]">
 </eg-admin-page>
 
-
 <ng-template #compDefTmpl let-row="row">
   <div *ngIf="row.ctype().composite() == 't'">
     <a routerLink="/staff/admin/server/config/coded_value_map/composite_def/{{row.id()}}">
@@ -12,3 +11,4 @@
     </a>
   </div>
 </ng-template>
+

@@ -398,6 +398,7 @@ sub create_batch_events {
     my $filter = shift || {};
     my $granularity = shift;
     my $user_data = shift;
+    my $batch_limit = shift;
 
     my $active = ($self->api_name =~ /active/o) ? 1 : 0;
     if ($active && !keys(%$filter)) {
@@ -498,6 +499,8 @@ sub create_batch_events {
                 }
             };
         }
+
+        $join->{limit} = $batch_limit if $batch_limit;
 
         $class =~ s/^Fieldmapper:://o;
         $class =~ s/::/_/go;
@@ -652,8 +655,14 @@ sub pending_events {
     my $client = shift;
     my $granularity = shift;
     my $granflag = shift;
+    my $batch_limit = shift;
 
-    my $query = [{ state => 'pending', run_time => {'<' => 'now'} }, { order_by => { atev => [ qw/run_time add_time/] }, 'join' => 'atevdef' }];
+    my $query = [
+        { state => 'pending', run_time => {'<' => 'now'} }, 
+        { order_by => { atev => [ qw/run_time add_time/] }, 'join' => 'atevdef' }
+    ];
+
+    $query->[1]->{limit} = $batch_limit if $batch_limit;
 
     if (defined $granularity) {
         if ($granflag) {
@@ -719,8 +728,10 @@ sub grouped_events {
     my $client = shift;
     my $granularity = shift;
     my $granflag = shift;
+    my $batch_limit = shift;
 
-    my ($events) = $self->method_lookup('open-ils.trigger.event.find_pending')->run($granularity, $granflag);
+    my ($events) = $self->method_lookup('open-ils.trigger.event.find_pending')
+        ->run($granularity, $granflag, $batch_limit);
 
     my %groups = ( '*' => [] );
 
@@ -814,8 +825,11 @@ sub run_all_events {
     my $client = shift;
     my $granularity = shift;
     my $granflag = shift;
+    my $batch_limit = shift;
 
-    my ($groups) = $self->method_lookup('open-ils.trigger.event.find_pending_by_group')->run($granularity, $granflag);
+    my ($groups) = $self->method_lookup('open-ils.trigger.event.find_pending_by_group')
+        ->run($granularity, $granflag, $batch_limit);
+
     $client->respond({"status" => "found"}) if (keys(%$groups) > 1 || @{$$groups{'*'}});
 
     my $self_multi;

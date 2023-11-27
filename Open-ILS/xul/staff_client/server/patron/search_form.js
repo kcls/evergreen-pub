@@ -127,6 +127,19 @@ patron.search_form.prototype = {
                             };
                         }
                     ],
+                    'egid' : [
+                        ['render'],
+                        function(e) {
+                            return function() {
+                                if (params.query&&params.query.egid) {
+                                    e.setAttribute('value',params.query.egid);
+                                    e.value = params.query.egid;
+                                } else {
+                                    e.value = '';
+                                }
+                            };
+                        }
+                    ],
                     'email' : [
                         ['render'],
                         function(e) {
@@ -372,7 +385,7 @@ patron.search_form.prototype = {
                     if (id == 'search_depth') {
                         query[id] = node.firstChild.getAttribute('value'); 
                     } else {
-                         var value = node.value.replace(/^\s+/,'').replace(/[\\\s]+$/,'');
+                        var value = node.value.replace(/^\s+/,'').replace(/[\\\s]+$/,'');
                         //value = value.replace(/\d/g,'');
                         switch(id) {
                             case 'family_name' :

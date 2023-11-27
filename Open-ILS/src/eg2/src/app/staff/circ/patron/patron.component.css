@@ -1,0 +1,26 @@
+
+::ng-deep legend {
+  font-size: 1rem; /* defaults to 1.5 */
+}
+
+::ng-deep .lost-row {
+  color: #FFF;
+  background-color: #800000 !important;
+}
+
+::ng-deep .longoverdue-row {
+  color: #000;
+  background-color: #FFE1A8 !important;
+}
+
+
+/* Prevent appended buttons from floating above the "Other" menu */
+::ng-deep .input-group-append {
+    z-index: 0;
+}
+
+/* 
+JBAS-3148 Copying this here to mimic the behavior of the patron status  
+CSS, which is not present in the DOM until we have a patron to view.    
+*/
+::ng-deep .patron-status-color { border: 3px solid transparent; }

@@ -40,6 +40,7 @@ function staged_init() {
         list.set_list_actions();
         window.staged_event_listeners.add($('cmd_cancel'), 'command', gen_event_handler('cancel'), false);
         window.staged_event_listeners.add($('cmd_load'), 'command', gen_event_handler('load'), false);
+        window.staged_event_listeners.add($('cmd_copy'), 'command', gen_event_handler('copy'), false);
         window.staged_event_listeners.add($('cmd_reload'), 'command', function() { populate_list(); }, false);
         populate_list();
         default_focus();
@@ -102,6 +103,8 @@ function gen_event_handler(method) { // cancel or load?
 
             if (method == 'cancel') {
                 cancel( row_ids );
+            } else if(method == 'copy') {
+                copy(row_ids);
             } else {
                 load( usrnames );
             }
@@ -111,6 +114,20 @@ function gen_event_handler(method) { // cancel or load?
         }
     };
 }
+
+function copy(ids){
+    try {
+        var dump = list.dump_selected_with_keys({'skip_hidden_columns':true,'labels_instead_of_ids':true});
+        list.data.stash_retrieve();
+        list.data.list_clipboard = dump; list.data.stash('list_clipboard');
+        JSAN.use('util.window'); var win = new util.window();
+        win.open(urls.XUL_LIST_CLIPBOARD,'list_clipboard','chrome,resizable,modal');
+        window.focus(); // sometimes the main window will lower after a clipboard action
+    } catch(E) {
+        this.error.standard_unexpected_error_alert('clipboard',E);
+    }
+}
+
 
 function cancel(ids) {
     try {
@@ -150,7 +167,7 @@ function cancel(ids) {
 
 function spawn_search(s) {
     data.stash_retrieve();
-    xulG.new_patron_tab( {}, { 'doit' : 1, 'query' : s } );
+    xulG.new_patron_tab( {}, { 'doit' : 1, 'query' : js2JSON(s) } );
 }
 
 function spawn_editor(p,func) {
@@ -184,6 +201,9 @@ function load( usrnames ) {
         function gen_on_save_handler(usrname) {
             return function() {
                 try {
+                    // avoid trying to remove the staged user twice.
+                    if (!rows[usrname]) return; 
+
                     var node = rows[ usrname ].treeitem_node;
                     var parentNode = node.parentNode;
                     parentNode.removeChild( node );
@@ -217,9 +237,58 @@ function init_list() {
             {
                 'columns' : list.fm_columns(
                     'stgu', {
-                        'stgu_ident_type' : { 'render' : function(my) { return data.hash.cit[ my.stgu.ident_type() ].name(); } },
-                        'stgu_home_ou' : { 'render' : function(my) { return data.hash.aou[ my.stgu.home_ou() ].shortname(); } }
+                        '*' : {remove_virtual : true},
+                        stgu_ident_type : {render : function(my) { 
+                            return data.hash.cit[ my.stgu.ident_type() ].name()}},
+                        stgu_home_ou    : {render : function(my) { 
+                            return data.hash.aou[ my.stgu.home_ou() ].shortname()}},
+                        stgu_usrname    : {hidden : true},
+                        stgu_email      : {hidden : true},
+                        stgu_complete   : {hidden : true},
+                        stgu_evening_phone : {hidden : true},
+                        stgu_profile    : {hidden : true},
+                        stgu_passwd     : {hidden : true},
+                        stgu_ident_type : {hidden : true},
+                        stgu_row_id     : {hidden : true},
+                        stgu_dob        : {width : 27} // KCLS: squish dob by default
                     }
+                ).concat(
+                    list.fm_columns(
+                        'stgba', {
+                            '*' : {
+                                expanded_label : true, 
+                                remove_virtual : true
+                            },
+                            stgba_row_id   : {remove_me : true},
+                            stgba_row_date : {remove_me : true},
+                            stgba_complete : {remove_me : true},
+                            stgba_usrname  : {remove_me : true},
+                            stgba_street2  : {hidden : true},
+                            stgba_state    : {hidden : true},
+                            stgba_county   : {hidden : true},
+                            stgba_country  : {hidden : true},
+                            stgba_post_code: {hidden : true},
+                        }
+                    )
+                ).concat(
+                    list.fm_columns(
+                        'stgma', {
+                            '*' : {
+                                expanded_label : true, 
+                                remove_virtual : true,
+                            },
+                            stgma_street2  : {hidden : true},
+                            stgma_city     : {hidden : true},
+                            stgma_county   : {hidden : true},
+                            stgma_state    : {hidden : true},
+                            stgma_country  : {hidden : true},
+                            stgma_post_code: {hidden : true},
+                            stgma_row_id   : {remove_me : true},
+                            stgma_row_date : {remove_me : true},
+                            stgma_complete : {remove_me : true},
+                            stgma_usrname  : {remove_me : true}
+                        }
+                    )
                 ),
                 'retrieve_row' : retrieve_row,
                 'on_select' : handle_selection,
@@ -250,9 +319,11 @@ function handle_selection(ev) { // handler for list row selection event
     if (sel.length > 0) {
         $('cmd_cancel').setAttribute('disabled','false');
         $('cmd_load').setAttribute('disabled','false');
+        $('cmd_copy').setAttribute('disabled','false');
     } else {
         $('cmd_cancel').setAttribute('disabled','true');
         $('cmd_load').setAttribute('disabled','true');
+        $('cmd_copy').setAttribute('disabled','true');
     }
 };
 
@@ -267,7 +338,9 @@ function populate_list() {
             var row_params = {
                 'row' : {
                     'my' : {
-                        'stgu' : blob.user
+                        'stgu' : blob.user,
+                        'stgma' : blob.mailing_addresses[0],
+                        'stgba' : blob.billing_addresses[0]
                     }
                 }
             };

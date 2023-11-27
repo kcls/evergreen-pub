@@ -33,6 +33,10 @@
     <script type="text/javascript" src="/xul/server/cat/bib_brief.js"/>
     <script type="text/javascript" src="alternate_copy_summary.js"/>
 
+    <commandset id="copy_status_cmds">
+        <command id="cmd_alternate_copy_summary_print" />
+    </commandset>
+
     <messagecatalog id="circStrings" src="/xul/server/locale/<!--#echo var='locale'-->/circ.properties"/>
     <messagecatalog id="catStrings" src="/xul/server/locale/<!--#echo var='locale'-->/cat.properties"/>
 
@@ -78,7 +82,7 @@
                         </columns>
                         <rows>
                             <row>
-                                <label value="&staff.circ.alternate_copy_summary.Barcode.label;" />
+                                <label value="&staff.circ.alternate_copy_summary.Barcode.label;" control="barcode"/>
                                 <textbox name="barcode" readonly="true" context="clipboard"/>
                                 <label value="&staff.circ.alternate_copy_summary.Circ_Library.label;" />
                                 <textbox name="copy_circ_lib" readonly="true" context="clipboard"/>
@@ -304,6 +308,9 @@
                 </tabpanel>
             </tabpanels>
         </tabbox>
+        <hbox>
+            <button id="alternate_copy_summary_print" label="Print Detailed" command="cmd_alternate_copy_summary_print" accesskey=	"&staff.circ.copy_status_overlay.copy_status_print.accesskey;"/>
+        </hbox>
     </groupbox>
 
 </window>

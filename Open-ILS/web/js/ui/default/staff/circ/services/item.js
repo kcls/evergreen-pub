@@ -378,6 +378,10 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
             function($scope , $uibModalInstance , egUser) {
                 $scope.user = null;
                 $scope.first_user_fetch = true;
+                $scope.num_success = 0;
+                $scope.num_failed = 0;
+                $scope.pending = true;
+                $scope.err_events = [];
 
                 $scope.hold_data = {
                     hold_type : 'C',
@@ -389,11 +393,13 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                         egCore.hatch.getLocalItem('eg.cat.request_items.honor_user_settings')
                 };
 
+                $scope.selectMe = false; // wait for data
                 egUser.get( $scope.hold_data.user ).then(function(u) {
                     $scope.user = u;
                     $scope.barcode = u.card().barcode();
                     $scope.user_name = egUser.format_name(u);
                     $scope.hold_data.user = u.id();
+                    setTimeout(function() { $scope.selectMe = true; });
                 });
 
                 $scope.user_name = '';
@@ -441,30 +447,41 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                         depth     : 0
                     };
 
+                    $scope.processing = true;
+
                     egCore.net.request(
                         'open-ils.circ',
-                        'open-ils.circ.holds.test_and_create.batch.override',
-                        egCore.auth.token(), args,
-                        h.hold_type == 'T' ? h.record_list : h.copy_list,
-                        { 'all' : 1, 'honor_user_settings' : h.honor_user_settings }
-                    ).then(function(r) {
-                        console.log('request result',r);
-                        if (isNaN(r.result)) {
-                            if (typeof r.result.desc != 'undefined') {
-                                ngToast.danger(r.result.desc);
-                            } else {
-                                if (typeof r.result.last_event != 'undefined') {
-                                    ngToast.danger(r.result.last_event.desc);
-                                } else {
-                                    ngToast.danger(egCore.strings.FAILURE_HOLD_REQUEST);
-                                }
+                        'open-ils.circ.holds.test_and_create.batch',
+                        egCore.auth.token(), args, h.copy_list,
+                        {'honor_user_settings' : h.honor_user_settings}
+                    ).then(
+                        function() {
+                            $scope.pending = false; 
+                            if ($scope.num_failed > 0) {
+                                ngToast.warning($scope.err_events.join(','));
+                            } else if ($scope.num_success) {
+                                // Display a final success toast if any succeeded.
+                                ngToast.create(egCore.strings.HOLD_PLACED);
                             }
-                        } else {
-                            ngToast.success(egCore.strings.SUCCESS_HOLD_REQUEST);
+                        },
+                        null, // error
+                        function(res) {
+                            if (typeof res.result == 'object') {
+                                $scope.num_failed++;
+                                $scope.err_events.push(
+                                    Array.isArray(res.result) ?
+                                    res.result[0].textcode :
+                                    res.result.textcode
+                                );
+                            } else {
+                                $scope.num_success++;
+                            }
                         }
-                    });
+                    ).finally(function() {$scope.processing = false;});
 
-                    $uibModalInstance.close();
+                    // Leave the dialog open so staff can see the number
+                    // of holds that succeeded / failed.
+                    //$uibModalInstance.close();
                 }
 
                 $scope.cancel = function($event) {
@@ -751,8 +768,8 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                 }
             ).then(function(key) {
                 if (key) {
-                    var tab = (hide_vols === true) ? 'attrs' : 'holdings';
-                    var url = '/eg2/staff/cat/volcopy/' + tab + '/session/ ' + key;
+                    //var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                    var url = '/eg2/staff/cat/volcopy/holdings/session/' + key;
                     $timeout(function() { $window.open(url, '_blank') });
                 } else {
                     alert('Could not create anonymous cache key!');
@@ -761,7 +778,7 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
         });
     }
 
-    service.spawnHoldingsEdit = function (items,hide_vols,hide_copies){
+    service.spawnHoldingsEdit = function (items,hide_vols,hide_copies,new_volcopy){
         var item_ids = [];
         angular.forEach(items, function(i){
 	    item_ids.push(i.id);
@@ -784,8 +801,8 @@ function(egCore , egOrg , egCirc , $uibModal , $q , $timeout , $window , ngToast
                 hide_copies : hide_copies
             }).then(function(key) {
 		if (key) {
-		    var tab = (hide_vols === true) ? 'attrs' : 'holdings';
-		    var url = '/eg2/staff/cat/volcopy/' + tab + '/session/ ' + key;
+		    //var url = egCore.env.basePath + 'cat/volcopy/' + key;
+            var url = '/eg2/staff/cat/volcopy/holdings/session/' + key;
 		    $timeout(function() { $window.open(url, '_blank') });
 		} else {
 		    alert('Could not create anonymous cache key!');

@@ -1,0 +1,9 @@
+
+/* Apply the invalid styling directly to the input instead of the
+ * component container node.  Otherwise, the border displays above
+ * the date input instead of to the left.
+ */
+.ng-invalid {
+  border-left: 5px solid #FA787E;
+}
+

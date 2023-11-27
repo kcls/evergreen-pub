@@ -80,14 +80,9 @@ function drawBriefRecordForm(fields) {
             oncomplete : function(r) {
                 var attrs = openils.Util.readResponse(r);
                 if(attrs && attrs.marc) {
-
-                    attrs = attrs.marc.sort(
-                        function(a, b) {
-                            if(a.description < b.description)
-                                return 1;
-                            return -1;
-                        }
-                    );
+                    attrs = attrs.marc.sort(function(a, b) {
+                        return a.description_sortkey() - b.description_sortkey();
+                    });
 
                     var xpathParser = new openils.MarcXPathParser();
                     dojo.forEach(attrs,

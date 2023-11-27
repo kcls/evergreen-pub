@@ -101,9 +101,16 @@
                     </label>
                 </div>
                 <div class="col-xs-6">
+                    <!--
                     <label>
                         <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.attributes.alerts"/>
                         [% l('Add/Edit Item Alerts') %]
+                    </label>
+                    -->
+                    <label>
+                      <input type="checkbox" ng-change="saveDefaults()" 
+                        ng-model="defaults.attributes.alert_message"/>
+                      [% l('Add/Edit Item Alert Message') %]
                     </label>
                 </div>
             </div>
@@ -309,6 +316,69 @@
                     </label>
                 </div>
             </div>
+
+            <div class="row">
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.owning_lib"/>
+                    [% l('Owning Library') %]
+                </label>
+              </div>
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.attributes.barcode"/>
+                    [% l('Barcode') %]
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.attributes.create_date"/>
+                    [% l('Creation Date') %]
+                </label>
+              </div>
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.attributes.active_date"/>
+                    [% l('Active Date') %]
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.attributes.edit_date"/>
+                    [% l('Last Edit Date') %]
+                </label>
+              </div>
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.creator"/>
+                    [% l('Creator') %]
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.editor"/>
+                    [% l('Last Editor') %]
+                </label>
+              </div>
+              <!--
+              <div class="col-xs-6">
+                <label>
+                  <input type="checkbox" ng-change="saveDefaults()" ng-model="defaults.attributes.edit_date"/>
+                    [% l('Last Edit Date') %]
+                </label>
+              </div>
+              -->
+            </div>
+
 
         </div>
 

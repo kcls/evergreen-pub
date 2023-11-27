@@ -43,6 +43,10 @@
                 $('catStrings').getString('staff.cat.marcedit.help.replace_008')
             );"
         />
+                <caption id="cat-date-caption" hidden="true" align="center">&staff.cat.marcedit.catalogdate.caption;</caption>
+                <datepicker id="cat-date-value" hidden="true" type="popup" onselect='onCatDateSelect();' oncommand='onCatDateSelect();' onchange='onCatDateSelect();' onblur='onCatDateSelect();'/>
+                <button id="cat-date-button" label="&staff.cat.marcedit.catalogdate.submit.label;" accesskey="&staff.cat.marcedit.catalogdate.submit.accesskey;" disabled="true" oncommand="updateCatDate();" hidden="true"/>
+                <button id="clear-cat-date-button" label="&staff.cat.marcedit.catalogdate.clear.label;" accesskey="&staff.cat.marcedit.catalogdate.clear.accesskey;" oncommand="clearCatDate();" hidden="true"/>
     </hbox>
     <hbox id="fastItemAdd_textboxes">
         <label control="fastItemAdd_callnumber" accesskey="&staff.cat.marcedit.fastItemAdd_callnumber.accesskey;" value="&staff.cat.marcedit.fastItemAdd_callnumber.label;" />

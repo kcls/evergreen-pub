@@ -24,6 +24,7 @@ export class HoldsPullListComponent implements OnInit {
     }
 
     targetOrg(): number {
+        // TODO: selector
         return this.auth.user().ws_ou();
     }
 }

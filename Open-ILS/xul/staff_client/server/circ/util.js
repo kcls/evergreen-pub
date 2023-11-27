@@ -596,17 +596,6 @@ circ.util.columns = function(modify,params) {
                 }
             }
         },
-	{
-            'id' : 'ahhc',
-            'fm_class' : 'hasholdscount',
-            'label' : 'Holds Count',
-            'flex' : 1,
-            'primary' : false,
-            'hidden' : true,
-            'editable' : false, 'render' : function(my) {
-		return network.simple_request("FM_CIRC_HAS_HOLDS_COUNT_RETRIEVE_VIA_COPY",[ ses(), my.acp.id() ] );
-		}
-        },
         {
             'id' : 'prefix',
             'fm_class' : 'acn',
@@ -1196,7 +1185,7 @@ circ.util.columns = function(modify,params) {
             'primary' : false,
             'hidden' : true,
             'editable' : false, 'render' : function(my) {
-                if (my.circ) {
+                if (my.circ && my.circ.stop_fines() != "") {
                     return util.date.formatted_date( my.circ.due_date(), '%{localized}' );
                 } else {
                     return "";
@@ -1523,6 +1512,23 @@ circ.util.columns = function(modify,params) {
             'primary' : false,
             'hidden' : true,
             'editable' : false, 'render' : function(my) { return my.bre ? (typeof my.bre.owner() == 'object' ? my.bre.owner().shortname() : data.hash.aou[my.bre.owner()].shortname() ) : ''; }
+        },
+	{
+            'persist' : 'hidden width ordinal',
+            'fm_class' : 'bre',
+            'id' : 'cataloging_date',
+            'label' : document.getElementById('circStrings').getString('staff.circ.utils.cataloging_date'),
+            'flex' : 1,
+            'primary' : false,
+            'hidden' : true,
+            'editable' : false, 'render' : function(my){ return my.bre ? util.date.formatted_date( my.bre.cataloging_date(), 'mmddyyyy' ) : ''; }
+            ,'sort_value' : function(my) {
+                return util.date.db_date2Date(
+                    my.bre
+                    ? my.bre.cataloging_date()
+                    : null
+                ).getTime();
+            } 
         },
         {
             'fm_class' : 'bre',

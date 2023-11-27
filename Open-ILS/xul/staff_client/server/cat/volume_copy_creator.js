@@ -751,7 +751,18 @@ g.render_barcode_entry = function(node,callnumber_composite_key,count,ou_id) {
             tb.setAttribute('rel_vert_pos',rel_vert_pos_barcode);
             part_menu.firstChild.setAttribute('rel_vert_pos',rel_vert_pos_part);
             if (!tb.value && g.org_label_existing_copy_map[ ou_id ]) {
-                tb.value = g.org_label_existing_copy_map[ ou_id ][ callnumber_composite_key ][i].barcode();
+                var copything = g.org_label_existing_copy_map[ ou_id ][ callnumber_composite_key ][i];
+                tb.value = copything.barcode();
+
+                // JBAS-1736
+                // prevent barcode changes for items in non-editable statuses
+                var stat = copything.status();
+                if (typeof stat == 'object') stat = stat.id();
+                tb.disabled = (
+                    my_constants.magical_statuses[stat] &&
+                    my_constants.magical_statuses[stat].disable_in_copy_editor
+                );
+
                 tb.setAttribute('acp_id', g.org_label_existing_copy_map[ ou_id ][ callnumber_composite_key ][i].id());
                 var temp_parts = g.org_label_existing_copy_map[ ou_id ][ callnumber_composite_key ][i].parts();
                 temp_parts = util.functional.filter_list(

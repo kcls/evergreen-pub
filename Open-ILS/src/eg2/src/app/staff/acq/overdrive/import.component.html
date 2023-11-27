@@ -1,0 +1,52 @@
+
+<eg-title i18n-prefix prefix="Import Overdrive Invoices"></eg-title>
+
+<div class="common-form striped-odd form-validated ml-3 mr-3">
+  <div class="row">
+    <div class="col-lg-3">
+      <label for="upload-file" i18n>CSV File to Upload:</label>
+    </div>
+    <div class="col-lg-3">
+      <input #fileSelector (change)="fileSelected($event)" 
+        id="upload-file" required class="form-control" type="file"/>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-3">
+      <button class="btn btn-success btn-lg btn-block font-weight-bold"
+        [disabled]="!selectedFile || isUploading" 
+        (click)="upload()" i18n>Import</button>
+    </div>
+    <div class="col-lg-6">
+      <div class="form-check">
+        <input type='checkbox' [(ngModel)]="testMode"/>
+        <label class="form-check-label ml-2" i18n>Dry Run</label>
+      </div>
+      <div class='font-italic ml-2 pl-3'>
+        Inspect the CSV file and report results but do not create
+        invoices in Evergreen.
+      </div>
+    </div>
+    <div class="col-lg-3" [hidden]="!isUploading">
+      <eg-progress-inline #uploadProgress></eg-progress-inline>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-3">
+      <label i18n>Number of Invoices in File:</label>
+    </div>
+    <div class="col-lg-3">{{numRead}}</div>
+  </div>
+  <div class="row">
+    <div class="col-lg-3">
+      <label i18n>Number of Invoices Created:</label>
+    </div>
+    <div class="col-lg-3">{{numCreated}}</div>
+  </div>
+  <div class="row m-2 p-2 border border-dark" *ngIf="response">
+    <h3 i18n>Response Data</h3>
+    <div class="w-100">
+      <pre>{{response | json}}</pre>
+    </div>
+</div>
+

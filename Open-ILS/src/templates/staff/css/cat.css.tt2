@@ -16,12 +16,16 @@
 
 .marcflateditor {
     max-width: 100%;
-    font-family: 'Lucida Console', Monaco, monospace;
+    font-family: Courier, 'Courier New', 'Lucida Console', Monaco, monospace;
 }
 
 .marcfastitemadd, .marctypesource {
     border-bottom: solid thin gray;
     flex-wrap: wrap;
+}
+
+.flex-end {
+    justify-content: flex-end;
 }
 
 .marcedit {
@@ -305,7 +309,8 @@ table.custom-label-table td {
 
 .record-merge-container {
   flex: 1;
-  max-height: 600px;
+  max-height: 500px;
+  overflow-x: scroll;
   /*
    * LP1739293 Leaving for reference in case anyone wants to allow the
    * marc records to occupy more horizontal space and/or put scroll bars
@@ -325,6 +330,7 @@ table.custom-label-table td {
 /* Avoid word wrapping in edit mode and add scrolls for navigation */
 .record-edit-container {
   flex: 1;
+  max-height: 500px;
   overflow-x: scroll;
   overflow-y: scroll;
   white-space: nowrap;

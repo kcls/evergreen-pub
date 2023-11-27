@@ -186,6 +186,12 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     }
 
 
+    $scope.update_items = function() {
+        if (!$scope.args.recordId) return;
+        var url = egCore.env.basePath + 'acq/update_items/' + $scope.args.recordId;
+        $timeout(function() { $window.open(url, '_blank') });
+    }
+
     $scope.attach_to_peer_bib = function() {
         itemSvc.attach_to_peer_bib([{
             id : $scope.args.copyId,
@@ -290,10 +296,20 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     }
 
     $scope.replaceBarcodes = function() {
+        itemSvc.spawnHoldingsEdit([{
+            id : $scope.args.copyId,
+            'call_number.id' : $scope.args.cnId,
+            'call_number.owning_lib' : $scope.args.cnOwningLib,
+            'call_number.record.id' : $scope.args.recordId,
+            barcode : $scope.args.copyBarcode
+        }], false, false, true);
+
+        /*
         itemSvc.replaceBarcodes([{
             id : $scope.args.copyId,
             barcode : $scope.args.copyBarcode
         }]);
+        */
     }
 
     $scope.changeItemOwningLib = function() {
@@ -603,7 +619,7 @@ function($scope , $q , $window , $location , $timeout , egCore , egNet , egGridD
     }
 
     $scope.replaceBarcodes = function() {
-        itemSvc.replaceBarcodes(copyGrid.selectedItems());
+        itemSvc.spawnHoldingsEdit(copyGrid.selectedItems(),false,false,true);
     }
 
     $scope.attach_to_peer_bib = function() {
@@ -1047,9 +1063,7 @@ console.debug($scope.copy_alert_count);
         });
         users.forEach(function(usr) {
             $timeout(function() {
-                var url = $location.absUrl().replace(
-                    /\/cat\/.*/,
-                    '/circ/patron/' + usr.id() + '/checkout');
+                var url = '/eg2/staff/circ/patron/' + usr.id() + '/checkout';
                 $window.open(url, '_blank')
             });
         });
@@ -1291,7 +1305,8 @@ console.debug($scope.copy_alert_count);
                 }
             ).then(function(key) {
                 if (key) {
-                    var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                    //var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                    var url = '/eg2/staff/cat/volcopy/holdings/session/' + key;
                     $window.location.href = url;
                 } else {
                     alert('Could not create anonymous cache key!');

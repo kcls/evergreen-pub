@@ -1,6 +1,7 @@
 
-<eg-patron-search-dialog #patronSearch>
-</eg-patron-search-dialog>
+<eg-patron-search-dialog #patronSearch></eg-patron-search-dialog>
+<eg-barcode-select #barcodeSelect></eg-barcode-select>
+<eg-worklog-strings-components></eg-worklog-strings-components>                
 
 <eg-alert-dialog #activeDateAlert
   i18n-dialogTitle i18n-dialogBody
@@ -10,9 +11,8 @@
 </eg-alert-dialog>
 
 <div class="row">
-  <div class="col-lg-1">
-    <button class="btn btn-info label-with-material-icon"
-      (click)="goBack()" [disabled]="hasNoHistory()">
+  <div class="col-lg-1" *ngIf="hasHistory()">
+    <button class="btn btn-info label-with-material-icon" (click)="goBack()">
       <span class="material-icons">keyboard_backspace</span>
       <span i18n>Return</span>
     </button>
@@ -26,8 +26,7 @@
     <ng-container *ngIf="!badBarcode">
       <h3 i18n>Place Hold
         <small *ngIf="user">
-        ({{user.pref_family_name() ? user.pref_family_name() : user.family_name()}}, 
-        {{user.pref_first_given_name() ? user.pref_first_given_name() :user.first_given_name()}})
+        ({{user.family_name()}}, {{user.first_given_name()}})
         </small>
       </h3>
     </ng-container>
@@ -71,6 +70,7 @@
           </div>
         </div>
       </div>
+      <!--
       <div class="row mt-2">
         <div class="col-lg-6">
           <div class="form-check">
@@ -85,6 +85,7 @@
         </div>
         <div class="col-lg-6 font-weight-bold">{{requestor.usrname()}}</div>
       </div>
+      -->
       <div class="row mt-2">
         <div class="col-lg-6">
           <label i18n>Pickup Location: </label>
@@ -128,10 +129,13 @@
     </div><!-- left column -->
     <div class="col-lg-6">
       <div class="card">
+          <!-- KCLS JBAS-2617
         <div class="card-header">
           <h4 i18n>Notifications</h4>
         </div>
+        -->
         <ul class="list-group list-group-flush">
+          <!-- KCLS JBAS-2617
           <li class="list-group-item d-flex">
             <div class="flex-1">
               <div class="form-check">
@@ -202,9 +206,12 @@
               </eg-combobox>
             </div>
           </li>
+          -->
           <li class="list-group-item">
             <button class="btn btn-success" (click)="placeHolds()"
-              [disabled]="!readyToPlaceHolds()" i18n>Place Hold(s)</button>
+              [disabled]="!readyToPlaceHolds()" 
+              egAccessKey keyCtx="catalog" i18n-keySpec i18n-keyDesc              
+              keySpec="ctrl+enter" keyDesc="Place Hold(s)" i18n>Place Hold(s)</button>
             <button class="btn btn-outline-dark ml-2" (click)="resetForm()" i18n>Reset</button>
           </li>
         </ul><!-- col -->
@@ -228,6 +235,11 @@
       <ng-container *ngIf="holdType == 'P'">PARTS</ng-container>
       hold on record(s)
     </span>
+  </div>
+  <div>
+    <span class="ml-4" i18n>Holds Succeeded: {{successCount}}</span>
+    <span class="ml-2" [ngClass]="{'text-danger': failCount > 0}" i18n>
+      Holds Failed: {{failCount}}</span>
   </div>
   <div class="flex-1"> </div>
   <div>
@@ -273,11 +285,13 @@
 
   <div class="row mt-2 ml-1 mr-1 font-weight-bold">
     <div class="col-lg-1" i18n>Format</div>
-    <div class="col-lg-2" i18n>Title</div>
+    <div class="col-lg-3" i18n>Title</div>
     <div class="col-lg-1" i18n>Author</div>
+    <!-- KCLS
     <div class="col-lg-2" i18n>Part</div>
+    -->
     <div class="col-lg-2" i18n>Call Number</div>
-    <div class="col-lg-1" i18n>Barcode</div>
+    <div class="col-lg-2" i18n>Barcode</div>
     <div class="col-lg-2" i18n>Holds Status</div>
     <div class="col-lg-1" i18n>Override</div>
   </div>
@@ -285,12 +299,12 @@
     <div class="col-lg-12" *ngIf="ctx.holdMeta">
       <div class="row">
         <div class="col-lg-1">
-          <ng-container
-            *ngFor="let code of ctx.holdMeta.bibSummary.attributes.icon_format">
-            <img class="pr-1"
+          <ng-container 
+            *ngFor="let code of ctx.holdMeta.bibSummary.attributes.mattype">
+            <img class="pr-1" 
               alt="{{iconFormatLabel(code)}}"
               title="{{iconFormatLabel(code)}}"
-              src="/images/format_icons/icon_format/{{code}}.png"/>
+              src="/images/format_icons/mattype/{{code}}.png"/>
           </ng-container>
         </div>
         <!-- TODO: link for a metarecord should
@@ -301,6 +315,7 @@
           </a>
         </div>
         <div class="col-lg-1">{{ctx.holdMeta.bibSummary.display.author}}</div>
+        <!-- KCLS
         <div class="col-lg-2">
           <ng-container *ngIf="ctx.holdMeta.parts.length">
             <select class="form-control"  (change)="setPart(ctx, $event)"
@@ -319,14 +334,15 @@
             </ng-container>
           </ng-container>
         </div>
+        -->
         <div class="col-lg-2">
           <ng-container *ngIf="ctx.holdMeta.callNum; else anyValue">
-            {{ctx.holdMeta.callNum.label()}}
+            {{ctx.holdMeta.callNum.label()}} ({{orgSn(ctx.holdMeta.callNum, true)}})
           </ng-container>
         </div>
-        <div class="col-lg-1">
+        <div class="col-lg-2">
           <ng-container *ngIf="ctx.holdMeta.copy; else anyValue">
-            {{ctx.holdMeta.copy.barcode()}}
+            {{ctx.holdMeta.copy.barcode()}} ({{orgSn(ctx.holdMeta.copy)}})
           </ng-container>
         </div>
         <div class="col-lg-2">
@@ -369,7 +385,7 @@
               <img class="ml-1"
                 alt="{{iconFormatLabel(ccvm.code())}}"
                 title="{{iconFormatLabel(ccvm.code())}}"
-                src="/images/format_icons/icon_format/{{ccvm.code()}}.png"/>
+                src="/images/format_icons/mattype/{{ccvm.code()}}.png"/>
               <label class="form-check-label ml-1">
                 {{ccvm.search_label() || ccvm.value()}}
               </label>

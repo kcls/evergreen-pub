@@ -42,6 +42,10 @@ export class RecordActionsComponent implements OnInit {
               'eg.cat.transfer_target_lib',
               'eg.cat.transfer_target_vol'
             ]
+        },
+        lineitemTransfer: {
+            key: 'eg.cat.marked_lineitem_transfer_record',
+            current: null
         }
     };
 
@@ -100,6 +104,15 @@ export class RecordActionsComponent implements OnInit {
 
     addHoldings() {
         this.addHoldingsRequested.emit();
+    }
+
+    // KCLS bibliocommons
+    openPatronView() {
+        // '082' is (I assume) a KCLS-specific identifier.  Seems to work.
+        const url =
+            `https://kcls.bibliocommons.com/item/show/${this.recId}082`;
+
+        window.open(url, '_blank');
     }
 }
 

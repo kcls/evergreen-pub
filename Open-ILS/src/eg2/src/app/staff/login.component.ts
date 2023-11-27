@@ -4,15 +4,17 @@ import {Router, ActivatedRoute} from '@angular/router';
 import {AuthService, AuthWsState} from '@eg/core/auth.service';
 import {StoreService} from '@eg/core/store.service';
 import {OrgService} from '@eg/core/org.service';
+import {OfflineService} from '@eg/staff/share/offline.service';
 
 @Component({
   templateUrl : './login.component.html'
 })
-
 export class StaffLoginComponent implements OnInit {
 
     workstations: any[];
     loginFailed: boolean;
+    routeTo: string;
+    pendingXactsDate: Date;
 
     args = {
       username : '',
@@ -28,12 +30,32 @@ export class StaffLoginComponent implements OnInit {
       private renderer: Renderer2,
       private auth: AuthService,
       private org: OrgService,
-      private store: StoreService
+      private store: StoreService,
+      private offline: OfflineService
     ) {}
 
     ngOnInit() {
+        this.routeTo = this.route.snapshot.queryParamMap.get('routeTo');
+
+        if (this.routeTo) {
+            if (this.routeTo.match(/^[a-z]+:\/\//i)) {
+                console.warn(
+                    'routeTo must contain only path information: ', this.routeTo);
+                this.routeTo = null;
+            }
+        }
+
+        const needsBroadcast = this.auth.hasToken();
+
         // clear out any stale auth data
         this.auth.logout();
+
+        if (needsBroadcast) {
+            // Login page was accessed directly (e.g. via bookmark) while
+            // a session was already active.  Notify any open tabs they
+            // just got booted.
+            this.auth.broadcastLogout();
+        }
 
         // Focus username
         this.renderer.selectRootElement('#username').focus();
@@ -46,6 +68,8 @@ export class StaffLoginComponent implements OnInit {
             this.args.workstation = def;
             this.applyWorkstation();
         });
+
+        this.offline.pendingXactsDate().then(d => this.pendingXactsDate = d);
     }
 
     applyWorkstation() {
@@ -62,20 +86,19 @@ export class StaffLoginComponent implements OnInit {
 
     handleSubmit() {
 
+        const splashUrl = this.ngLocation.prepareExternalUrl('/staff/splash');
+
         // post-login URL
-        let url: string = this.auth.redirectUrl || '/staff/splash';
+        let url: string = this.routeTo || splashUrl;
 
         // prevent sending the user back to the login page
-        if (url.startsWith('/staff/login')) {
-            url = '/staff/splash';
-        }
+        if (url.match('/staff/login')) { url = splashUrl; }
 
         const workstation: string = this.args.workstation;
 
         this.loginFailed = false;
         this.auth.login(this.args).then(
             ok => {
-                this.auth.redirectUrl = null;
 
                 if (this.auth.workstationState === AuthWsState.NOT_FOUND_SERVER) {
                     // User attempted to login with a workstation that is
@@ -83,21 +106,34 @@ export class StaffLoginComponent implements OnInit {
                     // Reset the WS state to avoid looping back to WS removal
                     // page before the new workstation can be activated.
                     this.auth.workstationState = AuthWsState.PENDING;
-                    this.router.navigate(
-                        [`/staff/admin/workstation/workstations/remove/${workstation}`]);
+
+                    let url;
+
+                    if (workstation) {
+                        url = this.ngLocation.prepareExternalUrl(
+                            `/staff/admin/workstation/workstations/remove/${workstation}`);
+                    } else {
+                        url = this.ngLocation.prepareExternalUrl(
+                            `/staff/admin/workstation/workstations/manage`);
+                    }
+
+                    // Open a new page instead of router.navigate to ensure
+                    // user auth info is fully loaded after a partial login.
+                    location.href = url;
 
                 } else {
 
-                    // Initial login clears cached org unit setting values
-                    // and user/workstation setting values
-                    this.org.clearCachedSettings().then(_ => {
+                    // Initial fetches offline data when needed and
+                    // clears cached org unit setting values and
+                    // user/workstation setting values.
+                    this.offline.refreshOfflineData()
+                    .then(_ => this.org.clearCachedSettings())
+                    .then(_ => {
 
                         // Force reload of the app after a successful login.
                         // This allows the route resolver to re-run with a
                         // valid auth token and workstation.
-                        window.location.href =
-                            this.ngLocation.prepareExternalUrl(url);
-
+                        window.location.href = url;
                     });
                 }
             },

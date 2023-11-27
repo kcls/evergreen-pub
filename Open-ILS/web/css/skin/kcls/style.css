@@ -1,0 +1,179 @@
+@charset "utf-8";
+/* CSS Document */
+
+html, body {
+	margin:0;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	background:#333;
+	width:100%;
+}
+
+img {
+	border: none;
+}
+
+a {
+	color: #003399;
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+h1 {
+	margin:0;
+	margin-bottom: 5px;
+	font-size: 20px;
+	font-weight:normal;
+}
+
+h2 {
+	margin:0;
+	margin-bottom: 5px;
+	font-size: 14px;
+	font-weight:bold;
+}
+
+#header {
+	color: #bda964;
+	font-weight:bold;
+	padding: 12px 0px 9px 17px;
+	width: 694px;
+	margin: auto;
+}
+
+#content-wrapper {
+	background: white;
+	min-height: 260px;
+	border-bottom: 1px solid black;
+}
+
+#main-content {
+	width: 694px;
+	margin:auto;
+	padding-left:17px;
+}
+
+.checkout {
+	font-size:16px;
+}
+
+.checkout h1 {
+	font-size:36px;
+}
+
+.checkout h2 {
+	font-size:24px;
+}
+
+.checkout .sidebar h3 {
+	font-size: 16px;
+	margin:0;
+	padding-left:3px;
+}
+
+.checkout .sidebar a {
+	font-size:12px;
+}
+
+.checkout .sidebar a span {
+	font-weight:bold;
+}
+
+.checkout .sidebar p {
+	margin:4px 0px;
+	padding:3px;
+}
+
+.checkout .sidebar div, .checkout .sidebar p {
+	font-size: 16px;
+	line-height: 1em;
+}
+
+.checkout input[type=text], .checkout input[type=password] {
+	border: 1px solid black;
+	width:300px;
+	height:20px;
+	padding:2px;
+	padding-top:1px;
+	margin:0px;
+	font-size:16px;
+}
+
+.checkout .sidebar {
+	background: #b0b0b0;
+	border-left:2px ridge #eee;
+	border-right:2px ridge #eee;
+	padding:10px 7px;
+}
+
+.checkout .sidebar .top {
+	float:right;
+	padding-right:5px;
+}
+
+.checkout .sidebar .greet {
+	clear:both;
+	padding:15px 3px;
+}
+
+.checkout .sidebar .selected {
+	background:#999
+}
+
+.checkout .header1 {
+	height:108px;
+	border-bottom:1px solid #a83135;
+	padding-top:20px;
+}
+
+.checkout .userid {
+	width:200px;
+	font-size:16px;
+	font-weight:bold;
+	padding:5px 6px 6px 6px !important;
+	border:2px solid black !important;
+	background: none !important;
+	margin:0 !important;
+}
+
+.checkout .item_table {
+	border-collapse: collapse;
+}
+
+.checkout .item_table td {
+	font-size:16px;
+	border:2px solid black;
+	text-align: left;
+}
+
+.checkout .item_table table td.label {
+	font-weight:bold;
+	text-transform: uppercase;
+	text-align: right;
+	white-space:nowrap;
+	padding-right:5px;
+	width:1px;
+}
+
+.checkout .item_table table td {
+	border:none;
+}
+
+.checkout #back_button:hover {
+	text-decoration: none;
+}
+
+.checkout .status_box {
+	color:red;
+	font-weight:bold;
+	height:20px;
+}
+
+.checkout .oils-selfck-status-div {
+	height:inherit !important;
+	vertical-align:inherit !important;
+}
+

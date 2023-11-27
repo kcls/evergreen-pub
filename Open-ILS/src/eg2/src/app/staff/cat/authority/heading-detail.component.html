@@ -1,0 +1,113 @@
+
+<ng-template #dialogContent>
+  <div class="modal-header bg-info">
+    <h4 class="modal-title">
+      <span i18n>Heading Details</span>
+    </h4>
+    <button type="button" class="close" 
+      i18n-aria-label aria-label="Close" (click)="close()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <table id='info-table'>
+      <tbody>
+
+        <tr>
+          <td class='label' i18n>Previous Heading</td>
+          <td><span class='text-danger'>{{heading.prev_entry_value()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Previous Indexed As</td>
+          <td><span>{{heading.prev_field_label()}}</span></td>
+          <td class='label' i18n>Previous TCN</td>
+          <td><span>{{heading.prev_bib_record()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Previous Authority Tag</td>
+          <td><span>{{heading.prev_auth_tag()}}</span></td>
+          <td class='label' i18n>Previous Browse Entry ID</td>
+          <td><span>{{heading.prev_entry()}}</span></td>
+        </tr>
+
+        <tr><td colspan='4'><hr/></td></tr>
+
+        <tr>
+          <td class='label' i18n>New Heading</td>
+          <td><span class='text-danger'>{{heading.entry_value()}}</span>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Heading Date</td>
+          <td><span>{{heading.heading_date() | date:'short'}}</span></td>
+          <td class='label' i18n>Indexed As</td>
+          <td><span>{{heading.field_label()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>From TCN</td>
+          <td><span>{{heading.bib_record()}}</span></td>
+          <td class='label' i18n>Browse Entry ID</td>
+          <td><span>{{heading.entry()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Heading Create Date</td>
+          <td><span>{{heading.entry_create_date() | date:'short'}}</span></td>
+          <td class='label' i18n>Bib Record Edit Date</td>
+          <td><span>{{heading.bib_edit_date() | date:'short'}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Bib Record Cataloging Date</td>
+          <td><span>{{heading.bib_cataloging_date() | date:'short'}}</span></td>
+          <td class='label' i18n>Bib Record Create Date</td>
+          <td><span>{{heading.bib_create_date() | date:'short'}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Bib Record Editor Username</td>
+          <td><span>{{heading.bib_editor_usrname()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>From 1XX</td>
+          <td colspan='3'><span>{{heading.bib_marc_1xx()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>From 245</td>
+          <td colspan='3'><span>{{heading.bib_marc_245()}}</span></td>
+        </tr>
+
+        <tr><td colspan='4'><hr/></td></tr>
+
+        <tr>
+          <td class='label' i18n>Next Heading</td>
+          <td><span class='text-danger'>{{heading.next_entry_value()}}</span>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Next Indexed As</td>
+          <td><span>{{heading.next_field_label()}}</span></td>
+          <td class='label' i18n>Next TCN</td>
+          <td><span>{{heading.next_bib_record()}}</span></td>
+        </tr>
+
+        <tr>
+          <td class='label' i18n>Next Authority Tag</td>
+          <td><span>{{heading.next_auth_tag()}}</span></td>
+          <td class='label' i18n>Next Browse Entry ID</td>
+          <td><span>{{heading.next_entry()}}</span></td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-warning" (click)="close()" i18n>Close</button>
+  </div>
+</ng-template>
+

@@ -256,6 +256,7 @@ angular.module('egGridMod',
                     // link columns to scope after loadConfig(), since it
                     // replaces the columns array.
                     $scope.columns = grid.columnsProvider.columns;
+                    $scope.configLoadPromise = null;  // indicate completeness
                 });
 
                 // NOTE: grid.collect() is first called from link(), not here.
@@ -339,6 +340,14 @@ angular.module('egGridMod',
                 }
 
                 controls.refresh = function(noReset) {
+                    if ($scope.configLoadPromise) {
+                        // Prevent force-loading the grid before the config
+                        // load promise has completed.  The grid will be
+                        // automatically refreshed once the load promise
+                        // has completed.
+                        console.log('Ignoring pre-load refresh() call');
+                        return;
+                    }
                     if (!noReset) grid.offset = 0;
                     grid.collect();
                 }
@@ -370,6 +379,22 @@ angular.module('egGridMod',
                 grid.dataProvider.refresh = controls.refresh;
                 grid.dataProvider.prepend = controls.prepend;
                 grid.controls = controls;
+            }
+
+            // Visible columns sorted alphabetically followed by
+            // non-visible columns sorted.
+            $scope.columnsForPicker = function() {
+                if (!$scope.columns) { return []; }
+
+                var visible = $scope.columns
+                    .filter(function(c) { return c.visible; });
+                var invisible = $scope.columns
+                    .filter(function(c) { return !c.visible; });
+
+                visible.sort(function(a, b) { return a.label < b.label ? -1 : 1; });
+                invisible.sort(function(a, b) { return a.label < b.label ? -1 : 1; });
+
+                return visible.concat(invisible);
             }
 
             // If a menu item provides its own HTML template, translate it,
@@ -1309,7 +1334,7 @@ angular.module('egGridMod',
                 if (grid.selfManagedData && !grid.dataProvider.query) return;
 
                 if (grid.collecting) return; // avoid parallel collect()
-                grid.collecting = true;
+                grid.collecting = $scope.gridCollecting = true;
 
                 console.debug('egGrid.collect() offset=' 
                     + grid.offset + '; limit=' + grid.limit);
@@ -1348,7 +1373,7 @@ angular.module('egGridMod',
                     }
                 }).finally(function() { 
                     console.debug('egGrid.collect() complete');
-                    grid.collecting = false 
+                    grid.collecting = $scope.gridCollecting = false 
                     $scope.selected = angular.copy($scope.selected);
                 });
             }

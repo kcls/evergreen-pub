@@ -1,0 +1,316 @@
+
+<eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
+
+<div class="well-table" *ngIf="item && !loading">
+
+  <div class="well-row" *ngIf="item.dummy_title() || item.dummy_author()">
+    <div class="well-label" *ngIf="item.dummy_title()" i18n>Precat Title</div>
+    <div class="well-value" *ngIf="item.dummy_title()">{{item.dummy_title()}}</div>
+    
+    <div class="well-label" *ngIf="item.dummy_author()" i18n>Precat Author</div>
+    <div class="well-value" *ngIf="item.dummy_author()">{{item.dummy_author()}}</div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Barcode</div>
+    <div class="well-value">{{item.barcode()}}</div>
+
+    <div class="well-label" i18n>Circ Library</div>
+    <div class="well-value">{{item.circ_lib().shortname()}}</div>
+
+    <div class="well-label" i18n>Call # Prefix</div>
+    <div class="well-value">
+      {{item.call_number().prefix().label()}}
+    </div>
+
+    <div class="well-label" i18n>Status</div>
+    <div
+      class="well-value"
+      title="Holdable: {{item.status().holdable()}} / 
+        OPAC Visible: {{item.status().opac_visible()}}"
+    >{{item.status().name()}}</div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Price</div>
+    <div class="well-value">{{item.price()}}</div>
+
+    <div class="well-label" i18n>Owning Library</div>
+    <div class="well-value">{{item.call_number().owning_lib().shortname()}}</div>
+
+    <div class="well-label" i18n>Call #</div>
+    <div class="well-value">{{item.call_number().label()}}</div>
+
+    <div class="well-label" i18n>Due Date</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.currentCirc | egDueDate}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Quality</div>
+    <div class="well-value">
+      <span *ngIf="item.mint_condition() == 't'" i18n>Standard</span>
+      <span *ngIf="item.mint_condition() == 'f'" i18n>No Supplemental</span>
+    </div>
+
+    <div class="well-label" i18n>Shelving Location</div>
+    <div
+      class="well-value"
+      title="Holdable: {{item.location().holdable()}} / 
+        OPAC Visible: {{item.location().opac_visible()}}"
+    >{{item.location().name()}}</div>
+
+    <div class="well-label" i18n>Call # Suffix</div>
+    <div class="well-value">
+      {{item.call_number().suffix().label()}}
+    </div>
+
+    <div class="well-label" i18n>Checkout Date</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.circSummary.start_time() | egDateTime}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>ISBN</div>
+    <div class="well-value">
+      <ng-container *ngFor="let i of item._isbns">{{i}}<br/></ng-container>
+    </div>
+
+    <div class="well-label" i18n>Loan Duration</div>
+    <div class="well-value">
+      <div *ngIf="item.loan_duration() == 1" i18n>Short</div>
+      <div *ngIf="item.loan_duration() == 2" i18n>Normal</div>
+      <div *ngIf="item.loan_duration() == 3" i18n>Long</div>
+    </div>
+
+    <div class="well-label" i18n>Renewal Type</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        <div *ngIf="circInfo.currentCirc.opac_renewal() == 't'" i18n>OPAC</div>
+        <div *ngIf="circInfo.currentCirc.desk_renewal() == 't'" i18n>Desk</div>
+        <div *ngIf="circInfo.currentCirc.phone_renewal() == 't'" i18n>Phone</div>
+        <div *ngIf="circInfo.currentCirc.auto_renewal() == 't'" i18n>Automatic</div>
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Checkout Workstation</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.circSummary.checkout_workstation()}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Date Created</div>
+    <div class="well-value">{{item.create_date() | egDateTime}}</div>
+    <div class="well-label" i18n>Fine Level</div>
+    <div class="well-value">
+      <div *ngIf="item.fine_level() == 1" i18n>Low</div>
+      <div *ngIf="item.fine_level() == 2" i18n>Normal</div>
+      <div *ngIf="item.fine_level() == 3" i18n>High</div>
+    </div>
+
+    <ng-template #circYearsTmpl>
+      <ng-container *ngIf="circInfo">
+        <ul>
+          <li *ngFor="let chunk of circYears">
+            {{chunk.year}} : {{chunk.count}}
+          </li>
+        </ul>
+      </ng-container>
+    </ng-template>
+
+    <div class="well-label">
+      <div [ngbPopover]="circYearsTmpl"
+        triggers="mouseenter:mouseleave" i18n-popoverTitle 
+        popoverTitle="Checkouts by Year" i18n>
+        Total Circs
+      </div>
+    </div>
+    <div class="well-value">
+      <div [ngbPopover]="circYearsTmpl"
+        triggers="mouseenter:mouseleave" i18n-popoverTitle 
+        popoverTitle="Checkouts by Year">
+        {{circInfo.totalCircs}}
+      </div>
+    </div>
+
+    <div class="well-label" i18n>Duration Rule</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo">
+        {{circDurationRule(circInfo.currentCirc)}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Date Active</div>
+    <div class="well-value">{{item.active_date() | egDate}}</div>
+
+    <div class="well-label" i18n>Reference</div>
+    <div class="well-value"><eg-bool [value]="item.ref()"></eg-bool></div>
+
+    <div class="well-label" i18n>Total Circs - Current Year</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo">{{circInfo.circsThisYear}}</ng-container>
+    </div>
+
+    <div class="well-label" i18n>Recurring Fine Rule</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.currentCirc.recurring_fine_rule().name()}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Status Changed</div>
+    <div class="well-value">{{item.status_changed_time() | egDateTime}}</div>
+
+    <div class="well-label" i18n>OPAC Visible</div>
+    <div class="well-value"><eg-bool [value]="item.opac_visible()"></eg-bool></div>
+
+    <div class="well-label" i18n>Total Circs - Prev Year</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo">{{circInfo.circsPrevYear}}</ng-container>
+    </div>
+
+    <div class="well-label" i18n>Max Fine Rule</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.currentCirc.max_fine_rule().name()}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Item ID</div>
+    <div class="well-value">{{item.id()}}</div>
+
+    <div class="well-label" i18n>Holdable</div>
+    <div class="well-value"><eg-bool [value]="item.holdable()"></eg-bool></div>
+
+    <div class="well-label" i18n>In-House Uses</div>
+    <div class="well-value">{{item._inHouseUseCount}}</div>
+
+    <div class="well-label" i18n>Checkin Time</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.currentCirc.checkin_time() || 
+          circInfo.circSummary.last_checkin_time() | egDateTime}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Circulate</div>
+    <div class="well-value"><eg-bool [value]="item.circulate()"></eg-bool></div>
+
+    <div class="well-label" i18n>Renewal Workstation</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.circSummary.last_renewal_workstation()}}
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Remaining Renewals</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.currentCirc.renewal_remaining()}}
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Checkin Scan Time</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        {{circInfo.currentCirc.checkin_scan_time() || 
+          circInfo.circSummary.last_checkin_scan_time() | egDateTime}}
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Floating</div>
+    <div class="well-value">
+      <ng-container *ngIf="item.floating()">
+        {{item.floating().name()}}
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Circ Modifier</div>
+    <div class="well-value">
+      <ng-container *ngIf="item.circ_modifier()" i18n>
+        {{item.circ_modifier().code()}}: {{item.circ_modifier().name()}}
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Age-based Hold Protection</div>
+    <div class="well-value">
+      <ng-container *ngIf="item.age_protect()">
+        {{item.age_protect().name()}}
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Checkin Workstation</div>
+    <div class="well-value">
+      <ng-container *ngIf="circInfo && circInfo.currentCirc">
+        <ng-container *ngIf="circInfo.currentCirc.checkin_workstation()">
+          {{circInfo.currentCirc.checkin_workstation().name()}}
+        </ng-container>
+        <ng-container 
+          *ngIf="!circInfo.currentCirc.checkin_workstation() && circInfo.circSummary.last_checkin_workstation()">
+          {{circInfo.circSummary.last_checkin_workstation().name()}}
+        </ng-container>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="well-row">
+    <div class="well-label" i18n>Inventory Date</div>
+    <div class="well-value">
+      <ng-container *ngIf="item.latest_inventory()">
+        {{item.latest_inventory().inventory_date() | egDateTime}}
+      </ng-container>
+    </div>
+
+    <div class="well-label" i18n>Inventory Workstation</div>
+    <div class="well-value">
+      <ng-container *ngIf="item.latest_inventory()">
+        {{item.latest_inventory().inventory_workstation().name()}}
+      </ng-container>
+    </div>
+
+    <div class="well-label"></div>
+    <div class="well-value"></div>
+    <div class="well-label"></div>
+    <div class="well-value"></div>
+  </div>
+
+  <div class="well-row">
+    <!--
+    <div class="well-label" i18n>Item Alerts</div>
+    <div class="well-value" id="item-status-alert-msg">
+      <button class="btn btn-outline-dark" (click)="addItemAlerts()" i18n>Add</button>
+      <button class="btn btn-outline-dark ml-2" [disabled]="item.copy_alerts().length == 0"
+        (click)="manageItemAlerts()"  i18n>Manage</button>
+    </div>
+    -->
+    <div class="well-label pr-0 mr-0" i18n>Alert Message</div>
+    <div class="well-value pl-0 ml-0" style="flex:7" i18n>{{item.alert_message()}}</div>
+
+    <!--
+    <div class="well-label"></div>
+    <div class="well-value"></div>
+    <div class="well-label"></div>
+    <div class="well-value"></div>
+    -->
+  </div>
+
+</div>

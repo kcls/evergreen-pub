@@ -37,6 +37,7 @@ export class QueueComponent implements OnInit, AfterViewInit {
     @ViewChild('queueGrid', { static: true }) queueGrid: GridComponent;
     @ViewChild('confirmDelDlg', { static: false }) confirmDelDlg: ConfirmDialogComponent;
     @ViewChild('progressDlg', { static: true }) progressDlg: ProgressDialogComponent;
+    @ViewChild('progressSelect', {static: false}) progressSelect: ProgressDialogComponent;
 
     cellTextGenerator: GridCellTextGenerator;
 
@@ -205,12 +206,46 @@ export class QueueComponent implements OnInit, AfterViewInit {
             Boolean(this.vandelay.importSelection.overlayMap[rid]);
     }
 
+    rowIsSelected(rowId: number): boolean {
+        return this.vandelay.importSelection &&
+            this.vandelay.importSelection.recordIds.includes(rowId);
+    }
+
+    toggleSelectRows(checked: boolean) {
+
+        if (checked) {
+            this.progressSelect.open();
+            this.queueGrid.context.getAllRows().then(_ => {
+                this.queueSource.data.forEach(row => {
+                    if (!this.rowIsSelected(row)) {
+                        this.rowClicked(row);
+                    }
+                });
+                this.progressSelect.close();
+            });
+
+        } else {
+            const selection = this.vandelay.importSelection;
+            if (selection) {
+                selection.recordIds = [];
+            }
+        }
+    }
+
+    rowClicked(row: any) {
+        const selection = this.findOrCreateImportSelection();
+        if (selection.recordIds.includes(row.id)) {
+            selection.recordIds = selection.recordIds.filter(
+                rid => rid !== row.id);
+        } else {
+            selection.recordIds.push(row.id);
+        }
+    }
+
     importSelected() {
-        const rows = this.queueGrid.context.getSelectedRows();
-        if (rows.length) {
-            const selection = this.findOrCreateImportSelection();
-            selection.recordIds = rows.map(row => row.id);
-            console.log('importing: ', this.vandelay.importSelection);
+        const selection = this.findOrCreateImportSelection();
+        if (selection.recordIds.length) {
+            console.debug('importing: ', this.vandelay.importSelection);
             this.router.navigate(['/staff/cat/vandelay/import']);
         }
     }

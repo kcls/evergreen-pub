@@ -39,6 +39,10 @@
     overflow: hidden;
 }
 
+.eg-grid-tight .eg-grid-cell {
+    padding: 2px;
+}
+
 /* allow tooltips to be wider than the default 200px */
 .eg-grid-cell .tooltip-inner {
   max-width: 400px; 
@@ -102,7 +106,7 @@
 }
 
 .eg-grid-cell-skinny {
-  width: 2em;
+  width: 2.2em;
   text-align: center;
   flex: none;
 }
@@ -180,3 +184,31 @@
 .popover {
     max-width: initial;
 }
+
+/* Make the grid action menus scrollable for smaller screens, because
+ * in some cases, when the menu pops up and part sits below the bottom
+ * of the view port, no scroll bar is presented by the browser -- it 
+ * doesn't realize the content went past the bottom of the page.
+ * NOTE: the above issue appears to be resolved in BS v5.
+ */
+@media (max-height: 1200px) { 
+    .popover-body {
+        height: auto;
+        max-height: 350px;
+        overflow-y: auto;
+        font-size: 99%;
+    }
+}
+
+/* Make background white so that bluish link text is readable */
+.eg-grid-tooltip .tooltip-inner {
+    background-color: white;
+    border: 2px solid black;
+    color: black;
+}
+
+#eg-grid-select-all-checkbox, .grid-row-checkbox {
+  width: 18px;
+  height: 18px;
+}
+

@@ -239,9 +239,11 @@ sub run_method {
 
     $circulator->mk_env();
     $circulator->noop(1) if $circulator->claims_never_checked_out;
+    $circulator->noop(1) if $circulator->revert_hold_fulfillment;
 
     return circ_events($circulator) if $circulator->bail_out;
 
+    my $ops = 0;
     if( $api =~ /checkout\.permit/ ) {
         $circulator->do_permit();
 
@@ -256,6 +258,7 @@ sub run_method {
         unless( $circulator->bail_out ) {
             $circulator->events([]);
             $circulator->do_checkout();
+	    $ops = 1;
         }
 
     } elsif( $circulator->is_res_checkout ) {
@@ -268,12 +271,14 @@ sub run_method {
 
     } elsif( $api =~ /checkout/ ) {
         $circulator->do_checkout();
+	$ops = 1;
 
     } elsif( $circulator->is_res_checkin ) {
         $circulator->do_reservation_return();
         $circulator->do_checkin() if ($circulator->copy());
     } elsif( $api =~ /checkin/ ) {
         $circulator->do_checkin();
+	$ops = 2;
 
     } elsif( $api =~ /renew/ ) {
         $circulator->do_renew($api);
@@ -306,6 +311,14 @@ sub run_method {
         }
 
         $circulator->editor->commit;
+
+        if($ops == 1) {
+            $U->log_user_activity($$args{patron_id}, '', 'checkout');
+        } elsif ($ops == 2) {
+            if ($circulator->circ) {
+                $U->log_user_activity($circulator->circ->usr, '', 'checkin');
+            }
+        }
     }
     
     $conn->respond_complete(circ_events($circulator));
@@ -484,6 +497,7 @@ my @AUTOLOAD_FIELDS = qw/
     rental_billing
     capture
     noop
+    revert_hold_fulfillment
     void_overdues
     parent_circ
     return_patron
@@ -1906,6 +1920,51 @@ sub handle_checkout_holds {
 }
 
 
+sub undo_hold_fulfillment {
+    my $self = shift;
+    my $e = $self->editor;
+
+    my $hold = $e->search_action_hold_request([
+        {   usr => $self->patron->id,
+            cancel_time => undef,
+            fulfillment_time => {'!=' => undef},
+            current_copy => $self->copy->id
+        }, {
+            order_by => {ahr => 'fulfillment_time desc'},
+            limit => 1
+        }
+    ])->[0];
+
+    return unless $hold;
+
+    # The hold fulfillment time will match the xact_start time of its
+    # companion circulation, however in some cases the date stored in PG
+    # contains milliseconds and in other cases not.  To make an accurate
+    # comparison, truncate the milliseconds.
+
+    my $xact_time = DateTime::Format::ISO8601->new->parse_datetime(
+        clean_ISO8601($self->circ->xact_start))->strftime('%FT%T%z');
+
+    my $ff_time = DateTime::Format::ISO8601->new->parse_datetime(
+        clean_ISO8601($hold->fulfillment_time))->strftime('%FT%T%z');
+
+    return unless $xact_time eq $ff_time;
+
+    $logger->info("circulator: undoing fulfillment for hold ".$hold->id);
+
+    $hold->clear_fulfillment_time;
+    $hold->clear_fulfillment_staff;
+    $hold->clear_fulfillment_lib;
+
+    return $self->bail_on_events($e->event)
+        unless $e->update_action_hold_request($hold);
+
+    # Put the item back on the holds shelf.
+    $self->copy->status(OILS_COPY_STATUS_ON_HOLDS_SHELF);
+    $self->update_copy();
+}
+
+
 # ------------------------------------------------------------------------------
 # If the circ.checkout_fill_related_hold setting is turned on and no hold for
 # the patron directly targets the checked out item, see if there is another hold 
@@ -2346,6 +2405,8 @@ sub apply_modified_due_date {
       # if the due_date lands on a day when the location is closed
       return unless $copy and $circ->due_date;
 
+        $self->extend_renewal_due_date if $self->is_renewal;
+
         #my $org = (ref $copy->circ_lib) ? $copy->circ_lib->id : $copy->circ_lib;
 
         # due-date overlap should be determined by the location the item
@@ -2374,6 +2435,66 @@ sub apply_modified_due_date {
    }
 }
 
+sub extend_renewal_due_date {
+    my $self = shift;
+    my $circ = $self->circ;
+    my $matchpoint = $self->circ_matrix_matchpoint;
+
+    return unless $U->is_true($matchpoint->renew_extends_due_date);
+
+    my $prev_circ = $self->editor->retrieve_action_circulation($self->parent_circ);
+
+    my $start_time = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($prev_circ->xact_start))->epoch;
+
+    my $prev_due_date = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($prev_circ->due_date));
+
+    my $due_date = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($circ->due_date));
+
+    my $prev_due_time = $prev_due_date->epoch;
+
+    my $now_time = DateTime->now->epoch;
+
+    return if $prev_due_time < $now_time; # Renewed circ was overdue.
+
+    if (my $interval = $matchpoint->renew_extend_min_interval) {
+
+        my $min_duration = OpenILS::Utils::DateTime->interval_to_seconds($interval);
+        my $checkout_duration = $now_time - $start_time;
+
+        if ($checkout_duration < $min_duration) {
+            # Renewal occurred too early in the cycle to result in an
+            # extension of the due date on the renewal.
+
+            # If the new due date falls before the due date of
+            # the previous circulation, use the due date of the prev.
+            # circ so the patron does not lose time.
+            my $due = $due_date < $prev_due_date ? $prev_due_date : $due_date;
+            $circ->due_date($due->strftime('%FT%T%z'));
+
+            return;
+        }
+    }
+
+    # Item was checked out long enough during the previous circulation
+    # to consider extending the due date of the renewal to cover the gap.
+
+    # Amount of the previous duration that was left unused.
+    my $remaining_duration = $prev_due_time - $now_time;
+
+    $due_date->add(seconds => $remaining_duration);
+
+    # If the calculated due date falls before the due date of the previous 
+    # circulation, use the due date of the prev. circ so the patron does
+    # not lose time.
+    my $due = $due_date < $prev_due_date ? $prev_due_date : $due_date;
+
+    $logger->info("circulator: renewal due date extension landed on due date: $due");
+
+    $circ->due_date($due->strftime('%FT%T%z'));
+}
 
 
 sub create_due_date {
@@ -2544,7 +2665,7 @@ sub cancel_transit_if_circ_exists {
         )->gather(1);
         $logger->warn("circulator: transit abort result: ".$result);
         $circ_ses->disconnect;
-        $self->transit(undef);
+        $self->{transit} = undef;
     }
 }
 
@@ -2671,9 +2792,12 @@ sub do_checkin {
         OpenILS::Event->new('ASSET_COPY_NOT_FOUND')) 
         unless $self->copy;
 
+    # Never capture a deleted copy for a hold.
+    $self->capture('nocapture') if $U->is_true($self->copy->deleted);
+
     $self->fix_broken_transit_status; # if applicable
     $self->check_transit_checkin_interval;
-    $self->checkin_retarget;
+    $self->checkin_retarget unless $self->revert_hold_fulfillment;
 
     # the renew code and mk_env should have already found our circulation object
     unless( $self->circ ) {
@@ -2690,6 +2814,17 @@ sub do_checkin {
     $self->cancel_transit_if_circ_exists; # if applicable
 
     my $stat = $U->copy_status($self->copy->status)->id;
+
+    if ($self->revert_hold_fulfillment) {
+        # Rule out any unexpected scenarios before continuing with
+        # reverting the hold fulfillment.
+        return $self->bail_on_events(OpenILS::Event->new('NO_CHANGE'))
+            unless (
+                $self->circ
+                && $stat == OILS_COPY_STATUS_CHECKED_OUT
+                && !$self->is_renewal
+            );
+    }
 
     # LOST (and to some extent, LONGOVERDUE) may optionally be handled
     # differently if they are already paid for.  We need to check for this
@@ -2758,7 +2893,10 @@ sub do_checkin {
             unless $self->editor->allowed('COPY_CHECKIN');
     }
 
-    $self->push_events($self->check_copy_alert());
+    # KCLS never wants to see item alert messages during checkin.
+    # NOTE: if we ever move to new-style alerts this should be reverted.
+    # $self->push_events($self->check_copy_alert()) unless $self->revert_hold_fulfillment;
+    
     $self->push_events($self->check_checkin_copy_status());
 
     # if the circ is marked as 'claims returned', add the event to the list
@@ -2766,12 +2904,35 @@ sub do_checkin {
         if ($self->circ and $self->circ->stop_fines 
                 and $self->circ->stop_fines eq OILS_STOP_FINES_CLAIMSRETURNED);
 
-    $self->check_circ_deposit();
+    $self->check_circ_deposit() unless $self->revert_hold_fulfillment;
 
     # handle the overridable events 
     $self->override_events unless $self->is_renewal;
     return if $self->bail_out;
     
+    # ----------------------------------------------------------
+    # KCLS KMAIN-49 KCM-3 overwrite old transit info
+    # Check to see if there is a hold transit with a cancelled hold
+    my $hold_is_cancelled;
+    my $test_hold;
+    if( $self->transit ) {
+        my $transit = $self->transit;
+        my $test_hold_transit = $self->editor->retrieve_action_hold_transit_copy($transit->id);
+        if($test_hold_transit) {
+            $test_hold = $self->editor->retrieve_action_hold_request($test_hold_transit->hold);
+            $hold_is_cancelled = 1 if ($test_hold->cancel_time or $test_hold->fulfillment_time);
+        }
+    }
+
+    # If the hold is cancelled, and the item is checked in by the owning lib, clear the transit
+    my $transit_is_cleared;
+    if (($hold_is_cancelled && $self->circ_lib == $self->copy->circ_lib)) {
+        $self->bail_on_events($self->editor->event)
+            unless $self->editor->delete_action_transit_copy($self->transit);
+        $transit_is_cleared = 1;
+    }
+    # ----------------------------------------------------------
+
     if( $self->circ ) {
         $self->checkin_handle_circ_start;
         return if $self->bail_out;
@@ -2808,7 +2969,7 @@ sub do_checkin {
         return if $self->bail_out;
         $self->checkin_changed(1);
 
-    } elsif( $self->transit ) {
+    } elsif( $self->transit and !$transit_is_cleared ) {
         my $hold_transit = $self->process_received_transit;
         $self->checkin_changed(1);
 
@@ -2832,7 +2993,8 @@ sub do_checkin {
 
             my $hold;
             if( $hold_transit ) {
-               $hold = $self->editor->retrieve_action_hold_request($hold_transit->hold);
+		#No need to retreive the hold again
+		$hold = $test_hold;
             } else {
                    ($hold) = $U->fetch_open_hold_by_copy($self->copy->id);
             }
@@ -2882,6 +3044,14 @@ sub do_checkin {
         $self->finish_fines_and_voiding;
         return if $self->bail_out;
         $self->push_events(OpenILS::Event->new('SUCCESS'));
+        return;
+    }
+
+    if ($self->revert_hold_fulfillment) {
+        $self->undo_hold_fulfillment;
+        return if $self->bail_out;
+        $self->push_events(OpenILS::Event->new('SUCCESS'));
+        $self->checkin_flesh_events;
         return;
     }
 
@@ -3415,7 +3585,14 @@ sub do_hold_notify {
     my $hold = $e->retrieve_action_hold_request($holdid) or return $e->die_event;
     $e->rollback;
     my $ses = OpenSRF::AppSession->create('open-ils.trigger');
-    $ses->request('open-ils.trigger.event.autocreate', 'hold.available', $hold, $hold->pickup_lib);
+
+    my $hook = 'hold.available';
+
+    # KCLS JBAS-2558 Holds ready at a Locker use a different hook.
+    $hook .= '.locker' if $U->ou_ancestor_setting_value(
+        $hold->pickup_lib, 'circ.holds.org_unit_is_locker', $self->editor);
+
+    $ses->request('open-ils.trigger.event.autocreate', $hook, $hold, $hold->pickup_lib);
 
     $logger->info("circulator: running delayed hold notify process");
 
@@ -3510,6 +3687,16 @@ sub process_received_transit {
         my $loc = $self->circ_lib;
         my $dest = $transit->dest;
 
+        # KCLS
+        # If item needs to be routed to a different location, update the 
+        # source org unit & send time
+        # NOTE: transits have a prev_hop field meant to serve this purpose.
+        # Investigate possibility of using that instead to retain data.
+        $transit->source($self->circ_lib);
+        $transit->source_send_time('now');
+        $self->bail_on_events($self->editor->event)
+            unless $self->editor->update_action_transit_copy($transit);
+
         $logger->info("circulator: Fowarding transit on copy which is destined ".
             "for a different location. transit=$tid, copy=$copyid, current ".
             "location=$loc, destination location=$dest");
@@ -3571,8 +3758,12 @@ sub process_received_transit {
 # ------------------------------------------------------------------
 sub put_hold_on_shelf {
     my($self, $hold) = @_;
-    $hold->shelf_time('now');
     $hold->current_shelf_lib($self->circ_lib);
+
+    # Avoid setting shelf time info if a hold was canceled in transit.
+    return undef if $hold->cancel_time;
+
+    $hold->shelf_time('now');
     $holdcode->set_hold_shelf_expire_time($hold, $self->editor);
     return undef;
 }
@@ -3973,9 +4164,23 @@ sub checkin_flesh_events {
     my $record = $U->record_to_mvr($self->title) if($self->title and !$self->is_precat);
 
     my $hold;
-    if($self->hold and !$self->hold->cancel_time) {
+    if ($self->hold) {
         $hold = $self->hold;
-        $hold->notes($self->editor->search_action_hold_request_note({hold => $hold->id}));
+
+    } elsif ($self->remote_hold && 
+        $self->remote_hold->pickup_lib == $self->circ_lib) {
+        # Be sure holds captured as local transats are returned
+        # so the hold receipt can print.
+        $hold = $self->remote_hold;
+    }
+
+    if ($hold) {
+        if ($hold->cancel_time) {
+            $hold = undef;
+        } else {
+            $hold->notes(
+                $self->editor->search_action_hold_request_note({hold => $hold->id}));
+        }
     }
 
     if($self->circ) {
@@ -4247,11 +4452,17 @@ sub append_reading_list {
 sub make_trigger_events {
     my $self = shift;
     return unless $self->circ;
-    $U->create_events_for_hook('checkout', $self->circ, $self->circ_lib) if $self->is_checkout;
-    $U->create_events_for_hook('checkin',  $self->circ, $self->circ_lib) if $self->is_checkin;
-    $U->create_events_for_hook('renewal',  $self->circ, $self->circ_lib) if $self->is_renewal;
-}
 
+    my $hook = 'checkout' if $self->is_checkout;
+       $hook = 'checkin' if $self->is_checkin;
+       $hook = 'renewal' if $self->is_renewal;
+
+    # KCLS JBAS-2558 Holds ready at a Locker use a different hook.
+    $hook .= '.locker' if $U->ou_ancestor_setting_value(
+        $self->circ_lib, 'circ.holds.org_unit_is_locker', $self->editor);
+
+    $U->create_events_for_hook($hook, $self->circ, $self->circ_lib) if $hook;
+}
 
 
 sub checkin_handle_lost_or_lo_now_found {

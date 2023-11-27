@@ -1,11 +1,11 @@
 
-<div class="eg-grid" role="grid">
+<div class="eg-grid" [ngClass]="{'eg-grid-tight': tightDisplay}" role="grid">
 
   <eg-grid-toolbar #toolbar
     [gridContext]="context"
     [gridPrinter]="gridPrinter"
     [colWidthConfig]="colWidthConfig"
-    [disableSaveSettings]="!persistKey || ('disabled' === persistKey)">
+    [disableSaveSettings]="!persistKey || disableSaveSettings || ('disabled' === persistKey)">
   </eg-grid-toolbar>
 
   <div #egGridStickyHeader [ngClass]="{'eg-grid-sticky-header' : context.stickyGridHeader}">

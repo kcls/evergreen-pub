@@ -4,7 +4,7 @@ use Apache2::Const -compile =>
     qw(OK FORBIDDEN NOT_FOUND HTTP_INTERNAL_SERVER_ERROR HTTP_BAD_REQUEST);
 use Apache2::RequestRec;
 use CGI;
-use HTML::Defang;
+use HTML::Defang qw/DEFANG_NONE DEFANG_ALWAYS/;
 use DateTime;
 use DateTime::Format::ISO8601;
 use Unicode::Normalize;
@@ -15,6 +15,7 @@ use OpenILS::Utils::CStoreEditor q/:funcs/;
 use OpenSRF::Utils::Logger q/$logger/;
 use OpenILS::Application::AppUtils;
 use OpenILS::Utils::DateTime qw/:datetime/;
+use SVG::Barcode::Code128;                                                     
 
 my $U = 'OpenILS::Application::AppUtils';
 my $helpers;
@@ -35,9 +36,35 @@ sub child_init {
     return Apache2::Const::OK;
 }
 
+sub tags_callback {
+    my ($self, $defang, $open_angle, $lc_tag) = @_;
+    return DEFANG_NONE if 
+        $lc_tag eq 'svg' || $lc_tag eq 'rect' || $lc_tag eq 'text';
+}
+
+sub attribs_callback {
+    my ($self, $defang, $lc_tag, $lc_attr) = @_;
+     
+    # Allow image sources through
+    # NOTE: could tweak this to only allow locally hosted images.
+    if ($lc_tag eq 'img' && $lc_attr eq 'src') {
+        return DEFANG_NONE;
+    };
+
+    return DEFANG_NONE if 
+        $lc_tag eq 'svg' || $lc_tag eq 'rect' || $lc_tag eq 'text';
+  
+    return DEFANG_ALWAYS;
+}
+
 # HTML scrubber
 # https://metacpan.org/pod/HTML::Defang
-my $defang = HTML::Defang->new;
+my $defang = HTML::Defang->new(
+    attribs_to_callback => ['src', 'viewbox', 'xmlns', 'fill', 'height', 'width', 'y', 'x', 'font-size'],
+    attribs_callback => \&attribs_callback,
+    tags_to_callback => ['svg', 'rect', 'text'],
+    tags_callback => \&tags_callback
+);
 
 sub handler {
     my $r = shift;
@@ -78,6 +105,18 @@ sub handler {
     }
 
     my ($staff_org) = $U->fetch_org_unit($e->requestor->ws_ou);
+
+    if ($staff_org->mailing_address) {
+        $staff_org->mailing_address(
+            $e->retrieve_actor_org_address($staff_org->mailing_address)
+        );
+    }
+
+    if ($staff_org->billing_address) {
+        $staff_org->billing_address(
+            $e->retrieve_actor_org_address($staff_org->billing_address)
+        );
+    }
 
     my $output = '';
     my $tt = Template->new;
@@ -220,6 +259,24 @@ $helpers = {
         my($org_id, $setting) = @_;
         return $U->ou_ancestor_setting_value($org_id, $setting);
     },
+
+    # Useful for accessing hash values whose key contains dots (.), 
+    # which TT interprets as levels within a nested hash.
+    #
+    # e.g.  So you don't have to do stuff like this:
+    # SET field = 'summary.balance_owed'; xact.$field
+    hashval => sub {
+        my ($hash, $key) = @_;
+        return $hash ? $hash->{$key} : undef;
+    },
+
+    # Generate code128 SVG markup for a barcode
+    barcode_svg => sub {
+        my ($barcode, $params) = @_;
+        $params ||= {};
+        my $code128 = SVG::Barcode::Code128->new(%$params);
+        return $code128->plot($barcode);
+    }
 
 };
 

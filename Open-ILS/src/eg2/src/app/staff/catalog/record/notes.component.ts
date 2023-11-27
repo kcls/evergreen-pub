@@ -4,6 +4,7 @@ import {PcrudService} from '@eg/core/pcrud.service';
 import {Pager} from '@eg/share/util/pager';
 import {OrgService} from '@eg/core/org.service';
 import {PermService} from '@eg/core/perm.service';
+import {AuthService} from '@eg/core/auth.service';
 import {GridDataSource} from '@eg/share/grid/grid';
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {FmRecordEditorComponent} from '@eg/share/fm-editor/fm-editor.component';
@@ -43,7 +44,8 @@ export class NotesComponent implements OnInit {
         private idl: IdlService,
         private org: OrgService,
         private pcrud: PcrudService,
-        private perm: PermService
+        private perm: PermService,
+        private auth: AuthService
     ) {
         this.permissions = {};
         this.gridDataSource = new GridDataSource();
@@ -76,8 +78,17 @@ export class NotesComponent implements OnInit {
                 flesh_fields: {bren: ['creator', 'editor']}
             };
 
-            return this.pcrud.search('bren',
-                {record: this.recId, deleted: 'f'}, searchOps);
+            const base = {record: this.recId, deleted: 'f'};
+            const query: any = new Array();
+            query.push(base);
+
+            Object.keys(this.gridDataSource.filters).forEach(key => {
+                Object.keys(this.gridDataSource.filters[key]).forEach(key2 => {
+                    query.push(this.gridDataSource.filters[key][key2]);
+                });
+            });
+
+            return this.pcrud.search('bren', query, searchOps);
         };
 
         this.notesGrid.onRowActivate.subscribe(
@@ -93,6 +104,8 @@ export class NotesComponent implements OnInit {
 
             const note = this.idl.create('bren');
             note.record(this.recordId);
+            note.creator(this.auth.user().id());
+            note.editor(this.auth.user().id());
             this.editDialog.record = note;
 
             this.editDialog.mode = 'create';

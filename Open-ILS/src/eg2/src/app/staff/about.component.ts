@@ -16,10 +16,14 @@ export class AboutComponent implements OnInit {
 
     ngOnInit() {
         this.server = window.location.hostname;
+        this.version = "3.9";
+
+        /*
         this.net.request(
             'open-ils.actor',
             'opensrf.open-ils.system.ils_version'
         ).subscribe(v => this.version = v);
+        */
     }
 }
 

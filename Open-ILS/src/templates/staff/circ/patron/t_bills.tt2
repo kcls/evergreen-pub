@@ -50,12 +50,17 @@
             <select ng-model="payment_type" class="form-control">
               <option value="cash_payment" selected="selected">[% l('Cash') %]</option>
               <option value="check_payment">[% l('Check') %]</option>
-              <option value="credit_card_payment">[% l('Credit Card') %]</option>
-              <option value="debit_card_payment">[% l('Debit Card') %]</option>
+
+              <option ng-if="registerIsActive()" 
+                value="credit_card_payment">[% l('Credit Card') %]</option>
+
+              <option value="forgive_payment">[% l('Forgive') %]</option>
+
+              <!-- KCLS
               <option value="credit_payment">[% l('Patron Credit') %]</option>
               <option value="work_payment">[% l('Work') %]</option>
-              <option value="forgive_payment">[% l('Forgive') %]</option>
               <option value="goods_payment">[% l('Goods') %]</option>
+              -->
             </select>
           </div>
         </div>
@@ -66,7 +71,7 @@
           <div class="col-md-6">
             <input type="number" min="1" step="any" id="check-input" 
               ng-model="check_number" focus-me="focus_check"
-              ng-disabled="payment_type!='check_payment'"
+              ng-disabled="registerIsActive() || payment_type!='check_payment'"
               value="" class="form-control col-md-6 "/>
           </div>
         <div class="form-group">

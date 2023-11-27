@@ -18,7 +18,7 @@
         <label for="activate-use-email" class="sr-only">[% l('Update Activate Email') %]</label>
         <input id='activate-use-email' ng-model="args.update_email_notify" type="checkbox"/>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label for='use-email'>[% l("Send Emails") %]</label>
       </div>
       <div class="col-md-7">
@@ -31,15 +31,16 @@
         <label for="activate-phone-number" class="sr-only">[% l('Update Phone Number') %]</label>
         <input id='activate-phone-number' ng-model="args.update_phone_notify" type="checkbox"/>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label for='phone-number'>[% l("Phone #") %]</label>
       </div>
-      <div class="col-md-7">
-        <input id="phone-number" type='tel' 
+      <div class="col-md-5">
+        <input id="phone-number" type='tel' class="form-control"
           ng-model="args.phone_notify" ng-disabled="!args.update_phone_notify"/>
       </div>
+      <div class="col-md-3" style="font-size: 95%">(111-222-3333)</div>
     </div>
-    <div class="row">
+    <div class="row" style='display:none'>
       <div class="col-md-1">
         <label for="activate-sms-number" class="sr-only">[% l('Update SMS Number') %]</label>
         <input id='activate-sms-number' ng-model="args.update_sms_notify" type="checkbox"/>
@@ -52,7 +53,7 @@
           ng-model="args.sms_notify" ng-disabled="!args.update_sms_notify"/>
       </div>
     </div>
-    <div class="row">
+    <div class="row" style='display:none'>
       <div class="col-md-1">
         <label for="activate-sms-carrier" class="sr-only">[% l('Update SMS Carrier') %]</label>
         <input id='activate-sms-carrier' ng-model="args.update_sms_carrier" type="checkbox"/>

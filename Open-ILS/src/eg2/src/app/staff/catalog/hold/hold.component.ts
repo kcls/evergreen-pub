@@ -19,6 +19,9 @@ import {PatronService} from '@eg/staff/share/patron/patron.service';
 import {PatronSearchDialogComponent
   } from '@eg/staff/share/patron/search-dialog.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
+import {BarcodeSelectComponent
+    } from '@eg/staff/share/barcodes/barcode-select.component';
+import {WorkLogService} from '@eg/staff/share/worklog/worklog.service';
 
 class HoldContext {
     holdMeta: HoldRequestTarget;
@@ -94,10 +97,14 @@ export class HoldComponent implements OnInit {
     // Orgs which are not valid pickup locations
     disableOrgs: number[] = [];
 
+    successCount = 0;
+    failCount = 0;
+
     @ViewChild('patronSearch', {static: false})
       patronSearch: PatronSearchDialogComponent;
 
     @ViewChild('smsCbox', {static: false}) smsCbox: ComboboxComponent;
+    @ViewChild('barcodeSelect') private barcodeSelect: BarcodeSelectComponent;
 
     @ViewChild('activeDateAlert') private activeDateAlert: AlertDialogComponent;
 
@@ -115,7 +122,8 @@ export class HoldComponent implements OnInit {
         private staffCat: StaffCatalogService,
         private holds: HoldsService,
         private patron: PatronService,
-        private perm: PermService
+        private perm: PermService,
+        private worklog: WorkLogService
     ) {
         this.holdContexts = [];
         this.smsCarriers = [];
@@ -133,21 +141,20 @@ export class HoldComponent implements OnInit {
         this.holdType = this.route.snapshot.params['type'];
         this.holdTargets = this.route.snapshot.queryParams['target'];
         this.holdFor = this.route.snapshot.queryParams['holdFor'] || 'patron';
+        this.userBarcode = this.route.snapshot.queryParams['holdForBarcode'];
 
-        if (this.staffCat.holdForBarcode) {
+        if (this.userBarcode) {
+            this.holdFor = 'patron';
+        } else if (this.staffCat.holdForBarcode) {
             this.holdFor = 'patron';
             this.userBarcode = this.staffCat.holdForBarcode;
         }
 
-        this.store.getItemBatch([
-            'circ.staff_placed_holds_fallback_to_ws_ou',
-            'circ.staff_placed_holds_default_to_ws_ou'
-        ]).then(settings => {
-            this.puLibWsFallback =
-                settings['circ.staff_placed_holds_fallback_to_ws_ou'] === true;
-            this.puLibWsDefault =
-                settings['circ.staff_placed_holds_default_to_ws_ou'] === true;
-        });
+        console.log('USER BARCODE', this.userBarcode);
+
+        this.store.getItem('circ.staff_placed_holds_fallback_to_ws_ou')
+        .then(setting => this.puLibWsFallback = setting === true)
+        .then(_ => this.worklog.loadSettings());
 
         this.org.list().forEach(org => {
             if (org.ou_type().can_have_vols() === 'f') {
@@ -173,17 +180,12 @@ export class HoldComponent implements OnInit {
         this.requestor = this.auth.user();
         this.pickupLib = this.auth.user().ws_ou();
 
-        this.resetForm();
+        this.resetForm(true);
 
         this.getRequestorSetsAndPerms()
         .then(_ => {
 
             // Load receipient data if we have any.
-            if (this.staffCat.holdForBarcode) {
-                this.holdFor = 'patron';
-                this.userBarcode = this.staffCat.holdForBarcode;
-            }
-
             if (this.holdFor === 'staff' || this.userBarcode) {
                 this.holdForChanged();
             }
@@ -209,14 +211,14 @@ export class HoldComponent implements OnInit {
 
             if (this.smsEnabled) {
 
-                return this.pcrud.search(
-                    'csc', {active: 't'}, {order_by: {csc: 'name'}})
-                .pipe(tap(carrier => {
-                    this.smsCarriers.push({
-                        id: carrier.id(),
-                        label: carrier.name()
+                return this.patron.getSmsCarriers().then(carriers => {
+                    carriers.forEach(carrier => {
+                        this.smsCarriers.push({
+                            id: carrier.id(),
+                            label: carrier.name()
+                        });
                     });
-                })).toPromise();
+                });
             }
 
         }).then(_ => {
@@ -393,9 +395,18 @@ export class HoldComponent implements OnInit {
         const flesh = {flesh: 1, flesh_fields: {au: ['settings']}};
 
         promise = promise.then(_ => {
-            return id ?
-                this.patron.getById(id, flesh) :
-                this.patron.getByBarcode(this.userBarcode, flesh);
+            if (id) { return id; }
+            // Find the patron ID from the provided barcode.
+            return this.barcodeSelect.getBarcode('actor', this.userBarcode)
+                .then(selection => selection ? selection.id : null);
+        });
+
+        promise = promise.then(matchId => {
+            if (matchId) {
+                return this.patron.getById(matchId, flesh);
+            } else {
+                return null;
+            }
         });
 
         this.badBarcode = null;
@@ -416,8 +427,8 @@ export class HoldComponent implements OnInit {
 
     resetRecipient(keepBarcode?: boolean) {
         this.user = null;
-        this.notifyEmail = true;
-        this.notifyPhone = true;
+        this.notifyEmail = false;
+        this.notifyPhone = false;
         this.notifySms = false;
         this.phoneValue = '';
         this.pickupLib = this.requestor.ws_ou();
@@ -437,6 +448,8 @@ export class HoldComponent implements OnInit {
     resetForm(keepBarcode?: boolean): Promise<any> {
         this.placeHoldsClicked = false;
         this.resetRecipient(keepBarcode);
+        this.successCount = 0;
+        this.failCount = 0;
 
         this.holdContexts = this.holdTargets.map(target => {
             const ctx = new HoldContext(target);
@@ -558,8 +571,17 @@ export class HoldComponent implements OnInit {
         // At least one hold attempted.  Confirm all succeeded
         // before resetting the recipient info in the form.
         let reset = true;
+
+        this.successCount = 0;
+        this.failCount = 0;
+
         this.holdContexts.forEach(ctx => {
-            if (!ctx.success) { reset = false; }
+            if (ctx.success) {
+                this.successCount++;
+            } else {
+                this.failCount++;
+                reset = false;
+            }
         });
 
         if (reset) { this.resetRecipient(); }
@@ -624,6 +646,13 @@ export class HoldComponent implements OnInit {
 
                 if (request.result.success) {
                     ctx.success = true;
+
+                    this.worklog.record({
+                        action: 'requested_hold',
+                        hold_id: request.result.holdId,
+                        patron_id: this.user.id(),
+                        user: this.user.family_name()
+                    });
 
                     // Overrides are processed one hold at a time, so
                     // we have to invoke the post-holds logic here
@@ -707,12 +736,21 @@ export class HoldComponent implements OnInit {
         }
     }
 
-    hasNoHistory(): boolean {
-        return history.length === 0;
+    hasHistory(): boolean {
+        return history.length > 0;
     }
 
     goBack() {
         history.back();
+    }
+
+    orgSn(thing: IdlObject, fromCn?: boolean): string {
+        if (!thing) { return ''; }
+        if (fromCn) {
+            return this.org.get(thing.owning_lib()).shortname();
+        } else {
+            return this.org.get(thing.circ_lib()).shortname();
+        }
     }
 }
 

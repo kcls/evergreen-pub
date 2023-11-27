@@ -1,0 +1,191 @@
+<eg-staff-banner bannerText="New Headings" i18n-bannerText></eg-staff-banner>
+
+<eg-heading-detail-dialog #detailDialog></eg-heading-detail-dialog>
+
+<ng-template #headingTemplate let-axis="axis" let-heading="heading">
+  <div class="card-body">
+    <table>
+      <tbody>
+        <tr>
+          <td class="pr-2 label" i18n>Previous:</td>
+          <td>
+            <span i18n>
+              <span *ngIf="heading.prev_bib_record()">B: </span>
+              <span *ngIf="!heading.prev_bib_record()">A: </span>
+              {{heading.prev_entry_value()}}
+            </span>
+            <ng-container *ngIf="heading.prev_auth_tag()">
+              <span class="pl-2" i18n>(From {{heading.prev_auth_tag()}})</span>
+            </ng-container>
+          </td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>New:</td>
+          <td>
+            <a target="_blank" routerLink="/staff/catalog/browse"
+              [queryParams]="{browseTerm: heading.entry_value(), browseClass: axis}">
+              {{heading.entry_value()}}
+            </a>
+            <a href="javascript:;" class="pl-3" (click)="openDetailDialog(heading)">
+              (details)
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>Next:</td>
+          <td>
+            <span i18n>
+              <span *ngIf="heading.next_bib_record()">B: </span>
+              <span *ngIf="!heading.next_bib_record()">A: </span>
+              {{heading.next_entry_value()}}
+            </span>
+            <ng-container *ngIf="heading.next_auth_tag()">
+              <span class="pl-2" i18n>(From {{heading.next_auth_tag()}})</span>
+            </ng-container>
+          </td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>From TCN:</td>
+          <td>
+            <a target="_blank" routerLink="/staff/catalog/record/{{heading.bib_record()}}">
+              {{heading.bib_record()}}
+            </a>
+            <span class="pl-2 label" i18n>Indexed As:</span>
+            <span>{{heading.field_label()}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>Edited By:</td>
+          <td>
+            <span>{{heading.bib_editor_usrname()}}</span>
+            <span class="pl-2 label" i18n>Heading Date:</span>
+            <span>{{heading.heading_date() | date:'shortDate'}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>From 1XX:</td>
+          <td>{{heading.bib_marc_1xx()}}</td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>From 245:</td>
+          <td>{{heading.bib_marc_245()}}</td>
+        </tr>
+        <tr>
+          <td class="pr-2 label" i18n>Format:</td>
+          <td>{{mattypeLabel(heading.mattype())}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</ng-template>
+
+<div class="row d-flex">
+  <div class="flex-1">
+
+    <div class="row form-inline border border-primary p-2 pr-3 mr-3 sticky-top-with-nav bg-white">
+      <label class="mr-2" i18n>Start Date: </label>
+      <eg-date-select #startDateSelect [(ngModel)]="startDate"></eg-date-select> 
+
+      <label class="ml-2 mr-2" i18n>End Date: </label>
+      <eg-date-select #endDateSelect [(ngModel)]="endDate"></eg-date-select> 
+
+      <button class="ml-2 btn btn-outline-dark" (click)="getHeadings(true)" i18n>Go</button>
+
+      <span class="border-left border-dark pl-3 ml-3">
+        <button class="btn btn-outline-dark" (click)="prevPage()" 
+          [disabled]="pager.isFirstPage()" i18n>Previous Page</button>
+      </span>
+
+      <label class="ml-3 mr-3" i18n>Page {{pager.currentPage()}}</label>
+
+      <button class="btn btn-outline-dark" (click)="nextPage()" 
+        [disabled]="pager.isLastPage()" i18n>Next Page</button>
+    </div>
+
+    <div class="row mt-3" *ngIf="loading">
+      <div class="col-lg-6 offset-lg-3">
+        <eg-progress-inline></eg-progress-inline>
+      </div>
+    </div>
+
+    <div class="row mt-3" 
+      *ngIf="!loading && hasLoaded && headings.length === 0">
+      <div class="col-lg-6 offset-lg-3">
+        <div class="w-100 alert alert-info" i18n>No headings found</div>
+      </div>
+    </div>
+
+    <div class="mt-3 pb-3" *ngIf="!loading">
+
+      <ng-container *ngFor="let heading of headingsByAxisForPage('author'); let idx = index">
+        <div class="card tight-card">
+          <div *ngIf="idx === 0" class="card-header font-weight-bold bg-info" i18n>New Author Headings</div>
+          <ng-container
+            *ngTemplateOutlet="headingTemplate;context:{heading:heading,axis:'author'}">
+          </ng-container>
+        </div>
+      </ng-container>
+
+      <ng-container *ngFor="let heading of headingsByAxisForPage('subject'); let idx = index">
+        <div class="card tight-card">
+        <div *ngIf="idx === 0" class="card-header font-weight-bold bg-info" i18n>New Subject Headings</div>
+          <ng-container
+            *ngTemplateOutlet="headingTemplate;context:{heading:heading,axis:'subject'}">
+          </ng-container>
+        </div>
+      </ng-container>
+
+      <ng-container *ngFor="let heading of headingsByAxisForPage('series'); let idx = index">
+        <div class="card tight-card">
+          <div *ngIf="idx === 0" class="card-header font-weight-bold bg-info" i18n>New Series Headings</div>
+          <ng-container
+            *ngTemplateOutlet="headingTemplate;context:{heading:heading,axis:'series'}">
+          </ng-container>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+
+  <div>
+    <div class="sticky-top-with-nav bg-white">
+    <div class="mt-2 p-2 border border-info rounded">
+      <h3 i18n>Exclude These Editors</h3>
+      <div class="w-100 justify-content-right mattype-list">
+        <eg-combobox #usrCbox [entries]="usrCboxEntries" required="true"
+          (onChange)="usrChanged($event)"
+          [selectedId]="usrId" [asyncDataSource]="usrCboxSource">
+        </eg-combobox>
+      </div>
+      <div class="w-100 justify-content-right mattype-list">
+        <div class="mt-1" *ngFor="let entry of excludeUsers">
+          <button class="btn-sm btn-danger" (click)="removeExcludedUser(entry.id)">X</button>
+          <span class="ml-2">{{entry.label}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-2 p-2 border border-info rounded">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" 
+          [(ngModel)]="exclude001ODN" id="exclude-001-odn"/>
+        <label class="form-check-label" for="exclude-001-odn" i18n>
+          Exclude 001 ODN Records
+        </label>
+      </div>
+    </div>
+    <div class="mt-2 p-2 border border-info rounded">
+      <h3 i18n>Exclude These Formats</h3>
+      <div class="w-100 justify-content-right mattype-list">
+        <ng-container *ngFor="let mat of mattypes">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" 
+              [(ngModel)]="selectedMattypes[mat.code()]" id="mattype-{{mat.code()}}"/>
+            <label class="form-check-label" for="mattype-{{mat.code()}}">
+              {{mat.value()}}</label>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>

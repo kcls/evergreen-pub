@@ -1,0 +1,46 @@
+<ng-template #dialogContent>
+  <div class="modal-header bg-info">
+    <h4 class="modal-title">
+      <span i18n>Verify Repair Cost</span>
+    </h4>
+    <button type="button" class="close"
+      i18n-aria-label aria-label="Close" (click)="close()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body form-validated">
+    <h5 i18n>Verify Missing Pieces Repair Cost</h5>
+
+    <div class="row mt-3">
+      <div class="col-lg-3" i18n>Repair Cost: </div>
+      <div class="col-lg-6">
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text">$</span>
+          </div>
+          <input type="number" size="5" [min]="0" [required]="true"
+            [(ngModel)]="repairCost" class="form-control"/>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-lg-3" i18n>Missing Pieces: </div>
+      <div class="col-lg-9">
+        <textarea type="text" [required]="true" rows="3"
+          [(ngModel)]="missingPiecesNote" class="form-control">
+        </textarea>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-lg-3">
+        <input type="text" i18n-placeholder placeholder="Initials" size="6"
+          [(ngModel)]="staffInitials" class="form-control" [required]="true"/>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-success" 
+      [disabled]="!missingPiecesNote || repairCost == '' || repairCost == null || !staffInitials"
+      (click)="close(true)" i18n>Confirm</button>
+  </div>
+</ng-template>

@@ -21,6 +21,8 @@ use List::Util qw(shuffle);
 use OpenILS::Application::AppUtils;
 use DateTime;
 use Data::Dumper;
+use MARC::Record;
+use MARC::File::XML (BinaryEncoding => 'UTF-8');
 use OpenSRF::EX qw(:try);
 use OpenILS::Perm;
 use OpenILS::Event;
@@ -40,6 +42,7 @@ use OpenSRF::Utils::Cache;
 use OpenSRF::Utils::JSON;
 my $apputils = "OpenILS::Application::AppUtils";
 my $U = $apputils;
+my $tz = DateTime::TimeZone::Local->TimeZone();
 
 __PACKAGE__->register_method(
     method    => "test_and_create_hold_batch",
@@ -66,7 +69,6 @@ __PACKAGE__->register_method(
         desc  => '@see open-ils.circ.holds.test_and_create.batch',
     }
 );
-
 
 sub test_and_create_hold_batch {
     my( $self, $conn, $auth, $params, $target_list, $oargs ) = @_;
@@ -152,15 +154,19 @@ sub test_and_create_hold_batch {
             )->run($auth, $ahr, $oargs);
             $res2 = {
                 'target' => $$params{$target_field},
-                'result' => $res2
+                'result' => $res2,
+                'type' => $$params{'hold_type'}
             };
             $conn->respond($res2);
+            $$conn{'res'} =$res2;
         } else {
             $res = {
                 'target' => $$params{$target_field},
-                'result' => $res
+                'result' => $res,
+                'type' => $$params{'hold_type'}
             };
             $conn->respond($res);
+            $$conn{'res'} =$res;
         }
     }
     return undef;
@@ -653,6 +659,15 @@ sub create_hold {
         $hold->behind_desk('f');
     }
 
+    # KCLS JBAS-2558
+    my $is_locker = $U->ou_ancestor_setting_value(
+        $hold->pickup_lib, 'circ.holds.org_unit_is_locker', $e);
+
+    if ($is_locker) {
+        my $evt = hold_failed_on_pickup_notice($e, $hold);
+        return $evt if $evt;
+    }
+
     $hold->requestor($e->requestor->id);
     $hold->request_lib($e->requestor->ws_ou);
     $hold->selection_ou($hold->pickup_lib) unless $hold->selection_ou;
@@ -666,7 +681,54 @@ sub create_hold {
         'open-ils.hold-targeter.target', {hold => $hold->id}
     ) unless $U->is_true($hold->frozen);
 
+    $U->log_user_activity($recipient->id, '', 'hold');
     return undef;
+}
+
+# Returns event on failure, undef on success.
+sub hold_failed_on_pickup_notice {
+    my ($e, $hold) = @_;
+
+    # KCLS does not care about the disposition of the notification
+    # settings on the hold, only the notification opt-ins and
+    # whether the patron has email/phone on their acount.
+    my $settings = $e->search_actor_user_setting({
+        usr => $hold->usr,
+        name => [
+            'notification.hold.pickup.email', 
+            'notification.hold.pickup.phone',
+            'notification.hold.pickup.text',
+            'opac.default_sms_notify'
+        ]
+    });
+
+    my $user = $e->retrieve_actor_user($hold->usr) or return $e->die_event;
+
+    for my $set (grep {$_->name =~ /notification/} @$settings) {
+        next unless OpenSRF::Utils::JSON->JSON2perl($set->value);
+
+        return undef if $set->name =~ 'email' && $user->email;
+        return undef if $set->name =~ 'phone' && $user->day_phone;
+
+        # Confirm patron has an SMS number or day phone
+        if ($set->name eq 'notification.hold.pickup.text') {
+
+            # Try day phone first
+            return undef if $user->day_phone;
+
+            # No day phone, see if they have an SMS number configured.
+            my ($sms_set) = 
+                grep {$_->name eq 'opac.default_sms_notify'} @$settings;
+
+            return undef if $sms_set && 
+                OpenSRF::Utils::JSON->JSON2perl($sms_set->value);
+        }
+    }
+
+    # No viable notification preferences set.
+    $e->rollback;
+
+    return OpenILS::Event->new('HOLD_REQUIRES_PICKUP_NOTIFICATION');
 }
 
 # makes sure that a user has permission to place the type of requested hold
@@ -837,35 +899,10 @@ sub retrieve_holds {
 
     if($self->api_name =~ /canceled/) {
 
-        # Fetch the canceled holds
-        # order cancelled holds by cancel time, most recent first
+        $holds_query->{order_by} = 
+            [{class => 'ahr', field => 'cancel_time', direction => 'desc'}];
 
-        $holds_query->{order_by} = [{class => 'ahr', field => 'cancel_time', direction => 'desc'}];
-
-        my $cancel_age;
-        my $cancel_count = $U->ou_ancestor_setting_value(
-                $e->requestor->ws_ou, 'circ.holds.canceled.display_count', $e);
-
-        unless($cancel_count) {
-            $cancel_age = $U->ou_ancestor_setting_value(
-                $e->requestor->ws_ou, 'circ.holds.canceled.display_age', $e);
-
-            # if no settings are defined, default to last 10 cancelled holds
-            $cancel_count = 10 unless $cancel_age;
-        }
-
-        if($cancel_count) { # limit by count
-
-            $holds_query->{where}->{cancel_time} = {'!=' => undef};
-            $holds_query->{limit} = $cancel_count;
-
-        } elsif($cancel_age) { # limit by age
-
-            # find all of the canceled holds that were canceled within the configured time frame
-            my $date = DateTime->now->subtract(seconds => OpenILS::Utils::DateTime->interval_to_seconds($cancel_age));
-            $date = $U->epoch2ISO8601($date->epoch);
-            $holds_query->{where}->{cancel_time} = {'>=' => $date};
-        }
+        recently_canceled_holds_filter($e, $holds_query);
 
     } else {
 
@@ -911,6 +948,45 @@ sub retrieve_holds {
 
     return \@holds;
 }
+
+
+# Creates / augments a set of query filters to search for canceled holds
+# based on circ.holds.canceled.* org settings.
+sub recently_canceled_holds_filter {
+    my ($e, $filters) = @_;
+    $filters ||= {};
+    $filters->{where} ||= {};
+
+    my $cancel_age;
+    my $cancel_count = $U->ou_ancestor_setting_value(
+            $e->requestor->ws_ou, 'circ.holds.canceled.display_count', $e);
+
+    unless($cancel_count) {
+        $cancel_age = $U->ou_ancestor_setting_value(
+            $e->requestor->ws_ou, 'circ.holds.canceled.display_age', $e);
+
+        # if no settings are defined, default to last 10 cancelled holds
+        $cancel_count = 10 unless $cancel_age;
+    }
+
+    if($cancel_count) { # limit by count
+
+        $filters->{where}->{cancel_time} = {'!=' => undef};
+        $filters->{limit} = $cancel_count;
+
+    } elsif($cancel_age) { # limit by age
+
+        # find all of the canceled holds that were canceled within the configured time frame
+        my $date = DateTime->now->subtract(seconds => 
+            OpenILS::Utils::DateTime->interval_to_seconds($cancel_age));
+
+        $date = $U->epoch2ISO8601($date->epoch);
+        $filters->{where}->{cancel_time} = {'>=' => $date};
+    }
+
+    return $filters;
+}
+
 
 
 __PACKAGE__->register_method(
@@ -1024,12 +1100,19 @@ sub uncancel_hold {
     $hold->clear_prev_check_time;
     $hold->clear_shelf_expire_time;
     $hold->clear_current_shelf_lib;
+    $hold->clear_id;
 
-    $e->update_action_hold_request($hold) or return $e->die_event;
-    $e->commit;
+    my $rtarget_list = [$hold->target];
+    my $params = {};
+    $$params{'requestor'} = $hold->requestor;
+    $$params{'hold_type'} = $hold->hold_type;
+    $$params{'pickup_lib'} = $hold->pickup_lib;
+    $$params{'patronid'} = $hold->usr;
 
-    $U->simplereq('open-ils.hold-targeter',
-        'open-ils.hold-targeter.target', {hold => $hold_id});
+
+    # KCLS custom.  Uncancel leaves the canceled hold in place
+    # and creates a new hold.
+    test_and_create_hold_batch($self, $client, $auth, $params, $rtarget_list);
 
     return 1;
 }
@@ -1374,38 +1457,29 @@ sub update_hold_impl {
 sub set_hold_shelf_expire_time {
     my ($class, $hold, $editor, $start_time) = @_;
 
+    # TODO: create org unit setting for explicitly tracking days.
     my $shelf_expire = $U->ou_ancestor_setting_value(
         $hold->pickup_lib,
         'circ.holds.default_shelf_expire_interval',
         $editor
     );
 
-    return undef unless $shelf_expire;
-
-    $start_time = ($start_time) ?
-        DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($start_time)) :
-        DateTime->now(time_zone => 'local'); # without time_zone we get UTC ... yuck!
-
-    my $seconds = OpenILS::Utils::DateTime->interval_to_seconds($shelf_expire);
-    my $expire_time = $start_time->add(seconds => $seconds);
-
-    # if the shelf expire time overlaps with a pickup lib's
-    # closed date, push it out to the first open date
-    my $dateinfo = $U->storagereq(
-        'open-ils.storage.actor.org_unit.closed_date.overlap',
-        $hold->pickup_lib, $expire_time->strftime('%FT%T%z'));
-
-    if($dateinfo) {
-        my $dt_parser = DateTime::Format::ISO8601->new;
-        $expire_time = $dt_parser->parse_datetime(clean_ISO8601($dateinfo->{end}));
-
-        # TODO: enable/disable time bump via setting?
-        $expire_time->set(hour => '23', minute => '59', second => '59');
-
-        $logger->info("circulator: shelf_expire_time overlaps".
-            " with closed date, pushing expire time to $expire_time");
+    #Grab the numeric interval from the text
+    my $day_count;
+    if ( $shelf_expire =~ /(\d+)/g) {
+        $day_count = $1;
     }
 
+    return undef unless $shelf_expire and $day_count;
+
+    my $date_str = $U->org_unit_open_days(
+        $hold->pickup_lib, $day_count, $editor);
+
+    my $expire_time = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($date_str));
+
+    # Hold shelf expire should include the full final day.
+    $expire_time->set(hour => '23', minute => '59', second => '59');
     $hold->shelf_expire_time($expire_time->strftime('%FT%T%z'));
     return undef;
 }
@@ -1567,9 +1641,12 @@ sub _hold_status {
             or return $e->event;
     }
 
-    return 3 if $copy->status == OILS_COPY_STATUS_IN_TRANSIT;
+    # Protect against fleshed copy statuses
+    my $cp_status = ref($copy->status) ? $copy->status->id : $copy->status;
 
-    if($copy->status == OILS_COPY_STATUS_ON_HOLDS_SHELF) {
+    return 3 if $cp_status == OILS_COPY_STATUS_IN_TRANSIT;
+
+    if($cp_status == OILS_COPY_STATUS_ON_HOLDS_SHELF) {
 
         my $hs_wait_interval = $U->ou_ancestor_setting_value($hold->pickup_lib, 'circ.hold_shelf_status_delay');
         return 4 unless $hs_wait_interval;
@@ -1648,21 +1725,27 @@ sub retrieve_hold_queue_status_impl {
 
         # fetch cut_in_line and request_time since they're in the order_by
         # and we're asking for distinct values
+        #
+        # KCLS JBAS-2005 Pull hold queue position from newly
+        # materialized reporter.hold_request_record grouping
+        # in targeted bib record.
         select => {ahr => ['id', 'cut_in_line', 'request_time']},
         from   => 'ahr',
         where => {
+            fulfillment_time => undef,
+            cancel_time => undef,
             id => { in => {
-                select => { ahcm => ['hold'] },
+                select => { rhrr => ['id'] },
                 from   => {
-                    'ahcm' => {
-                        'ahcm2' => {
-                            'class' => 'ahcm',
-                            'field' => 'target_copy',
-                            'fkey'  => 'target_copy'
+                    'rhrr' => {
+                        'rhrr2' => {
+                            'class' => 'rhrr',
+                            'field' => 'bib_record',
+                            'fkey'  => 'bib_record'
                         }
                     }
                 },
-                where => { '+ahcm2' => { hold => $hold->id } },
+                where => { '+rhrr2' => { id => $hold->id } },
                 distinct => 1
             }}
         },
@@ -2395,6 +2478,7 @@ __PACKAGE__->register_method(
 __PACKAGE__->register_method(
     method    => 'fetch_captured_holds',
     api_name  => 'open-ils.circ.captured_holds.id_list.expired_on_shelf.retrieve',
+    
     stream    => 1,
     authoritative => 1,
     signature => q/
@@ -2439,6 +2523,8 @@ sub fetch_captured_holds {
 
     $org ||= $e->requestor->ws_ou;
 
+	$logger->info("In fetch_captured_holds VSL");
+
     my $current_copy = { '!=' => undef };
     $current_copy = { '=' => $match_copy } if $match_copy;
 
@@ -2463,12 +2549,25 @@ sub fetch_captured_holds {
         }
     };
     if($self->api_name =~ /expired/) {
+		
+		$logger->info("in if(api_name =~/expired/");
         $query->{'where'}->{'+alhr'}->{'-or'} = {
                 shelf_expire_time => { '<' => 'today'},
                 cancel_time => { '!=' => undef },
-        };
+                
+        };  
     }
-    my $hold_ids = $e->json_query( $query );
+    my $hold_ids = $e->json_query( $query, {timeout => 600} );
+    
+     if ($self->api_name =~ /wrong_shelf/) {
+       # fetch holds whose current_shelf_lib is $org, but whose pickup 
+        # lib is some other org unit.  Ignore already-retrieved holds.
+        my $wrong_shelf =
+             pickup_lib_changed_on_shelf_holds(
+                 $e, $org, [map {$_->{id}} @$hold_ids]);
+        # match the layout of other items in $hold_ids
+       push (@$hold_ids, {id => $_}) for @$wrong_shelf;
+    }
 
     if ($self->api_name =~ /wrong_shelf/) {
         # fetch holds whose current_shelf_lib is $org, but whose pickup 
@@ -2527,7 +2626,7 @@ sub print_expired_holds_stream {
     $$params{org_id} = (defined $$params{org_id}) ? $$params{org_id}: $e->requestor->ws_ou;
 
     my @hold_ids = $self->method_lookup(
-        "open-ils.circ.captured_holds.id_list.expired_on_shelf.retrieve"
+        "open-ils.circ.captured_holds.id_list.expired_on_shelf_or_wrong_shelf.retrieve"
     )->run($auth, $params->{"org_id"});
 
     if (!@hold_ids) {
@@ -3636,11 +3735,25 @@ __PACKAGE__->register_method(
 );
 
 sub stream_wide_holds {
-    my($self, $client, $auth, $restrictions, $order_by, $limit, $offset) = @_;
+    my($self, $client, $auth, $restrictions, $order_by, $limit, $offset, $options) = @_;
+    $options ||= {};
 
     my $e = new_editor(authtoken=>$auth);
     $e->checkauth or return $e->event;
     $e->allowed('VIEW_HOLD') or return $e->event;
+
+    if ($options->{recently_canceled}) {
+        # Map the the recently canceled holds filter into values 
+        # wide-stream understands.
+        my $filter = recently_canceled_holds_filter($e);
+        $restrictions->{$_} =
+            $filter->{where}->{$_} for keys %{$filter->{where}};
+
+        $limit = $filter->{limit} if $filter->{limit};
+    }
+
+    my $filters = OpenSRF::Utils::JSON->perl2JSON($restrictions);
+    $logger->info("WIDE HOLD FILTERS: $filters");
 
     my $st = OpenSRF::AppSession->create('open-ils.storage');
     my $req = $st->request(
@@ -3712,10 +3825,15 @@ sub uber_hold_impl {
     push (@$flesh_fields, 'cancel_cause') if $args->{include_cancel_cause};
     push (@$flesh_fields, 'sms_carrier') if $args->{include_sms_carrier};
 
-    my $hold = $e->retrieve_action_hold_request([
-        $hold_id,
-        {flesh => 1, flesh_fields => {ahr => $flesh_fields}}
-    ]) or return $e->event;
+    my $flesh = {flesh => 1, flesh_fields => {ahr => $flesh_fields}};
+
+    if ($args->{include_copy_status}) {
+        $flesh->{flesh} = 2;
+        $flesh->{flesh_fields}->{acp} = ['status'];
+    }
+
+    my $hold = $e->retrieve_action_hold_request([$hold_id, $flesh])
+        or return $e->event;
 
     if($hold->usr->id ne $e->requestor->id) {
         # caller is asking for someone else's hold
@@ -3737,6 +3855,21 @@ sub uber_hold_impl {
 
     my( $mvr, $volume, $copy, $issuance, $part, $bre ) = find_hold_mvr($e, $hold, $args);
 
+    # --------------------
+    # KCLS - include bib call number if no asset.call_number is available
+    my $bibcn;
+    if (!$volume) {
+        my $marc;
+        eval { $marc = MARC::Record->new_from_xml($bre->marc()) };
+        if ($@) {
+            $logger->error(
+                "Error processing MARC record for bib ".$bre->id." $@"); 
+        } else {
+            $bibcn = $marc->subfield('092',"a") || $marc->subfield('099', "a") || " "; 
+        }
+    }
+    # --------------------
+
     flesh_hold_notices([$hold], $e) unless $args->{suppress_notices};
     flesh_hold_transits([$hold]) unless $args->{suppress_transits};
 
@@ -3746,6 +3879,8 @@ sub uber_hold_impl {
     my $resp = {
         hold    => $hold,
         bre_id  => $bre->id,
+        # Allows data from the bib call number to be used
+        ($bibcn    ? (bibcn          => $bibcn)    : ()), 
         ($copy     ? (copy           => $copy)     : ()),
         ($volume   ? (volume         => $volume)   : ()),
         ($issuance ? (issuance       => $issuance) : ()),
@@ -3828,6 +3963,19 @@ sub find_hold_mvr {
     if(!$copy and ref $hold->current_copy ) {
         $copy = $hold->current_copy;
         $hold->current_copy($copy->id) unless $args->{include_current_copy};
+
+    } elsif ($copy 
+        && $args->{include_copy_status}
+        && ref $hold->current_copy 
+        && ref $hold->current_copy->status) {
+        $copy->status($hold->current_copy->status);
+    }
+
+    if ($copy && !ref $copy->status && $args->{include_copy_status}) {
+        # In cases of copy-level holds that are un-targeted (i.e. no 
+        # current_copy), users may still want to see the status of the 
+        # hold target copy.
+        $copy->status($e->retrieve_config_copy_status($copy->status));
     }
 
     if(!$volume and $copy) {
@@ -3851,6 +3999,18 @@ __PACKAGE__->register_method(
     }
 );
 
+__PACKAGE__->register_method(
+    method    => 'clear_shelf_cache',
+    api_name  => 'open-ils.circ.hold.clear_shelf.get_cache.test',
+    stream    => 1,
+    signature => {
+        desc => q/
+            Returns 1 if cache data exists, undef otherwise.
+        /
+    }
+);
+
+
 sub clear_shelf_cache {
     my($self, $client, $auth, $cache_key, $chunk_size) = @_;
     my $e = new_editor(authtoken => $auth, xact => 1);
@@ -3865,13 +4025,19 @@ sub clear_shelf_cache {
         $logger->info("no hold data found in cache"); # XXX TODO return event
         $e->rollback;
         return undef;
+    } elsif ($self->api_name =~ /test/) {
+        # inform the caller that cache data is present and exit.
+        return 1;
     }
 
     my $maximum = 0;
     foreach (keys %$hold_data) {
         $maximum += scalar(@{ $hold_data->{$_} });
     }
-    $client->respond({"maximum" => $maximum, "progress" => 0});
+
+    my $progress = {maximum => $maximum, progress => 0};
+
+    $client->respond($progress);
 
     for my $action (sort keys %$hold_data) {
         while (@{$hold_data->{$action}}) {
@@ -3880,6 +4046,7 @@ sub clear_shelf_cache {
             my $result_chunk = $e->json_query({
                 "select" => {
                     "acp" => ["barcode"],
+                    "ccs" => [{column => 'name', alias => 'cs_name'}],
                     "au" => [qw/
                         first_given_name second_given_name family_name alias
                     /],
@@ -3888,7 +4055,7 @@ sub clear_shelf_cache {
                     "acns" => [{column => "label", alias => "suffix"}],
                     "bre" => ["marc"],
                     "acpl" => ["name"],
-                    "ahr" => ["id"]
+                    "ahr" => ["id", "hold_type"]
                 },
                 "from" => {
                     "ahr" => {
@@ -3909,7 +4076,8 @@ sub clear_shelf_cache {
                                         }
                                     }
                                 },
-                                "acpl" => {"field" => "id", "fkey" => "location"}
+                                "acpl" => {"field" => "id", "fkey" => "location"},
+                                "ccs" => {field => 'id', fkey => 'status'},
                             }
                         },
                         "au" => {"field" => "id", "fkey" => "usr"}
@@ -3917,6 +4085,16 @@ sub clear_shelf_cache {
                 },
                 "where" => {"+ahr" => {"id" => \@hid_chunk}}
             }, {"substream" => 1}) or return $e->die_event;
+
+
+            # Get the updated hold status for each hold
+            for my $data (@$result_chunk) {
+                my $hold = $e->retrieve_action_hold_request($data->{id});
+                $data->{hold_status} = _hold_status($e, $hold);
+            }
+
+            $progress->{progress}++;
+            $client->respond($progress);
 
             $client->respond([
                 map {
@@ -3934,6 +4112,7 @@ sub clear_shelf_cache {
 __PACKAGE__->register_method(
     method    => 'clear_shelf_process',
     stream    => 1,
+    max_bundle_count => 5,
     api_name  => 'open-ils.circ.hold.clear_shelf.process',
     signature => {
         desc => q/
@@ -3947,27 +4126,41 @@ __PACKAGE__->register_method(
     }
 );
 
+__PACKAGE__->register_method(
+    method    => 'clear_shelf_process',
+    max_bundle_count => 5,
+    stream    => 1,
+    api_name  => 'open-ils.circ.hold.clear_shelf.process.fire',
+);
+
+
 sub clear_shelf_process {
     my($self, $client, $auth, $org_id, $match_copy, $chunk_size) = @_;
 
     my $e = new_editor(authtoken=>$auth);
     $e->checkauth or return $e->die_event;
     my $cache = OpenSRF::Utils::Cache->new('global');
+    my $cache_key = md5_hex(time . $$ . rand());
 
     $org_id ||= $e->requestor->ws_ou;
     $e->allowed('UPDATE_HOLD', $org_id) or return $e->die_event;
 
+    # return the cache key first thing so that the client
+    # can poll for results instead of waiting on the API to complete.
+    $client->respond_complete({cache_key => $cache_key}) 
+        if $self->api_name =~ /fire/;
+
     my $copy_status = $U->ou_ancestor_setting_value($org_id, 'circ.holds.clear_shelf.copy_status');
 
     my @hold_ids = $self->method_lookup(
-        "open-ils.circ.captured_holds.id_list.expired_on_shelf.retrieve"
+         "open-ils.circ.captured_holds.id_list.expired_on_shelf.retrieve"
     )->run($auth, $org_id, $match_copy);
 
     $e->xact_begin;
 
     my @holds;
     my @canceled_holds; # newly canceled holds
-    $chunk_size ||= 25; # chunked status updates
+    $chunk_size ||= 5; # chunked status updates
     $client->max_chunk_size($chunk_size) if (!$client->can('max_bundle_size') && $client->can('max_chunk_size'));
 
     my $counter = 0;
@@ -4000,7 +4193,7 @@ sub clear_shelf_process {
         }
 
         push(@holds, $hold);
-        $client->respond({maximum => int(scalar(@holds)), progress => $counter}) if ( (++$counter % $chunk_size) == 0);
+        $client->respond({maximum => int(scalar(@hold_ids)), progress => $counter}) if ( (++$counter % $chunk_size) == 0);
     }
 
     if ($e->commit) {
@@ -4012,6 +4205,7 @@ sub clear_shelf_process {
             pl_changed => pickup_lib_changed_on_shelf_holds($e, $org_id, \@hold_ids)
         );
 
+        my $counter = 0;
         for my $hold (@holds) {
 
             my $copy = $hold->current_copy;
@@ -4029,9 +4223,11 @@ sub clear_shelf_process {
 
                 push(@{$cache_data{shelf}}, $hold->id); # copy needs to go back to the shelf
             }
+
+            $client->respond({maximum => int(scalar(@holds)), progress => $counter}) 
+                if ( (++$counter % $chunk_size) == 0);
         }
 
-        my $cache_key = md5_hex(time . $$ . rand());
         $logger->info("clear_shelf_cache: storing under $cache_key");
         $cache->put_cache($cache_key, \%cache_data, 7200); # TODO: 2 hours.  configurable?
 
@@ -4057,6 +4253,7 @@ sub clear_shelf_process {
         $client->respond_complete;
     }
 }
+
 
 # returns IDs for holds that are on the holds shelf but 
 # have had their pickup_libs change while on the shelf.
@@ -4473,6 +4670,10 @@ sub rec_hold_count {
     my($self, $conn, $target_id, $args) = @_;
     $args ||= {};
 
+    # KCLS JBAS-2024
+    return rec_hold_count_via_rhrr($target_id, $args) 
+        unless $self->api_name =~ /mmr/;
+
     my $mmr_join = {
         mmrsm => {
             field => 'source',
@@ -4607,6 +4808,52 @@ sub rec_hold_count {
 
     return $result;
 }
+
+# KCLS JBAS-2024
+sub rec_hold_count_via_rhrr {
+    my ($target_id, $args) = @_;
+    $args ||= {};
+
+    # TODO: add metarecord holds count support by counting holds
+    # in rhrr that link to the master record.
+    # TODO: post to LP
+
+    my $query = {
+        select => {rhrr => [
+            {column => 'id', transform => 'count', alias => 'count'}
+        ]},
+        from => {rhrr => 'ahr'},
+        where => {
+            '+rhrr' => {bib_record => $target_id},
+            '+ahr' => {
+                cancel_time => undef,
+                fulfillment_time => undef
+            }
+        }
+    };
+
+    if (my $pld = $args->{pickup_lib_descendant}) {
+
+        my $top_ou = 
+            new_editor()->search_actor_org_unit(
+                {parent_ou => undef})->[0];
+
+        $query->{where}->{'+ahr'}->{pickup_lib} = {
+            in => {
+                select  => {aou => [{ 
+                    column => 'id', 
+                    transform => 'actor.org_unit_descendants', 
+                    result_field => 'id' 
+                }]},
+                from    => 'aou',
+                where   => {id => $pld}
+            }
+        } if ($pld != $top_ou->id);
+    }
+
+    return new_editor()->json_query($query)->[0]->{count};
+}
+
 
 # A helper function to calculate a hold's expiration time at a given
 # org_unit. Takes the org_unit as an argument and returns either the

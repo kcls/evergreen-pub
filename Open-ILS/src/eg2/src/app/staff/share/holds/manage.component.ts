@@ -6,6 +6,7 @@ import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {HoldsService} from './holds.service';
+import {DateUtil} from '@eg/share/util/date';
 
 /** Edit holds in single or batch mode. */
 
@@ -23,6 +24,7 @@ export class HoldManageComponent implements OnInit {
     smsEnabled: boolean;
     smsCarriers: ComboboxEntry[];
     activeFields: {[key: string]: boolean};
+    hasInvalidValues = false;
 
     // Emits true if changes were applied to the hold.
     @Output() onComplete: EventEmitter<boolean>;
@@ -66,15 +68,20 @@ export class HoldManageComponent implements OnInit {
             // Use a dummy hold to store form values.
             this.hold = this.idl.create('ahr');
 
+            // Set all boolean fields to false on startup so they are
+            // not sent to the server as null when saving.
+            this.idl.classes.ahr.fields
+                .filter(f => f.datatype === 'bool')
+                .forEach(f => this.hold[f.name]('f'));
+
         } else {
             // Form values are stored in the one hold we're editing.
             this.pcrud.retrieve('ahr', this.holdIds[0])
-            .subscribe(hold => this.hold = hold);
+            .subscribe(hold => {
+                this.hold = hold;
+                setTimeout(() => this.checkInvalidValues());
+            });
         }
-    }
-
-    toFormData() {
-
     }
 
     isBatch(): boolean {
@@ -87,7 +94,27 @@ export class HoldManageComponent implements OnInit {
         }
     }
 
+    checkInvalidValues() {
+        this.hasInvalidValues =
+            document.querySelector('.eg-date-select-native.ng-invalid') !== null;
+    }
+
+    applyDateValue(field: string, ymd: string) {
+
+        if (field === 'shelf_expire_time') {
+            // Always bump shelf expire time to the end of the requested day.
+            const d: Date = DateUtil.localDateFromYmd(ymd);
+            d.setHours(23, 59, 59);
+            ymd = d.toISOString();
+        }
+
+        this.hold[field](ymd);
+        setTimeout(() => this.checkInvalidValues());
+    }
+
     save() {
+        if (this.hasInvalidValues) { return; }
+
         if (this.isBatch()) {
 
             // Fields with edit-active checkboxes
@@ -100,6 +127,10 @@ export class HoldManageComponent implements OnInit {
                 hold => {
                     // Copy form fields to each hold to update.
                     fields.forEach(field => hold[field](this.hold[field]()));
+
+                    // Clear thaw date for active holds.
+                    if (hold.frozen() === 'f') { hold.thaw_date(null); }
+                    if (!hold.shelf_time()) { hold.shelf_expire_time(null); }
                     holds.push(hold);
                 },
                 err => {},
@@ -108,6 +139,8 @@ export class HoldManageComponent implements OnInit {
                 }
             );
         } else {
+            // Clear thaw date for active holds.
+            if (this.hold.frozen() === 'f') { this.hold.thaw_date(null); }
             this.saveBatch([this.hold]);
         }
     }
@@ -138,6 +171,10 @@ export class HoldManageComponent implements OnInit {
 
     exit() {
         this.onComplete.emit(false);
+    }
+
+    setExp(value) {
+        this.hold.expire_time(value);
     }
 }
 

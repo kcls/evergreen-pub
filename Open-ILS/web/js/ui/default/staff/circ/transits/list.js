@@ -65,7 +65,7 @@ function($scope , $q , $routeParams , $window , egCore , egTransits , egGridData
         if (!angular.isArray(transits)) transits = [transits];
         angular.forEach(transits, function(transit) {
             $window.open(
-                egCore.env.basePath + '/cat/item/' +
+                '/eg2/staff/cat/item/' +
                 transit.target_copy().id(),
                 '_blank'
             ).focus()
@@ -197,7 +197,8 @@ function($scope , $q , $routeParams , $window , egCore , egTransits , egGridData
                 }
             ).then(function(key) {
                 if (key) {
-                    var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                    //var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                    var url = '/eg2/staff/cat/volcopy/holdings/session/' + key;
                     $timeout(function() { $window.open(url, '_blank') });
                 } else {
                     alert('Could not create anonymous cache key!');

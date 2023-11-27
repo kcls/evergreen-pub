@@ -6,12 +6,15 @@
 <!ENTITY common.check_barcode.description "Check barcode?">
 <!ENTITY common.date_helper 'or choose one of these'>
 <!ENTITY common.date_helper.normal 'Normal'>
+<!ENTITY common.date_helper.same_day 'Today'>
 <!ENTITY common.date_helper.3_days 'Today + 3 days'>
 <!ENTITY common.date_helper.7_days 'Today + 7 days'>
 <!ENTITY common.date_helper.14_days 'Today + 14 days'>
 <!ENTITY common.date_helper.21_days 'Today + 21 days'>
 <!ENTITY common.date_helper.28_days 'Today + 28 days'>
 <!ENTITY common.date_helper.30_days 'Today + 30 days'>
+<!ENTITY common.date_helper.42_days 'Today + 42 days'>
+<!ENTITY common.date_helper.1_year 'Today + 1 year'>
 <!ENTITY common.due_date.description 'Enter the item due date:'>
 <!ENTITY common.enter.label "Enter">
 <!ENTITY common.enter.accesskey "E">
@@ -152,7 +155,7 @@
 <!ENTITY staff.au_day_phone_label "Day Phone">
 <!ENTITY staff.au_dob_label "Date of Birth">
 <!ENTITY staff.au_email_label "Email">
-<!ENTITY staff.au_evening_phone_label "Evening Phone">
+<!ENTITY staff.au_evening_phone_label "Secondary Phone">
 <!ENTITY staff.au_expire_date_label "Expire Date">
 <!ENTITY staff.au_family_name_label "Family Name">
 <!ENTITY staff.au_first_given_name_label "First Given Name">
@@ -348,6 +351,8 @@
 <!ENTITY staff.cat.opac.manage_multi_home_items.label "Manage Conjoined Items">
 <!ENTITY staff.cat.opac.mark_for_multi_home.accesskey "C">
 <!ENTITY staff.cat.opac.mark_for_multi_home.label "Mark as Target for Conjoined Items">
+<!ENTITY staff.cat.opac.mark_for_li_transfer.accesskey "">
+<!ENTITY staff.cat.opac.mark_for_li_transfer.label "Mark as Target for Lineitem Transfer">
 <!ENTITY staff.cat.opac.marc_edit.accesskey "E">
 <!ENTITY staff.cat.opac.marc_edit.label "MARC Edit">
 <!ENTITY staff.cat.opac.marc_view.accesskey "V">
@@ -384,6 +389,8 @@
 <!ENTITY staff.cat.opac.view_holds.label "View Holds">
 <!ENTITY staff.cat.opac.view_orders.accesskey "r">
 <!ENTITY staff.cat.opac.view_orders.label "View/Place Orders">
+<!ENTITY staff.cat.opac.update_items.accesskey "u">
+<!ENTITY staff.cat.opac.update_items.label "Update Items">
 <!ENTITY staff.cat.opac.alt_serial.accesskey "a">
 <!ENTITY staff.cat.opac.alt_serial.label "Alternate Serial Control">
 <!ENTITY staff.cat.opac.batch_receive.accesskey "i">
@@ -736,6 +743,7 @@
 <!ENTITY staff.main.button_bar.hotkeys_toggle "Toggle Hotkeys">
 <!ENTITY staff.main.button_bar.create_marc "Create MARC Record">
 <!ENTITY staff.main.button_bar.authority_manage "Manage Authorities">
+<!ENTITY staff.main.button_bar.find_authority_by_id "Find Authority by ID">
 <!ENTITY staff.main.button_bar.retrieve_last_record "Retrieve Last Record">
 <!ENTITY staff.main.menu.acquisitions.accesskey "q">
 <!ENTITY staff.main.menu.acquisitions.label "Acquisitions">
@@ -758,6 +766,7 @@
 <!ENTITY staff.main.menu.admin.local_admin.conify.action_trigger.label "Notifications / Action Triggers">
 <!ENTITY staff.main.menu.admin.local_admin.conify.survey.label "Surveys">
 <!ENTITY staff.main.menu.admin.local_admin.conify.idl_field_doc.label "Field Documentation">
+<!ENTITY staff.main.menu.admin.local_admin.conify.patron_message_editor.label "Patron Message Editor">
 <!ENTITY staff.main.menu.admin.local_admin.conify.standing_penalty.label "Standing Penalties">
 <!ENTITY staff.main.menu.admin.local_admin.conify.grp_penalty_threshold.label "Group Penalty Thresholds">
 <!ENTITY staff.main.menu.admin.local_admin.conify.copy_location_order.label "Copy Location Order">
@@ -967,6 +976,8 @@
 <!ENTITY staff.main.menu.cat.add_volume.label "Add Volume">
 <!ENTITY staff.main.menu.cat.authority_manage.accesskey "t">
 <!ENTITY staff.main.menu.cat.authority_manage.label "Manage Authorities">
+<!ENTITY staff.main.menu.cat.find_authority_by_id.accesskey "F">
+<!ENTITY staff.main.menu.cat.find_authority_by_id.label "Find Authority by ID">
 <!ENTITY staff.main.menu.cat.bib_search.accesskey "S">
 <!ENTITY staff.main.menu.cat.bib_search.label "Search the Catalog">
 <!ENTITY staff.main.menu.cat.bib_status.key "B">
@@ -1155,6 +1166,8 @@
 <!ENTITY staff.main.menu.file.label "File">
 <!ENTITY staff.main.menu.file.new.accesskey "N">
 <!ENTITY staff.main.menu.file.new.label "New Window">
+<!ENTITY staff.main.menu.file.open.record.windows.horizontal "Tile MARC Records (Horizontal)">
+<!ENTITY staff.main.menu.file.open.record.windows.vertical "Tile MARC Records (Vertical)">
 <!ENTITY staff.main.menu.file.new_tab.accesskey "T">
 <!ENTITY staff.main.menu.file.new_tab.label "New Tab">
 <!ENTITY staff.main.menu.file.portal.label "Home">
@@ -1530,9 +1543,9 @@
 <!ENTITY staff.patron_display.tab.stat_cats.accesskey ''>
 <!ENTITY staff.patron_display.credit.label 'Credit:'>
 <!ENTITY staff.patron_display.date_of_birth.label 'Date of Birth:'>
-<!ENTITY staff.patron_display.day_phone.label 'Day Phone:'>
+<!ENTITY staff.patron_display.day_phone.label 'Primary Phone:'>
 <!ENTITY staff.patron_display.email.label 'Email:'>
-<!ENTITY staff.patron_display.evening_phone.label 'Evening Phone:'>
+<!ENTITY staff.patron_display.evening_phone.label 'Secondary Phone:'>
 <!ENTITY staff.patron_display.family_name.label 'Last Name:'>
 <!ENTITY staff.patron_display.first_given_name.label 'First Name:'>
 <!ENTITY staff.patron_display.holds.label 'Holds:'>
@@ -1546,6 +1559,7 @@
 <!ENTITY staff.patron_display.items.print_receipt.accesskey 'P'>
 <!ENTITY staff.patron_display.items_claimed_returned.label 'Items Claimed Returned:'>
 <!ENTITY staff.patron_display.library_card.label 'Library Card:'>
+<!ENTITY staff.patron_display.parent_guardian.label 'Parent/Guardian:'>
 <!ENTITY staff.patron_display.verify_password.label 'Test Password'>
 <!ENTITY staff.patron_display.verify_password.accesskey 'P'>
 <!ENTITY staff.patron_display.toggle_summary.label 'Toggle Summary'>
@@ -1564,7 +1578,7 @@
 <!ENTITY staff.patron_display.address_export_popup.print 'Print'>
 <!ENTITY staff.patron_display.radio.mailing_address.label 'Mailing'>
 <!ENTITY staff.patron_display.radio.mailing_address.accesskey ''>
-<!ENTITY staff.patron_display.radio.physical_address.label 'Billing'>
+<!ENTITY staff.patron_display.radio.physical_address.label 'Residence'>
 <!ENTITY staff.patron_display.radio.physical_address.accesskey ''>
 <!ENTITY staff.patron_display.name.label 'Patron Name'>
 <!ENTITY staff.patron_display.other_phone.label 'Other Phone:'>
@@ -1585,12 +1599,15 @@
 <!ENTITY staff.patron_display.penalty.menu.actions.accesskey "P">
 <!ENTITY staff.patron_display.penalty.menu.apply.label "Apply Standing Penalty/Message">
 <!ENTITY staff.patron_display.penalty.menu.apply.accesskey "S">
+<!ENTITY staff.patron_display.penalty.menu.actions.view.label "View Penalty/Message">
 <!ENTITY staff.patron_display.penalty.menu.actions.remove.label "Remove Penalty/Message">
 <!ENTITY staff.patron_display.penalty.menu.actions.remove.accesskey "R">
 <!ENTITY staff.patron_display.penalty.menu.actions.edit.label "Modify Penalty/Message">
 <!ENTITY staff.patron_display.penalty.menu.actions.edit.accesskey "M">
 <!ENTITY staff.patron_display.penalty.menu.actions.archive.label "Archive Penalty/Message">
 <!ENTITY staff.patron_display.penalty.menu.actions.archive.accesskey "A">
+<!ENTITY staff.patron_display.penalty.column.save.label "Save Columns">
+<!ENTITY staff.patron_display.penalty.column.archive.save.label "Save Archived Messages Columns">
 <!ENTITY staff.patron_display.apply_penalty_dialog.title "Apply Standing Penalty/Message">
 <!ENTITY staff.patron_display.apply_penalty_dialog.header "Apply Standing Penalty/Message">
 <!ENTITY staff.patron_display.apply_penalty_dialog.description "Notes, Alerts, Blocks">
@@ -1606,6 +1623,10 @@
 <!ENTITY staff.patron_display.apply_penalty_dialog.apply_btn.accesskey "A">
 <!ENTITY staff.patron_display.apply_penalty_dialog.initials_entry.label "Initials">
 <!ENTITY staff.patron_display.apply_penalty_dialog.initials_entry.accesskey "I">
+<!ENTITY staff.patron_display.view_penalty_dialog.title "View Standing Penalty/Message">
+<!ENTITY staff.patron_display.view_penalty_dialog.header "View Standing Penalty/Message">
+<!ENTITY staff.patron_display.view_penalty_dialog.close_btn.label "Close">
+<!ENTITY staff.patron_display.view_penalty_dialog.close_btn.accesskey "C">
 <!ENTITY staff.patron_display.edit_penalty_dialog.title "Modify Standing Penalty/Message">
 <!ENTITY staff.patron_display.edit_penalty_dialog.header "Modify Standing Penalty/Message">
 <!ENTITY staff.patron_display.edit_penalty_dialog.description "Notes, Alerts, Blocks">
@@ -2267,6 +2288,7 @@
 <!ENTITY staff.server.admin.index.library_configuration "Library Configuration">
 <!ENTITY staff.server.admin.index.maintenance_reports "Maintenance Reports">
 <!ENTITY staff.server.admin.index.fonts_and_sounds "Global Font and Sound Settings">
+<!ENTITY staff.server.admin.index.search_templates "Search Templates">
 <!ENTITY staff.server.admin.index.printer "Printer Settings Editor">
 <!ENTITY staff.server.admin.index.do_not_auto_attempt_print_setting.label "'Do Not Attempt Auto-Print' Setting">
 <!ENTITY staff.server.admin.index.do_not_auto_attempt_print_setting.accesskey "">
@@ -2441,7 +2463,7 @@
 <!ENTITY staff.circ.checkin_overlay.sel_bucket.accesskey "A">
 <!ENTITY staff.circ.checkin_overlay.sel_opac.label "Show in Catalog">
 <!ENTITY staff.circ.checkin_overlay.sel_opac.accesskey "S">
-<!ENTITY staff.circ.checkin_overlay.sel_opac_holds.label "Show Holds on Bib">
+<!ENTITY staff.circ.checkin_overlay.sel_opac_holds.label "View Holds">
 <!ENTITY staff.circ.checkin_overlay.sel_opac_holds.accesskey "H">
 <!ENTITY staff.circ.checkin_overlay.sel_copy_details.label "Show Item Details">
 <!ENTITY staff.circ.checkin_overlay.sel_copy_details.accesskey "I">
@@ -2499,7 +2521,7 @@
 <!ENTITY staff.circ.renew_overlay.sel_bucket.accesskey "A">
 <!ENTITY staff.circ.renew_overlay.sel_opac.label "Show in Catalog">
 <!ENTITY staff.circ.renew_overlay.sel_opac.accesskey "S">
-<!ENTITY staff.circ.renew_overlay.sel_opac_holds.label "Show Holds on Bib">
+<!ENTITY staff.circ.renew_overlay.sel_opac_holds.label "View Holds">
 <!ENTITY staff.circ.renew_overlay.sel_opac_holds.accesskey "H">
 <!ENTITY staff.circ.renew_overlay.sel_copy_details.label "Show Item Details">
 <!ENTITY staff.circ.renew_overlay.sel_copy_details.accesskey "I">
@@ -2566,8 +2588,9 @@
 <!ENTITY staff.circ.copy_status_overlay.sel_record_bucket.accesskey "">
 <!ENTITY staff.circ.copy_status_overlay.sel_opac.label "Show in Catalog">
 <!ENTITY staff.circ.copy_status_overlay.sel_opac.accesskey "S">
-<!ENTITY staff.circ.copy_status_overlay.sel_opac_holds.label "Show Holds on Bib">
+<!ENTITY staff.circ.copy_status_overlay.sel_opac_holds.label "View Holds">
 <!ENTITY staff.circ.copy_status_overlay.sel_opac_holds.accesskey "H">
+<!ENTITY staff.circ.copy_status_overlay.sel_opac_copy_browser.label "Holdings Maintenance">
 <!ENTITY staff.circ.copy_status_overlay.sel_copy_details.label "Show Item Details">
 <!ENTITY staff.circ.copy_status_overlay.sel_copy_details.accesskey "I">
 <!ENTITY staff.circ.copy_status_overlay.sel_patron.label "Show Last Few Circulations">
@@ -2626,6 +2649,8 @@
 <!ENTITY staff.circ.copy_status_overlay.last_scanned.caption "Scan Item">
 <!ENTITY staff.circ.copy_status_overlay.copy_status_scan_barcode.label "Barcode:">
 <!ENTITY staff.circ.copy_status_overlay.copy_status_scan_barcode.accesskey "B">
+<!ENTITY staff.patron_search_form.egid.accesskey 'E'>
+<!ENTITY staff.patron_search_form.egid.label 'Evergreen Id:'>
 <!ENTITY staff.circ.copy_status_overlay.copy_status_submit_barcode.label "Submit">
 <!ENTITY staff.circ.copy_status_overlay.copy_status_submit_barcode.accesskey "t">
 <!ENTITY staff.circ.copy_status_overlay.copy_status_upload_file.label "Upload From File">
@@ -2678,6 +2703,7 @@
 <!ENTITY staff.circ.pre_cat.dummy_author.accesskey "A">
 <!ENTITY staff.circ.pre_cat.dummy_isbn.label "ISBN">
 <!ENTITY staff.circ.pre_cat.dummy_isbn.accesskey "I">
+<!ENTITY staff.circ.pre_cat.dummy_barcode.label "Barcode">
 <!ENTITY staff.circ.pre_cat.dummy_circ_modifier.label "Circ Modifier">
 <!ENTITY staff.circ.pre_cat.dummy_circ_modifier.accesskey "M">
 <!ENTITY staff.circ.pre_cat.cancel.label "Cancel">
@@ -2726,6 +2752,8 @@
 <!ENTITY staff.cat.bib_brief.edition.accesskey "">
 <!ENTITY staff.cat.bib_brief.pub_date.label "Pub Date:">
 <!ENTITY staff.cat.bib_brief.pub_date.accesskey "">
+<!ENTITY staff.cat.bib_brief.cataloging_date.label "Cataloging Date:">
+<!ENTITY staff.cat.bib_brief.cataloging_date.accesskey "">
 <!ENTITY staff.cat.bib_brief.call_number.label "Bib Call #:">
 <!ENTITY staff.cat.bib_brief.call_number.accesskey "">
 <!-- "TCN" is an abbreviation for "title control number" -->
@@ -2745,7 +2773,7 @@
 <!ENTITY staff.circ.holds.copy_to_clipboard.accesskey "C">
 <!ENTITY staff.circ.holds.show_in_catalog "Show in Catalog">
 <!ENTITY staff.circ.holds.show_in_catalog.accesskey "S">
-<!ENTITY staff.circ.holds.show_in_catalog_holds "Show Holds on Bib">
+<!ENTITY staff.circ.holds.show_in_catalog_holds "View Holds">
 <!ENTITY staff.circ.holds.show_in_catalog_holds.accesskey "H">
 <!ENTITY staff.circ.holds.show_item_details "Show Item Details">
 <!ENTITY staff.circ.holds.show_item_details.accesskey "I">
@@ -3035,6 +3063,10 @@
 <!ENTITY staff.cat.marcedit.source.submit.label "Update source">
 <!ENTITY staff.cat.marcedit.phys_char_wizard.label "Physical Characteristics Wizard">
 <!ENTITY staff.cat.marcedit.phys_char_wizard.accesskey "W">
+<!ENTITY staff.cat.marcedit.catalogdate.caption "Cataloging Date:">
+<!ENTITY staff.cat.marcedit.catalogdate.submit.label "Update date">
+<!ENTITY staff.cat.marcedit.catalogdate.clear.label "Clear date">
+<!ENTITY staff.cat.marcedit.catalogdate.submit.accesskey "U">
 <!ENTITY staff.cat.marc_new.load.label "Load">
 <!ENTITY staff.cat.marc_new.load.accesskey "L">
 <!ENTITY staff.cat.marc_new.set_default.label "Set Workstation Default">
@@ -3307,7 +3339,7 @@
 <!ENTITY staff.patron.bill_history.bills.end_date.accesskey "">
 <!ENTITY staff.patron.bill_history.bills.retrieve.label "Retrieve Transactions">
 <!ENTITY staff.patron.bill_history.bills.retrieve.accesskey "R">
-
+<!ENTITY staff.patron.bill_interface.print_selected.label "Print Selected Items">
 <!ENTITY staff.patron.bill_interface.caption.label "Current Bills">
 <!ENTITY staff.patron.bill_interface.total_owed "Total Owed:">
 <!ENTITY staff.patron.bill_interface.total_checked "Total Checked:">
@@ -3345,8 +3377,8 @@
 <!ENTITY staff.patron.bill_interface.paid.label "Paid">
 
 <!ENTITY staff.patron.bills_overlay.still_checked_out.label "Red Items are still Checked Out">
-<!ENTITY staff.patron.bills_overlay.longoverdue_checked_out.label "Orange Items are Long Overdue">
-<!ENTITY staff.patron.bills_overlay.lost_checked_out.label "Dark Red Items are Lost">
+<!ENTITY staff.patron.bills_overlay.longoverdue_checked_out.label "Green Items are Long Overdue">
+<!ENTITY staff.patron.bills_overlay.lost_checked_out.label "Orange Items are Lost">
 <!ENTITY staff.patron.bills_overlay.uncheck_all.label "Uncheck All">
 <!ENTITY staff.patron.bills_overlay.uncheck_all.accesskey "U">
 <!ENTITY staff.patron.bills_overlay.check_all.label "Check All">
@@ -3592,8 +3624,8 @@
 <!ENTITY staff.patron.ue.secondary_id.label "Secondary Identification">
 <!ENTITY staff.patron.ue.parent_guardian.label "Parent or Guardian">
 <!ENTITY staff.patron.ue.email_address.label "Email Address">
-<!ENTITY staff.patron.ue.day_phone.label "Daytime Phone">
-<!ENTITY staff.patron.ue.evening_phone.label "Evening Phone">
+<!ENTITY staff.patron.ue.day_phone.label "Primary Phone">
+<!ENTITY staff.patron.ue.evening_phone.label "Secondary Phone">
 <!ENTITY staff.patron.ue.other_phone.label "Other Phone">
 <!ENTITY staff.patron.ue.home_library.label "Home Library">
 <!ENTITY staff.patron.ue.address.label "Address">
@@ -3889,8 +3921,17 @@
 <!ENTITY staff.search_prefs.adv_pane.caption "Advanced Search Default Pane">
 <!ENTITY staff.search_prefs.adv_pane.description "Advanced search has secondary panes for Numeric and MARC Expert searching. You can change which one is loaded by default when opening a new catalog window here.">
 <!ENTITY staff.search_prefs.adv_pane.advanced "Advanced (default)">
+<!ENTITY staff.search_prefs.adv_pane.browse "Browse">
 <!ENTITY staff.search_prefs.adv_pane.numeric "Numeric">
 <!ENTITY staff.search_prefs.adv_pane.expert "MARC Expert">
+<!ENTITY staff.search_prefs.browse_sort_default.caption "Browse Results Default Sort">
+<!ENTITY staff.search_prefs.browse_sort_default.description "You can set the default of how items are sorted in the Browse field.">
+<!ENTITY staff.search_prefs.browse_sort_default.titlesort "Title: A to Z">
+<!ENTITY staff.search_prefs.browse_sort_default.titlesort.descending "Title: Z to A">
+<!ENTITY staff.search_prefs.browse_sort_default.authorsort "Author: A to Z">
+<!ENTITY staff.search_prefs.browse_sort_default.authorsort.descending "Author: Z to A">
+<!ENTITY staff.search_prefs.browse_sort_default.pubdate "Date: Oldest to Newest">
+<!ENTITY staff.search_prefs.browse_sort_default.pubdate.descending "Date: Newest to Oldest">
 <!ENTITY staff.search_prefs.save.label "Save">
 <!ENTITY staff.search_prefs.save.accesskey "S">
 <!ENTITY staff.search_prefs.saved_message "Preferences saved">

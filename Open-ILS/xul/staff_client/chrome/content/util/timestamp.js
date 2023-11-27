@@ -46,6 +46,24 @@ function timestamp_init() {
             d.appendChild( t );
         }
 
+        // Append options specific to the Claims Returned dialog when requested.
+        // XXX: shoving this UI-specific code into this utility function
+        // is pretty hacky, but this code will be deprecated soon enough.
+        if (xul_param('claims_returned_ops')){
+            var newDiv = document.createElement("div"); 
+            var newGroup = document.createElement("radiogroup");
+            var newRadio1 = document.createElement("radio");
+            var newRadio2 = document.createElement("radio");
+            newGroup.appendChild(newRadio1);
+            newRadio1.setAttribute('label', "Use Due Date");
+            newRadio1.setAttribute('id', 'newRadio1');
+            newGroup.appendChild(newRadio2);
+            newRadio2.setAttribute('label', "Enter a claimed return date");
+            newRadio2.setAttribute('id', 'newRadio2');
+            newDiv.appendChild(newGroup);
+            x.appendChild(newDiv);
+        }
+
         if (xul_param('allow_unset')) { $('remove_btn').hidden = false; }
 
         /* set widget behavior */
@@ -118,6 +136,11 @@ function gen_handle_apply(params) {
                 var dp = $('datepicker');
                 var tp = $('timepicker');
 
+                // newRadio1 is not always present in the DOM.
+                var radioDom = document.getElementById("newRadio1");
+                var radio1On = 
+                    radioDom ? radioDom.getAttribute("selected") : false;
+
                 var check = check_date( dp.value );
                 if ( ! check.allowed ) { alert( check.reason ); $('apply_btn').disabled = true; return; }
 
@@ -126,6 +149,7 @@ function gen_handle_apply(params) {
                 dp_date.setHours( tp_date.getHours() );
                 dp_date.setMinutes( tp_date.getMinutes() );
 
+                xulG.radio1 = radio1On;
                 xulG.timestamp = util.date.formatted_date(dp_date,'%{iso8601}');
                 xulG.complete = 1;
                 window.close();
@@ -136,3 +160,4 @@ function gen_handle_apply(params) {
         }
     };
 }
+

@@ -1,0 +1,61 @@
+<eg-staff-banner i18n-bannerText bannerText="Pending Patrons">
+</eg-staff-banner>
+
+<eg-confirm-dialog #confirmDelete
+  i18n-dialogTitle i18n-dialogBody
+  dialogTitle="Confirm Delete"
+  dialogBody="Delete {{deleteCount}} pending patron(s)?">
+</eg-confirm-dialog>
+
+<div class="row">
+  <div class="col-lg-5">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <div class="input-group-text" i18n>Home Library</div>
+      </div>
+      <eg-org-select [applyDefault]="true" (onChange)="homeLibChanged($event)">
+      </eg-org-select>
+    </div>
+  </div>
+</div>
+
+
+<eg-grid #grid [dataSource]="gridDataSource" [disablePaging]="true"
+  persistKey="circ.pending_patrons.list" [sortable]="true" [useLocalSort]="true"
+  (onRowActivate)="openPatron($event)">
+
+  <eg-grid-toolbar-action
+    i18n-label label="Load Patron" (onClick)="openPatron($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action
+    i18n-label label="Delete Patron Patron(s)" (onClick)="deleteSelected($event)">
+  </eg-grid-toolbar-action>
+
+
+  <eg-grid-column path="id" [index]="true" [hidden]="true" i18n-label label="ID"></eg-grid-column>
+  <eg-grid-column path="user.row_date" i18n-label label="Create Date"
+    datatype="timestamp" [datePlusTime]="true"></eg-grid-column>
+  <eg-grid-column path="user.first_given_name" i18n-label label="First Name"></eg-grid-column>
+  <eg-grid-column path="user.second_given_name" i18n-label label="Middle Name" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="user.family_name" i18n-label label="Last Name"></eg-grid-column>
+  <eg-grid-column path="user.pref_first_given_name" i18n-label label="Legal First Name"></eg-grid-column>
+  <eg-grid-column path="user.pref_second_given_name" i18n-label label="Legal Middle Name" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="user.pref_family_name" i18n-label label="Legal Last Name"></eg-grid-column>
+  <eg-grid-column path="user.email" i18n-label label="Email"></eg-grid-column>   
+  <eg-grid-column path="user.day_phone" i18n-label label="Primary Phone"></eg-grid-column>   
+  <eg-grid-column path="user.home_ou.shortname" i18n-label label="Home Library"></eg-grid-column>
+  <eg-grid-column path="user.dob" datatype="timestamp" i18n-label label="Date of Birth"></eg-grid-column>
+  <eg-grid-column path="mailing_address.street1" i18n-label label="Street 1"></eg-grid-column>
+  <eg-grid-column path="mailing_address.city" i18n-label label="City"></eg-grid-column>
+  <eg-grid-column path="mailing_address.post_code" i18n-label label="Post Code"></eg-grid-column>
+  <eg-grid-column path="user.delivery_method" i18n-label label="Delivery"></eg-grid-column>
+  <eg-grid-column path="user.usrname" i18n-label label="Requested Username" [hidden]="true"></eg-grid-column>
+  <eg-grid-column path="user.*" idlClass="stgu" [hidden]="true"></eg-grid-column> 
+  <eg-grid-column path="mailing_address.*" idlClass="stgma" [hidden]="true"></eg-grid-column>
+
+</eg-grid>
+
+
+
+

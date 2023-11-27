@@ -15,6 +15,7 @@ __PACKAGE__->register_method(
     api_name        => "open-ils.circ.copy_location.retrieve.all",
     method      => 'cl_retrieve_all',
     argc            =>  2,
+    max_chunk_size => 0,
     signature   => q/
         Retrieves the ranged set of copy locations for the requested org.
         If no org is provided, all copy locations are returned

@@ -61,6 +61,7 @@ sub _prepare_biblio_search_basics {
         # This stuff probably will need refined or rethought to better handle
         # the weird things Real Users will surely type in.
         $contains = "" unless defined $contains; # silence warning
+        $query =~ s/-/ /g; # replace dash with space
         if ($contains eq 'nocontains') {
             $query =~ s/"//g;
             $query = ('"' . $query . '"') if index $query, ' ';
@@ -69,11 +70,26 @@ sub _prepare_biblio_search_basics {
             $query =~ s/"//g;
             $query = ('"' . $query . '"') if index $query, ' ';
         } elsif ($contains eq 'exact') {
-            $query =~ s/[\^\$]//g;
+			$query =~ s/"//g;
+			
+			# This allows searches that end with $ or start with ^
+			if ($query =~ m/^\^/ && $query =~ m/\$$/ ){
+				
+				$query =~ s/^\^//g;
+				$query =~ s/\$$//g;
+			}
+            
+            $query =~ s/\^/\^/g;
+            $query =~ s/\$/\$/g;
+            #$query = '$VERY_UNIQUE_STRING$' . $query . '$VERY_UNIQUE_STRING$';
             $query = '^' . $query . '$';
         } elsif ($contains eq 'starts') {
             $query =~ s/"//g;
-            $query =~ s/[\^\$]//g;
+            $query =~ s/^\^//g;
+            $query =~ s/\$$//g;
+            $query =~ s/\^/\^/g;
+            $query =~ s/\$/\$/g;
+            #$query = '$VERY_UNIQUE_STRING$' . $query . '$VERY_UNIQUE_STRING$';
             $query = '^' . $query;
             $query = ('"' . $query . '"') if index $query, ' ';
         }
@@ -84,6 +100,8 @@ sub _prepare_biblio_search_basics {
         }
 
         $query = "$qtype:$query" unless ($query =~ /^$qtype:/ or ($qtype eq 'keyword' and $i == 0));
+
+		$logger->debug("kmain384 query after: " . $query);
 
         $bool = ($bool and $bool eq 'or') ? '||' : '&&';
         $full_query = $full_query ? "($full_query $bool $query)" : $query;
@@ -371,6 +389,7 @@ sub load_rresults {
     my $self = shift;
     my %args = @_;
     my $internal = $args{internal};
+    my $export = $args{export};
     my $cgi = $self->cgi;
     my $ctx = $self->ctx;
     my $e = $self->editor;
@@ -388,6 +407,10 @@ sub load_rresults {
     my @mods = $cgi->multi_param('modifier');
     my $is_meta = (@mods and grep {$_ eq 'metabib'} @mods and !$metarecord);
     my $id_key = $is_meta ? 'mmr_id' : 'bre_id';
+    my $isBrowse = 0;
+    if($cgi->param('bterm')) {
+        $isBrowse = 1;
+    }
 
     # find the last record in the set, then redirect
     my $find_last = $cgi->param('find_last');
@@ -398,12 +421,18 @@ sub load_rresults {
         return $bbag_err;
     }
 
-    $ctx->{page} = 'rresult' unless $internal;
+    $ctx->{page} = 'rresult' unless ($internal || $export);
     $ctx->{ids} = [];
     $ctx->{records} = [];
     $ctx->{search_facets} = {};
     $ctx->{hit_count} = 0;
     $ctx->{is_meta} = $is_meta;
+
+    # KCLS
+    # JBAS-2958 Disable Catalog Search
+    $ctx->{page_size} = 10;
+    $ctx->{search_page} = 0;
+    return Apache2::Const::OK;
 
     # Special alternative searches here.  This could all stand to be cleaner.
     if ($cgi->param("_special")) {
@@ -412,7 +441,8 @@ sub load_rresults {
             (!defined $cgi->param("query") or $cgi->param("query") =~ /^\s*$/));
         $self->timelog("Calling item barcode search");
         return $self->item_barcode_shortcut if (
-            $cgi->param("qtype") and ($cgi->param("qtype") eq "item_barcode") and not $internal
+            $cgi->param("qtype") and ($cgi->param("qtype") eq "item_barcode") 
+            and not ($internal || $export)
         );
         $self->timelog("Calling call number browse");
         return $self->call_number_browse_standalone if (
@@ -437,6 +467,9 @@ sub load_rresults {
     # fetch this page plus the first hit from the next page
     if ($internal) {
         $limit = $offset + $limit + 1;
+        $offset = 0;
+    } elsif ($export) {
+        $limit = 1000;
         $offset = 0;
     }
 
@@ -510,8 +543,10 @@ sub load_rresults {
         $results = $req->gather(1);
         $self->timelog("Returned from the multiclass query");
 
-    } catch Error with {
-        my $err = shift;
+    };
+
+    if ($@) {
+        my $err = $@;
         $logger->error("multiclass search error: $err");
         $results = {count => 0, ids => []};
     };
@@ -541,13 +576,14 @@ sub load_rresults {
         # redirect to the record detail page for the last record in the results
         my $rec_id = pop @$rec_ids;
         $cgi->delete('find_last');
-        my $url = $cgi->url(-full => 1, -path => 1, -query => 1);
+        my $url = $cgi->url(-relative => 1, -path => 1, -query => 1);
         # TODO: metarecord => /rresults?metarecord=$mmr_id
         $url =~ s|/results|/record/$rec_id|;
+        $url = "oils://remote/" . $url;
         return $self->generic_redirect($url);
     }
 
-    return Apache2::Const::OK if @$rec_ids == 0 or $internal;
+    return Apache2::Const::OK if @$rec_ids == 0 || $internal || $export;
 
     $self->load_rresults_bookbag_item_notes($rec_ids) if $ctx->{bookbag};
 
@@ -590,7 +626,7 @@ sub load_rresults {
         push(@{$ctx->{records}}, $rec);
 
         if ($is_meta) {
-            try {
+            eval {
                 my $method = 'open-ils.search.biblio.multiclass.query';
                 $method .= '.staff' if $ctx->{is_staff};
                 my $ses = OpenSRF::AppSession->create('open-ils.search');
@@ -602,8 +638,10 @@ sub load_rresults {
                 $args->{offset} = 0;
                 $mr_contents{$rec_id} = $ses->request($method, $args, $query, 1, $ctx->{physical_loc});
                 $args->{offset} = $save_offset;
-            } catch Error with {
-                my $err = shift;
+            };
+            
+            if ($@) {
+                my $err = $@;
                 $logger->error("multiclass search error: $err");
             };
         }
@@ -629,6 +667,13 @@ sub load_rresults {
     my $course_module_opt_in = 0;
     if ($ctx->{get_org_setting}->($self->_get_search_lib, "circ.course_materials_opt_in")) {
         $course_module_opt_in = 1;
+    }
+
+    # KCLS custom
+    # Adds hold count to records in context
+    for my $rec ( @{ $ctx->{records} } ) {
+        $rec->{hold_count} = $U->simplereq(
+            'open-ils.circ', 'open-ils.circ.bre.holds.count', $rec->{id});
     }
 
     for my $rec (@{$ctx->{records}}) {
@@ -663,8 +708,36 @@ sub load_rresults {
     
 
     $ctx->{search_facets} = $facets;
+    $ctx->{processed_search_query} = $user_query;
 
     return Apache2::Const::OK;
+}
+
+# KCLS:
+# Export a search result set as MARC records
+# Does not support metarecord searches
+sub load_export {
+    my $self = shift;
+    my $ctx = $self->ctx;
+    $ctx->{page} = 'export';
+
+    $self->load_rresults(export => 1);
+    my @bib_ids = @{$ctx->{ids}};
+
+    $logger->info("Exporting IDs: @bib_ids");
+
+    return Apache2::Const::OK unless @bib_ids;
+
+    my $url = sprintf(
+        "%s://%s/exporter?id=%s",
+        $self->ctx->{proto},
+        $self->ctx->{hostname}, 
+        join('&id=', @bib_ids)
+    );
+
+    $logger->info("Exporting with URL: $url");
+
+    return $self->generic_redirect($url);
 }
 
 # If the calling search results in 1 record and the client
@@ -700,7 +773,7 @@ sub check_1hit_redirect {
         $self->ctx->{opac_root},
         $$rec_ids[0],
     );
-    
+
     # If we get here from the same record detail page to which we
     # now wish to redirect, do not perform the redirect.  This
     # approach seems to work well, with the rare exception of 
@@ -814,6 +887,11 @@ sub marc_expert_search {
 
     if ($args{internal}) {
         $limit = $offset + $limit + 1;
+        $offset = 0;
+    }
+
+    if ($args{export}) {
+        $limit = 1000;
         $offset = 0;
     }
 

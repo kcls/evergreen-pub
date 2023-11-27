@@ -3,6 +3,13 @@ Global print container.
 There should only be one print component active in a page.
 -->
 
+<ng-template #jobQueued let-name="name" i18n>
+  <ng-container *ngIf="name">Print Job Queued: {{name}}</ng-container>
+  <ng-container *ngIf="!name">Print Job Queued</ng-container>
+</ng-template>
+
+<eg-string key="eg.print.job_queued" [template]="jobQueued"></eg-string>
+
 <ng-template #notFound let-name="name" i18n>
 No activate template found named "{{name}}"
 </ng-template>

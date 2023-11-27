@@ -157,3 +157,9 @@ listitem { border-bottom: solid thin black; }
 
 .oils_event { color: red; }
 
+.barcode_highlight { 
+	color: red; 
+	font-weight: bold;
+	font-size: large;		
+)
+

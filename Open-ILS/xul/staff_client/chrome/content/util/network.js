@@ -1,4 +1,4 @@
-dump('entering util/network.js\n');
+console.log('entering util/network.js\n');
 // vim:noet:sw=4:ts=4:
 
 var offlineStrings;
@@ -63,7 +63,7 @@ util.network.prototype = {
                 if (instanceOf(E, NetworkFailure)) {
                     obj.NETWORK_FAILURE = E;
                 } else {
-                    try { obj.NETWORK_FAILURE = js2JSON(E); } catch(F) { dump(F + '\n'); obj.NETWORK_FAILURE = E; };
+                    try { obj.NETWORK_FAILURE = js2JSON(E); } catch(F) { console.log(F + '\n'); obj.NETWORK_FAILURE = E; };
                 }
             } catch(I) { 
                 obj.NETWORK_FAILURE = offlineStrings.getString('network.unknown_status');
@@ -259,17 +259,17 @@ util.network.prototype = {
                     );
                     if (r == 1) {
                         data.proceed_offline = true; data.stash('proceed_offline');
-                        dump('Remembering proceed_offline for 200000 ms.\n');
+                        console.log('Remembering proceed_offline for 200000 ms.\n');
                         setTimeout(
                             function() {
                                 data.proceed_offline = false; data.stash('proceed_offline');
-                                dump('Setting proceed_offline back to false.\n');
+                                console.log('Setting proceed_offline back to false.\n');
                             }, 200000
                         );
                     }
                 }
 
-                dump( r == 0 ? 'Retry Network\n' : 'Ignore Errors\n' );
+                console.log( r == 0 ? 'Retry Network\n' : 'Ignore Errors\n' );
 
                 switch(r) {
                     case 0: 
@@ -580,7 +580,7 @@ util.network.prototype = {
 
             var args = [];
 
-            dump('process.run = ' + process.run(true, args, args.length) + '\n');
+            console.log('process.run = ' + process.run(true, args, args.length) + '\n');
 
             file.close();
 
@@ -611,7 +611,7 @@ util.network.prototype = {
                 }
             }
         } catch(E) {
-            dump('Error in network.js, play_sounds() : ' + E + '\n');
+            console.log('Error in network.js, play_sounds() : ' + E + '\n');
         }
     }
 }
@@ -622,4 +622,4 @@ function sample_callback(request) {
 }
 */
 
-dump('exiting util/network.js\n');
+console.log('exiting util/network.js\n');

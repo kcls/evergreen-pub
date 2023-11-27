@@ -1,0 +1,31 @@
+<eg-staff-banner i18n-bannerText bannerText="Receive Line Items">
+</eg-staff-banner>
+
+<div class="row mb-4">
+  <div class="col-lg-6">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" i18n>Line Item ID:</span>
+      </div>
+      <input type='text' id='id-search-input' class="form-control"
+        (keyup.enter)="findLineitem()" placeholder="ID..."
+        i18n-placeholder [(ngModel)]="lineitemId"/>
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary"
+          (click)="findLineitem()" i18n>Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-container *ngIf="!isBasePage()">
+  <div class="mt-2 mb-2">
+    <a routerLink="/staff/acq/receive-lineitems/{{lineitemId}}" 
+      queryParamsHandling="merge">
+      <button class="btn btn-sm btn-info" i18n>Return</button>
+    </a>
+  </div>
+</ng-container>
+
+<router-outlet></router-outlet>
+

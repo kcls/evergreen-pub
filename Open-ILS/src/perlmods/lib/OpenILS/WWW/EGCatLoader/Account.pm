@@ -1,6 +1,6 @@
 package OpenILS::WWW::EGCatLoader;
 use strict; use warnings;
-use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST);
+use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST HTTP_REQUEST_TIME_OUT);
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Fieldmapper;
@@ -13,6 +13,7 @@ use OpenILS::Utils::DateTime qw/:datetime/;
 use Digest::MD5 qw(md5_hex);
 use Business::Stripe;
 use Data::Dumper;
+use OpenILS::WWW::EGCatLoader::PayflowHosted;
 $Data::Dumper::Indent = 0;
 use DateTime;
 use DateTime::Format::ISO8601;
@@ -1023,7 +1024,7 @@ sub load_myopac_prefs_my_lists {
 
     my @user_prefs = qw/
         opac.lists_per_page
-        opac.list_items_per_page
+        opac.lists_per_page
     /;
 
     my $stat = $self->_load_user_with_prefs;
@@ -1830,7 +1831,7 @@ sub attempt_hold_placement {
     } elsif (!$ctx->{is_staff})  {
 
         $method .= '.override' if $self->ctx->{get_org_setting}->(
-            $e->requestor->home_ou, "opac.patron.auto_overide_hold_events");
+            $e->requestor->home_ou, "opac.patron.auto_override_hold_events");
     }
 
     my @create_targets = map {$_->{target_id}} (grep { !$_->{hold_failed} } @hold_data);
@@ -2347,6 +2348,304 @@ sub load_myopac_payment_form {
     return Apache2::Const::OK;
 }
 
+# UI for showing summary of fines to pay and form that directs
+# patrons to the PP site for payment.
+sub load_myopac_payflow_form {
+    my $self = shift;
+
+    my $stat = $self->prepare_extended_user_info;
+    return $stat if $stat;
+
+    # If this is a new payment, the transactions will come from GET params.
+    my $xacts = [$self->cgi->param('xact'), $self->cgi->param('xact_misc')];
+
+    $stat = $self->prepare_fines(undef, undef, $xacts);
+    return $stat if $stat;
+        
+    $self->generate_payflow_secure_token($xacts);
+    return Apache2::Const::OK;
+}
+
+sub payflow_hosted_enabled {
+    my $self = shift;
+    return $self->ctx->{get_org_setting}->(
+        $self->editor->requestor->home_ou,
+        'credit.processor.payflowhosted.enabled'
+    );
+}
+
+sub payflow_hosted_is_default {
+    my $self = shift;
+    my $org = $self->editor->requestor->home_ou;
+    my $ctx = $self->ctx;
+
+    my $cc_default = 
+        $ctx->{get_org_setting}->($org, 'credit.processor.default') || '';
+
+    return $cc_default eq 'PayflowHosted' && $self->payflow_hosted_enabled;
+}
+
+# Generates a PayPal secure token using address, etc. data collected
+# from payflow form1 and adds the necessary data to the template context
+# to direct the user to the hosted payment page.
+sub generate_payflow_secure_token {
+    my $self = shift;
+    my $xacts = shift;
+    my $ctx = $self->ctx;
+    my $cgi = $self->cgi;
+    my $org = $self->editor->requestor->home_ou;
+
+    return unless $self->payflow_hosted_enabled;
+
+    # Generate the PayPal secure token.
+    my $tokens = OpenILS::WWW::EGCatLoader::PayflowHosted::create_xact_token(
+        authtoken => $self->editor->authtoken,
+        user => $ctx->{user},
+        amount => $ctx->{fines}->{balance_owed}, # from prepare_fines()
+        billing_org => $org,
+        response_host => "https://" . $self->ctx->{hostname}
+    );
+
+    unless ($tokens && $tokens->{secure_token}) {
+        # Let the template gracefully warn the user.
+        $ctx->{payflow_hosted_ctx} = {init_error => 1};
+        return;
+    }
+
+    # Cache the transactions so the payment can be made internally
+    # after it's made externally.
+    $tokens->{xacts} = $xacts;
+    $tokens->{user} = $self->editor->requestor->id;
+
+    $ctx->{payflow_hosted_ctx} = $tokens;
+
+    # Cache the tokens so we can link the results data from PayPal
+    # back to the original transaction data.  Cache time is set to
+    # match PayPal's secure token timeout of 30 minutes.
+    my $cache = OpenSRF::Utils::Cache->new('global');
+    $cache->put_cache($tokens->{secure_token_id}, $tokens, 1800);
+}
+
+
+# See if the provided authtoken is still valid.  If so, use it.
+# Otherwise, create a temp auth token using open-ils.auth_internal.
+# Returns undef on succcess, server error on failure.
+sub create_tmp_auth {
+    my $self = shift;
+    my $authtoken = shift;
+    my $user_id = shift;
+
+    my $e = $self->editor;
+
+    $e->authtoken($authtoken);
+    if ($e->checkauth) { # test token and set $e->requestor
+
+        $logger->info(
+            "PayflowHosted existing authtoken still valid for $user_id"); 
+
+        # Need to fetch the in-database user in addition to the cached
+        # auth session to pick up the current user->last_xact_id
+        $self->ctx->{user} = $e->requestor;
+        return $self->prepare_extended_user_info;
+    }
+
+    $logger->info("PayflowHosted generating temp auth token for $user_id");
+        
+    my $evt = $U->simplereq(
+        'open-ils.auth_internal',
+        'open-ils.auth_internal.session.create', {
+            user_id => $user_id,
+            login_type => "temp"
+        }
+    );
+
+    if ($evt && $evt->{payload} && 
+            ($authtoken = $evt->{payload}->{authtoken})) {
+        $e->authtoken($authtoken);
+        $e->checkauth; # sets $e->requestor
+
+        # Need to fetch the in-database user in addition to the cached
+        # auth session to pick up the current user->last_xact_id
+        $self->ctx->{user} = $e->requestor;
+        return $self->prepare_extended_user_info;
+    }
+
+    $logger->error("PayflowHosted unable to generate temp auth ".
+        "session for user $user_id to complete credit card payment!");
+
+    return Apache2::Const::HTTP_INTERNAL_SERVER_ERROR;
+}
+
+
+sub load_myopac_payflow_silent_post {
+    my $self = shift;
+    my $cgi = $self->cgi;
+    my $ctx = $self->ctx;
+
+    my $respmsg = $cgi->param('RESPMSG');
+    my $order_number = $cgi->param('PNREF');
+    my $appr_code = $cgi->param('AUTHCODE');
+    my $token_id = $cgi->param('SECURETOKENID');
+    my $result = $cgi->param('RESULT');
+    my $authtoken = $cgi->param('USER1');
+
+    # Toss the CGI params into a string for easier error logging.
+    my $log_params = '';
+    $log_params .= "$_=" . $cgi->param($_) . "; " for ($cgi->param);
+
+    $logger->info("PayflowHosted responded with: $log_params");
+
+    if (!$token_id) {
+        $logger->error("PayflowHosted processor responsded with success but ".
+            "failed to return a SECURETOKENID.  Cannot complete payment!");
+        return Apache2::Const::HTTP_BAD_REQUEST;
+    }
+
+    my $tokens = $self->load_payflow_tokens($token_id);
+
+    if (!$tokens) {
+        $logger->error("PayflowHosted payment succeeded, but no matching ".
+            "transaction data found in memcache. Cannot complete payment!");
+
+        # Token data was not found in the cache.  
+        # Presumably the cache entry expired.
+        return Apache2::Const::HTTP_REQUEST_TIME_OUT;
+    }
+
+    $tokens->{$_} = $cgi->param($_) for
+        (qw/RESULT PNREF AVSADDR AVSZIP PROCCVV2 AMT/);
+
+    $tokens->{pay_result_code} = $result;
+
+    if ($result eq '0') {
+        # Payment processed successfully at PP.  Track the payment locally.
+        $logger->info("PayflowHosted processor returned success: $respmsg");
+
+        # Add the completed payment data to the cache.
+        $tokens->{cc_args} = {
+            where_process => -1, # processed externally
+            approval_code => $appr_code,
+            order_number  => $order_number,
+            processor     => 'PayflowHosted'
+        };
+
+        # This API is called directly from PP with no session cookie.
+        # Create a new temp auth session for the paying patron via 
+        # open-ils.auth_internal.
+        my $stat = $self->create_tmp_auth($authtoken, $tokens->{user});
+        return $stat if $stat;
+
+        return $self->payflow_create_payment($token_id, $tokens);
+    }
+
+    # Payment failed.  
+    if ($result < 0) {
+        $logger->error("PayflowHosted processor returned a".
+            "communication error response code=$result : $respmsg");
+    } else {
+        $logger->warn("PayflowHosted processor returned a non-success ".
+            "(but recoverable) response code=$result : $respmsg");
+    }
+
+    # Cache the tokens once again so we can report errors
+    my $cache = OpenSRF::Utils::Cache->new('global');
+    $cache->put_cache($token_id, $tokens, 1800);
+
+    return Apache2::Const::OK;
+}
+
+sub payflow_create_payment {
+    my ($self, $token_id, $tokens) = @_;
+    my $cgi = $self->cgi;
+    my $cache = OpenSRF::Utils::Cache->new('global');
+
+    # Must be called before prepare_fines_for_payment();
+    $self->prepare_fines(undef, undef, $tokens->{xacts});
+
+    my $args = {
+        cc_args      => $tokens->{cc_args},
+        userid       => $tokens->{user},
+        payments     => $self->prepare_fines_for_payment,
+        payment_type => "credit_card_payment"
+    };
+
+    # prepare_fines() collects xact data for the requested transactions,
+    # but excludes any that no longer have a positive balance.
+    # If the current balance owed across all requested transactions no
+    # longer matches the payment amount made at PayPal, exit early by
+    # returning a non-OK status to PayPal to void the payment.
+    # This can happen if the same transactions are paid by 2 separate
+    # PP instances at the same time.
+    my @xact_balances = map {$_->[1]} @{$args->{payments}};
+    my $cur_total = $U->fpsum(@xact_balances); # current balance of selected.
+    my $paid_total = $tokens->{AMT}; # original paypal payment amount
+
+    # Using != resulted in some numbers that (according to the logs) were
+    # the same number behaving as if they weren't.  More decimal weirdness?
+    # Treat the values as strings instead.
+    $cur_total = sprintf("%.2f", $cur_total);
+    $paid_total = sprintf("%.2f", $paid_total);
+
+    if ($paid_total ne $cur_total) {
+        my @xacts = @{$tokens->{xacts}};
+
+        $logger->error("PayflowHosted requested payment amount of ".
+            "$paid_total does not match total balance owed ($cur_total) of ".
+            "selected transactions (@xacts). Reverting CC payment");
+
+        return Apache2::Const::HTTP_BAD_REQUEST;
+    }
+
+    $logger->info("PayflowHosted sending payments: ".Dumper($args));
+
+    my $resp = $U->simplereq(
+        "open-ils.circ", 
+        "open-ils.circ.money.payment",
+        $self->editor->authtoken, $args, 
+        $self->ctx->{user}->last_xact_id
+    );
+
+    if ($resp->{textcode}) {
+        $logger->error("PayflowHosted CC internal payment tracking ".
+            "failed with event code " . $resp->{textcode});
+        # Tell PP to void the payment.
+        return Apache2::Const::HTTP_INTERNAL_SERVER_ERROR;
+    } 
+
+    $logger->info("PayflowHosted CC internal payment tracking succeeded");
+    $logger->info("PayflowHosted created payments: ".Dumper($resp->{payments}));
+    $tokens->{payments} = $resp->{payments};
+
+    # Cache the payment info to generate a receipt on the receipts page.
+    $cache->put_cache($token_id, $tokens, 1800);
+
+    return Apache2::Const::OK;
+}
+
+# Generate a printable receipt from a CC payment.
+sub load_myopac_payflow_receipt {
+    my $self = shift;
+
+    my $token_id = $self->ctx->{page_args}->[0];
+    return Apache2::Const::HTTP_BAD_REQUEST unless $token_id;
+
+    my $tokens = $self->load_payflow_tokens($token_id);
+
+    # this page is loaded immediately after the token is created.
+    # if the cached data is not there, it's because of an invalid
+    # token (or cache failure) and not because of a timeout.
+    return Apache2::Const::HTTP_BAD_REQUEST 
+        unless $tokens && $tokens->{payments};
+
+    $self->ctx->{printable_receipt} = $U->simplereq(
+       "open-ils.circ", "open-ils.circ.money.payment_receipt.print",
+       $self->editor->authtoken, $tokens->{payments}
+    );
+
+    $self->ctx->{payflow_hosted_ctx} = $tokens;
+    return Apache2::Const::OK;
+}
+
 # TODO: add other filter options as params/configs/etc.
 sub load_myopac_payments {
     my $self = shift;
@@ -2376,6 +2675,13 @@ sub load_myopac_payments {
         'open-ils.actor',
         'open-ils.actor.user.payments.retrieve.atomic',
         $e->authtoken, $e->requestor->id, $args);
+
+    for my $pay (@{$self->ctx->{payments}}) {
+        $pay->{refundable_payment} = 
+            $e->search_money_refundable_payment(
+                {payment => $pay->{mp}->id})->[0];
+    }
+
 
     return Apache2::Const::OK;
 }
@@ -2427,6 +2733,63 @@ sub load_myopac_pay_init {
     # the actual payment.  The refresh url contains the payment token.
     # It also contains the list of xact IDs, which allows us to clear the
     # cache at the earliest possible time while leaving a trace of which
+    # transactions we were processing, so the UI can bring the user back
+    # to the payment form w/ the same xacts if the payment fails.
+
+    my $refresh = "1; url=main_pay/$token?xact=" . pop(@payment_xacts);
+    $refresh .= ";xact=$_" for @payment_xacts;
+    $self->ctx->{refresh} = $refresh;
+
+    return Apache2::Const::OK;
+}
+
+# 1. caches the form parameters
+# 2. loads the credit card payment "Processing..." page
+sub biblio_load_myopac_pay_init {
+    my $self = shift;
+    my $cache = OpenSRF::Utils::Cache->new('global');
+
+    my @payment_xacts = ($self->cgi->param('xact'), $self->cgi->param('xact_misc'));
+
+    if (!@payment_xacts) {
+        # for consistency with load_myopac_payment_form() and
+        # to preserve backwards compatibility, if no xacts are
+        # selected, assume all (applicable) transactions are wanted.
+        my $stat = $self->prepare_fines(undef, undef, [$self->cgi->param('xact'), $self->cgi->param('xact_misc')]);
+        return $stat if $stat;
+        @payment_xacts =
+            map { $_->{xact}->id } (
+                @{$self->ctx->{fines}->{circulation}},
+                @{$self->ctx->{fines}->{grocery}}
+        );
+    }
+
+    return $self->generic_redirect unless @payment_xacts;
+
+    my $cc_args = {"where_process" => 1};
+
+    $cc_args->{$_} = $self->cgi->param($_) for (qw/
+        number cvv2 expire_year expire_month billing_first
+        billing_last billing_address billing_city billing_state
+        billing_zip
+    /);
+
+    my $cache_args = {
+        cc_args => $cc_args,
+        user => $self->ctx->{user}->id,
+        xacts => \@payment_xacts
+    };
+
+    # generate a temporary cache token and cache the form data
+    my $token = md5_hex($$ . time() . rand());
+    $cache->put_cache($token, $cache_args, 30);
+
+    $logger->info("tpac caching payment info with token $token and xacts [@payment_xacts]");
+
+    # after we render the processing page, we quickly redirect to submit
+    # the actual payment.  The refresh url contains the payment token.
+    # It also contains the list of xact IDs, which allows us to clear the 
+    # cache at the earliest possible time while leaving a trace of which 
     # transactions we were processing, so the UI can bring the user back
     # to the payment form w/ the same xacts if the payment fails.
 
@@ -2497,29 +2860,72 @@ sub load_myopac_pay {
 sub load_myopac_receipt_print {
     my $self = shift;
 
-    $self->ctx->{printable_receipt} = $U->simplereq(
-    "open-ils.circ", "open-ils.circ.money.payment_receipt.print",
-    $self->editor->authtoken, [$self->cgi->param("payment")]
-    );
+    my $pay_id = $self->cgi->param("payment");
+    my $receipt = '';
 
+    # KCLS JBAS-1306
+    # Refundable payments use a different receipt
+    my $rf_pay = 
+        $self->editor->search_money_refundable_payment(
+            {payment => $pay_id})->[0];
+
+    if ($rf_pay) { # Refundable receipt
+
+        $receipt = $U->simplereq(
+            "open-ils.circ", 
+            "open-ils.circ.refundable_payment.receipt.html",
+            $self->editor->authtoken, $rf_pay->id
+        );
+
+    } else { # Non-refunable receipt
+
+        $receipt = $U->simplereq(
+            "open-ils.circ", 
+            "open-ils.circ.money.payment_receipt.print",
+            $self->editor->authtoken, [$pay_id]
+        );
+    }
+
+    $self->ctx->{printable_receipt} = $receipt;
     return Apache2::Const::OK;
 }
 
 sub load_myopac_receipt_email {
     my $self = shift;
 
-    # The following ML method doesn't actually check whether the user in
-    # question has an email address, so we do.
-    if ($self->ctx->{user}->email) {
-        $self->ctx->{email_receipt_result} = $U->simplereq(
-        "open-ils.circ", "open-ils.circ.money.payment_receipt.email",
-        $self->editor->authtoken, [$self->cgi->param("payment")]
-        );
-    } else {
+    if (!$self->ctx->{user}->email) {
         $self->ctx->{email_receipt_result} =
             new OpenILS::Event("PATRON_NO_EMAIL_ADDRESS");
+        return Apache2::Const::OK;
     }
 
+    my $pay_id = $self->cgi->param("payment");
+    my $result;
+
+    # KCLS JBAS-1306
+    # Refundable payments use a different receipt
+    my $rf_pay = 
+        $self->editor->search_money_refundable_payment(
+            {payment => $pay_id})->[0];
+
+
+    if ($rf_pay) { # Refundable receipt
+
+        $result = $U->simplereq(
+            "open-ils.circ", 
+            "open-ils.circ.refundable_payment.receipt.email",
+            $self->editor->authtoken, $rf_pay->id
+        );
+
+    } else {
+        $result = $U->simplereq(
+            "open-ils.circ", 
+            "open-ils.circ.money.payment_receipt.email",
+            $self->editor->authtoken, [$pay_id]
+        );
+    }
+
+    $self->ctx->{email_receipt_result} = $result;
     return Apache2::Const::OK;
 }
 
@@ -2549,7 +2955,7 @@ sub prepare_fines {
         'open-ils.cstore.direct.money.open_billable_transaction_summary.search',
         {
             usr => $self->editor->requestor->id,
-            balance_owed => {'!=' => 0},
+            balance_owed => {'>' => 0},
             ($id_list && @$id_list ? ("id" => $id_list) : ()),
         },
         {
@@ -2635,8 +3041,10 @@ sub prepare_fines_for_payment {
 
 sub load_myopac_main {
     my $self = shift;
+    my $token_id = $self->ctx->{page_args}->[0];
     my $limit = $self->cgi->param('limit') || 0;
     my $offset = $self->cgi->param('offset') || 0;
+
     $self->ctx->{search_ou} = $self->_get_search_lib();
     $self->ctx->{user}->notes(
         $self->editor->search_actor_usr_message({
@@ -2644,7 +3052,45 @@ sub load_myopac_main {
             pub => 't'
         })
     );
+
+    # determines which payment form page the user is directed to.
+    $self->ctx->{using_payflow} = $self->payflow_hosted_is_default();
+
+    if ($self->ctx->{using_payflow} && $token_id) {
+        # If we have a token_id, it means a payment attempt failed.
+        # Load the cached token data so the template can decide what 
+        # to do next.
+        my $tokens = $self->load_payflow_tokens($token_id);
+
+        if ($tokens) {
+            # Select the transactions in the transaction list that were
+            # used for the failed payment attempt.
+            $self->ctx->{selected_xacts} = $tokens->{xacts};
+
+        } else {
+
+            $logger->error("PayflowHosted payment failed, but we were ".
+                "unable to retrieve the payment context data from the ".
+                "cache. This may be due to the patron taking too long to ".
+                "complete the payment.  Unable to resume payment!");
+
+            $self->ctx->{payflow_hosted_ctx} = {error => 1};
+        }
+    }
+
     return $self->prepare_fines($limit, $offset) || Apache2::Const::OK;
+}
+
+sub load_payflow_tokens {
+    my ($self, $token_id) = @_;
+
+    $logger->info(
+        "PayflowHosted loading cached payment info for token ID $token_id");
+
+    my $cache = OpenSRF::Utils::Cache->new('global');
+    my $tokens = $cache->get_cache($token_id);
+
+    return $self->ctx->{payflow_hosted_ctx} = $tokens;
 }
 
 sub load_myopac_update_email {
@@ -2899,7 +3345,7 @@ sub load_myopac_bookbags {
     my $self = shift;
     my $e = $self->editor;
     my $ctx = $self->ctx;
-    my $limit = $self->_get_lists_per_page || 10;
+    my $limit = $self->_get_lists_per_page;
     my $offset = $self->cgi->param('offset') || 0;
 
     $ctx->{bookbags_limit} = $limit;

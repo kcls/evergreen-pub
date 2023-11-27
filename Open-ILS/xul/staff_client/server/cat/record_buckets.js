@@ -119,6 +119,20 @@ cat.record_buckets.prototype = {
             } 
         );
 
+        var col = columns.filter(function(c) {return c.id == 'deleted'})[0];
+        if (col) {
+            // JBAS-1150 Turn the deleted column into a reference to the bib
+            // record's deleted column instead of the copy's deleted column.
+            col.fm_class = 'mvr';
+            col.label = 'Record Deleted?'; 
+            col.render = function(my) {
+                if (!my.mvr) return;
+                var key = get_bool(my.mvr.deleted()) ? 
+                    'staff.circ.utils.yes' : 'staff.circ.utils.no';
+                return document.getElementById('circStrings').getString(key);
+            }
+        }
+
         JSAN.use('util.list'); 
 
         function retrieve_row(params) {

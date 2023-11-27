@@ -24,4 +24,8 @@
 <eg-grid-menu-item label="[% l('Batch Edit') %]"
   standalone="true" handler="batchEdit"></eg-grid-menu-item>
 
+<eg-grid-menu-item label="[% l('Batch Edit (Alternate)') %]"
+  standalone="true" handler="altBatchEdit"></eg-grid-menu-item>
+
+
 

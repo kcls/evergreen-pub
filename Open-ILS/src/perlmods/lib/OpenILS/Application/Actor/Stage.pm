@@ -92,9 +92,13 @@ sub user_stage_by_org {
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
     $org_id ||= $e->requestor->ws_ou;
-    return $e->event unless $e->allowed('VIEW_USER', $org_id);
+    if (ref $org_id eq 'ARRAY') {
+        return $e->event unless $e->allowed('VIEW_USER');
+    } else {
+        return $e->event unless $e->allowed('VIEW_USER', $org_id);
+    }
 
-    $limit ||= 100;
+    $limit ||= 1000;
     $offset ||= 0;
 
     my $stage_ids = $e->search_staging_user_stage(
@@ -102,7 +106,7 @@ sub user_stage_by_org {
             {   home_ou => $org_id, complete => 'f'}, 
             {   limit => $limit, 
                 offset => $offset, 
-                order_by => {stgu => 'row_id'}
+                order_by => {stgu => 'row_date DESC'}
             }
         ],
         {idlist => 1}

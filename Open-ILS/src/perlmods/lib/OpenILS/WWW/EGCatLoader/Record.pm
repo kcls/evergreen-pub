@@ -44,7 +44,7 @@ sub load_record {
     $copy_depth = $depth unless defined $copy_depth; # can be 0
     $self->ctx->{copy_depth} = $copy_depth;
 
-    my $copy_limit = int($self->cgi->param('copy_limit') || 10);
+    my $copy_limit = int($self->cgi->param('copy_limit') || 50);
     my $copy_offset = int($self->cgi->param('copy_offset') || 0);
 
     $self->get_staff_search_settings;

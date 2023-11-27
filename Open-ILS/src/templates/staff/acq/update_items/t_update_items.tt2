@@ -1,0 +1,296 @@
+<eg-record-summary record-id="record_id" record="summaryRecord"></eg-record-summary>
+<div class="container-fluid pad-vert" eg-update-item-hotkey>
+<div class="row">
+    <div class="col-xs-12 col-sm-6 col-md-4">
+        <div class="input-group">
+            <div class="input-group-addon">
+              <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" ng-model="noteData.add_notes">[% l('Add Notes:') %]
+              </label>
+            </div>
+            <input class="form-control" type="text" ng-model="noteData.note_a">
+        </div>
+    </div>
+    <div class="col-xs-12 col-sm-6 col-md-3">
+        <div class="input-group">
+            <div class="input-group-addon">[% l('Additional Note:') %]</div>
+            <input class="form-control" type="text" ng-model="noteData.note_b">
+        </div>
+    </div>
+</div>
+
+<hr />
+
+<div class="row">
+
+    <!--Update Items Section -->
+    <div class="col-xs-12 col-md-7">
+        <div class="row bg-info">
+            <div class="col-xs-12 col-md-5">
+                <div class="input-group">
+                    <div class="input-group-addon">[% l('Call Number') %]</div>
+                    <eg-basic-combo-box
+                        allow-all="true"
+                        list="marc_cns"
+                        selected="batchApply.callnumber"
+                        placeholder={{marc_cns.value}}>
+                    </eg-basic-combo-box>
+                    <span class="input-group-btn">
+                        <button
+                            class="btn btn-default"
+                            type="button"
+                            eg-accesskey="alt+shift+a"
+                            ng-click="callnumberBatchApply()"
+                            ng-disabled="!currentLineItem"
+                            eg-accesskey-desc="[% l('Batch Apply Callnumber') %]">
+                            [% l('Apply') %]
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <div class="col-xs-12 col-md-5">
+                <eg-line-item-dropdown></eg-line-item-dropdown>
+            </div>
+        </div>
+
+        <div class="row pad-vert">
+            <!--ng-repeat for each lineitem -->
+            <div class="col-xs-6 col-sm-1 col-md-1"><b>[% l('Owning Library') %]</b></div>
+            <div class="col-xs-6 col-sm-3 col-md-1"><b>[% l('Volumes') %]</b></div>
+            <div class="col-xs-12 col-sm-6 col-md-9">
+                <div class="row"> <!-- ng-repeat volumes -->
+                    <div class="col-xs-6 col-md-5"><b>[% l('Call Number') %]</b></div>
+                    <div class="col-xs-6 col-md-2" ><b>[% l('Copies') %]</b></div>
+                    <div class="col-xs-12 col-md-4">
+                        <div class="row"> <!-- ng-repeat copies -->
+                            <div class="col-xs-4"><b>[% l('Barcode') %]</b></div>
+                            <div class="col-xs-4"><b>[% l('Status') %]</b></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row pad-vert" ng-if="!selectedPO">
+            <div class="col-xs-12">
+                <div class="alert alert-warning" ng-if="purchaseOrders.length">
+                {{strings.warningNoSelectedPO}}</div>
+                <div class="alert alert-danger" ng-if="!purchaseOrders.length">
+                <i class="glyphicon glyphicon-warning-sign"></i> {{strings.warningNoAvailablePO}}</div>
+            </div>
+        </div>
+        <div class="row pad-vert" ng-if="lineitemDisplayErrorFlag">
+            <div class="col-xs-12">
+                <div class="alert alert-danger">
+                <i class="glyphicon glyphicon-warning-sign"></i> {{strings.warningUnknownError}}
+                </div>
+            </div>
+        </div>
+        <div class="row" style="padding:2px" ng-if="currentLineItem"
+          ng-repeat="org in currentLineItem.orgs">
+          <div class="col-xs-6 col-sm-1 col-md-1" style="padding-right:0">
+            <span class="center-block">{{org.shortname}}</span>
+          </div>
+          <div class="col-xs-6 col-sm-3 col-md-1" style="padding-right:0">
+            <input class="form-control" ng-disabled="true" value="{{org.vols.length}}">
+          </div>
+          <div class="col-xs-12 col-sm-6 col-md-9">
+            <div class="row" style="padding-bottom:20px" ng-repeat="volume in org.vols">
+              <div class="col-xs-6 col-md-5" style="padding-right:0">
+                <input class="form-control" ng-model="volume.cn_label" ng-blur="updateVolCopy()">
+              </div>
+              <div class="col-xs-6 col-md-2" style="padding-right:0">
+                <input class="form-control" ng-disabled="true"
+                  ng-value="volume.copies.length">
+              </div>
+              <div class="col-xs-12 col-md-4">
+                <div class="row" style="padding-bottom:20px" ng-repeat="copy in volume.copies">
+                  <div class="col-xs-6" style="padding-right:0">
+                    <div class="input-group">
+                        <input
+                            class="form-control barcode-field"
+                            ng-model="copy.barcode"
+                            ng-blur="barcodeCheck(copy)"
+                            ng-click="clickBarCode($event.target)"
+                            ng-class="barcodeBoxValidation(copy,itemArgs,true)"
+                            value="{{copy.barcode}}"
+                            eg-barcode-enter="true"
+                            ng-style="!itemArgs.use_checkdigit ? {
+                                'border-top-right-radius':'4px','border-bottom-right-radius':'4px',
+                                'border-top-left-radius':'4px','border-bottom-left-radius':'4px'} : {
+                                'border-top-right-radius':'0px','border-bottom-right-radius':'0px',
+                                'border-top-left-radius':'4px','border-bottom-left-radius':'4px'} ">
+                        <div class="input-group-addon" ng-class="{'alert-danger': copy._invalidBarcode}" ng-if="itemArgs.use_checkdigit">
+                            <span class="glyphicon" ng-class="{'glyphicon-warning-sign': copy._invalidBarcode, 'glyphicon-ok': !copy._invalidBarcode}"></span>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="col-xs-6" style="padding-right:0">
+                    <input class="form-control" ng-value="copy.status.name" ng-disabled="true">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <!-- Micro-Item Attribute Editor & Notes Section -->
+    <div class="col-xs-12 col-md-5">
+        <form novalidate class="css-form" name="forms.myForm">
+        <div class="row bg-info">
+            <div class="col xs-12 col-md-6">
+                <div class="input-group">
+                    <div class="input-group-addon">[% l('Template') %]</div>
+                    <select
+                        class="form-control"
+                        ng-model="selectedTemplate"
+                        ng-change="applyTemplate(selectedTemplate)"
+                        ng-options="template for template in template_name_list"
+                        ng-disabled="!currentLineItem">
+                        <option value="">{{strings.noneOption}}</option>
+                    </select>
+                    <span class="input-group-btn">
+                        <button
+                            class="btn btn-default"
+                            type="button"
+                            ng-click="onApplyClick()"
+                            ng-disabled="!currentLineItem">
+                            [% l('Apply') %]
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- Circ Modifier & Circulate? -->
+        <div class="row pad-vert">
+            <div class="col-xs-6">
+                <div class="row bg-info">
+                    <div class="col-xs-12">
+                        <b>[% l('Circulation Modifer') %]</b>
+                    </div>
+                </div>
+                <div class="row pad-vert">
+                    <div class="nullable col-xs-12">
+                        <select class="form-control" ng-model="itemArgs.circ_modifier" ng-disabled="!currentLineItem"
+                            ng-options="m.code() as m.name() for m in circ_modifier_list | orderBy: 'name()'">
+                            <option value="">{{strings.noneOption}}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-6">
+                <div class="row bg-info">
+                    <div class="col-xs-12">
+                        <b>[% l('Circulate?') %]</b>
+                    </div>
+                </div>
+                <div class="row pad-vert">
+                    <div class="col-xs-12">
+                        <div class="btn-group" data-toggle="buttons">
+                            <label ng-class="circulateButtonClasses('t')" ng-model="itemArgs.circulate"
+                              uib-btn-radio="true" uib-uncheckable="!currentLineItem">[% l('Yes') %]</label>
+                            <label ng-model="itemArgs.circulate" ng-class="circulateButtonClasses('f')"
+                              uib-btn-radio="false" uib-uncheckable="!currentLineItem">[% l('No') %]</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Circ Library & Price -->
+            <div class="col-xs-6">
+                <div class="row bg-info">
+                    <div class="col-md-12">
+                        <b>[% l('Location/Collection') %]</b>
+                    </div>
+                </div>
+                <div class="row pad-vert">
+                    <div class="col-md-12">
+                        <select class="form-control" ng-model="itemArgs.location" ng-disabled="!currentLineItem"
+                        ng-options="l.id() as i18n.ou_qualified_location_name(l) for l in location_list"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-6">
+                <div class="row bg-info">
+                    <div class="col-md-12">
+                        <b>[% l('Price') %]</b>
+                    </div>
+                </div>
+                <div class="row pad-vert">
+                    <div class="col-md-12">
+                        <input class="form-control" ng-model="itemArgs.price" ng-disabled="!currentLineItem">
+                    </div>
+                </div>
+            </div>
+        </div>
+        </form>
+
+        <!-- Line Item Notes Section -->
+        <div class="row bg-info">
+            <div class="col-xs-12"><h5 class="center-block">[% l('Line Item Notes') %]</h5></div>
+        </div>
+        <div class="row pad-vert"></div>
+        <div class="row" ng-if="!currentLineItem || !currentLineItem.notes.length">
+            <div class="col-xs-12">
+                <div class="alert alert-warning">{{strings.warningNoNotes}}</div>
+            </div>
+        </div>
+        <eg-product-order-notes></eg-product-order-notes>
+    </div>
+</div>
+<div class="row pad-vert">
+    <div class="col-xs-12 col-md-2">
+        <button class="btn btn-default" type="button"  ng-disabled="!currentLineItem" ng-click="autogenBarcode()"
+          eg-accesskey="alt+shift+g" eg-accesskey-desc="[% l('Autogenerate Barcodes') %]">
+            [% l('Autogenerate Barcodes') %]
+        </button>
+    </div>
+    <div class="col-xs-12 col-sm-6 col-md-2 form-check form-check-inline">
+        <label class="form-check-label">
+            <input
+                class="form-check-input"
+                type="checkbox"
+                ng-model="itemArgs.use_checkdigit"
+                ng-change="setCheckboxValues()"
+                eg-accesskey="alt+t"
+                eg-accesskey-desc="[% l('Use Checkdigit') %]">
+                [% l('Use Checkdigit') %]
+        </label>
+    </div>
+    <div class="col-xs-12 col-sm-6 col-md-2 form-check form-check-inline">
+        <label class="form-check-label">
+            <input class="form-check-input"
+                type="checkbox"
+                ng-model="printOptions.print_label"
+                ng-change="setCheckboxValues()"
+                eg-accesskey="alt+shift+p"
+                eg-accesskey-desc="[% l('Print Labels') %]">
+                [% l('Print Labels') %]
+        </label>
+    </div>
+    <div class="col-xs-12 col-sm-6 col-md-2 form-check form-check-inline">
+        <label class="form-check-label">
+            <input
+                class="form-check-input"
+                type="checkbox"
+                ng-model="printOptions.print_worksheet"
+                ng-change="setCheckboxValues()">
+                [% l('Print Worksheet') %]
+        </label>
+    </div>
+    <div class="col-xs-4">
+        <eg-line-item-save-button content="strings.saveChanges" note-data="noteData"
+          print-options="printOptions" item-args="itemArgs" selected="currentLineItem">
+        </eg-line-item-save-button>
+        <eg-line-item-save-button exit="true" content="strings.saveExit"
+          note-data="noteData" access-key="strings.saveAccessKey"
+          print-options="printOptions" item-args="itemArgs" selected="currentLineItem">
+        </eg-line-item-save-button>
+        <button class="btn btn-default" type="button" ng-click="editItemAttributes()"
+          ng-disabled="!currentLineItem" eg-accesskey='alt+shift+e'
+          eg-accesskey-desc="[% l('Edit Item Attributes') %]">
+          [% l('Edit Item Attributes') %]
+        </button>
+    </div>
+    </div>
+</div>

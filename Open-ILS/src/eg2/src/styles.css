@@ -43,6 +43,7 @@ h5 {font-size: .95rem}
 .flex-3 {flex: 3}
 .flex-4 {flex: 4}
 .flex-5 {flex: 5}
+.flex-6 {flex: 6}
 
 /** BS deprecated the well, but it's replacement is not quite the same.
  * Define our own version and expand it to a full "table".
@@ -83,6 +84,13 @@ h5 {font-size: .95rem}
   cursor: not-allowed;
 }
 
+/* copies color/border/elements from above sans position elements */
+.well-like {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+}
+
 /* usefuf for mat-icon buttons without any background or borders */
 .material-icon-button {
   /* Transparent background */
@@ -101,6 +109,10 @@ h5 {font-size: .95rem}
     font-size: 18px;
 }
 
+.material-icons.small {
+  font-size: 18px;
+}
+
 .input-group .mat-icon-in-button {
     font-size: .88rem !important; /* useful for buttons that cuddle up with inputs */
 }
@@ -108,6 +120,11 @@ h5 {font-size: .95rem}
 .material-icons {
   /** default is 24px which is pretty chunky */
   font-size: 22px;
+}
+
+.mat-icon-shrunk-in-button {
+    line-height: inherit;
+    font-size: 18px;
 }
 
 /* allow spans/labels to vertically orient with material icons */
@@ -131,13 +148,21 @@ h5 {font-size: .95rem}
   padding: .5rem;
 }
 
+/* roughly the same size as a btn-sm */
+.tight-pagination .page-link {
+  padding: .40rem .7rem;
+}
+
 @media all and (min-width: 800px) {
-    /* scrollable typeahead menus for full-size screens */
     ngb-typeahead-window {
         height: auto;
-        max-height: 200px;
+        max-height: 440px;
         overflow-x: hidden;
     }
+}
+
+ngb-typeahead-window .dropdown-item {
+    font-size: 14px;
 }
 
 /* Limit size of dropdown menus and allow for scrolling */
@@ -148,16 +173,31 @@ h5 {font-size: .95rem}
   font-size: 99%;
 }
 
+/* Items stick to the top of the page once scrolled past,
+ * leaving room above for the nav bar */
+.sticky-top-with-nav {
+  top: 48px;
+  position: sticky;
+  /* Sticky menus display above sticky grid headers */
+  z-index: 2;
+}
+
 /* --------------------------------------------------------------------------
 /* Form Validation CSS - https://angular.io/guide/form-validation
  * TODO: these colors don't fit the EG color scheme
  * Required valid fields are left-border styled in green-ish.
  * Invalid fields are left-border styled in red-ish.
+ *
+ * re: .valid-input / .invalid-input : sometimes you just need a 
+ * simple way to force it.
  */
-.form-validated .ng-valid[required], .form-validated .ng-valid.required, input[formcontrolname].ng-valid {
+.form-validated .ng-valid[required]:not(eg-combobox):not(eg-date-select):not(eg-date-select-native), 
+.form-validated .ng-valid.required, input[formcontrolname].ng-valid,
+.valid-input {
   border-left: 5px solid #78FA89;
 }
-.form-validated .ng-invalid:not(form), input[formcontrolname].ng-invalid {
+.form-validated .ng-invalid:not(form):not(eg-combobox):not(eg-date-select):not(eg-date-select-native),
+input[formcontrolname].ng-invalid, .invalid-input {
   border-left: 5px solid #FA787E;
 }
 
@@ -184,17 +224,21 @@ h5 {font-size: .95rem}
   font-weight: bold;
 }
 
-.common-form.striped-even .row:nth-child(even) {
-  background-color: rgba(0,0,0,.03);
-  border-top: 1px solid rgba(0,0,0,.125);
-  border-bottom: 1px solid rgba(0,0,0,.125);
-}
-.common-form.striped-odd .row:nth-child(odd) {
+.common-form.striped-even .row:nth-child(even),
+  .striped-rows-even .row:nth-child(even) {
+
   background-color: rgba(0,0,0,.03);
   border-top: 1px solid rgba(0,0,0,.125);
   border-bottom: 1px solid rgba(0,0,0,.125);
 }
 
+.common-form.striped-odd .row:nth-child(odd),
+  .striped-rows-odd .row:nth-child(odd) {
+
+  background-color: rgba(0,0,0,.03);
+  border-top: 1px solid rgba(0,0,0,.125);
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
 
 /**
  * Only display the print container when printing
@@ -303,4 +347,22 @@ body>.dropdown-menu {z-index: 2100;}
 /* style for negative monetary values */
 .negative-money-amount {
     color: red;
+}
+
+input.medium {
+  width: 6em;
+}
+
+input.small {
+  width: 4em;
+}
+
+/* 
+ * Created initially for styled grid rows where full 'bg-danger' CSS is
+ * intense and not especially readable, more so when rows are stacked.
+ * http://web-accessibility.carnegiemuseums.org/design/color/
+ */
+.less-intense-alert {
+  background-color: #f9dede;
+  color: #212121;
 }

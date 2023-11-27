@@ -29,7 +29,7 @@ sub DeleteTempBiblioBucket {
 
 # This is really more of an auxillary reactor
 sub CreateHoldNotification {
-    my ($self, $env) = @_;
+    my ($self, $env, $via) = @_;
     my $e = new_editor(xact => 1);
     my $holds = $env->{target};
 
@@ -37,11 +37,14 @@ sub CreateHoldNotification {
         $env->{event}->[0]->event_def : # event_def is grouped
         $env->{event}->event_def;
 
+    $holds = [$holds] unless ref $holds eq 'ARRAY';
+    $via ||= $event_def->reactor;
+
     for my $hold (@$holds) {
 
         my $notify = Fieldmapper::action::hold_notification->new;
         $notify->hold($hold->id);
-        $notify->method($event_def->reactor);
+        $notify->method($via);
 
         unless($e->create_action_hold_notification($notify)) {
             $e->rollback;
@@ -53,5 +56,17 @@ sub CreateHoldNotification {
     $e->rollback;
     return 0;
 }
+
+
+sub CreateHoldEmailNotification {
+    my ($self, $env) = @_;
+    return $self->CreateHoldNotification($env, 'Email');
+}
+
+sub CreateHoldTextNotification {
+    my ($self, $env) = @_;
+    return $self->CreateHoldNotification($env, 'Text');
+}
+
 
 1;

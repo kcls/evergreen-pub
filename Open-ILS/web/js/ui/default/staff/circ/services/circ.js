@@ -37,11 +37,11 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
             service.clearHold = Boolean(set['circ.clear_hold_on_checkout']);
 
             if (angular.isArray(set['circ.staff_client.do_not_auto_attempt_print'])) {
-                if (set['circ.staff_client.do_not_auto_attempt_print'].indexOf('Hold Slip') > 1)
+                if (set['circ.staff_client.do_not_auto_attempt_print'].indexOf('Hold Slip') > -1)
                     service.never_auto_print['hold_shelf_slip'] = true;
-                if (set['circ.staff_client.do_not_auto_attempt_print'].indexOf('Hold/Transit Slip') > 1)
+                if (set['circ.staff_client.do_not_auto_attempt_print'].indexOf('Hold/Transit Slip') > -1)
                     service.never_auto_print['hold_transit_slip'] = true;
-                if (set['circ.staff_client.do_not_auto_attempt_print'].indexOf('Transit Slip') > 1)
+                if (set['circ.staff_client.do_not_auto_attempt_print'].indexOf('Transit Slip') > -1)
                     service.never_auto_print['transit_slip'] = true;
             }
         });
@@ -270,6 +270,15 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
 
         var payload = final_resp.evt[0].payload;
         if (!payload) {
+
+            if (final_resp.evt[0].textcode === 'ASSET_COPY_NOT_FOUND') {
+                // Return the response so the caller can see what
+                // event was returned.  Also, for not-found, an audio
+                // alert has already played.
+                final_resp.evt = final_resp.evt[0];
+                return final_resp;
+            }
+
             egCore.audio.play('error.unknown.no_payload');
             return;
         }
@@ -574,6 +583,23 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
             }
         );
     }
+
+    service.get_patron_messages = function() {
+        if (service.patronMessages) {
+            return $q.when(service.patronMessages);
+        }
+
+        return egCore.pcrud.retrieveAll('cpm', {}, {atomic : true})
+        .then(function(messages) {
+            service.patronMessages = messages.sort(
+                function(a, b) {
+                    return a.weight() < b.weight() ? -1 : 1
+                }
+            );
+            return service.patronMessages;
+        });
+    }
+
 
     // ideally all of these data should be returned with the response,
     // but until then, grab what we need.
@@ -1330,6 +1356,45 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
         return deferred.promise;
     }
 
+
+    service.pauseRefundDialog = function(params) {
+        return $uibModal.open({
+            backdrop: 'static',
+            templateUrl: './circ/share/t_pause_refund',
+            controller:
+                ['$scope', '$uibModalInstance', 'egCore',
+                function($scope, $uibModalInstance, egCore) {
+
+                    $scope.refundNotes = '';
+                    $scope.staffInitials;
+
+                    $scope.go = function(pause) {
+
+                        if (pause === null) { 
+                            // Close dialog and tell caller we canceled.
+                            $uibModalInstance.close(null);
+                            return;
+                        }
+
+                        // Leave the dialog open
+                        if (!$scope.staffInitials) { return; }
+
+                        params.refund_notes = ($scope.refundNotes || '') +
+                            service.formatInitials($scope.staffInitials);
+
+                        if (pause) {
+                            params.pause_refund = true;
+                        } else {
+                            params.no_pause_refund = true;
+                        }
+
+                        $uibModalInstance.close(params);
+                    }
+                }
+            ]
+        }).result;
+    }
+
     service.mark_damaged = function(params) {
         if (!params) return $q.when();
         return $uibModal.open({
@@ -1339,11 +1404,21 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                 ['$scope', '$uibModalInstance', 'egCore', 'egBilling', 'egItem',
                 function($scope, $uibModalInstance, egCore, egBilling, egItem) {
                     var doRefresh = params.refresh;
+
+                    console.debug('Marking damaged with params', params);
+
+                    if (service.autoRefundsEnabled == undefined) {
+                        egCore.hatch.getItem('eg.circ.lostpaid.auto_refund')
+                        .then(function(value) {
+                            service.autoRefundsEnabled = Boolean(value);
+                        });
+                    }
                     
                     $scope.showBill = params.charge != null && params.circ;
                     $scope.billArgs = {charge: params.charge};
                     $scope.mode = 'charge';
                     $scope.barcode = params.barcode;
+
                     if (params.circ) {
                         $scope.circ = params.circ;
                         $scope.circ_checkin_time = params.circ.checkin_time();
@@ -1351,6 +1426,7 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                             + params.circ.usr().first_given_name() + " "
                             + params.circ.usr().second_given_name();
                     }
+
                     egBilling.fetchBillingTypes().then(function(res) {
                         $scope.billingTypes = res;
                     });
@@ -1372,36 +1448,87 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                     }
 
                     var handle_mark_item_damaged = function() {
-                        var applyFines;
-                        if ($scope.showBill)
-                            applyFines = $scope.billArgs.charge ? 'apply' : 'noapply';
+
+                        // Ignored if the item is no longer checked out.
+                        params.handle_checkin = true;
+
+                        if ($scope.showBill) {
+                            params.apply_fines = 
+                                $scope.billArgs.charge ? 'apply' : 'noapply';
+                            params.override_amount = $scope.billArgs.charge;
+                            params.override_btype = $scope.billArgs.type;
+                            params.override_note = $scope.billArgs.note;
+                        }
 
                         egCore.net.request(
                             'open-ils.circ',
                             'open-ils.circ.mark_item_damaged',
-                            egCore.auth.token(), params.id, {
-                                apply_fines: applyFines,
-                                override_amount: $scope.billArgs.charge,
-                                override_btype: $scope.billArgs.type,
-                                override_note: $scope.billArgs.note,
-                                handle_checkin: !applyFines
-                        }).then(function(resp) {
-                            if (evt = egCore.evt.parse(resp)) {
-                                doRefresh = false;
-                                console.debug("mark damaged more information required. Pushing back.");
-                                service.mark_damaged({
-                                    id: params.id,
-                                    barcode: params.barcode,
-                                    charge: evt.payload.charge,
-                                    circ: evt.payload.circ,
-                                    refresh: params.refresh
-                                });
-                                console.error('mark damaged failed: ' + evt);
+                            egCore.auth.token(), params.id, params
+                        ).then(function(resp) {
+
+                            console.debug('Mark damaged returned', resp);
+
+                            if (Number(resp) === 1) {
+                                console.debug('Mark damaged completed successfully');
+                                $uibModalInstance.close();
+                                return;
                             }
+
+                            doRefresh = false;
+
+                            var evt = egCore.evt.parse(resp);
+
+                            if (evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING') {
+
+                                // Avoid multiple open dialogs
+                                $uibModalInstance.close();
+
+                                if (service.autoRefundsEnabled) {
+
+                                    return service.pauseRefundDialog(params)
+                                    .then(function(p) {
+                                        console.debug('Pause refund dialog returne', p);
+    
+                                        if (p === null) {
+                                            console.debug('Mark damage canceled');
+                                        }
+    
+                                        return service.mark_damaged(p);
+                                    });
+                                } 
+
+                                // Auto-refunds are not active.
+                                // Convince the code we've already
+                                // handled the refund input
+                                params.no_pause_refund = true;
+                                return service.mark_damaged(params);
+
+                            } else if (evt.textcode === 'DAMAGE_CHARGE') {
+                                params.circ = evt.payload.circ;
+                                params.charge = evt.payload.charge;
+
+                                return service.mark_damaged(params);
+
+                            } else {
+                                console.error('Mark damaged failed', evt);
+                                alert(evt);
+                                $uibModalInstance.close();
+                                return $q.reject();
+                            }
+
                         }).then(function() {
                             if (doRefresh) egItem.add_barcode_to_list(params.barcode);
                         });
-                        $uibModalInstance.close();
+                    }
+
+                    if ((params.pause_refund || params.no_pause_refund) 
+                        && !$scope.showBill) {
+                        // Mark-damaged process already under way and
+                        // briefly interrupted by the pause-refund
+                        // dialog.  Go ahead and fire the API call agian
+                        // with the new refund params added -- no need
+                        // to request the go-ahead from staff.
+                        handle_mark_item_damaged();
                     }
                 }]
         }).result;
@@ -1681,13 +1808,14 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                         .then(function() {return final_resp});
 
                     case 8: /* ON HOLDS SHELF */
-                        egCore.audio.play('info.checkin.holds_shelf');
                         
                         if (hold) {
 
                             if (hold.pickup_lib() == egCore.auth.user().ws_ou()) {
                                 // inform user if the item is on the local holds shelf
                             
+                                egCore.audio.play('info.checkin.holds_shelf');
+
                                 evt[0].route_to = egCore.strings.ROUTE_TO_HOLDS_SHELF;
                                 return service.route_dialog(
                                     './circ/share/t_hold_shelf_dialog', 
@@ -1731,13 +1859,14 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                 }
                 
             case 'ROUTE_ITEM':
+ 
                 return service.route_dialog(
                     './circ/share/t_transit_dialog', 
                     evt[0], params, options
                 ).then(function(data) {
                     if (transit && data.transit && transit.dest().id() != data.transit.dest().id())
                         final_resp.evt[0].route_to = data.transit.dest().shortname();
-                    return final_resp;
+                   return final_resp;
                 });
 
             case 'ASSET_COPY_NOT_FOUND':
@@ -1786,7 +1915,7 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                 egCore.pcrud.retrieve('au', 
                     evt.payload.hold.usr(), {
                         flesh : 1,
-                        flesh_fields : {'au' : ['card']}
+                        flesh_fields : {'au' : ['card', 'stat_cat_entries']}
                     }
                 ).then(function(patron) {data.patron = patron})
             );
@@ -1817,6 +1946,12 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
 
         return service.collect_route_data(tmpl, evt, params, options)
         .then(function(data) {
+
+            if (data.transit) { // skip route-to-holds-shelf
+                var sound = 'info.checkin.transit';
+                if (evt.payload.hold) sound += '.hold';
+                egCore.audio.play(sound);
+            }
 
             var template = data.transit ?
                 (data.patron ? 'hold_transit_slip' : 'transit_slip') :
@@ -1857,20 +1992,31 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
             if (data.patron) {
                 print_context.hold = egCore.idl.toHash(evt.payload.hold);
                 var notes = print_context.hold.notes;
-                if(notes.length > 0){
-                    print_context.hold_notes = [];
-                    angular.forEach(notes, function(n){
-                        print_context.hold_notes.push(n);
-                    });
-                }
+
+                print_context.hold_notes = notes
+                    .filter(function(n) { return n.slip === 't' })
+                    .map(function(n) { return n.title + ' : ' + n.body})
+                    .join(' ');
+
+                var entries = [];
+                (data.patron.stat_cat_entries() || []).forEach(
+                    function(entry) {
+                        entries.push(egCore.idl.toHash(entry));
+                    }
+                );
+                data.patron.stat_cat_entries(entries);
+
                 print_context.patron = egCore.idl.toHash(data.patron);
             }
 
-            var sound = 'info.checkin.transit';
-            if (evt.payload.hold) sound += '.hold';
-            egCore.audio.play(sound);
-
             function print_transit(template) {
+
+                if (!options.auto_print_holds_transits) {
+                    // auto-print really just means "print, please and thank you"
+                    // When disabled, get outta here.
+                    return $q.when(data);
+                }
+
                 return egCore.print.print({
                     context : 'default', 
                     template : template, 
@@ -1878,10 +2024,10 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                 }).then(function() { return data });
             }
 
-            // when auto-print is on, skip the dialog and go straight
-            // to printing.
-            if (options.auto_print_holds_transits || options.suppress_popups) 
+            if (options.suppress_popups) {
+                // Bypass the info dialog and go straight to printing.
                 return print_transit(template);
+            }
 
             return $uibModal.open({
                 templateUrl: tmpl,
@@ -2126,16 +2272,11 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
             templateUrl: './circ/share/t_new_message_dialog',
             backdrop: 'static',
             controller: 
-                   ['$scope','$uibModalInstance','allPenalties','goodOrgs',
-            function($scope , $uibModalInstance , allPenalties , goodOrgs) {
+                   ['$scope','$uibModalInstance','staffPenalties','patronMessages',
+            function($scope , $uibModalInstance , staffPenalties , patronMessages) {
                 $scope.focusNote = true;
-                $scope.penalties = allPenalties.filter(
-                    function(p) { return p.id() > 100 || p.id() == 20 || p.id() == 21 || p.id() == 25; });
-                $scope.set_penalty = function(id) {
-                    if (!($scope.args.pub && $scope.args.read_date) && !$scope.args.deleted) {
-                        $scope.args.penalty = id;
-                    }
-                }
+                $scope.penalties = staffPenalties;
+                $scope.messages = patronMessages;
                 $scope.require_initials = service.require_initials;
                 $scope.update_org = function(org) {
                     if (!($scope.args.pub && $scope.args.read_date) && !$scope.args.deleted) {
@@ -2172,9 +2313,9 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                     }
                 });
             }],
-            resolve : {
-                allPenalties : service.get_all_penalty_types,
-                goodOrgs : egCore.perm.hasPermAt('UPDATE_USER', true)
+            resolve : { 
+                staffPenalties : service.get_staff_penalty_types,
+                patronMessages: service.get_patron_messages
             }
         }).result.then(
             function(args) {
@@ -2185,8 +2326,14 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                     message : args.note ? args.note : ''
                 };
                 pen.usr(user_id);
-                pen.org_unit(args.org.id());
-                if (args.initials) msg.message = (args.note ? args.note : '') + ' [' + args.initials + ']';
+                pen.org_unit(egCore.auth.user().ws_ou());
+                pen.note(args.note);
+
+                if (args.initials) {
+                    pen.note(args.note + 
+                        service.formatInitials(args.initials));
+                }
+
                 if (args.custom_penalty) {
                     pen.standing_penalty(args.custom_penalty);
                 } else {
@@ -2202,6 +2349,17 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
                 );
             }
         );
+    }
+
+    // e.g.  [ ggg 2020-04-17 @ AP ]
+    service.formatInitials = function(initials) {
+        var d = new Date();
+        return ' [ ' + 
+            initials + ' ' +
+            egCore.date.getYmd() + ' @ ' + 
+            egCore.org.get(
+                egCore.auth.user().ws_ou()).shortname() + 
+        ' ]';
     }
 
     // assumes, for now anyway,  penalty type is fleshed onto usr_penalty.
@@ -2309,22 +2467,15 @@ function($uibModal , $q , egCore , egAlertDialog , egConfirmDialog,  egAddCopyAl
             }
         }).result.then(
             function(args) {
-                aum.pub(args.pub);
-                aum.title(args.title);
-                aum.message(args.note);
-                aum.sending_lib(egCore.org.get(egCore.auth.user().ws_ou()).id());
-                pen.org_unit(egCore.org.get(args.org).id());
-                if (args.initials) aum.message((args.note ? args.note : '') + ' [' + args.initials + ']');
-                if (args.custom_penalty) {
-                    pen.standing_penalty(args.custom_penalty);
-                } else {
-                    pen.standing_penalty(args.penalty);
+                usr_penalty.note(args.note);
+
+                if (args.initials) {
+                    usr_penalty.note(args.note + 
+                        service.formatInitials(args.initials));
                 }
-                return egCore.net.request(
-                    'open-ils.actor',
-                    'open-ils.actor.user.penalty.modify',
-                    egCore.auth.token(), pen, aum
-                );
+
+                usr_penalty.standing_penalty(args.penalty);
+                return egCore.pcrud.update(usr_penalty);
             }
         );
     }

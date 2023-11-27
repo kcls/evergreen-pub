@@ -7,6 +7,8 @@
   i18n-text text="Hold Transfer Target Set"></eg-string>
 <eg-string key="catalog.record.toast.holdingTransfer"
   i18n-text text="Holding Transfer Target Set"></eg-string>
+<eg-string key="catalog.record.toast.lineitemTransfer" 
+  i18n-text text="Lineitem Transfer Target Set"></eg-string>
 <eg-string key="catalog.record.toast.cleared"
   text="Record Marks Cleared"></eg-string>
 
@@ -21,24 +23,23 @@
 
 <div class="row ml-0 mr-0">
 
-  <a target="_blank" href="/eg/opac/record/{{recId}}">
-    <button class="btn btn-outline-primary ml-1" i18n>Patron View</button>
-  </a>
+  <button class="btn btn-sm btn-outline-primary ml-1" (click)="openPatronView()" i18n>
+    Patron View
+  </button>
 
-  <a routerLink="/staff/catalog/hold/T" [queryParams]="{target: recId}"
-    *ngIf="isHoldable">
-    <button class="btn btn-outline-primary ml-1" i18n>Place Hold</button>
+  <a routerLink="/staff/catalog/hold/T" [queryParams]="{target: recId}">
+    <button class="btn btn-sm btn-outline-primary ml-1" i18n>Place Hold</button>
   </a>
   <button class="btn btn-outline-secondary ml-1" *ngIf="!isHoldable" disabled i18n>
     Place Hold
   </button>
 
-  <button class="btn btn-outline-primary ml-1" (click)="addHoldings()" i18n>
+  <button class="btn btn-sm btn-outline-primary ml-1" (click)="addHoldings()" i18n>
     Add Holdings
   </button>
 
   <div ngbDropdown placement="bottom-right" class="ml-1">
-    <button class="btn btn-outline-primary" id="actionsForSerials"
+    <button class="btn btn-sm btn-outline-primary" id="actionsForSerials"
       ngbDropdownToggle i18n>Serials</button>
     <div ngbDropdownMenu aria-labelledby="actionsForSerials">
       <a class="dropdown-item" href="/eg/staff/serials/{{recId}}" i18n>
@@ -51,15 +52,17 @@
   </div>
 
   <div ngbDropdown placement="bottom-right" class="ml-1">
-    <button class="btn btn-outline-primary" id="actionsForDd"
+    <button class="btn btn-sm btn-outline-primary" id="actionsForDd"
       ngbDropdownToggle i18n>Mark For...</button>
     <div ngbDropdownMenu aria-labelledby="actionsForDd">
+      <!-- KCLS
       <button class="dropdown-item" (click)="mark('conjoined')">
         <span i18n>
           Conjoined Items<ng-container *ngIf="targets.conjoined.current">
             (Currently {{targets.conjoined.current}})</ng-container>
         </span>
       </button>
+      -->
       <button class="dropdown-item" (click)="mark('overlay')">
         <span i18n>
           Overlay Target<ng-container *ngIf="targets.overlay.current">
@@ -78,6 +81,12 @@
             (Currently {{targets.holdingTransfer.current}})</ng-container>
         </span>
       </button>
+      <button class="dropdown-item" (click)="mark('lineitemTransfer')">
+        <span i18n>
+          Lineitem Transfer<ng-container *ngIf="targets.lineitemTransfer.current">
+            (Currently {{targets.lineitemTransfer.current}})</ng-container>
+        </span>
+      </button>
       <button class="dropdown-item" (click)="clearMarks()">
         <span i18n>Reset Record Marks</span>
       </button>
@@ -85,7 +94,7 @@
   </div>
 
   <div ngbDropdown placement="bottom-right" class="ml-1">
-    <button class="btn btn-outline-primary" id="otherActionsForDd"
+    <button class="btn btn-sm btn-outline-primary" id="otherActionsForDd"
       ngbDropdownToggle i18n>Other Actions</button>
     <div ngbDropdownMenu aria-labelledby="otherActionsForDd">
       <button class="dropdown-item" (click)="recordBucketDialog.open({size: 'lg'})">
@@ -94,12 +103,16 @@
       <button class="dropdown-item" (click)="recordCarouselDialog.open({size: 'lg'})">
         <span i18n>Add To Carousel</span>
       </button>
-      <button class="dropdown-item" (click)="jacketImageDialog.open({size: 'lg'})">
-        <span i18n>Upload Cover Image</span>
-      </button>
-      <a class="dropdown-item"
-        href="/eg/staff/acq/legacy/lineitem/related/{{recId}}?target=bib">
+      <a class="dropdown-item" target="_blank" routerLink="/staff/acq/related/{{recId}}">
         <span i18n>View/Place Orders</span>
+      </a>
+      <a class="dropdown-item" target="_blank"
+        routerLink="/staff/acq/update-items/{{recId}}">
+        <span i18n>Update Items</span>
+      </a>
+      <a class="dropdown-item" target="_blank"
+        href="/elastic/bib-search/_doc/{{recId}}">
+        <span i18n>View Indexed Data</span>
       </a>
     </div>
   </div>

@@ -312,3 +312,13 @@ function toggle_related_required(id, isRequired){
     var input = document.getElementById(id);
     input.required = isRequired;
 }
+
+// Dirty hack to keep the Sort Results order selector persistent in 
+// multiple searches in same tab (see 
+// openils/var/templates_kcls/opac/parts/advanced.tt2)
+function setPersistentSort() {
+	if (document.location.toString().indexOf('advanced') > -1) {
+	    window.name = (document.getElementById("opac.result.sort")).selectedIndex;
+	}
+}
+

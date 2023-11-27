@@ -41,6 +41,8 @@ export class BibRecordSummary {
     orgDepth: number;
     record: IdlObject;
     display: any;
+    synopsis: string;
+    general_note: string;
     attributes: any;
     holdingsSummary: HoldingsSummary[];
     prefOuHoldingsSummary: HoldingsSummary[];
@@ -68,6 +70,13 @@ export class BibRecordSummary {
     getBibCallNumber(): Promise<string> {
 
         if (this.bibCallNumber !== null) {
+            return Promise.resolve(this.bibCallNumber);
+        }
+
+        if (this.display && this.display.bibcn) {
+            // No need to fetch the bib call number if we have it
+            // available as a display field.
+            this.bibCallNumber = this.display.bibcn;
             return Promise.resolve(this.bibCallNumber);
         }
 
@@ -110,9 +119,9 @@ export class BibRecordService {
             });
     }
 
-    getBibSummary(id: number,
-        orgId?: number, isStaff?: boolean): Observable<BibRecordSummary> {
-        return this.getBibSummaries([id], orgId, isStaff);
+    getBibSummary(id: number, orgId?: number,
+        isStaff?: boolean, options?: any): Observable<BibRecordSummary> {
+        return this.getBibSummaries([id], orgId, isStaff, options);
     }
 
     getBibSummaries(bibIds: number[], orgId?: number,
@@ -129,6 +138,8 @@ export class BibRecordService {
             const summary = new BibRecordSummary(bibSummary.record, orgId);
             summary.net = this.net; // inject
             summary.display = bibSummary.display;
+            summary.synopsis = bibSummary.synopsis;
+            summary.general_note = bibSummary.general_note;
             summary.attributes = bibSummary.attributes;
             summary.holdCount = bibSummary.hold_count;
             summary.holdingsSummary = bibSummary.copy_counts;

@@ -10,6 +10,12 @@ import {CatalogSearchContext, CatalogSearchState} from './search-context';
 import {BibRecordService, BibRecordSummary} from './bib-record.service';
 import {BasketService} from './basket.service';
 import {CATALOG_CCVM_FILTERS} from './search-context';
+import {ElasticService} from './elastic.service';
+
+// Start with this number of records in the first batch so results
+// can start displaying sooner.  A batch of 5 gets a decent chunk of
+// data on the page while waiting for the other results to appear.
+const INITIAL_REC_BATCH_SIZE = 5;
 
 @Injectable()
 export class CatalogService {
@@ -34,14 +40,24 @@ export class CatalogService {
         private unapi: UnapiService,
         private pcrud: PcrudService,
         private bibService: BibRecordService,
-        private basket: BasketService
+        private basket: BasketService,
+        private elastic: ElasticService
     ) {
         this.onSearchComplete = new EventEmitter<CatalogSearchContext>();
-
     }
 
     search(ctx: CatalogSearchContext): Promise<void> {
         ctx.searchState = CatalogSearchState.SEARCHING;
+
+        if (this.elastic.canSearch(ctx)) {
+            return this.elastic.performSearch(ctx)
+            .then(result => {
+                console.debug('ES returned', result);
+                this.applyResultData(ctx, result);
+                ctx.searchState = CatalogSearchState.COMPLETE;
+                this.onSearchComplete.emit(ctx);
+            });
+        }
 
         if (ctx.showBasket) {
             return this.basketSearch(ctx);
@@ -116,6 +132,7 @@ export class CatalogService {
     }
 
     marcSearch(ctx: CatalogSearchContext): Promise<void> {
+
         let method = 'open-ils.search.biblio.marc';
         if (ctx.isStaff) { method += '.staff'; }
 
@@ -198,6 +215,9 @@ export class CatalogService {
             ctx.resultIds = [];
         }
 
+        console.debug(`Search found ${result.count} and ` +
+            `returned ${result.ids.length} record IDs`);
+
         result.ids.forEach((blob, idx) => ctx.addResultId(blob[0], idx));
     }
 
@@ -237,7 +257,6 @@ export class CatalogService {
             } else {
                 idx = ctx.currentResultIds().indexOf(summary.id);
             }
-
             if (ctx.result.records) {
                 // May be reset when quickly navigating results.
                 ctx.result.records[idx] = summary;
@@ -321,41 +340,70 @@ export class CatalogService {
             return Promise.resolve();
         }
 
+        if (this.elastic.enabled && ctx.result.facets) {
+            // MARC searches also return facets, but we don't yet support
+            // using facets as filters for MARC searches.  It's certainly
+            // possible with ES, but it would require quite a few changes
+            // to stock files, which I'm hoping to avoid as much as possible.
+            // Only collect facets on 'term' searches for now so they
+            // otherwise remain hidden.
+            if (ctx.termSearch.isSearchable()) {
+                ctx.result.facetData =
+                    this.elastic.formatFacets(ctx.result.facets);
+            }
+            return Promise.resolve();
+        }
+
         return new Promise((resolve, reject) => {
             this.net.request('open-ils.search',
                 'open-ils.search.facet_cache.retrieve',
                 ctx.result.facet_key
             ).subscribe(facets => {
-                const facetData = {};
-                Object.keys(facets).forEach(cmfId => {
-                    const facetHash = facets[cmfId];
-                    const cmf = this.cmfMap[cmfId];
-
-                    const cmfData = [];
-                    Object.keys(facetHash).forEach(value => {
-                        const count = facetHash[value];
-                        cmfData.push({value : value, count : count});
-                    });
-
-                    if (!facetData[cmf.field_class()]) {
-                        facetData[cmf.field_class()] = {};
-                    }
-
-                    facetData[cmf.field_class()][cmf.name()] = {
-                        cmfLabel : cmf.label(),
-                        valueList : cmfData.sort((a, b) => {
-                            if (a.count > b.count) { return -1; }
-                            if (a.count < b.count) { return 1; }
-                            // secondary alpha sort on display value
-                            return a.value < b.value ? -1 : 1;
-                        })
-                    };
-                });
-
+                const facetData = this.formatFacets(facets);
                 this.lastFacetKey = ctx.result.facet_key;
                 this.lastFacetData = ctx.result.facetData = facetData;
                 resolve();
             });
+        });
+    }
+
+    formatFacets(facets: any) {
+        const facetData = {};
+        Object.keys(facets).forEach(cmfId => {
+            const facetHash = facets[cmfId];
+            const cmf = this.cmfMap[cmfId];
+
+            const cmfData = [];
+            Object.keys(facetHash).forEach(value => {
+                const count = facetHash[value];
+                cmfData.push({value : value, count : count});
+            });
+
+            if (!facetData[cmf.field_class()]) {
+                facetData[cmf.field_class()] = {};
+            }
+
+            facetData[cmf.field_class()][cmf.name()] = {
+                cmfLabel : cmf.label(),
+                valueList : cmfData.sort((a, b) => {
+                    if (a.count > b.count) { return -1; }
+                    if (a.count < b.count) { return 1; }
+                    // secondary alpha sort on display value
+                    return a.value < b.value ? -1 : 1;
+                })
+            };
+        });
+
+        return facetData;
+    }
+
+    checkSearchEngine(): Promise<any> {
+        return this.pcrud.retrieve('cgf', 'elastic.bib_search.enabled')
+        .toPromise().then(flag => {
+            if (flag && flag.enabled() === 't') {
+                this.elastic.enabled = true;
+                return this.elastic.init();
+            }
         });
     }
 
@@ -386,18 +434,18 @@ export class CatalogService {
 
         Object.keys(this.ccvmMap).forEach(cType => {
             this.ccvmMap[cType] =
-                this.ccvmMap[cType].sort((a, b) => {
-                    return a.value() < b.value() ? -1 : 1;
-                });
+                this.ccvmMap[cType].sort((a, b) =>
+                    a.value().toLowerCase() < b.value().toLowerCase() ? -1 : 1
+                );
         });
     }
 
     iconFormatLabel(code: string): string {
-        if (this.ccvmMap && this.ccvmMap.icon_format) {
-            const ccvm = this.ccvmMap.icon_format.filter(
+        if (this.ccvmMap && Object.keys(this.ccvmMap).length > 0) {
+            const ccvm = this.ccvmMap.mattype.filter(
                 format => format.code() === code)[0];
             if (ccvm) {
-                return ccvm.search_label();
+                return ccvm.search_label() || ccvm.value();
             }
         }
     }
@@ -434,8 +482,9 @@ export class CatalogService {
 
         this.copyLocations = [];
 
+        // KCLS removing opac_visible:'t' since this is staff-only
         return this.pcrud.search('acpl',
-            {deleted: 'f', opac_visible: 't', owning_lib: orgIds},
+            {deleted: 'f', owning_lib: orgIds},
             {order_by: {acpl: 'name'}},
             {anonymous: true}
         ).pipe(tap(loc => this.copyLocations.push(loc))).toPromise();
@@ -457,7 +506,8 @@ export class CatalogService {
                 term: bs.value,
                 limit : ctx.pager.limit,
                 pivot: bs.pivot,
-                org_unit: ctx.searchOrg.id()
+                org_unit: ctx.searchOrg.id(),
+                mattype: bs.format
             }
         ).pipe(
             tap(result => ctx.searchState = CatalogSearchState.COMPLETE),

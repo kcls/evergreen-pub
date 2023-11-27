@@ -54,7 +54,7 @@
             </tr>
 
             <tr>
-                <td class='color_4 light_border'>[% l("Evening Phone") %]</td>
+                <td class='color_4 light_border'>[% l("Secondary Phone") %]</td>
                 <td class='light_border'>[% ctx.user.evening_phone | html %]</td>
                 <td></td>
                 <td></td>

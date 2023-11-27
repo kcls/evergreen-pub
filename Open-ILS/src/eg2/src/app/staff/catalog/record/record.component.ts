@@ -1,5 +1,5 @@
 import {Component, OnInit, Input, ViewChild, HostListener} from '@angular/core';
-import {NgbTabset, NgbTabChangeEvent} from '@ng-bootstrap/ng-bootstrap';
+import {NgbNav, NgbNavChangeEvent} from '@ng-bootstrap/ng-bootstrap';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {IdlObject} from '@eg/core/idl.service';
@@ -25,7 +25,7 @@ export class RecordComponent implements OnInit {
     recordTab: string;
     summary: BibRecordSummary;
     searchContext: CatalogSearchContext;
-    @ViewChild('recordTabs', { static: true }) recordTabs: NgbTabset;
+    @ViewChild('recordTabs', {static: true}) recordTabs: NgbNav;
     @ViewChild('marcEditor', {static: false}) marcEditor: MarcEditorComponent;
 
     @ViewChild('holdingsMaint', {static: false})
@@ -83,10 +83,15 @@ export class RecordComponent implements OnInit {
 
     // Changing a tab in the UI means changing the route.
     // Changing the route ultimately results in changing the tab.
-    beforeTabChange(evt: NgbTabChangeEvent) {
+    beforeTabChange(evt: NgbNavChangeEvent) {
 
         // prevent tab changing until after route navigation
         evt.preventDefault();
+
+        if (evt.nextId === 'default') {
+            this.setDefaultTab();
+            return;
+        }
 
         // Protect against tab changes with dirty data.
         this.canDeactivate().then(ok => {
@@ -153,8 +158,8 @@ export class RecordComponent implements OnInit {
         this.summary = null;
         this.bib.getBibSummary(
             this.recordId,
-            this.searchContext.searchOrg.id(),
-            this.searchContext.searchOrg.ou_type().depth()).toPromise()
+            this.searchContext.searchOrg.id(), true, {flesh_synopsis: true}
+        ).toPromise()
         .then(summary => {
             this.summary =
                 this.staffCat.currentDetailRecordSummary = summary;
@@ -176,6 +181,24 @@ export class RecordComponent implements OnInit {
         }
 
         return this.summary;
+    }
+
+    bibSubjects(): string[] {
+        if (!this.summary) { return []; }
+        return this.summary.display.subject.sort();
+    }
+
+    // These should be de-duped on the server, but no dice.
+    bibSeries(): string[] {
+        if (!this.summary) { return []; }
+        const series = [];
+        this.summary.display.series_title.sort().forEach(s => {
+            if (!series.includes(s)) {
+                series.push(s);
+            }
+        });
+
+        return series;
     }
 
     currentSearchOrg(): IdlObject {

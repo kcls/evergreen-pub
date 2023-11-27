@@ -1,0 +1,259 @@
+<eg-staff-banner bannerText="Update Items" i18n-banerText></eg-staff-banner>
+
+<eg-bib-summary [recordId]="recordId"> </eg-bib-summary>
+
+<eg-progress-dialog #progressDialog
+  dialogTitle="Applying Changes..." i18n-dialogTitle></eg-progress-dialog>
+
+<div class="row mt-4">
+
+  <div class="col-lg-8">
+    <div class="row border border-info pb-2">
+      <div class="col-lg-3 offset-lg-2">
+        <div class="font-weight-bold" i18n>Call Number</div>
+        <eg-combobox #callNumberCbox 
+          [allowFreeText]="true" placeholder="Call Number..." >
+        </eg-combobox>
+      </div>
+      <div class="col-lg-2 pr-0">
+        <div class="font-weight-bold" i18n>Batch</div>
+        <div>
+          <button class="btn btn-sm btn-outline-dark" 
+            (click)="applyCallNumber()" i18n>Apply</button>
+        </div>
+      </div>
+      <div class="col-lg-3 pl-0">
+        <div class="font-weight-bold" i18n>Lineitem</div>
+        <div>
+          <eg-combobox #lineitemCbox (onChange)="lineitemChanged($event)">
+            <eg-combobox-entry *ngFor="let li of lineitems; let index = index"
+              [entryId]="li.id()" i18n-entryLabel 
+              entryLabel="PO {{li.purchase_order().id()}} / LI: {{li.id()}}">
+            </eg-combobox-entry>
+          </eg-combobox>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-1">
+        <div class="font-weight-bold" i18n>Library</div>
+      </div>
+      <div class="col-lg-1">
+        <div class="font-weight-bold" i18n>Volumes</div>
+      </div>
+      <div class="col-lg-3">
+        <div class="font-weight-bold" i18n>Call Number</div>
+      </div>
+      <div class="col-lg-2 pr-0">
+        <div class="font-weight-bold" i18n>Copies</div>
+      </div>
+      <div class="col-lg-3 pl-0">
+        <div class="font-weight-bold" i18n>Barcode</div>
+      </div>
+      <div class="col-lg-2">
+        <div class="font-weight-bold" i18n>Status</div>
+      </div>
+    </div>
+
+    <div class="row mt-4 pt-4 mb-4 pb-4" *ngIf="loading">
+      <div class="col-lg-6 offset-lg-3">
+        <eg-progress-inline></eg-progress-inline>
+      </div>
+    </div>
+
+    <ng-container *ngFor="let orgSet of holdings; let orgIndex = index">
+      <ng-container *ngFor="let volSet of orgSet.volumes; let volIndex = index">
+        <ng-container *ngFor="let item of volSet.items; let itemIndex = index">
+          <div class="row mt-1 form-validated" [ngClass]="{'bg-light' : itemIndex == 0}">
+            <div class="col-lg-1">
+              <ng-container *ngIf="itemIndex == 0">
+                <div>{{orgSet.org.shortname()}}</div>
+              </ng-container>
+            </div>
+            <div class="col-lg-1">
+              <ng-container *ngIf="itemIndex == 0">
+                <div>{{orgSet.volumes.length}}</div>
+              </ng-container>
+            </div>
+            <div class="col-lg-3">
+              <ng-container *ngIf="itemIndex == 0">
+                <input type="text" class="form-control form-control-sm" 
+                  (focus)="$event.target.select()" required
+                  [ngModel]="volSet.volume.label()"
+                  (ngModelChange)="callNumberChanged(volSet.volume, $event)"/>
+              </ng-container>
+            </div>
+            <div class="col-lg-2 pr-0">
+              <ng-container *ngIf="itemIndex == 0">
+                {{volSet.items.length}}
+              </ng-container>
+            </div>
+            <div class="col-lg-3 pl-0">
+              <input type="text" class="form-control form-control-sm"
+                [disabled]="!barcodeCanChange(item)"
+                [ngClass]="{'text-danger': item._dupe_barcode}"
+                id='barcode-input-{{item.id()}}'
+                (focus)="$event.target.select()"
+                (keyup.enter)="focusNextBarcode(item.id())"
+                [ngModel]="item.barcode()" required
+                (ngModelChange)="barcodeChanged(item, $event)"/>
+
+              <div *ngIf="item._dupe_barcode"
+                class="alert alert-danger font-italic p-1" i18n>
+                Duplicate Barcode</div>
+            </div>
+            <div class="col-lg-2">
+              {{item.status().name()}}
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+
+  </div><!-- left column -->
+
+  <div class="col-lg-4 bg-light">
+    <div class="row border border-info border-left-0 pb-2">
+      <div class="col-lg-11">
+        <div class="font-weight-bold" i18n>Templates</div>
+        <div class="row">
+          <div class="col-lg-10">
+            <eg-combobox #copyTemplateCbox [entries]="templateNames">
+            </eg-combobox>
+          </div>
+          <div class="col-lg-2">
+            <button class="btn btn-sm btn-outline-dark" 
+              (click)="applyTemplate()" i18n>Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-lg-8 pb-2">
+        <ng-template #circModEditTemplate>
+          <eg-combobox #circModCbox [entries]="circModifiers"></eg-combobox>
+        </ng-template>
+        <eg-batch-item-attr label="Circulation Modifier" i18n-label
+          [hideClearOption]="true"
+          [labelCounts]="itemAttrCounts.circ_modifier"
+          [editTemplate]="circModEditTemplate"
+          (changesSaved)="circModChanged(circModCbox.selected)">
+        </eg-batch-item-attr>
+      </div>
+
+      <div class="col-lg-4">
+        <ng-template #circulateEditTemplate>
+          <select class="form-control" [(ngModel)]="circulate">
+            <option value="yes" i18n>Yes</option>
+            <option value="no" i18n>No</option>
+          </select>
+        </ng-template>
+        <eg-batch-item-attr label="Circulate?" i18n-label displayAs="bool"
+          [hideClearOption]="true"
+          [labelCounts]="itemAttrCounts.circulate"
+          [editTemplate]="circulateEditTemplate"
+          (changesSaved)="circulateChanged()">
+        </eg-batch-item-attr>
+      </div>
+    </div>
+
+    <div class="row mt-3 mb-2">
+      <div class="col-lg-8 pb-2">
+        <ng-template #copyLocEditTemplate>
+          <eg-combobox #copyLocCbox [entries]="localCopyLocations"></eg-combobox>
+        </ng-template>
+        <eg-batch-item-attr label="Location/Collection" i18n-label
+          [hideClearOption]="true"
+          [labelCounts]="itemAttrCounts.location"
+          [editTemplate]="copyLocEditTemplate"
+          (changesSaved)="copyLocationChanged(copyLocCbox.selected)">
+        </eg-batch-item-attr>
+      </div>
+      <div class="col-lg-4">
+        <ng-template #priceEditTemplate>
+          <input type="text" class="form-control" [(ngModel)]="copyPrice"/>
+        </ng-template>
+        <eg-batch-item-attr label="Price" i18n-label displayAs="currency"
+          [hideClearOption]="true"
+          [labelCounts]="itemAttrCounts.price"
+          [editTemplate]="priceEditTemplate"
+          (changesSaved)="priceChanged()">
+        </eg-batch-item-attr>
+      </div>
+    </div>
+
+    <div class="row mt-3 pt-3 border-top border-info" *ngIf="lineitem">
+      <div class="col-lg-12">
+        <div class="font-weight-bold" i18n>
+        Lineitem Notes (<a target="_blank" 
+          routerLink="/staff/acq/po/{{lineitem.purchase_order().id()}}"
+          fragment="{{lineitem.id()}}">View Purchase Order</a>)
+        </div>
+        <ul class="mt-2">
+          <li *ngFor="let note of lineitem.lineitem_notes()">
+            <span class="pr-2">{{note.create_time() | date:'shortDate'}}</span>
+            <span>{{note.value()}}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- right column -->
+
+</div>
+
+<hr class="mt-2 mb-2"/>
+
+<div class="row mt-4 mb-5 pl-0 pr-0">
+  <div class="col-lg-12 d-flex form-inline">
+
+    <button class="btn btn-sm btn-outline-dark" (click)="autogenBarcodes()" i18n>
+      Generate Barcodes
+    </button>
+
+    <div class="form-check form-check-inline ml-2">
+      <input class="form-check-input" id='use-checkdigit-cbox' type="checkbox" 
+        [(ngModel)]="useCheckdigit" (change)="savePref('checkdigit')"/>
+      <label class="form-check-label" for='use-checkdigit-cbox' 
+        i18n>Use Checkdigit?</label>
+    </div>
+
+    <div class="form-check form-check-inline ml-2">
+      <input class="form-check-input" id='use-labels-cbox' type="checkbox" 
+        [(ngModel)]="printLabels" (change)="savePref('labels')"/>
+      <label class="form-check-label" for='use-labels-cbox' 
+        i18n>Print Labels?</label>
+    </div>
+
+    <div class="form-check form-check-inline ml-1">
+      <input class="form-check-input" id='use-add-note-cbox' 
+        (change)="savePref('notes')"
+        type="checkbox" [(ngModel)]="addNotes"/>
+      <label class="form-check-label" for='use-add-note-cbox' 
+        i18n>Add Notes?</label>
+    </div>
+    <input type="text" class="form-control form-control-sm" 
+      style="width:10em" [(ngModel)]="note"/>
+    <input type="text" class="form-control  form-control-sm ml-2" style="width:10em" 
+      [(ngModel)]="anotherNote" placeholder="Additional Note..." i18n-placeholder/>
+
+    <a target="_blank" class="ml-1" *ngIf="lineitem"
+      routerLink="/staff/acq/po/{{lineitem.purchase_order().id()}}/lineitem/{{lineitemId}}/worksheet">
+      <button class="btn btn-sm btn-outline-dark" i18n>View Worksheet</button>
+    </a>
+
+    <div class="flex-1"></div>
+
+    <button class="btn btn-sm btn-outline-dark" 
+      [disabled]="!canSave()" (click)="save()" i18n>Save</button>
+
+    <button class="btn btn-sm btn-outline-dark ml-2" 
+      [disabled]="!canSave()" (click)="save(true)" i18n>Save &amp; Close</button>
+
+    <button class="btn btn-sm btn-outline-dark ml-2" 
+      (click)="editItems()" i18n>Edit Item Attributes</button>
+
+  </div>
+</div>
+

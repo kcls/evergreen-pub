@@ -3,7 +3,7 @@
     <div class="navbar-nav">
       <div class="nav-item">
         <a i18n class="nav-link with-material-icon" 
-          routerLink="/staff/"
+          routerLink="/staff/splash"
           egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
           keySpec="alt+h" keyDesc="Navigate Home">
           <span class="material-icons">home</span>
@@ -17,13 +17,13 @@
          Search
         </a>
         <div class="dropdown-menu" ngbDropdownMenu>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/search"
+          <a class="dropdown-item" routerLink="/staff/circ/patron/search"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="alt+s f4" keyDesc="Patron Search">
             <span class="material-icons" aria-hidden="true">person</span>
             <span i18n>Search for Patrons</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/cat/item/search">
+          <a class="dropdown-item" routerLink="/staff/cat/item/list">
             <span class="material-icons" aria-hidden="true">assignment</span>
             <span i18n>Search for Items by Barcode</span>
           </a>
@@ -43,19 +43,19 @@
          <span i18n>Circulation</span>
         </a>
         <div class="dropdown-menu" ngbDropdownMenu>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/bcsearch"
+          <a class="dropdown-item" routerLink="/staff/circ/patron/bcsearch"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="f1" keyDesc="Checkout">
             <span class="material-icons" aria-hidden="true">trending_up</span>
             <span i18n>Check Out</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/checkin/checkin"
+          <a class="dropdown-item" routerLink="/staff/circ/checkin"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="f2" keyDesc="Checkin">
             <span class="material-icons" aria-hidden="true">trending_down</span>
             <span i18n>Check In</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/checkin/capture"
+          <a class="dropdown-item" routerLink="/staff/circ/checkin/capture"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="shift+f2" keyDesc="Capture Holds">
             <span class="material-icons" aria-hidden="true">pin_drop</span>
@@ -65,29 +65,31 @@
             <span class="material-icons" aria-hidden="true">view_list</span>
             <span i18n>Pull List for Hold Requests</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/renew/renew"
+          <a class="dropdown-item" routerLink="/staff/circ/renew"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="ctrl+f2" keyDesc="Renew Items">
             <span class="material-icons" aria-hidden="true">autorenew</span>
             <span i18n>Renew Items</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/register"
+          <a class="dropdown-item" routerLink="/staff/circ/patron/register"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="shift+f1" keyDesc="Register Patron">
             <span class="material-icons" aria-hidden="true">person_add</span>
             <span i18n>Register Patron</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/last"
+          <a class="dropdown-item" routerLink="/staff/circ/patron/last"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
             keySpec="f8" keyDesc="Retrieve Last Patron">
             <span class="material-icons" aria-hidden="true">redo</span>
             <span i18n>Retrieve Last Patron</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/search?show_recent=1">
+          <a class="dropdown-item" routerLink="/staff/circ/patron/search/recents"
+            egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
+            keySpec="shift+f4" keyDesc="Retrieve Recent Patrons">
             <span class="material-icons" aria-hidden="true">redo</span>
             <span i18n>Retrieve Recent Patrons</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/pending/list">
+          <a class="dropdown-item" routerLink="/staff/circ/patron/pending">
             <span class="material-icons" aria-hidden="true">thumb_up</span>
             <span i18n>Pending Patrons</span>
           </a>
@@ -100,7 +102,9 @@
             <span i18n>Hold Groups</span>
           </a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="/eg/staff/circ/patron/credentials">
+          <a class="dropdown-item" routerLink="/staff/circ/patron/credentials"
+            egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
+            keySpec="alt+c" keyDesc="Verify Patron Credentials">
             <span class="material-icons" aria-hidden="true">check_circle</span>
             <span i18n>Verify Credentials</span>
           </a>
@@ -110,24 +114,40 @@
             <span class="material-icons" aria-hidden="true">playlist_add</span>
             <span i18n>Record In-House Use</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/circ/holds/shelf">
+          <a class="dropdown-item" routerLink="/staff/circ/holds/shelf">
             <span class="material-icons" aria-hidden="true">format_list_bulleted</span>
             <span i18n>Holds Shelf</span>
+          </a>
+          <a class="dropdown-item" routerLink="/staff/circ/holds/shelf/clear">
+            <span class="material-icons" aria-hidden="true">format_list_bulleted</span>
+            <span i18n>Clear Holds</span>
           </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href="/eg/staff/cat/item/replace_barcode/index">
             <span class="material-icons" aria-hidden="true">library_books</span>
             <span i18n>Replace Barcode</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/cat/item/search"
+          <a class="dropdown-item" routerLink="/staff/cat/item/list"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
-            keySpec="f5" keyDesc="Navigate To Item Status">
+            keySpec="f5" keyDesc="Navigate To Item Search">
             <span class="material-icons" aria-hidden="true">question_answer</span>
-            <span i18n>Item Status</span>
+            <span i18n>Item Search</span>
+          </a>
+          <a class="dropdown-item" routerLink="/staff/circ/patron/circ-search">
+            <span class="material-icons" aria-hidden="true">search</span>
+            <span i18n>Find Circulation by ID</span>
           </a>
           <a class="dropdown-item" routerLink="/staff/cat/item/missing_pieces">
             <span class="material-icons" aria-hidden="true">grid_on</span>
             <span i18n>Scan Item as Missing Pieces</span>
+          </a>
+          <a class="dropdown-item" routerLink="/staff/admin/local/negative-balances">
+            <span class="material-icons">money_off</span>
+            <span i18n>Patrons With Negative Balances</span>
+          </a>
+          <a class="dropdown-item" routerLink="/staff/circ/worklog">
+            <span class="material-icons">history</span>
+            <span i18n>Work Log</span>
           </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" (click)="reprintLast()"
@@ -165,15 +185,11 @@
             <span class="material-icons" aria-hidden="true">search</span>
             <span i18n>Search the Catalog</span>
           </a>
-          <a href="/eg/staff/cat/catalog/index" class="dropdown-item">
-            <span class="material-icons" aria-hidden="true">search</span>
-            <span i18n>Search the Catalog (Traditional)</span>
-          </a>
-          <a class="dropdown-item" href="/eg/staff/cat/item/search"
+          <a class="dropdown-item" routerLink="/staff/cat/item/list"
             egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
-            keySpec="f5" keyDesc="Navigate To Item Status">
+            keySpec="f5" keyDesc="Navigate To Item Search">
             <span class="material-icons" aria-hidden="true">question_answer</span>
-            <span i18n>Item Status</span>
+            <span i18n>Item Search</span>
           </a>
           <div class="dropdown-divider"></div>
           <a href="/eg/staff/cat/bucket/record/view" class="dropdown-item">
@@ -223,6 +239,12 @@
             <span class="material-icons" aria-hidden="true">link</span>
             <span i18n>Link Checker</span>
           </a>
+          <a routerLink="/staff/cat/ill/track" class="dropdown-item"
+            egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
+            keySpec="alt+i" keyDesc="Create ILL Item">
+            <span class="material-icons" aria-hidden="true">playlist_add</span>
+            <span i18n>Create ILL Item</span>
+          </a>
           <div class="dropdown-divider"></div>
           <a routerLink="/staff/cat/authority/browse" class="dropdown-item">
             <span class="material-icons" aria-hidden="true">lock</span>
@@ -262,7 +284,7 @@
             <span i18n>Selection Lists</span>
           </a>
           <a class="dropdown-item" 
-            href="/eg/staff/acq/legacy/picklist/brief_record">
+            routerLink="/staff/acq/picklist/brief-record">
             <span class="material-icons" aria-hidden="true">edit</span>
             <span i18n>New Brief Record</span>
           </a>
@@ -292,7 +314,7 @@
             <span class="material-icons" aria-hidden="true">shopping_cart</span>
             <span i18n>Purchase Orders</span>
           </a>
-          <a class="dropdown-item" href="/eg/staff/acq/legacy/po/create">
+          <a class="dropdown-item" routerLink="/staff/acq/po/create">
             <span class="material-icons" aria-hidden="true">add_shopping_cart</span>
             <span i18n>Create Purchase Order</span>
           </a>
@@ -301,6 +323,23 @@
             href="/eg/staff/acq/legacy/financial/claim_eligible">
             <span class="material-icons" aria-hidden="true">contact_phone</span>
             <span i18n>Claim-Ready Items</span>
+          </a>
+          <a class="dropdown-item"
+            egAccessKey keyCtx="navbar" i18n-keySpec i18n-keyDesc
+            keySpec="alt+r" keyDesc="Receieve Lineitems"
+            routerLink="/staff/acq/receive-lineitems">
+            <span class="material-icons" aria-hidden="true">move_to_inbox</span>
+            <span i18n>Receive Lineitems</span>
+          </a>
+          <a class="dropdown-item"
+            routerLink="/staff/acq/asn/receive">
+            <span class="material-icons" aria-hidden="true">archive</span>
+            <span i18n>Receive Shipment</span>
+          </a>
+          <a class="dropdown-item"
+            routerLink="/staff/acq/asn/report">
+            <span class="material-icons" aria-hidden="true">reorder</span>
+            <span i18n>Invoice ASN Lookup</span>
           </a>
           <a class="dropdown-item"
             routerLink="/staff/acq/search/invoices">
@@ -312,10 +351,17 @@
             <span class="material-icons" aria-hidden="true">monetization_on</span>
             <span i18n>Create Invoice</span>
           </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" 
+            routerLink="/staff/acq/overdrive/import">
+            <span class="material-icons">import_export</span>
+            <span i18n>Import Overdrive Invoices</span>
+          </a>
         </div>
       </div>
     </div>
 
+    <!-- KCLS
     <div class="navbar-nav">
       <div ngbDropdown class="nav-item dropdown">
         <a ngbDropdownToggle i18n class="nav-link dropdown-toggle">
@@ -349,6 +395,7 @@
         </div>
       </div>
     </div>
+    -->
 
     <div class="navbar-nav">
       <div ngbDropdown class="nav-item dropdown">
@@ -390,26 +437,39 @@
             <span class="material-icons" aria-hidden="true">layers</span>
             <span i18n>Serials Administration</span>
           </a>
+          <!-- KCLS
           <a class="dropdown-item"
               routerLink="/staff/admin/booking/splash">
             <span class="material-icons" aria-hidden="true">business_center</span>
             <span i18n>Booking Administration</span>
           </a>
+          -->
           <a class="dropdown-item" href="/eg/staff/reporter/legacy/main">
             <span class="material-icons" aria-hidden="true">insert_chart</span>
             <span i18n>Reports</span>
           </a>
+          <!--
           <a class="dropdown-item" routerLink="/staff/reporter/simple">
             <span class="material-icons" aria-hidden="true">insert_chart</span>
             <span i18n>Simple Reports</span>
           </a>
+          -->
         </div>
       </div>
     </div>
 
 
     <div class="navbar-nav mr-auto"></div>
-    <div class="navbar-nav navbar-user" *ngIf="user()">
+
+    <div class="navbar-nav" *ngIf="hostname == 'evgtesting.kcls.org'">
+      <span><b style="color:gold; font-size: 130%">TESTING SERVER</b></span>
+    </div>
+
+    <div class="navbar-nav" *ngIf="hostname == 'evgstaging.kcls.org'">
+      <span><b style="color:orange; font-size: 130%">STAGING SERVER</b></span>
+    </div>
+
+    <div class="navbar-nav" *ngIf="user()">
       <span i18n>{{user()}} @ {{workstation()}}</span>
     </div>
     <div class="navbar-nav" *ngIf="locales.length > 1 && currentLocale">

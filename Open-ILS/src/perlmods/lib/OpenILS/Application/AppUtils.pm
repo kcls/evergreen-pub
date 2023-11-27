@@ -7,6 +7,7 @@ use base qw/OpenILS::Application/;
 use OpenSRF::Utils::Cache;
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::ModsParser;
+use OpenSRF::Utils qw/:datetime/;
 use OpenSRF::EX qw(:try);
 use OpenILS::Event;
 use Data::Dumper;
@@ -18,6 +19,7 @@ use UUID::Tiny;
 use Encode;
 use DateTime;
 use DateTime::Format::ISO8601;
+use DateTime::SpanSet;
 use List::MoreUtils qw/uniq/;
 use Digest::MD5 qw(md5_hex);
 
@@ -2087,12 +2089,19 @@ sub basic_opac_copy_query {
     # Pass a defined value for either $rec_id OR ($iss_id AND $dist_id), #
     # not both.                                                          #
     ######################################################################
-    my ($self,$rec_id,$iss_id,$dist_id,$copy_limit,$copy_offset,$staff) = @_;
+    my ($self,$rec_id,$iss_id,$dist_id,$copy_limit,$copy_offset,$staff,$limit_to_viable,$aou_sort_field) = @_;
+
+    $aou_sort_field ||= 'name';
 
     return {
         select => {
             acp => ['id', 'barcode', 'circ_lib', 'create_date', 'active_date',
+                    'alert_message', # KCLS
                     'age_protect', 'holdable', 'copy_number', 'circ_modifier'],
+            ccm => [
+                {column => 'code', alias => 'circ_modifier_code'},
+                {column => 'name', alias => 'circ_modifier_name'}
+            ],
             acpl => [
                 {column => 'name', alias => 'copy_location'},
                 {column => 'holdable', alias => 'location_holdable'},
@@ -2125,6 +2134,7 @@ sub basic_opac_copy_query {
             crahp => [
                 {column => 'name', alias => 'age_protect_label'}
             ],
+            ($staff ? (erfcc => ['circ_count']) : ()),
             ($iss_id ? (sitem => ["issuance"]) : ())
         },
 
@@ -2152,8 +2162,9 @@ sub basic_opac_copy_query {
                     },
                 }},
                 {ccs => { # 4
-                    ($staff ? () : (filter => { opac_visible => 't' }))
+                    ($staff ? () : (filter => {opac_visible => 't'}))
                 }},
+                'ccm', # 4.1
                 {acpm => { # 5
                     type => 'left',
                     join => {
@@ -2188,11 +2199,12 @@ sub basic_opac_copy_query {
                 ($staff ? () : (opac_visible => 't'))
             },
             ($dist_id ? ( '+sstr' => { distribution => $dist_id } ) : ()),
-            ($staff ? () : ( '+aou' => { opac_visible => 't' } ))
+            ($staff ? () : ( '+aou' => { opac_visible => 't' } )),
+            ($limit_to_viable ? ( '+ccs' => {hopeless_prone => 'f' }) : ())
         },
 
         order_by => [
-            {class => 'aou', field => 'name'},
+            {class => 'aou', field => $aou_sort_field},
             {class => 'acn', field => 'label_sortkey'},
             {class => 'acns', field => 'label_sortkey'},
             {class => 'bmp', field => 'label_sortkey'},
@@ -2457,6 +2469,188 @@ sub verify_migrated_user_password {
 }
 
 
+# Returns a date representing the final day in a series of
+# days that include the desired number of open days for the 
+# requested org unit.
+# 
+# The calculation starts at noon tomorrow and counts forward 
+# until enough open days have been found to span the selected 
+# day count.
+# 
+# For example, if today was Jan 1 and a day count of 3 was
+# requested, assuming no closed date or hours of operation
+# collisions, the API would return Jan 4.
+#
+# If $start_date is set, use it as the starting point instead
+# of 'now'.
+sub org_unit_open_days {
+    my ($class, $org_id, $day_count, $e, $start_date) = @_;
+    $e ||= OpenILS::Utils::CStoreEditor->new;
+
+    my $spanset;
+    my $date = $start_date || DateTime->now(time_zone => 'local');
+    my $hoo = $e->retrieve_actor_org_unit_hours_of_operation($org_id);
+
+    my $counter = 0;
+    while ($counter++ < $day_count) {
+
+        $date->set(hour => '12', minute => '0', second => '0');           
+        $date->add(days => 1);
+        my $date_str = $date->strftime('%FT%T%z');
+
+        $spanset = org_closed_future_spanset($e, $org_id, $date_str) unless $spanset;
+
+        # method_lookup is the preferred way to invoke in-module
+        # API calls, but in this case method_lookup is an order
+        # of magnitude slower with high day counts :(.
+        my $end = org_next_open_day($org_id, $date_str, $spanset, $hoo);
+
+        # No overlap means today is good.  If we found an overlap
+        # push the current test date to the end date of the overlap.
+        # This new date is also known good.
+
+        if ($end) {
+            $logger->info("open days calc found an overlap ending at $end");
+            $date = DateTime::Format::ISO8601
+                ->parse_datetime(cleanse_ISO8601($end));
+        }
+    }
+
+    return $date->strftime('%FT%T%z');
+}
+
+# Build a spanset of dates starting at 'date' including all future
+# closed dates.
+sub org_closed_future_spanset {
+    my ($e, $org_id, $date) = @_;
+
+    $logger->info("Creating org closed dates spanset for $org_id starting $date");
+    my $close_dates = $e->search_actor_org_unit_closed_date(
+        {org_unit => $org_id, close_end => {'>=' => $date}});
+
+    $Data::Dumper::Indent = 0;
+    $logger->info("Found closed dates ".Dumper($close_dates));
+
+    return undef unless @$close_dates;
+
+    my $dtp = DateTime::Format::ISO8601->new;
+
+    my $spanset = DateTime::SpanSet->empty_set;
+    for my $close (@$close_dates) {
+        my $start = $dtp->parse_datetime(cleanse_ISO8601($close->close_start));
+        my $end   = $dtp->parse_datetime(cleanse_ISO8601($close->close_end));
+
+        $spanset = $spanset->union(
+            DateTime::Span->new(start => $start, end => $end));
+    }
+
+    return $spanset;
+}
+
+# Returns a date string representing the next day the selected org
+# unit is open, taking both closed dates and hours of operation info
+# account.
+sub org_next_open_day {
+    my $org_id = shift;
+    my $date = shift;
+    my $closure_spanset = shift;
+    my $hoo = shift;
+    my $dtp = DateTime::Format::ISO8601->new;
+
+    $date = cleanse_ISO8601($date);
+    my $target_date = $dtp->parse_datetime($date);
+    my ($begin, $end) = ($target_date, $target_date);
+
+    if ($closure_spanset && $closure_spanset->intersects($target_date)) {
+        my $intersection = $closure_spanset->intersection( $target_date );
+        $begin = $intersection->min;
+        $end = $intersection->max;
+
+        $end->add(days => 1);
+        while (my $next = org_next_open_day($org_id, 
+                $end->strftime('%FT%T%z'), $closure_spanset, $hoo)) {
+            $end = $dtp->parse_datetime(cleanse_ISO8601($next));
+        }
+    }
+
+    # Look for the next open hours-of-operation day.  If no open day is
+    # found after 7 attempts, give up to avoid looping on orgs that 
+    # have no open hours of operation.
+    my $hoo_counter = 0;
+    my $hoo_date = $end->clone;
+    while ($hoo_counter++ < 7) {
+        if (org_operates_on_date($org_id, $hoo_date, $hoo)) {
+            $end = $hoo_date;
+            last;
+        }
+        $hoo_date->add(days => 1);
+    }
+
+    if ($hoo_counter == 7) {
+        # The org unit is closed every day, which means this 
+        # function can never return a meaningful value.
+        $logger->warn("Org unit $org_id is closed every day");
+        return undef;
+    }
+
+    my $start = $begin->strftime('%FT%T%z');
+    my $stop = $end->strftime('%FT%T%z');
+
+    # If the start and end date match, no date modifications were
+    # required.  Selected date is open.
+    return undef if ($start eq $stop);
+
+    if ($hoo_counter > 1) {
+        # End date pushed ahead due to an hours of operation collision.
+        # Confirm the new date is not a closed date.
+
+        my $final_date = org_next_open_day(
+            $org_id, $stop, $closure_spanset, $hoo);
+
+        # date was bumped ahead even further.
+        return $final_date if $final_date;
+    }
+
+    return $stop;
+}
+
+# Returns true of the org unit has any hours of operation
+# for the selected date. 
+sub org_operates_on_date {
+    my ($org_id, $date, $hoo) = @_;
+
+    # No dates means always open
+    return 1 unless $hoo; 
+
+    my $dow = $date->day_of_week_0;
+    my $omethod = "dow_${dow}_open";
+    my $cmethod = "dow_${dow}_close";
+
+    # both values will equal 0 when the org unit is closed.
+    return $hoo->$omethod() ne $hoo->$cmethod();
+}
+
+# TODO: Move this into the database
+my @NO_REFUND_CIRC_MODIFIERS = (1, 7, 45, 46, 66, 40, 41, 47, 48); 
+sub circ_is_refundable {
+    my ($class, $circ_id, $e) = @_;
+
+    $e ||= OpenILS::Utils::CStoreEditor->new;
+
+    my $circ = $e->retrieve_action_circulation([$circ_id, 
+        {flesh => 1, flesh_fields => {circ => ['target_copy']}}
+    ]) or return 0;
+
+    my $copy = $circ->target_copy;
+
+    return 0 if $circ->stop_fines ne 'LOST';
+    return 0 if $circ->checkin_time;
+    return 0 if $copy->call_number == -1;
+    return 0 if grep {$_ == $copy->circ_modifier} @NO_REFUND_CIRC_MODIFIERS;
+
+    return 1;
+}
+
 # generate a MARC XML document from a MARC XML string
 sub marc_xml_to_doc {
     my ($class, $xml) = @_;
@@ -2465,8 +2659,6 @@ sub marc_xml_to_doc {
     $marc_doc->documentElement->setNamespace(MARC_NAMESPACE);
     return $marc_doc;
 }
-
-
 
 1;
 

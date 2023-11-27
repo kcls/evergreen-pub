@@ -3,6 +3,16 @@
 
 <eg-patron-penalty-dialog #penaltyDialog></eg-patron-penalty-dialog>
 
+<eg-pause-refund-dialog #pauseRefundDialog></eg-pause-refund-dialog>
+
+<eg-repair-cost-dialog #costDialog></eg-repair-cost-dialog>
+
+<eg-string key="cat.item.missing_pieces.update_alert.success" 
+  i18n-text text="Item Alert Messge Successfully Updated"></eg-string>
+
+<eg-string key="cat.item.missing_pieces.update_alert.failure" 
+  i18n-text text="Item Alert Messge Update Failed"></eg-string>
+
 <div class="row">
   <div class="col-lg-12 form-inline">
     <div class="input-group">
@@ -14,7 +24,7 @@
         (keyup.enter)="getItemByBarcode()" [(ngModel)]="itemBarcode" 
         aria-describedby="barcode-label"/>
     </div>
-    <button class="btn btn-outline-dark" 
+    <button class="btn btn-outline-dark" (disabled)="updatingItemAlert"
       (click)="getItemByBarcode()" i18n>Submit</button>
   </div>
 </div>
@@ -68,19 +78,62 @@
   </div>
 </div>
 
-<div *ngIf="letter">
-  <div class="row">
+<div *ngIf="item && circ">
+  <hr class="mb-2"/>
+  <div class="row mb-2">
     <div class="col-lg-3">
-      <button class="btn btn-outline-dark" (click)="printLetter()" i18n>
-        Print Letter
+      <div class="form-group form-validated">
+        <label for="alert-message" i18n>Item Alert Message:</label>
+        <textarea id="alert-message" [(ngModel)]="itemAlert" 
+          required rows="3" class="form-control"></textarea>
+      </div>
+      <button class="btn btn-info" (click)="updateAlertMessage()" i18n>
+        Update Alert Message
       </button>
     </div>
   </div>
-  <div class="row m-1">
-    <div class="col-lg-8">
-      <textarea [(ngModel)]="letter" 
-        rows="{{letterRowCount()}}" class="form-control">
-      </textarea>
+  <div class="row" *ngIf="!alertMsgUpdated">
+    <div class="col-lg-12">
+      <div class="alert alert-info" *ngIf="!alertMsgUpdated" i18n>
+        The letter may not be printed until the item alert message 
+        has been updated.
+      </div>
     </div>
   </div>
 </div>
+
+<div *ngIf="circ">
+  <hr class="mb-2"/>
+  <div class="row">
+    <div class="col-lg-12">
+      <!-- avoid link underline since it's inside a button -->
+      <a style="text-decoration: none;"
+        routerLink="/staff/circ/patron/{{circ.usr()}}/checkout" target="_blank">
+        <button class="btn btn-outline-primary label-with-material-icon" i18n>
+          <span>Retrieve Patron</span>
+          <span class="material-icons">person</span>
+        </button>
+      </a>
+      <button class="btn btn-outline-primary label-with-material-icon ml-3" (click)="prepareLetter()" i18n>
+        <span>Update Letter</span>
+        <span class="material-icons">refresh</span>
+      </button>
+      <button [disabled]="!alertMsgUpdated" *ngIf="printPreviewHtml" 
+        (click)="printLetter()" 
+        class="btn btn-outline-success label-with-material-icon ml-3" i18n>
+        <span>Print Letter</span>
+        <span class="material-icons">print</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 mt-5">
+    <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
+    <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
+      id="print-preview-pane"></div> 
+  </div>
+</div>
+
+

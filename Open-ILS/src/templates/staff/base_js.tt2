@@ -162,6 +162,7 @@ UpUp.start({
     s.STOP_FINES_LOST = "[% l('Status: Lost Materials') %]";
     s.STOP_FINES_LONGOVERDUE = "[% l('Status: Long Overdue') %]";
     s.CIRC_OVERDUE = "[% l('Status: Overdue') %]";
+    s.HOLD_PLACED = "[% l('Hold succesfully placed.') %]";
     s.YES = "[% l('Yes') %]";
     s.NO = "[% l('No') %]";
   }]);

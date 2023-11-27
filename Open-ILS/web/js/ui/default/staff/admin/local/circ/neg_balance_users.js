@@ -46,9 +46,7 @@ function($scope , $q , $timeout , $location , $window , egCore ,
         if (!selected.length) return;
         angular.forEach(selected, function(data) {
             $timeout(function() {
-                var url = $location.absUrl().replace(
-                    /admin\/local\/.*/,
-                    'circ/patron/' + data.usr.id() + '/checkout');
+                var url = '/eg2/staff/circ/patron/' + data.usr.id() + '/checkout';
                 $window.open(url, '_blank')
             });
         });

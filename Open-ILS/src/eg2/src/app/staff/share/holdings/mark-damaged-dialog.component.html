@@ -1,6 +1,8 @@
 <eg-string #successMsg text="Successfully Marked Item Damaged" i18n-text></eg-string>
 <eg-string #errorMsg text="Failed To Mark Item Damaged" i18n-text></eg-string>
 
+<eg-pause-refund-dialog #pauseRefundDialog></eg-pause-refund-dialog>
+
 <ng-template #dialogContent>
   <div class="modal-header">
     <h4 class="modal-title">
@@ -11,7 +13,7 @@
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
-  <div class="modal-body">
+  <div class="modal-body form-validated">
     <div class="row">
         <div class="col-lg-1">Barcode:</div>
         <div class="col-lg-11 font-weight-bold">{{copy.barcode()}}</div>
@@ -32,7 +34,7 @@
         <ul class="list-group list-group-flush">
           <li class="list-group-item" i18n>
             Item was last checked out by patron
-            <a href="/eg/staff/circ/patron/{{chargeResponse.circ.usr().id()}}/checkout">
+            <a routerLink="/staff/circ/patron/{{chargeResponse.circ.usr().id()}}/checkout">
               {{chargeResponse.circ.usr().family_name()}},
               {{chargeResponse.circ.usr().first_given_name()}} 
               ({{chargeResponse.circ.usr().usrname()}})
@@ -46,7 +48,7 @@
           </li>
           <li class="list-group-item">
             <span i18n>
-              Calucated fine amount is 
+              Calculated fine amount is 
               <span class="font-weight-bold text-danger">
                 {{chargeResponse.charge | currency}}
               </span>
@@ -59,7 +61,8 @@
                 <div class="col-lg-6">
                   <eg-combobox 
                     placeholder="Billing Type..." i18n-placeholder
-                    (onChange)="newBtype = $event.id"
+                    [startId]="newBtype" [required]="true"
+                    (onChange)="newBtype = $event ? $event.id : null"
                     [entries]="billingTypes"></eg-combobox>
                 </div>
               </div>  
@@ -69,7 +72,7 @@
                 <div class="col-lg-3" i8n>Charge Amount</div>
                 <div class="col-lg-6">
                   <input class="form-control" type="number" step="0.01" min="0"
-                  [(ngModel)]="newCharge"/>
+                  [required]="true" [(ngModel)]="newCharge"/>
                 </div>
               </div>  
             </li>
@@ -92,7 +95,7 @@
       <button type="button" class="btn btn-warning" 
         (click)="close(false)" i18n>Cancel</button>
       <button type="button" class="btn btn-success" 
-        (click)="markDamaged()" i18n>Mark Damaged</button>
+        (click)="markDamaged({})" i18n>Mark Damaged</button>
     </ng-container>
     <ng-container *ngIf="chargeResponse">
       <button type="button" class="btn btn-warning" 
@@ -102,6 +105,7 @@
       <button class="btn btn-secondary mr-2" 
         (click)="markDamaged({apply_fines:'noapply'})" i18n>No Charge</button>
       <button class="btn btn-success mr-2" 
+        [disabled]="amountChangeRequested && (!newBtype || !newCharge)"
         (click)="markDamaged({apply_fines:'apply'})" i18n>OK</button>
     </ng-container>
   </div>

@@ -19,7 +19,7 @@ export class VandelayImportSelection {
     recordIds: number[];
     queue: IdlObject;
     importQueue: boolean; // import the whole queue
-    overlayMap: {[qrId: number]: /* breId */ number};
+    overlayMap: {[qrId: number]: /* match */ IdlObject};
 
     constructor() {
        this.recordIds = [];
@@ -196,7 +196,7 @@ export class VandelayService {
 
         return this.pcrud.search('vibtg',
             {always_apply : 'f', owner: owners},
-            {vibtg : ['label']},
+            {order_by: {vibtg : 'label'}},
             {atomic: true}
         ).toPromise().then(groups => {
             this.bibTrashGroups = groups;

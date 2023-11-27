@@ -6,6 +6,7 @@ use OpenILS::Application::Cat::Merge;
 use OpenILS::Application::Cat::Authority;
 use OpenILS::Application::Cat::BibCommon;
 use OpenILS::Application::Cat::AssetCommon;
+use OpenILS::Application::Cat::Batch;
 use base qw/OpenILS::Application/;
 use Time::HiRes qw(time);
 use OpenSRF::EX qw(:try);
@@ -13,6 +14,11 @@ use OpenSRF::Utils::JSON;
 use OpenILS::Utils::Fieldmapper;
 use OpenILS::Event;
 use OpenILS::Const qw/:const/;
+
+use OpenILS::Utils::DateTime qw/:datetime/;
+
+use DateTime;
+use DateTime::Format::ISO8601;
 
 use XML::LibXML;
 use Unicode::Normalize;
@@ -22,6 +28,7 @@ use OpenILS::Perm;
 use OpenSRF::Utils::SettingsClient;
 use OpenSRF::Utils::Logger qw($logger);
 use OpenSRF::AppSession;
+use OpenSRF::Utils::Cache;
 
 my $U = "OpenILS::Application::AppUtils";
 my $conf;
@@ -297,8 +304,22 @@ sub template_overlay_container {
         if ($success eq 'f') {
             $num_failed++;
         } else {
-            $U->create_events_for_hook('bre.edit', $rec, $e->requestor->ws_ou);
-            $num_succeeded++;
+
+            # Get an updated copy of the modified bib
+            $rec = $e->retrieve_biblio_record_entry($rec->id);
+            $rec->edit_date('now');
+            $rec->editor($e->requestor->id);
+
+            if ($e->update_biblio_record_entry($rec)) {
+                # Get another fresh copy with the proper edit_date
+                $rec = $e->retrieve_biblio_record_entry($rec->id);
+                $U->create_events_for_hook('bre.edit', $rec, $e->requestor->ws_ou);
+                $num_succeeded++;
+            } else {
+                $num_failed++;
+                $success = 'f';
+                $e->rollback;
+            }
         }
 
         if ($actor) {
@@ -581,6 +602,9 @@ sub biblio_record_marc_cn {
                 ' ',
                 map { $_->textContent } $x->findnodes($xpath)
             );
+
+            # This trims the leading and trailing spaces
+            $cn =~ s/^\s+|\s+$//g;
             push @res, {$tag => $cn} if ($cn);
         }
     }
@@ -724,6 +748,8 @@ sub retrieve_copies {
     my( $self, $client, $user_session, $docid, @org_ids ) = @_;
 
     if(ref($org_ids[0])) { @org_ids = @{$org_ids[0]}; }
+    
+    $logger->debug("retrieve_copies $org_ids[0] id $docid");
 
     $docid = "$docid";
 
@@ -748,6 +774,9 @@ sub retrieve_copies {
         for my $orgid (@org_ids) {
             my $vols = _build_volume_list($e,
                     { record => $docid, owning_lib => $orgid, deleted => 'f', label => { '<>' => '##URI##' } } );
+                    
+			$logger->debug("retrieve_copies vols @$vols");
+                    
             push( @all_vols, @$vols );
         }
         
@@ -800,7 +829,12 @@ sub _build_volume_list {
             }
         ]);
 
+        $copies = [ sort { $a->barcode cmp $b->barcode } @$copies  ];
+
         for my $c (@$copies) {
+			
+			$logger->debug("copy: ".Dumper($c));	
+			
             if( $c->status == OILS_COPY_STATUS_CHECKED_OUT ) {
                 $c->circulations(
                     $e->search_action_circulation(
@@ -816,9 +850,20 @@ sub _build_volume_list {
             }
         }
 
+		
+			
         $volume->copies($copies);
+
+		for my $item (@$volume) {
+
+			$logger->debug("volume 2: ".Dumper($item));
+		}
+		#$logger->debug("copies: ".Dumper($volume->copies));	
+		
+        
         push( @volumes, $volume );
     }
+    
 
     #$session->disconnect();
     return \@volumes;
@@ -1211,7 +1256,7 @@ sub fleshed_volume_update {
         $vol->editor($reqr->id);
         $vol->edit_date('now');
 
-        my $copies = $vol->copies;
+        my $copies = $vol->copies || [];
         $vol->clear_copies;
 
         $vol->editor($editor->requestor->id);
@@ -1768,7 +1813,54 @@ sub acn_sms_msg {
     );
 }
 
+__PACKAGE__->register_method(
+	api_name        => 'open-ils.cat.asset.map_asset_by_call_number',
+	method          => 'asset_by_call_number',
+	stream          => 1
+);
 
+sub asset_by_call_number {
+	
+	my( $self, $client, $user_session, $docid, $current_index, $max_index ) = @_;
+
+	my $cache = OpenSRF::Utils::Cache->new('global');
+	my $returned;
+
+	if ($current_index && $max_index){
+
+		$current_index --;
+		my $key = 'maintenance_data'.($max_index - $current_index);
+		$returned = $cache->get_cache($key);
+		push(@{$returned},$current_index);
+		$cache->delete_cache($key);
+		$client->respond($returned);
+	}
+
+	else{
+
+		my $meth = $self->method_lookup("open-ils.storage.asset.map_asset_by_call_number");
+
+		my ($key_pair_ref) = $meth->run($user_session, $docid);
+
+		my $key_string = ${$key_pair_ref}[0];#'maintenance_data';
+		my $index = ${$key_pair_ref}[1];
+
+		$logger->debug("cat key: ".$key_string.$index);
+
+		# start at 0
+		$returned = $cache->get_cache($key_string.'0');
+
+	        # This is so we know how many batches there will be
+        	# and which batch number we are on
+	        push(@{$returned},$index + 1);
+
+		$cache->delete_cache($key_string.'0'); # remove the cache
+
+		$client->respond($returned);
+	}
+
+	return undef;
+}
 
 __PACKAGE__->register_method(
     method    => "fixed_field_values_by_rec_type",
@@ -1956,6 +2048,48 @@ sub retrieve_tag_table {
         }
         $conn->respond($field);
     }
+}
+
+__PACKAGE__->register_method(
+    method    => "cat_cataloging_date",
+    api_name  => "open-ils.cat.biblio.cataloging_date.set",
+    argc      => 3,
+    signature => {
+        desc   => 'Retrieve set of MARC tags for stock MARC standard',
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Bib Record ID', type => 'number'},
+            {   desc => 'ISO Date String.  An undef value clears the date', 
+                type => 'string'
+            }
+        ]
+    },
+    return => {desc => 'Set the cataloging date on a bib record'}
+);
+
+sub cat_cataloging_date {
+    my ($self, $client, $auth, $bre_id, $date) = @_;
+
+    my $e = new_editor(authtoken => $auth, xact => 1);
+    return $e->die_event unless $e->checkauth;
+    return $e->die_event unless $e->allowed('UPDATE_MARC');
+
+    my $bre = $e->retrieve_biblio_record_entry($bre_id) or return $e->die_event;
+
+    if ($date) {
+
+        $bre->cataloging_date(clean_ISO8601($date));
+
+    } else {
+
+        $bre->clear_cataloging_date;
+    }
+
+    $e->update_biblio_record_entry($bre) or return $e->die_event;
+
+    $e->commit;
+
+    return 1;
 }
 
 __PACKAGE__->register_method(

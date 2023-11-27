@@ -184,11 +184,21 @@ function handle_enter(ev) {
 }
 
 function handle_duedate_menu(ev) {
-    if (ev.target.value=='0') return; 
+    var duration = ev.target.value;
+    if (duration=='none') return; 
     JSAN.use('util.date'); 
     var today = new Date(); 
     var todayPlus = new Date(); 
-    todayPlus.setTime( today.getTime() + 24*60*60*1000*ev.target.value ); 
+    if (duration == '0') {
+        todayPlus.setTime(today.getTime());
+    } else if (duration.match(/year/)) {
+        // duration is represented in years
+        var count = duration.split(/ /)[0];
+        todayPlus.setFullYear(todayPlus.getFullYear() + parseInt(count));
+    } else {
+        // assume the duration is counted in days
+        todayPlus.setTime( today.getTime() + 24*60*60*1000*ev.target.value ); 
+    }
     todayPlus = util.date.formatted_date(todayPlus,'%F'); 
     $('duedate').setAttribute('value',todayPlus); 
     $('duedate').value = todayPlus;
@@ -286,11 +296,11 @@ function save_xacts() {
 
 function next_patron(cancel) {
     try {
-    
+
         if ($('print_receipt').checked && (cancel!='cancel')) {
             try {
                 var params = {
-                    'patron_barcode' : $('p_barcode').value,
+                    'patron_barcode' : "******" + $('p_barcode').value.substr(-4),
                     'template' : 'offline_checkout',
                     'printer_context' : 'offline',
                     'callback' : function() {

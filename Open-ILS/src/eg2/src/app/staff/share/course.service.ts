@@ -102,7 +102,7 @@ export class CourseService {
     fetchCoursesForRecord(recordId) {
         const courseIds = new Set<number>();
         return this.pcrud.search(
-            'acmcm', {record: recordId}, {atomic: false}
+            'acmcm', {record: recordId}
         ).pipe(tap(material => {
             courseIds.add(material.course());
         })).toPromise()

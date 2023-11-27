@@ -5,7 +5,8 @@
 export WEBDIR=@localstatedir@/web
 export STAFF_CLIENT_BUILD_ID = $$(/bin/cat build/BUILD_ID)
 export STAFF_CLIENT_VERSION = $$(/bin/cat build/VERSION)
-export STAFF_CLIENT_STAMP_ID = legacy
+export STAFF_CLIENT_STAMP_ID = $$(/bin/cat build/STAMP_ID)
+export STAFF_CLIENT_BUILD_DATE = $$(/bin/date +"%Y.%m.%d")
 
 # from http://closure-compiler.googlecode.com/files/compiler-latest.zip  FIXME: Autotools this?
 export CLOSURE_COMPILER_JAR = ~/closure-compiler/compiler.jar
@@ -135,6 +136,7 @@ localize_manifest:
 # Main VERSION will end up with 0branch.release, main STAMP ID will be 0branch_release.
 stamp:
 	@/bin/date +"%Y%m%d.%H%M%S" > build/BUILD_ID
+	@sed -i -e s/BUILD_DATE/${STAFF_CLIENT_BUILD_DATE}/ build/chrome/content/main/about.html
 	@if [ -n "${STAFF_CLIENT_BUILD_ID}" ]; then ( echo "Stamping with Build ID: ${STAFF_CLIENT_BUILD_ID}" ; echo ${STAFF_CLIENT_BUILD_ID} > build/BUILD_ID ) ; fi
 	@if [ -z "${STAFF_CLIENT_BUILD_ID}" ]; then ( echo "No Build ID for versioning" ; echo "none" > build/BUILD_ID ) ; fi
 	@sed -n -e 's/^AC_INIT([^,]*, \([^,]*\),.*$$/\1/p' @top_srcdir@/configure.ac > build/VERSION

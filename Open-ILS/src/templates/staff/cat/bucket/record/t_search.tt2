@@ -29,7 +29,6 @@
   ng-hide="forbidden"
   id-field="id"
   idl-class="rmsr"
-  auto-fields="true"
   grid-controls="gridControls"
   menu-label="[% l('Buckets') %]"
   persist-key="cat.bucket.record.search">
@@ -43,9 +42,20 @@
   <eg-grid-action label="[% l('Add To Bucket') %]" 
     handler="addToBucket"></eg-grid-action>
 
+  <eg-grid-field path="id" required hidden></eg-grid-field>
+  <eg-grid-field path="tcn_value" label="[% l('TCN Value') %]"></eg-grid-field>
+  <eg-grid-field path="tcn_source" label="[% l('TCN Source') %]"></eg-grid-field>
+
   <eg-grid-field label="[% l('Title') %]" path="title">
     <a target="_blank" href="/eg2/staff/catalog/record/{{item.id}}">
     {{item.title}} <span ng-show="item.id" class="glyphicon glyphicon-new-window"></span>
     </a>
   </eg-grid-field>
+
+  <eg-grid-field path="author" label="[% l('Author') %]"></eg-grid-field>
+  <eg-grid-field path="pubdate" label="[% l('Publication Year') %]"></eg-grid-field>
+  <eg-grid-field path="isbn" label="[% l('ISBN') %]"></eg-grid-field>
+  <eg-grid-field path="issn" label="[% l('ISSN') %]"></eg-grid-field>
+  <eg-grid-field label="[% l('Deleted?') %]" path="biblio_record.deleted"></eg-grid-field>
+
 </eg-grid>

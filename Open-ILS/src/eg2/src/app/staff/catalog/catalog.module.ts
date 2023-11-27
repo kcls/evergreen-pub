@@ -35,6 +35,9 @@ import {MarcEditModule} from '@eg/staff/share/marc-edit/marc-edit.module';
 import {PreferencesComponent} from './prefs.component';
 import {BrowsePagerComponent} from './result/browse-pager.component';
 import {HttpClientModule} from '@angular/common/http';
+import {BarcodesModule} from '@eg/staff/share/barcodes/barcodes.module';
+import {WorkLogModule} from '@eg/staff/share/worklog/worklog.module';
+import {AddedContentComponent} from './record/added-content.component';
 
 @NgModule({
   declarations: [
@@ -59,6 +62,7 @@ import {HttpClientModule} from '@angular/common/http';
     BrowseResultsComponent,
     ConjoinedComponent,
     HoldingsMaintenanceComponent,
+    AddedContentComponent,
     SearchTemplatesComponent,
     CnBrowseComponent,
     PreferencesComponent,
@@ -74,6 +78,8 @@ import {HttpClientModule} from '@angular/common/http';
     BookingModule,
     PatronModule,
     MarcEditModule,
+    BarcodesModule,
+    WorkLogModule,
     HttpClientModule
   ],
   providers: [

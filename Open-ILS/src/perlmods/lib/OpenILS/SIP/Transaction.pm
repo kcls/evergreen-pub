@@ -27,6 +27,8 @@ my %fields = (
       editor        => undef,
       authtoken     => '',
       fee_ack       => 0,
+      check_number  => undef,
+      register_login => undef
 );
 
 our $AUTOLOAD;

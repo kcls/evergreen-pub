@@ -92,6 +92,7 @@
             <eg-combobox *ngIf="t.op != '__fuzzy' && t.op != '__not,__fuzzy'"
               [idlClass]="searchFieldLinkedClasses[t.field]"
               [selectedId]="t.value1"
+              [startsWith]="searchFieldLinkedClasses[t.field] == 'acqpro'"
               (onChange)="t.value1 = $event ? $event.id : ''">
             </eg-combobox>
             <input [ngModelOptions]="{standalone: true}" [(ngModel)]="t.value1" type="text" *ngIf="t.op == '__fuzzy' || t.op == '__not,__fuzzy'" class="form-control" />

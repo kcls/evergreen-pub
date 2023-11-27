@@ -348,6 +348,28 @@ sub closed_dates_overlap {
         'open-ils.storage.actor.org_unit.closed_date.overlap', $orgid, $date );
 }
 
+__PACKAGE__->register_method(
+    method  => 'org_unit_open_day_range',
+    api_name    => 'open-ils.actor.org_unit.open_day_range',
+    signature   => q/
+        Returns a date representing the final day in a series of
+        days that include the desired number of open days for the 
+        requested org unit.
+
+        The calculation starts at noon tomorrow and counts forward 
+        until enough open days have been found to span the selected 
+        day count.
+
+        For example, if today was Jan 1 and a day count of 3 was
+        requested, assuming no closed date or hours of operation
+        collisions, the API would return Jan 4.
+    /
+);
+
+sub org_unit_open_day_range {
+    my ($self, $client, $org_id, $open_day_count) = @_;
+    return $U->org_unit_open_days($org_id, $open_day_count);
+}
 
 
 

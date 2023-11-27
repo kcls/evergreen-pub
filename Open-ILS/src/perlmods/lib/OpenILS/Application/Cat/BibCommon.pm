@@ -77,7 +77,7 @@ sub biblio_record_replace_marc  {
 }
 
 sub biblio_record_xml_import {
-    my($class, $e, $xml, $source, $auto_tcn, $override, $strip_grps) = @_;
+    my($class, $e, $xml, $source, $auto_tcn, $override, $strip_grps, $set_cat_date) = @_;
 
     $override = { all => 1 } if($override && !ref $override);
     $override = { all => 0 } if(!ref $override);
@@ -113,6 +113,7 @@ sub biblio_record_xml_import {
     $record->create_date('now');
     $record->edit_date('now');
     $record->marc($marc);
+    $record->cataloging_date('now') if $set_cat_date;
 
     $record = $e->create_biblio_record_entry($record) or return $e->die_event;
 

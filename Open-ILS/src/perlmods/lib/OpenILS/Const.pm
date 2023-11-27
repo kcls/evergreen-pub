@@ -45,6 +45,7 @@ econst OILS_COPY_STATUS_ON_RESV_SHELF => 15;
 econst OILS_COPY_STATUS_LONG_OVERDUE  => 16;
 econst OILS_COPY_STATUS_LOST_AND_PAID => 17;
 econst OILS_COPY_STATUS_CANCELED_TRANSIT => 18;
+econst OILS_COPY_STATUS_ASN_RECEIVED => 155; # KCLS
 
 # ---------------------------------------------------------------------
 # Circ defaults for pre-cataloged copies

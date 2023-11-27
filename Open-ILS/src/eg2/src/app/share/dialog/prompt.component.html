@@ -2,20 +2,23 @@
   <div class="modal-header">
     <h4 class="modal-title">{{dialogTitle}}</h4>
     <button type="button" class="close" 
-      i18n-aria-label aria-label="Close" (click)="close()">
+      i18n-aria-label aria-label="Close" (click)="closeAndClear()">
       <span aria-hidden="true">&times;</span>
     </button>
   </div>
   <div class="modal-body">
     <p>{{dialogBody}}</p>
     <div class="text-center">
-        <input class="form-control" [(ngModel)]="promptValue"/>
+        <input type="{{promptType}}" class="form-control" id="{{inputDomId}}"
+          [attr.min]="promptType == 'number' ? promptMin : ''"
+          [attr.max]="promptType == 'number' ? promptMax : ''"
+          (keyup.enter)="close(promptValue)" [(ngModel)]="promptValue"/>
     </div>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-success" 
-      (click)="close(promptValue)" i18n>Confirm</button>
+      (click)="closeAndClear(promptValue)" i18n>Confirm</button>
     <button type="button" class="btn btn-warning" 
-      (click)="close()" i18n>Cancel</button>
+      (click)="closeAndClear()" i18n>Cancel</button>
   </div>
 </ng-template>

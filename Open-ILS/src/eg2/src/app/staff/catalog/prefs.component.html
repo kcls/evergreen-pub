@@ -86,21 +86,25 @@
 <div class="row border-bottom border-secondary p-2 m-2">
   <div class="col-lg-2 offset-lg-1">
     <label for="pref-lib-selector" class="font-weight-bold" i18n>
-      Exclude Electronic Resources
+      Show / Hide Related Items
     </label>
   </div>
   <div class="col-lg-2">
-    <div class="checkbox pl-3 pt-2">
-      <label>
-        <input type="checkbox" 
-          (change)="checkboxChanged('eg.staffcat.exclude_electronic')"
-          [(ngModel)]="settings['eg.staffcat.exclude_electronic']">
-        <span class="pl-1" i18n></span>
-      </label>
+    <div class="form-check form-check-inline">
+
+      <input class="form-check-input" type="radio" 
+        [checked]="!settings['eg.catalog.hide_facets']"
+        name="hide-facets" id="show-facets" (change)="facetChanged('show', $event)"/>
+      <label class="form-check-label" for="show-facets">Show</label>
+
+      <input class="form-check-input ml-2" type="radio" 
+        [checked]="settings['eg.catalog.hide_facets']"
+        name="hide-facets" id="hide-facets" (change)="facetChanged('hide', $event)"/>
+      <label class="form-check-label" for="hide-facets">Hide</label>
     </div>
   </div>
   <div class="col-lg-6" i18n>
-    Add the 'Exclude Electronic Resources' checkbox to the main search form.
+    Hide the Related Authors, Subject, etc. side bar in search results.
   </div>
 </div>
 <div class="row">

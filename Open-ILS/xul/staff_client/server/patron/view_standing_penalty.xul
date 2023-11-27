@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!-- Application: Evergreen Staff Client -->
+<!-- Dialog: view Standing Penalty to Patron -->
+
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+<!-- PRESENTATION -->
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="/xul/server/skin/global.css" type="text/css"?>
+
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+<!-- LOCALIZATION -->
+<!DOCTYPE window PUBLIC "" ""[
+    <!--#include virtual="/opac/locale/${locale}/lang.dtd"-->
+]>
+
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+<!-- OVERLAYS -->
+<?xul-overlay href="/xul/server/OpenILS/util_overlay.xul"?>
+
+<window id="view_penalty_win" 
+    onload="try { view_penalty_init(); font_helper(); persist_helper(); } catch(E) { alert(E); }"
+    onunload="try { view_penalty_cleanup(); persist_helper_cleanup(); } catch(E) { alert(E); }"
+    oils_persist="height width sizemode"
+    xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+    title="&staff.patron_display.view_penalty_dialog.title;">
+
+    <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- BEHAVIOR -->
+    <script type="text/javascript">var myPackageDir = 'open_ils_staff_client'; var IAMXUL = true;</script>
+    <scripts id="openils_util_scripts"/>
+
+    <script type="text/javascript" src="/xul/server/main/JSAN.js"/>
+    <script type="text/javascript" src="view_standing_penalty.js"/>
+
+    <messagecatalog id="patronStrings" src="/xul/server/locale/<!--#echo var='locale'-->/patron.properties" />
+
+    <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- CONTENT -->
+    <dialogheader title="&staff.patron_display.view_penalty_dialog.header;" description="&staff.patron_display.view_penalty_dialog.description;" />
+    <textbox id="note_tb" class="ALL_FONTS_LARGE" flex="1" multiline="true" readonly="true" rows="3" onoverflow="this.rows = this.inputField.scrollHeight;"/>
+    <hbox>
+        <spacer flex="1"/>
+        <button id="close_btn" label="&staff.patron_display.view_penalty_dialog.close_btn.label;" accesskey="&staff.patron_display.close_penalty_dialog.close_btn.accesskey;" />
+    </hbox>
+</window>
+

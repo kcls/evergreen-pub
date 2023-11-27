@@ -16,7 +16,7 @@
       <div class="row new-entry">
         <div class="col-md-6">
           <span class="glyphicon glyphicon-print"></span>
-          <a target="_self" href="./admin/workstation/print/config">
+          <a href="/eg2/staff/admin/workstation/printers">
             [% l('Printer Settings') %]
           </a>
         </div>
@@ -135,6 +135,24 @@
             <option value="advanced">[% l('Advanced (default)') %]</option>
             <option value="numeric" >[% l('Numeric') %]</option>
             <option value="expert"  >[% l('MARC Expert') %]</option>
+            <option value="browse"  >[% l('Browse') %]</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row new-entry">
+        <div class="col-md-8">
+          <label for="results_sort_selector">[% l('Browse Results Default Sort') %]</label>
+          <p>[% l('You can set the default of how items are sorted in the Browse field.') %]</p>
+        </div>
+        <div class="col-md-4">
+          <select id="results_sort_selector" ng-model="results_sort">
+            <option value="pubdate.descending">[% l('Date: Newest to Oldest') %]</option>
+            <option value="pubdate">[% l('Date: Oldest to Newest') %]</option>
+            <option value="titlesort">[% l('Title: A to Z') %]</option>
+            <option value="titlesort.descending">[% l('Title: Z to A') %]</option>
+            <option value="authorsort">[% l('Author: A to Z') %]</option>
+            <option value="authorsort.descending">[% l('Author: Z to A') %]</option>
           </select>
         </div>
       </div>

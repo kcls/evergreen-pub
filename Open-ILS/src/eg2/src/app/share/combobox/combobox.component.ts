@@ -47,15 +47,17 @@ export class IdlClassTemplateDirective {
     multi: true
   }]
 })
-export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnChanges {
+export class ComboboxComponent
+    implements ControlValueAccessor, OnInit, AfterViewInit, OnChanges {
+
     static domIdAuto = 0;
 
     selected: ComboboxEntry;
     click$: Subject<string>;
     entrylist: ComboboxEntry[];
 
-    @ViewChild('instance', { static: true }) instance: NgbTypeahead;
-    @ViewChild('defaultDisplayTemplate', { static: true}) defaultDisplayTemplate: TemplateRef<any>;
+    @ViewChild('instance', {static: false}) instance: NgbTypeahead;
+    @ViewChild('defaultDisplayTemplate', {static: true}) defaultDisplayTemplate: TemplateRef<any>;
     @ViewChildren(IdlClassTemplateDirective) idlClassTemplates: QueryList<IdlClassTemplateDirective>;
 
     @Input() domId = 'eg-combobox-' + ComboboxComponent.domIdAuto++;
@@ -75,6 +77,10 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
 
     // If true, applies form-control-sm CSS
     @Input() smallFormControl = false;
+
+    // If true, the typeahead only matches values that start with
+    // the value typed as opposed to a 'contains' match.
+    @Input() startsWith = false;
 
     // Add a 'required' attribute to the input
     isRequired: boolean;
@@ -107,13 +113,26 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
     @Input() idlBaseQuery: any = null;
     @Input() startIdFiresOnChange: boolean;
 
+    // This will be appended to the async data retrieval query
+    // when fetching objects by idlClass.
+    @Input() idlQueryAnd: {[field: string]: any};
+
+    @Input() idlQuerySort: {[cls: string]: string};
+
+    // Display the selected value as text instead of within
+    // the typeahead
+    @Input() readOnly = false;
+
     // Allow the selected entry ID to be passed via the template
     // This does NOT not emit onChange events.
     @Input() set selectedId(id: any) {
         if (id === undefined) { return; }
 
         // clear on explicit null
-        if (id === null) { this.selected = null; }
+        if (id === null) {
+            this.selected = null;
+            return;
+        }
 
         if (this.entrylist.length) {
             this.selected = this.entrylist.filter(e => e.id === id)[0];
@@ -188,6 +207,8 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
     // When the UI value is cleared, null is emitted.
     @Output() onChange: EventEmitter<ComboboxEntry>;
 
+    @Output() keyUpEnter: EventEmitter<void> = new EventEmitter<void>();
+
     // Useful for massaging the match string prior to comparison
     // and display.  Default version trims leading/trailing spaces.
     formatDisplayString: (e: ComboboxEntry) => string;
@@ -213,7 +234,20 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
         this.defaultSelectionApplied = false;
 
         this.formatDisplayString = (result: ComboboxEntry) => {
-            const display = result.label || result.id;
+
+            let display;
+            if (this.idlClass && result.fm) {
+                // In some scenarios, like when we receive a partial
+                // data set from the caller in advance of any async
+                // lookups, the entry labels will not get formatted.
+                // Enforce the formatting here.
+                display = this.getFmRecordLabel(result.fm);
+            }
+
+            if (!display) { // Ensure the above produces something
+                display = result.label || result.id;
+            }
+
             return (display + '').trim();
         };
 
@@ -262,8 +296,19 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
                     args = this.idlBaseQuery;
                 }
                 const extra_args = { order_by : {} };
-                args[field] = {'ilike': `%${term}%`}; // could -or search on label
-                extra_args['order_by'][this.idlClass] = field;
+                if (this.startsWith) {
+                    args[field] = {'ilike': `${term}%`};
+                } else {
+                    args[field] = {'ilike': `%${term}%`}; // could -or search on label
+                }
+                if (this.idlQueryAnd) {
+                    Object.assign(args, this.idlQueryAnd);
+                }
+                if (this.idlQuerySort) {
+                    extra_args['order_by'] = this.idlQuerySort;
+                } else {
+                    extra_args['order_by'][this.idlClass] = field;
+                }
                 extra_args['limit'] = 100;
                 if (this.idlIncludeLibraryInLabel) {
                     extra_args['flesh'] = 1;
@@ -391,8 +436,7 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
     // Apply a default selection where needed
     applySelection() {
 
-        if (this.startId !== null &&
-            this.entrylist && !this.defaultSelectionApplied) {
+        if (this.entrylist && !this.defaultSelectionApplied) {
 
             const entry =
                 this.entrylist.filter(e => e.id === this.startId)[0];
@@ -422,6 +466,7 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
     }
 
     addAsyncEntry(entry: ComboboxEntry) {
+        if (!entry) { return; }
         // Avoid duplicate async entries
         if (!this.asyncIds['' + entry.id]) {
             this.asyncIds['' + entry.id] = true;
@@ -440,13 +485,25 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
         if (typeof this.selected === 'string') {
 
             if (this.allowFreeText && this.selected !== '') {
-                // Free text entered which does not match a known entry
-                // translate it into a dummy ComboboxEntry
-                this.selected = {
-                    id: null,
-                    label: this.selected,
-                    freetext: true
-                };
+                const freeText = this.entrylist.filter(e => e.id === null)[0];
+
+                if (freeText) {
+
+                    // If we already had a free text entry, just replace
+                    // the label with the new value
+                    freeText.label = this.selected;
+                    this.selected = freeText;
+
+                }  else {
+
+                    // Free text entered which does not match a known entry
+                    // translate it into a dummy ComboboxEntry
+                    this.selected = {
+                        id: null,
+                        label: this.selected,
+                        freetext: true
+                    };
+                }
 
             } else {
 
@@ -475,12 +532,14 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
             return of(term);
         }
 
-        let searchTerm: string;
-        searchTerm = term;
-        if (searchTerm === '_CLICK_') {
+        let searchTerm = term;
+        if (term === '_CLICK_') {
             if (this.asyncSupportsEmptyTermClick) {
+                // Search for "all", but retain and propage the _CLICK_
+                // term so the filter knows to open the selector
                 searchTerm = '';
             } else {
+                // Skip the final filter map and display nothing.
                 return of();
             }
         }
@@ -537,8 +596,6 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
                     if (this.asyncDataSource) {
                         term = '';
                     } else {
-                        // Give the typeahead a chance to open before applying
-                        // the disabled entry styling.
                         setTimeout(() => this.applyDisableStyle());
                         return this.entrylist;
                     }
@@ -551,8 +608,14 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
                 // Filter entrylist whose labels substring-match the
                 // text entered.
                 return this.entrylist.filter(entry => {
-                    const label = entry.label || entry.id;
-                    return label.toLowerCase().indexOf(term.toLowerCase()) > -1;
+                    const label = String(entry.label) || String(entry.id);
+                    if (!label) { return false; }
+
+                    if (this.startsWith) {
+                        return label.toLowerCase().startsWith(term.toLowerCase());
+                    } else {
+                        return label.toLowerCase().indexOf(term.toLowerCase()) > -1;
+                    }
                 });
             })
         );
@@ -573,6 +636,13 @@ export class ComboboxComponent implements ControlValueAccessor, OnInit, AfterVie
         this.propagateTouch = fn;
     }
 
+    hasNoValues(): boolean {
+        return (
+            this.allowFreeText &&
+            !this.asyncDataSource &&
+            (this.entrylist || []).length === 0
+        );
+    }
 }
 
 

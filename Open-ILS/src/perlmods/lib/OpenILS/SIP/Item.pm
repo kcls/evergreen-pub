@@ -154,6 +154,11 @@ sub new {
         $self->{destination_loc} = $self->{hold}->pickup_lib->shortname;
     }
 
+    if (my $hold = $self->{hold}) {
+        my $card = $e->search_actor_card({usr => $hold->usr})->[0];
+        $self->{hold_patron_bcode} = $card->barcode if $card;
+    }
+
     syslog("LOG_DEBUG", "OILS: Item('$item_id'): found with title '%s'", $self->title_id);
 
     my $config = OpenILS::SIP->config();    # FIXME : will not always match!

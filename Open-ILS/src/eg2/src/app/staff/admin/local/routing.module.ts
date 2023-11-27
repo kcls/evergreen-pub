@@ -68,6 +68,10 @@ const routes: Routes = [{
     loadChildren: () =>
       import('./triggers/triggers.module').then(m => m.TriggersModule)
 }, {
+    path: 'negative-balances',
+    loadChildren: () =>
+      import('./negative-balances/negative-balances.module').then(m => m.NegativeBalancesModule)
+}, {
     path: ':schema/:table',
     component: BasicAdminPageComponent
 }];

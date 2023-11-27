@@ -64,13 +64,14 @@
                     <spacer flex="1"/>
                     <menulist id="duedate_menu">
                         <menupopup>
-                            <menuitem label="&common.date_helper;" value="0"/>
-                            <menuitem label="&common.date_helper.3_days;" value="3"/>
+                            <menuitem label="&common.date_helper;" value="none"/>
+                            <menuitem label="&common.date_helper.same_day;" value="0"/>
                             <menuitem label="&common.date_helper.7_days;" value="7"/>
                             <menuitem label="&common.date_helper.14_days;" value="14"/>
                             <menuitem label="&common.date_helper.21_days;" value="21"/>
                             <menuitem label="&common.date_helper.28_days;" value="28"/>
-                            <menuitem label="&common.date_helper.30_days;" value="30"/>
+                            <menuitem label="&common.date_helper.42_days;" value="42"/>
+                            <menuitem label="&common.date_helper.1_year;" value="1 year"/>
                         </menupopup>
                     </menulist>
                 </hbox>

@@ -32,6 +32,7 @@
     <messagecatalog id="patronStrings" src="/xul/server/locale/<!--#echo var='locale'-->/patron.properties" />
 
     <commandset id="penalty_cmds">
+        <command id="cmd_view_message" disabled="true"/>
         <command id="cmd_apply_penalty" />
         <command id="cmd_remove_penalty" disabled="true"/>
         <command id="cmd_edit_penalty" disabled="true"/>
@@ -41,6 +42,8 @@
         <command id="cmd_show_note" />
         <command id="cmd_show_alert" />
         <command id="cmd_show_block" />
+        <command id="cmd_save_columns" />
+        <command id="cmd_save_archived_columns" />
     </commandset>
 
     <!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
@@ -74,9 +77,12 @@
                             type="menu" style="-moz-user-focus: normal" 
                             oncommand="this.focus(); this.firstChild.showPopup()">
                             <menupopup>
+                                <menuitem command="cmd_view_message" label="&staff.patron_display.penalty.menu.actions.view.label;"/>
                                 <menuitem command="cmd_remove_penalty" label="&staff.patron_display.penalty.menu.actions.remove.label;" accesskey="&staff.patron_display.menu.actions.remove.accesskey;"/>
                                 <menuitem command="cmd_edit_penalty" label="&staff.patron_display.penalty.menu.actions.edit.label;" accesskey="&staff.patron_display.menu.actions.edit.accesskey;"/>
                                 <menuitem command="cmd_archive_penalty" label="&staff.patron_display.penalty.menu.actions.archive.label;" accesskey="&staff.patron_display.menu.actions.archive.accesskey;"/>
+                                <menuseparator />
+                                <menuitem command="cmd_save_columns" label="&staff.patron_display.penalty.column.save.label;" />
                             </menupopup>
                         </toolbarbutton>
                     </toolbar>
@@ -91,6 +97,10 @@
         <vbox flex="0">
             <toolbox flex="1">
                 <toolbar>
+                    <toolbarbutton id="apply_btn" 
+                        command="cmd_save_archived_columns" 
+                        label="&staff.patron_display.penalty.column.archive.save.label;" 
+                        style="-moz-user-focus: normal" />
                     <toolbarspring/>
                     <toolbaritem>
                         <progressmeter id="archived_progress" flex="1" hidden="true" mode="undetermined"/>
@@ -114,9 +124,12 @@
 
     <popupset id="csp_popupset">
         <menupopup id="ausp_actions" position="at_pointer">
+            <menuitem command="cmd_view_message" label="&staff.patron_display.penalty.menu.actions.view.label;"/>
             <menuitem command="cmd_remove_penalty" label="&staff.patron_display.penalty.menu.actions.remove.label;" accesskey="&staff.patron_display.menu.actions.remove.accesskey;"/>
             <menuitem command="cmd_edit_penalty" label="&staff.patron_display.penalty.menu.actions.edit.label;" accesskey="&staff.patron_display.menu.actions.edit.accesskey;"/>
             <menuitem command="cmd_archive_penalty" label="&staff.patron_display.penalty.menu.actions.archive.label;" accesskey="&staff.patron_display.menu.actions.archive.accesskey;"/>
+            <menuseparator />
+            <menuitem command="cmd_save_columns" label="&staff.patron_display.penalty.column.save.label;" />
         </menupopup>
     </popupset>
 

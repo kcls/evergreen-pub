@@ -2,8 +2,10 @@ import {Injectable, Pipe, PipeTransform} from '@angular/core';
 import {DatePipe, DecimalPipe, getLocaleDateFormat, getLocaleTimeFormat, getLocaleDateTimeFormat, FormatWidth} from '@angular/common';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
+import {AuthService} from '@eg/core/auth.service';
 import {LocaleService} from '@eg/core/locale.service';
 import * as moment from 'moment-timezone';
+import {DateUtil} from '@eg/share/util/date';
 
 /**
  * Format IDL vield values for display.
@@ -18,7 +20,9 @@ export interface FormatParams {
     datatype?: string;
     orgField?: string; // 'shortname' || 'name'
     datePlusTime?: boolean;
+    dateFormat?: string;
     timezoneContextOrg?: number;
+    dateOnlyInterval?: string;
 }
 
 @Injectable({providedIn: 'root'})
@@ -27,12 +31,14 @@ export class FormatService {
     dateFormat = 'shortDate';
     dateTimeFormat = 'short';
     wsOrgTimezone: string = OpenSRF.tz;
+    tzCache: {[orgId: number]: string} = {};
 
     constructor(
         private datePipe: DatePipe,
         private decimalPipe: DecimalPipe,
         private idl: IdlService,
         private org: OrgService,
+        private auth: AuthService,
         private locale: LocaleService
     ) {
 
@@ -102,7 +108,16 @@ export class FormatService {
                     }
 
                 } else {
-                    return value + '';
+
+                    // We have an object with no display selector
+                    // Display its pkey instead to avoid showing [object Object]
+
+                    const pkey = this.idl.classes[params.idlClass].pkey;
+                    if (pkey && typeof value[pkey] === 'function') {
+                        return value[pkey]();
+                    }
+
+                    return '';
                 }
 
             case 'org_unit':
@@ -111,6 +126,12 @@ export class FormatService {
                 return org ? org[orgField]() : '';
 
             case 'timestamp':
+                // This can happen when in the process of applying a
+                // NOW() date value to an object in a grid.  Treat it
+                // essentially as unset so the caller is required to
+                // retrieve the modified value.
+                if (value === 'now') { return ''; }
+
                 let tz;
                 if (params.idlField === 'dob') {
                     // special case: since dob is the only date column that the
@@ -119,17 +140,35 @@ export class FormatService {
                     // local one
                     tz = 'UTC';
                 } else {
-                    tz = this.wsOrgTimezone;
+                    if (params.timezoneContextOrg) {
+                        tz = this.getOrgTz( // support ID or object
+                            this.org.get(params.timezoneContextOrg).id());
+                    } else {
+                        tz = this.wsOrgTimezone;
+                    }
                 }
+
                 const date = moment(value).tz(tz);
-                if (!date.isValid()) {
-                    console.error('Invalid date in format service', value);
+                if (!date || !date.isValid()) {
+                    console.error(
+                        'Invalid date in format service; date=', value, 'tz=', tz);
                     return '';
                 }
-                let fmt = this.dateFormat || 'shortDate';
+
+                let fmt = params.dateFormat || this.dateFormat || 'shortDate';
+
                 if (params.datePlusTime) {
+                    // Time component directly requested
                     fmt = this.dateTimeFormat || 'short';
+
+                } else if (params.dateOnlyInterval) {
+                    // Time component displays for non-day-granular intervals.
+                    const secs = DateUtil.intervalToSeconds(params.dateOnlyInterval);
+                    if (secs !== null && secs % 86400 !== 0) {
+                        fmt = this.dateTimeFormat || 'short';
+                    }
                 }
+
                 return this.datePipe.transform(date.toISOString(true), fmt, date.format('ZZ'));
 
             case 'money':
@@ -153,6 +192,42 @@ export class FormatService {
                 return value + '';
         }
     }
+
+    /**
+    Fetch the org timezone from cache when available.  Otherwise,
+    get the timezone from the org unit setting.  The first time
+    this call is made, it may return the incorrect value since
+    it's not a promise-returning method (because format() is not a
+    promise-returning method).  Future calls will return the correct
+    value since it's locally cached.  Since most format() calls are
+    repeated many times for Angular digestion, the end result is that
+    the correct value will be used in the end.
+    */
+    getOrgTz(orgId: number): string {
+
+        if (this.tzCache[orgId] === null) {
+            // We are still waiting for the value to be returned
+            // from the server.
+            return this.wsOrgTimezone;
+        }
+
+        if (this.tzCache[orgId] !== undefined) {
+            // We have a cached value.
+            return this.tzCache[orgId];
+        }
+
+        // Avoid duplicate parallel lookups by indicating we
+        // are loading the value from the server.
+        this.tzCache[orgId] = null;
+
+        this.org.settings(['lib.timezone'], orgId)
+        .then(sets => this.tzCache[orgId] = sets['lib.timezone']);
+
+        // Use the local timezone while we wait for the real value
+        // to load from the server.
+        return this.wsOrgTimezone;
+    }
+
     /**
      * Create an IDL-friendly display version of a human-readable date
      */
@@ -304,9 +379,61 @@ export class FormatService {
 @Pipe({name: 'formatValue'})
 export class FormatValuePipe implements PipeTransform {
     constructor(private formatter: FormatService) {}
-    // Add other filter params as needed to fill in the FormatParams
     transform(value: string, datatype: string): string {
         return this.formatter.transform({value: value, datatype: datatype});
+    }
+}
+
+@Pipe({name: 'egDate'})
+export class SimpleDatePipe implements PipeTransform {
+    constructor(private formatter: FormatService) {}
+
+    transform(value: string): string {
+        return this.formatter.transform({
+            value: value,
+            datatype: 'timestamp'
+        });
+    }
+}
+
+@Pipe({name: 'egDateTime'})
+export class SimpleDateTimePipe implements PipeTransform {
+    constructor(private formatter: FormatService) {}
+
+    transform(value: string): string {
+        return this.formatter.transform({
+            value: value,
+            datatype: 'timestamp',
+            datePlusTime: true
+        });
+    }
+}
+
+@Pipe({name: 'egOrgDateInContext'})
+export class OrgDateInContextPipe implements PipeTransform {
+    constructor(private formatter: FormatService) {}
+
+    transform(value: string, orgId?: number, interval?: string ): string {
+        return this.formatter.transform({
+            value: value,
+            datatype: 'timestamp',
+            timezoneContextOrg: orgId,
+            dateOnlyInterval: interval
+        });
+    }
+}
+
+@Pipe({name: 'egDueDate'})
+export class DueDatePipe implements PipeTransform {
+    constructor(private formatter: FormatService) {}
+
+    transform(circ: IdlObject): string {
+        return this.formatter.transform({
+            value: circ.due_date(),
+            datatype: 'timestamp',
+            timezoneContextOrg: circ.circ_lib(),
+            dateOnlyInterval: circ.duration()
+        });
     }
 }
 

@@ -8,8 +8,9 @@
 
 <eg-string #olLabel text="Owning Library" i18n-text></eg-string>
 
-<eg-string #mintConditionYes i18n-text text="Good"></eg-string>
-<eg-string #mintConditionNo i18n-text text="Damaged"></eg-string>
+<eg-string #mintConditionLabel i18n-text text="Quality"></eg-string>
+<eg-string #mintConditionYes i18n-text text="Standard"></eg-string>
+<eg-string #mintConditionNo i18n-text text="No Supplemental"></eg-string>
 
 <eg-string #savedHoldingsTemplates i18n-text text="Saved holdings template(s)"></eg-string>
 <eg-string #deletedHoldingsTemplate i18n-text text="Deleted holdings template"></eg-string>
@@ -104,7 +105,7 @@
 
       <ng-template #noEditStat>
         <eg-batch-item-attr label="Status" i18n-label [readOnly]="true"
-          [labelCounts]="itemAttrCounts('status')">
+          name="status" [labelCounts]="itemAttrCounts('status')">
         </eg-batch-item-attr>
       </ng-template>
     </div>
@@ -154,7 +155,7 @@
     <div *ngIf="displayAttr('location')">
       <ng-template #locationTemplate>
         <eg-item-location-select (valueChange)="values['location'] = $event"
-          [contextOrgIds]="copyLocationOrgs()"
+          [loadAsync]="false"
           domId='location-input' [required]="true" permFilter="UPDATE_COPY">
         </eg-item-location-select>
       </ng-template>
@@ -308,7 +309,7 @@
           [(ngModel)]="values['circ_modifier']">
           <option [value]="null" i18n>&lt;Unset&gt;</option>
           <option *ngFor="let mod of volcopy.commonData.acp_circ_modifier"
-            value="{{mod.code()}}">{{mod.name()}}</option>
+            value="{{mod.code()}}">{{mod.code()}} : {{mod.name()}}</option>
         </select>
       </ng-template>
       <ng-container *ngTemplateOutlet="batchAttr;
@@ -323,22 +324,19 @@
   <div class="flex-1 p-1">
     <div class="p-1"><h4 class="font-weight-bold" i18n>Miscellaneous</h4></div>
 
-    <!-- Adding this for sites that still use alert messages (we do)
-    <div>
+    <!-- KCLS JBAS-2533 -->
+    <div *ngIf="displayAttr('alert_message')">
       <ng-template #alertMessageTemplate>
-        <textarea rows="3" class="form-control" id="alert-message-input"
+        <textarea rows="3" class="form-control" id="alert_message-input"
           [(ngModel)]="values['alert_message']">
         </textarea>
       </ng-template>
-      <eg-batch-item-attr label="Alert Message" i18n-label
-        editInputDomId="alert-message-input"
-        [editTemplate]="alertMessageTemplate"
-        [labelCounts]="itemAttrCounts('alert_message')"
-        (changesSaved)="applyCopyValue('alert_message')">
-      </eg-batch-item-attr>
+      <ng-container *ngTemplateOutlet="batchAttr;
+        context:{field:'alert_message',template:alertMessageTemplate}">
+      </ng-container>
     </div>
-    -->
 
+    <!-- KCLS JBAS-2533
     <div class="border rounded m-1" *ngIf="displayAttr('copy_alerts')">
       <eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
       <div class="batch-header font-weight-bold p-2" i18n>Add Item Alerts</div>
@@ -348,6 +346,7 @@
         </button>
       </div>
     </div>
+    -->
 
     <div *ngIf="displayAttr('deposit')">
       <ng-template #depositTemplate>
@@ -417,8 +416,12 @@
           <option value="f" i18n>{{mintConditionNo.text}}</option>
         </select>
       </ng-template>
-      <ng-container *ngTemplateOutlet="batchAttr;
-        context:{field:'mint_condition',template:mintConditionTemplate}">
+      <ng-container *ngTemplateOutlet="batchAttr; context:{
+        field:'mint_condition',
+        required:true,
+        template:mintConditionTemplate,
+        label:mintConditionLabel.text
+      }">
       </ng-container>
     </div>
 
@@ -438,9 +441,12 @@
       </div>
     </div>
 
-    <div class="border rounded m-1" *ngIf="displayAttr('copy_notes')">
+    <div class="border rounded m-1" 
+      *ngIf="displayAttr('copy_notes') && context.copyList().length === 1">
       <eg-copy-notes-dialog #copyNotesDialog></eg-copy-notes-dialog>
-      <div class="batch-header font-weight-bold p-2" i18n>Add Item Notes</div>
+      <div class="batch-header font-weight-bold p-2" i18n>
+        Item Notes ({{context.copyList()[0].notes().length}})
+      </div>
       <div class="p-1">
         <button class="btn btn-outline-dark" (click)="openCopyNotes()" i18n>
           Item Notes

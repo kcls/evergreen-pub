@@ -1,4 +1,4 @@
-import {Component, OnInit, AfterViewInit, Directive, ElementRef, Renderer2, ViewChild} from '@angular/core';
+import {Component, OnInit, AfterViewInit, Directive, ElementRef, ViewChild} from '@angular/core';
 import {OrgService} from '@eg/core/org.service';
 import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -18,7 +18,6 @@ export class StaffSplashComponent implements OnInit {
     portalHeaders: any[] = [];
 
     constructor(
-        private renderer: Renderer2,
         private pcrud: PcrudService,
         private auth: AuthService,
         private org: OrgService,
@@ -67,28 +66,6 @@ export class StaffSplashComponent implements OnInit {
                         filteredPortalEntries = [];
                     }
                 }
-
-                // munge the results so that we don't need to
-                // care if there are gaps in the page_col or col_pos
-                // sequences
-                filteredPortalEntries.forEach((col) => {
-                    if (col !== undefined) {
-                        const filtered = col.filter(x => x !== undefined);
-                        this.portalEntries.push(filtered);
-                        filtered.forEach((entry) => {
-                            if (entry.entry_type() === 'header') {
-                                this.portalHeaders[this.portalEntries.length - 1] = entry;
-                            }
-                        });
-                    }
-                });
-                // supply an empty header entry in case a column was
-                // defined without a header
-                this.portalEntries.forEach((col, i) => {
-                    if (this.portalHeaders.length <= i) {
-                        this.portalHeaders[i] = undefined;
-                    }
-                });
             }
         );
 
@@ -99,6 +76,12 @@ export class StaffSplashComponent implements OnInit {
                     this.router.navigate(['/staff']);
                 });
         }
+
+        // Focus catalog search form
+        setTimeout(() => {
+            const node = document.getElementById('catalog-search-input');
+            if (node) { node.focus(); }
+        });
     }
 
     searchCatalog(): void {

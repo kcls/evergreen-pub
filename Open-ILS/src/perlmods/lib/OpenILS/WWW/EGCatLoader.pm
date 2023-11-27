@@ -5,7 +5,6 @@ use URI::Escape;
 use Digest::MD5 qw(md5_hex);
 use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST);
 use OpenSRF::AppSession;
-use OpenSRF::EX qw/:try/;
 use OpenILS::Utils::DateTime qw/:datetime/;
 use OpenSRF::Utils::JSON;
 use OpenSRF::Utils::Logger qw/$logger/;
@@ -29,6 +28,9 @@ use OpenILS::WWW::EGCatLoader::Course;
 use OpenILS::WWW::EGCatLoader::Container;
 use OpenILS::WWW::EGCatLoader::SMS;
 use OpenILS::WWW::EGCatLoader::Register;
+use OpenILS::WWW::EGCatLoader::Ecard;
+use OpenILS::WWW::EGCatLoader::EZproxy;
+use OpenILS::WWW::EGCatLoader::ADAForm;
 
 my $U = 'OpenILS::Application::AppUtils';
 
@@ -156,12 +158,15 @@ sub load {
     return $self->load_library if $path =~ m|opac/library|;
     return $self->load_rresults if $path =~ m|opac/results|;
     return $self->load_print_or_email_preview('print') if $path =~ m|opac/record/print_preview|;
+    return $self->load_export if $path =~ m|opac/export|;
+    return $self->load_rresults if $path =~ m|opac/browse_items|;
     return $self->load_print_record if $path =~ m|opac/record/print|;
     return $self->load_record if $path =~ m|opac/record/\d|;
     return $self->load_cnbrowse if $path =~ m|opac/cnbrowse|;
     return $self->load_browse if $path =~ m|opac/browse|;
     return $self->load_course_browse if $path =~ m|opac/course_browse|;
     return $self->load_course if $path =~ m|opac/course|;
+    return $self->load_rresults if $path =~ m|opac/see_also|;
 
     return $self->load_mylist_add if $path =~ m|opac/mylist/add|;
     return $self->load_mylist_delete if $path =~ m|opac/mylist/delete|;
@@ -180,8 +185,17 @@ sub load {
     return $self->load_password_reset if $path =~ m|opac/password_reset|;
     return $self->load_logout if $path =~ m|opac/logout|;
     return $self->load_patron_reg if $path =~ m|opac/register|;
+    return $self->biblio_load_logout if $path =~ m|opac/biblio/logout|;
 
     $self->load_simple("myopac") if $path =~ m:opac/myopac:; # A default page for myopac parts
+
+    return $self->load_ecard_form if $path =~ m|opac/ecard/form|;
+    return $self->load_ecard_submit if $path =~ m|opac/ecard/submit|;
+    return $self->load_ecard_verify if $path =~ m|opac/ecard/verify|;
+
+    return $self->load_ezproxy_form if $path =~ m|opac/ezproxy/login|;
+    return $self->load_ezproxy_deny if $path =~ m|opac/ezproxy/deny|;
+    return $self->load_ezproxy_headerfooter if $path =~ m|opac/ezproxy/headerfooter|;
 
     if($path =~ m|opac/login|) {
         return $self->load_login unless $self->editor->requestor; # already logged in?
@@ -191,6 +205,20 @@ sub load {
         return $self->generic_redirect(
             sprintf(
                 "%s://%s%s/myopac/main",
+                $self->ctx->{proto},
+                $self->ctx->{hostname}, $self->ctx->{opac_root}
+            )
+        );
+    }
+    
+    if($path =~ m|opac/biblio/login|) {
+        return $self->biblio_load_login unless $self->editor->requestor; # already logged in?
+
+        # This will be less confusing to users than to be shown a login form
+        # when they're already logged in.
+        return $self->generic_redirect(
+            sprintf(
+                "%s://%s%s/biblio/main_fines",
                 $self->ctx->{proto},
                 $self->ctx->{hostname}, $self->ctx->{opac_root}
             )
@@ -229,6 +257,14 @@ sub load {
     }
 
     return $self->load_manual_shib_login if $path =~ m|opac/manual_shib_login|;
+
+    # Payflow silent post responses do not require a login,
+    # because they use a secondary secure token that acts 
+    # as an auth token proxy.
+    return $self->load_myopac_payflow_silent_post if $path =~ m|opac/payflow/silent_post|;
+
+    return $self->load_ada_form if $path =~ m|ada-form|;
+
     # ----------------------------------------------------------------
     #  Everything below here requires authentication
     # ----------------------------------------------------------------
@@ -282,6 +318,19 @@ sub load {
     return $self->load_myopac_prefs if $path =~ m|opac/myopac/prefs|;
     return $self->load_myopac_reservations if $path =~ m|opac/myopac/reservations|;
 
+    # PayflowHosted E-Com pages.
+    return $self->load_myopac_payflow_form if $path =~ m|opac/payflow/pay_form|;
+    return $self->load_myopac_payflow_receipt if $path =~ m|opac/payflow/pay_receipt|;
+
+    #BiblioCommons E-Commerce Screens
+    return $self->load_myopac_payment_form if $path =~ m|opac/biblio/main_payment_form|;
+    return $self->load_myopac_payments if $path =~ m|opac/biblio/main_payments|;
+    return $self->biblio_load_myopac_pay_init if $path =~ m|opac/biblio/main_pay_init|;
+    return $self->load_myopac_main if $path =~ m|opac/biblio/main_fines|;
+    return $self->load_myopac_pay if $path =~ m|opac/biblio/main_pay|;
+    return $self->load_myopac_receipt_email if $path =~ m|opac/biblio/receipt_email|;
+    return $self->load_myopac_receipt_print if $path =~ m|opac/biblio/receipt_print|;
+
     return Apache2::Const::OK;
 }
 
@@ -309,9 +358,14 @@ sub redirect_auth {
     my $login_type = ($sso_enabled and !$sso_native) ? 'manual_shib_login' : 'login';
     my $login_page = sprintf('%s://%s%s/%s',($self->ctx->{is_staff} ? 'oils' : 'https'), $self->ctx->{hostname}, $self->ctx->{opac_root}, $login_type);
     my $redirect_to = uri_escape_utf8($self->apache->unparsed_uri);
-    my $redirect_url = "$login_page?redirect_to=$redirect_to";
-
-    return $self->generic_redirect($redirect_url);
+    
+    if ($redirect_to =~ m/biblio%2Fmain_fines/ || $redirect_to =~ m/biblio%2Fmain_payment/){
+        $login_page = sprintf('%s://%s%s/biblio/login',
+            ($self->ctx->{is_staff} ? 'oils' : 'https'), 
+            $self->ctx->{hostname}, $self->ctx->{opac_root});
+        }
+    
+    return $self->generic_redirect("$login_page?redirect_to=$redirect_to");
 }
 
 # -----------------------------------------------------------------------------
@@ -374,6 +428,7 @@ sub load_common {
 
     # capture some commonly accessed pages
     $ctx->{home_page} = $ctx->{proto} . '://' . $ctx->{hostname} . $self->ctx->{opac_root} . "/home";
+    $ctx->{biblio_login_page} = $ctx->{proto} . '://' . $ctx->{hostname} . $self->ctx->{opac_root} . "/biblio/main_fines";
     $ctx->{logout_page} = ($ctx->{proto} eq 'http' ? 'https' : $ctx->{proto} ) . '://' . $ctx->{hostname} . $self->ctx->{opac_root} . "/logout";
 
     if($e->authtoken($self->cgi->cookie(COOKIE_SES))) {
@@ -603,11 +658,11 @@ sub load_login {
         return Apache2::Const::OK unless $username and $password;
 
         my $auth_proxy_enabled = 0; # default false
-        try { # if the service is not running, just let this fail silently
+        eval {
             $auth_proxy_enabled = $U->simplereq(
                 'open-ils.auth_proxy',
                 'open-ils.auth_proxy.enabled');
-        } catch Error with {};
+        };
 
         $self->timelog("Checked for auth proxy: $auth_proxy_enabled; org = $org_unit; username = $username");
 
@@ -772,6 +827,107 @@ sub load_manual_shib_login {
 }
 
 # -----------------------------------------------------------------------------
+# BiblioCommons E-Commerce Log in and redirect to the redirect_to URL (or home)
+# -----------------------------------------------------------------------------
+sub biblio_load_login {
+    my $self = shift;
+    my $cgi = $self->cgi;
+    my $ctx = $self->ctx;
+
+    $self->timelog("Load login begins");
+
+    $ctx->{page} = 'login';
+
+    my $username = $cgi->param('username');
+    $username =~ s/\s//g;  # Remove blanks
+    my $password = $cgi->param('password');
+    my $org_unit = $ctx->{physical_loc} || $ctx->{aou_tree}->()->id;
+    my $persist = $cgi->param('persist');
+
+    # initial log form only
+    return Apache2::Const::OK unless $username and $password;
+
+    my $auth_proxy_enabled = 0; # default false
+    eval { # if the service is not running, just let this fail silently
+        $auth_proxy_enabled = $U->simplereq(
+            'open-ils.auth_proxy',
+            'open-ils.auth_proxy.enabled');
+    };
+
+    $self->timelog("Checked for auth proxy: $auth_proxy_enabled; org = $org_unit; username = $username");
+
+    my $args = {
+        type => ($persist) ? 'persist' : 'opac',
+        org => $org_unit,
+        agent => 'opac'
+    };
+
+    my $bc_regex = $ctx->{get_org_setting}->($org_unit, 'opac.barcode_regex');
+
+    # To avoid surprises, default to "Barcodes start with digits"
+    $bc_regex = '^\d' unless $bc_regex;
+
+    if ($bc_regex and ($username =~ /$bc_regex/)) {
+        $args->{barcode} = $username;
+    } else {
+        $args->{username} = $username;
+    }
+
+    my $response;
+    if (!$auth_proxy_enabled) {
+        my $seed = $U->simplereq(
+            'open-ils.auth',
+            'open-ils.auth.authenticate.init', $username);
+        $args->{password} = md5_hex($seed . md5_hex($password));
+        $response = $U->simplereq(
+            'open-ils.auth', 'open-ils.auth.authenticate.complete', $args);
+    } else {
+        $args->{password} = $password;
+        $response = $U->simplereq(
+            'open-ils.auth_proxy',
+            'open-ils.auth_proxy.login', $args);
+    }
+    $self->timelog("Checked password");
+
+    if($U->event_code($response)) { 
+        # login failed, report the reason to the template
+        $ctx->{login_failed_event} = $response;
+        return Apache2::Const::OK;
+    }
+
+    # login succeeded, redirect as necessary
+
+    my $acct = $self->apache->unparsed_uri;
+    $acct =~ s|/login|/biblio/main_fines|;
+
+    # both login-related cookies should expire at the same time
+    my $login_cookie_expires = ($persist) ? CORE::time + $response->{payload}->{authtime} : undef;
+
+    return $self->generic_redirect(
+        $cgi->param('redirect_to') || $acct,
+        [
+            # contains the actual auth token and should be sent only over https
+            $cgi->cookie(
+                -name => COOKIE_SES,
+                -path => '/',
+                -secure => 1,
+                -value => $response->{payload}->{authtoken},
+                -expires => $login_cookie_expires
+            ),
+            # contains only a hint that we are logged in, and is used to
+            # trigger a redirect to https
+            $cgi->cookie(
+                -name => COOKIE_LOGGEDIN,
+                -path => '/',
+                -secure => 0,
+                -value => '1',
+                -expires => $login_cookie_expires
+            )
+        ]
+    );
+}
+
+# -----------------------------------------------------------------------------
 # Log out and redirect to the home page
 # -----------------------------------------------------------------------------
 sub load_logout {
@@ -798,13 +954,13 @@ sub load_logout {
     # while logged in, go ahead and clear it out.
     $self->clear_anon_cache;
 
-    try { # a missing auth token will cause an ugly explosion
+    eval { # a missing auth token will cause an ugly explosion
         $U->simplereq(
             'open-ils.auth',
             'open-ils.auth.session.delete',
             $self->cgi->cookie(COOKIE_SES)
         );
-    } catch Error with {};
+    };
 
     return $self->generic_redirect(
         $redirect_to || $self->ctx->{home_page},
@@ -832,6 +988,37 @@ sub load_logout {
                 -name => COOKIE_SHIB_LOGGEDIN,
                 -path => '/',
                 -value => '0',
+                -expires => '-1h'
+            )
+        ]
+    );
+}
+
+# -----------------------------------------------------------------------------
+# BiblioCommons E-Commerce Log out and redirect to the home page
+# -----------------------------------------------------------------------------
+sub biblio_load_logout {
+    my $self = shift;
+    my $redirect_to = shift || $self->cgi->param('redirect_to');
+
+    # If the user was adding anyting to an anonymous cache
+    # while logged in, go ahead and clear it out.
+    $self->clear_anon_cache;
+
+    return $self->generic_redirect(
+        $redirect_to || $self->ctx->{biblio_login_page},
+        [
+            # clear value of and expire both of these login-related cookies
+            $self->cgi->cookie(
+                -name => COOKIE_SES,
+                -path => '/',
+                -value => '',
+                -expires => '-1h'
+            ),
+            $self->cgi->cookie(
+                -name => COOKIE_LOGGEDIN,
+                -path => '/',
+                -value => '',
                 -expires => '-1h'
             )
         ]

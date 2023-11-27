@@ -1,5 +1,5 @@
 import {Injectable, EventEmitter} from '@angular/core';
-import {Router, ActivatedRoute} from '@angular/router';
+import {Router, ActivatedRoute, NavigationEnd} from '@angular/router';
 import {IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
 import {CatalogService} from '@eg/share/catalog/catalog.service';
@@ -7,6 +7,9 @@ import {CatalogUrlService} from '@eg/share/catalog/catalog-url.service';
 import {CatalogSearchContext} from '@eg/share/catalog/search-context';
 import {BibRecordSummary} from '@eg/share/catalog/bib-record.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
+import {StoreService} from '@eg/core/store.service';
+
+const HOLD_FOR_PATRON_KEY = 'eg.circ.patron_hold_target';
 
 /**
  * Shared bits needed by the staff version of the catalog.
@@ -19,7 +22,6 @@ export class StaffCatalogService {
     routeIndex = 0;
     defaultSearchOrg: IdlObject;
     defaultSearchLimit: number;
-    // Track the current template through route changes.
     selectedTemplate: string;
 
     // Display the Exclude Electronic checkbox
@@ -52,22 +54,25 @@ export class StaffCatalogService {
     // Add digital bookplate to search options.
     enableBookplates = false;
 
-    // Cache of browse results so the browse pager is not forced to
-    // re-run the browse search on each navigation.
-    browsePagerData: any[];
-
     // whether to redirect to record page upon a single search
     // result
     jumpOnSingleHit = false;
 
+    // Cache of browse results so the browse pager is not forced to
+    // re-run the browse search on each navigation.
+    browsePagerData: any[];
+
+    hideFacets = false;
+
     constructor(
         private router: Router,
         private route: ActivatedRoute,
+        private store: StoreService,
         private org: OrgService,
         private cat: CatalogService,
         private patron: PatronService,
         private catUrl: CatalogUrlService
-    ) { }
+    ) {}
 
     createContext(): void {
         // Initialize the search context from the load-time URL params.
@@ -77,7 +82,7 @@ export class StaffCatalogService {
         this.searchContext =
             this.catUrl.fromUrlParams(this.route.snapshot.queryParamMap);
 
-        this.holdForBarcode = this.route.snapshot.queryParams['holdForBarcode'];
+        this.holdForBarcode = this.store.getLoginSessionItem(HOLD_FOR_PATRON_KEY);
 
         if (this.holdForBarcode) {
             this.patron.getByBarcode(this.holdForBarcode)
@@ -85,6 +90,9 @@ export class StaffCatalogService {
                 this.holdForUser = user;
                 this.holdForChange.emit();
             });
+        } else {
+            // In case the session item was cleared from another component.
+            this.clearHoldPatron();
         }
 
         this.searchContext.org = this.org; // service, not searchOrg
@@ -95,6 +103,7 @@ export class StaffCatalogService {
     clearHoldPatron() {
         this.holdForUser = null;
         this.holdForBarcode = null;
+        this.store.removeLoginSessionItem(HOLD_FOR_PATRON_KEY);
         this.holdForChange.emit();
     }
 

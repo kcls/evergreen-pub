@@ -112,6 +112,7 @@ function($routeProvider , $locationProvider , $compileProvider) {
         }
 
         $scope.refreshExceptions = function (s) {
+            if (!s) { return $q.when(); }
             return $http.get(
                 formURL({
                     action      : 'status',
@@ -204,8 +205,7 @@ function($routeProvider , $locationProvider , $compileProvider) {
             return egCore.pcrud.search('acp',{deleted: 'f', barcode: bc}).then(function(copy) {
                 if (copy) {
                     return $window.open(
-                        egCore.env.basePath +
-                        '/cat/item/' + copy.id(),
+                        '/eg2/staff/cat/item/' + copy.id(),
                         '_blank'
                     ).focus();
                 }
@@ -218,8 +218,7 @@ function($routeProvider , $locationProvider , $compileProvider) {
             return egCore.pcrud.search('ac',{barcode: bc}).then(function(card) {
                 if (card) {
                     return $window.open(
-                        egCore.env.basePath +
-                        '/circ/patron/' + card.usr() + '/checkout',
+                        '/eg2/staff/circ/patron/' + card.usr() + '/checkout',
                         '_blank'
                     ).focus();
                 }
@@ -983,8 +982,8 @@ function($routeProvider , $locationProvider , $compileProvider) {
                     service.opt_in_setting_types[stype.name()] = stype;
                 }
                 if (stype.reg_default() != undefined) {
-                    service.user_settings[setting.name()] = 
-                        setting.reg_default();
+                    service.user_settings[stype.name()] = 
+                        stype.reg_default();
                 }
             });
             return $q.when();

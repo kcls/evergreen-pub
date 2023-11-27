@@ -1,4 +1,4 @@
-import {Component, OnInit, Input, ViewChild, Renderer2} from '@angular/core';
+import {Component, OnInit, Input, ViewChild} from '@angular/core';
 import {Observable} from 'rxjs';
 import {switchMap, map, tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
@@ -40,23 +40,25 @@ export class ReplaceBarcodeDialogComponent
     constructor(
         private modal: NgbModal, // required for passing to parent
         private toast: ToastService,
-        private pcrud: PcrudService,
-        private renderer: Renderer2) {
+        private pcrud: PcrudService) {
         super(modal); // required for subclassing
     }
 
-    ngOnInit() {}
+    ngOnInit() {
+        this.onOpen$.subscribe(_ => {
+            setTimeout(() => {
+                const node = document.getElementById('new-barcode-input');
+                if (node) { node.focus(); }
+            });
+        });
+    }
 
     open(args: NgbModalOptions): Observable<boolean> {
         this.ids = [].concat(this.copyIds);
         this.numSucceeded = 0;
         this.numFailed = 0;
 
-        return this.getNextCopy()
-        .pipe(switchMap(() => super.open(args)),
-            tap(() =>
-                this.renderer.selectRootElement('#new-barcode-input').focus())
-        );
+        return this.getNextCopy().pipe(switchMap(() => super.open(args)));
     }
 
     getNextCopy(): Observable<any> {

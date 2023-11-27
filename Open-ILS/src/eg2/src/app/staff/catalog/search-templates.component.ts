@@ -1,4 +1,5 @@
 import {Component, OnInit, Input, ViewChild} from '@angular/core';
+import {Router, ActivatedRoute, NavigationEnd} from '@angular/router';
 import {OrgService} from '@eg/core/org.service';
 import {StoreService} from '@eg/core/store.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
@@ -14,6 +15,7 @@ import {AnonCacheService} from '@eg/share/util/anon-cache.service';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 
 const SAVED_TEMPLATES_SETTING = 'eg.catalog.search_templates';
+const SAVED_TEMPLATES_LAST_USED = 'eg.catalog.search_templates.last';
 const RECENT_SEARCHES_KEY = 'eg.catalog.recent_searches';
 
 class SearchTemplate {
@@ -38,6 +40,8 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
     searches: SearchTemplate[] = [];
     searchesCacheKey: string;
     templateName: string;
+    currentUrl: string;
+    initDone = false;
 
     @Input() searchTab: string;
 
@@ -46,6 +50,8 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
     @ViewChild('confirmDeleteSearches', { static: true }) confirmDeleteSearches: ConfirmDialogComponent;
 
     constructor(
+        private router: Router,
+        private route: ActivatedRoute,
         private org: OrgService,
         private store: StoreService,             // anon cache key
         private serverStore: ServerStoreService, // search templates
@@ -56,11 +62,26 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
         private staffCat: StaffCatalogService,
         private modal: NgbModal) {
         super(modal);
-
-        this.store.addLoginSessionKey(RECENT_SEARCHES_KEY);
     }
 
     ngOnInit() {
+
+        if (location.href.match(/\/staff\/catalog\/search$/)) {
+            // This could be achieved via the route, but it's a twisty
+            // maze of passages.  We need this to indicate that
+            // we want to apply our default search template.
+            this.currentUrl = '/staff/catalog/search';
+        }
+
+        this.router.events.subscribe(routeEvent => {
+            if (routeEvent instanceof NavigationEnd) {
+                this.currentUrl = routeEvent.url;
+                if (this.initDone && this.defaultTemplateWanted()) {
+                    this.applyDefaultTemplate();
+                }
+            }
+        });
+
         this.context = this.staffCat.searchContext;
 
         this.serverStore.getItem('opac.staff_saved_search.size')
@@ -80,7 +101,34 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
             });
         });
 
-        this.getTemplates();
+        this.getTemplates().then(_ => {
+            if (this.defaultTemplateWanted()) {
+                this.applyDefaultTemplate();
+            }
+            this.initDone = true;
+        });
+    }
+
+    applyDefaultTemplate() {
+
+        this.serverStore.getItem('eg.catalog.search_templates.last')
+        .then(name => {
+            if (!name) { return; }
+
+            this.staffCat.selectedTemplate = name;
+            const tmpl = this.templates.filter(t => t.name === name)[0];
+
+            if (tmpl) {
+                this.router.navigate(
+                    [this.getSearchPath(tmpl)], {queryParams: tmpl.params});
+            }
+        });
+    }
+
+    defaultTemplateWanted(): boolean {
+        // Any time we navigate back to a vanilla search page (no params)
+        // institute the default template
+        return this.currentUrl === '/staff/catalog/search';
     }
 
     selectedTemplate(): string {
@@ -227,7 +275,7 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
         // increment the router index in case the template is used
         // twice in a row.
         tmpl.params.ridx = ++this.staffCat.routeIndex;
-        console.log('selected template = ', this.staffCat.selectedTemplate);
+        this.serverStore.setItem(SAVED_TEMPLATES_LAST_USED, tmpl.name);
     }
 
     // Adds dummy query content to the context object so the
@@ -298,6 +346,8 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
         this.templates.push(
             new SearchTemplate(this.templateName, urlParams));
 
+        this.serverStore.setItem(SAVED_TEMPLATES_LAST_USED, this.templateName);
+
         return this.applyTemplateChanges().then(_ => this.close());
     }
 
@@ -319,6 +369,8 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
             this.templates = templates;
             this.staffCat.selectedTemplate = '';
             this.applyTemplateChanges();
+            // The deleted template will always be the last used template
+            this.serverStore.removeItem(SAVED_TEMPLATES_LAST_USED);
         });
     }
 
@@ -328,6 +380,19 @@ export class SearchTemplatesComponent extends DialogComponent implements OnInit 
             this.templates = [];
             this.staffCat.selectedTemplate = '';
             this.applyTemplateChanges();
+            this.serverStore.removeItem(SAVED_TEMPLATES_LAST_USED);
+        });
+    }
+
+    resetTemplate() {
+        this.staffCat.selectedTemplate = '';
+        this.serverStore.removeItem(SAVED_TEMPLATES_LAST_USED)
+        .then(_ => {
+            this.router.navigate(['/staff/catalog/search'],
+                // ridx needed so last-used template is not forced
+                // into place when this reroute is done
+                {queryParams: {ridx: ++this.staffCat.routeIndex}}
+            );
         });
     }
 }

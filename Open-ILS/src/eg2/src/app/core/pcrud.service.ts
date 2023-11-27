@@ -8,6 +8,17 @@ import {AuthService} from './auth.service';
 declare var js2JSON: (jsThing: any) => string;
 declare var OpenSRF: any; // creating sessions
 
+export interface PcrudQueryOps {
+    order_by?: any;
+    limit?: number;
+    offset?: number;
+    flesh?: number;
+    flesh_fields?: any;
+    select?: any;
+    join?: any;
+    no_i18n?: boolean;
+}
+
 interface PcrudReqOps {
     authoritative?: boolean;
     anonymous?: boolean;
@@ -140,7 +151,7 @@ export class PcrudContext {
     }
 
     retrieve(fmClass: string, pkey: Number | string,
-            pcrudOps?: any, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
+            pcrudOps?: PcrudQueryOps, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
         reqOps = reqOps || {};
         this.authoritative = reqOps.authoritative || false;
         if (reqOps.fleshSelectors) {
@@ -151,7 +162,7 @@ export class PcrudContext {
              [this.token(reqOps), pkey, pcrudOps]);
     }
 
-    retrieveAll(fmClass: string, pcrudOps?: any,
+    retrieveAll(fmClass: string, pcrudOps?: PcrudQueryOps,
             reqOps?: PcrudReqOps): Observable<PcrudResponse> {
         const search = {};
         search[this.idl.classes[fmClass].pkey] = {'!=' : null};
@@ -159,7 +170,7 @@ export class PcrudContext {
     }
 
     search(fmClass: string, search: any,
-            pcrudOps?: any, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
+            pcrudOps?: PcrudQueryOps, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
         reqOps = reqOps || {};
         this.authoritative = reqOps.authoritative || false;
 
@@ -334,17 +345,17 @@ export class PcrudService {
     }
 
     retrieve(fmClass: string, pkey: Number | string,
-        pcrudOps?: any, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
+        pcrudOps?: PcrudQueryOps, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
         return this.newContext().retrieve(fmClass, pkey, pcrudOps, reqOps);
     }
 
-    retrieveAll(fmClass: string, pcrudOps?: any,
+    retrieveAll(fmClass: string, pcrudOps?: PcrudQueryOps,
         reqOps?: PcrudReqOps): Observable<PcrudResponse> {
         return this.newContext().retrieveAll(fmClass, pcrudOps, reqOps);
     }
 
     search(fmClass: string, search: any,
-        pcrudOps?: any, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
+        pcrudOps?: PcrudQueryOps, reqOps?: PcrudReqOps): Observable<PcrudResponse> {
         return this.newContext().search(fmClass, search, pcrudOps, reqOps);
     }
 

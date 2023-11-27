@@ -307,16 +307,23 @@ sub generic_new_authorities_method {
     $term = naco_normalize($term);
 
     my $storage = create OpenSRF::AppSession("open-ils.storage");
-    my $list = $storage->request(
-        "open-ils.storage.authority.in_db.browse_or_search",
-        $method, $what, $term, $page, $page_size, $thesauruses
-    )->gather(1);
+    my $list;
+    if ($what eq "id") {
+        $list = $storage->request(
+            "open-ils.storage.authority.id_find",
+            $method, $what, $term, $page, $page_size
+        )->gather(1);
+    }
+    else {
+        $list = $storage->request(
+            "open-ils.storage.authority.in_db.browse_or_search",
+            $method, $what, $term, $page, $page_size, $thesauruses
+        )->gather(1);
+    }
 
     $storage->kill_me;
-
     return $list;
 }
-
 
 sub tree_walker {
     my $tree = shift;

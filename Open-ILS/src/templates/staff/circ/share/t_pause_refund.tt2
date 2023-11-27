@@ -1,0 +1,40 @@
+<div class="modal-header">
+  <button type="button" class="close" 
+    ng-click="cancel()" aria-hidden="true">&times;</button>
+  <h4 class="modal-title">
+    [% l('Pause Automatic Refund?') %]
+  </h4>
+</div>
+<div class="modal-body">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="alert alert-warning">
+        The affected circulation has payment(s) which are 
+        eligible for refund.  
+      </div>
+    </div>
+  </div>
+  <div class="row mt-2 pad-vert">
+    <div class="col-lg-12">
+      <textarea placeholder="Add Refund Notes..."
+        ng-model="refundNotes" class="form-control">
+      </textarea>
+    </div>
+  </div>
+  <div class="row mt-2 pad-vert">
+    <div class="col-lg-3 form-validated">
+      <input type="text" placeholder="Initials..."
+        required ng-model="staffInitials" class="form-control"/>
+    </div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" ng-disabled="!staffInitials" 
+    ng-click="go(true)">[% l('Pause Refund and Continue') %]</button>
+  <button class="btn btn-warning" ng-disabled="!staffInitials"
+    ng-click="go(false)">[% l('Continue Without Pausing Refund') %]
+  </button>
+  <button class="btn btn-default" ng-click="go(null)">
+    [% l('Cancel') %]
+  </button>
+</div>

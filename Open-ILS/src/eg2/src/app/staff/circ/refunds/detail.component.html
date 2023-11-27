@@ -1,0 +1,442 @@
+<eg-staff-banner bannerText="Refundable Transaction Details"></eg-staff-banner>
+<eg-confirm-dialog #confirmApprove
+  i18n-dialogTitle dialogTitle="Confirm Approval"
+  i18n-dialogBody dialogBody="Mark Refund As Approved?"></eg-confirm-dialog>
+
+<eg-confirm-dialog #confirmReject
+  i18n-dialogTitle dialogTitle="Confirm Rejection"
+  i18n-dialogBody dialogBody="Mark Refund As Rejected?"></eg-confirm-dialog>
+
+<eg-confirm-dialog #confirmPause
+  i18n-dialogTitle dialogTitle="Confirm Pause"
+  i18n-dialogBody dialogBody="Pause Automatic Refund?"></eg-confirm-dialog>
+
+<eg-confirm-dialog #confirmUndoApprove
+  i18n-dialogTitle dialogTitle="Undo Approval"
+  i18n-dialogBody dialogBody="Undo Approval?"></eg-confirm-dialog>
+
+<eg-confirm-dialog #confirmUndoReject
+  i18n-dialogTitle dialogTitle="Undo Rejection"
+  i18n-dialogBody dialogBody="Undo Rejection?"></eg-confirm-dialog>
+
+<eg-confirm-dialog #confirmUndoPause
+  i18n-dialogTitle dialogTitle="Undo Pause"
+  i18n-dialogBody dialogBody="Undo Pause?"></eg-confirm-dialog>
+
+<ng-container *ngIf="loading && !mrxs">
+  <div class="row">
+    <div class="col-lg-6 offset-lg-3">
+      <eg-progress-inline></eg-progress-inline>
+    </div>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="mrxs">
+
+  <div class="row d-flex mb-3">
+    <a routerLink="/staff/circ/refunds">
+      <button class="btn btn-info label-with-material-icon">
+        <span class="material-icons">keyboard_arrow_left</span>
+        <span class="ml-1" i18n>Return to List</span>
+      </button>
+    </a>
+
+    <div class="flex-1"><!-- push right--></div>
+
+    <ng-container *ngIf="state() == 4 || state() == 5">
+      <div class="mr-3 pt-2 align-middle" style="font-size:105%" i18n>
+        Refund will be automatically processed 
+        <span class="font-weight-bold">{{processDate | date:'shortDate'}}</span>.
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="state() == 6">
+      <div class="mr-3 pt-2 align-middle" style="font-size:105%" i18n>
+        Transaction is not currently eligible for refund.
+      </div>
+    </ng-container>
+
+
+    <ng-container *ngIf="state() > 1 && state() < 6">
+
+      <ng-container *ngIf="state() != 2">
+        <button class="btn btn-success label-with-material-icon"
+          [disabled]="!canApprove"
+          (click)="approveRefund()">
+          <span class="material-icons">thumb_up</span>
+          <span class="ml-1" i18n>Expedite Approval</span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="state() == 2">
+        <button class="btn btn-outline-success label-with-material-icon"
+          [disabled]="!canApprove"
+          (click)="approveRefund(true)">
+          <span class="material-icons">undo</span>
+          <span class="ml-1" i18n>Undo Approve</span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="state() != 4">
+        <button class="btn btn-warning ml-3 label-with-material-icon"
+          [disabled]="!canPause" (click)="pauseRefund()">
+          <span class="material-icons">pause_circle_outline</span>
+          <span class="ml-1" i18n>Pause</span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="state() == 4">
+        <button class="btn btn-outline-warning ml-3 label-with-material-icon"
+          [disabled]="!canPause" (click)="pauseRefund(true)">
+          <span class="material-icons">undo</span>
+          <span class="ml-1" i18n>Undo Pause</span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="state() != 3">
+        <button class="btn btn-danger ml-3 label-with-material-icon"
+          [disabled]="!canApprove" (click)="rejectRefund()">
+          <span class="material-icons">thumb_down</span>
+          <span class="ml-1" i18n>Reject</span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="state() == 3">
+        <button class="btn btn-outline-danger ml-3 label-with-material-icon"
+          [disabled]="!canApprove" (click)="rejectRefund(true)">
+          <span class="material-icons">undo</span>
+          <span class="ml-1" i18n>Undo Reject</span>
+        </button>
+      </ng-container>
+    </ng-container>
+
+  </div>
+  <div class="row">
+    <div class="col-lg-5">
+      <div class="row">
+        <div class="col-lg-12">
+        <div class="detail-header">
+          <h4 i18n>
+            Refundable Transaction Summary:
+            <ng-container [ngSwitch]="state()">
+              <span *ngSwitchCase="1" class="text-info">Refund Processed</span>
+              <span *ngSwitchCase="2" class="text-success">Approved, Pending Processing</span>
+              <span *ngSwitchCase="3" class="text-danger">Rejected</span>
+              <span *ngSwitchCase="4" class="text-warning">Paused</span>
+              <span *ngSwitchCase="5" class="text-primary">Pending Approval</span>
+            </ng-container>
+          </h4>
+        </div>
+        </div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5"><label i18n>Bill/Circ #</label></div>
+        <div class="col-lg-7">{{mrxs.xact().id()}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Transaction Total Billed</div>
+        <div class="col-lg-7">{{mrxs.total_owed() | currency}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Transaction Total Paid</div>
+        <div class="col-lg-7">{{mrxs.total_paid() | currency}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Transaction Balance Owed</div>
+        <div class="col-lg-7">{{mrxs.balance_owed() | currency}}</div>
+      </div>
+      <div class="row border-bottom" *ngIf="usrSummary">
+        <div class="col-lg-5" i18n>Patron Total Balance Owed</div>
+        <div class="col-lg-7">{{usrSummary.balance_owed() | currency}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Copy Price</div>
+        <div class="col-lg-7">{{mrxs.item_price() | currency}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Patron Name</div>
+        <div class="col-lg-7">
+          <a routerLink="/staff/circ/patron/{{mrxs.usr().id()}}/checkout">
+            {{mrxs.usr_first_name()}}
+            {{mrxs.usr_middle_name()}}
+            {{mrxs.usr_family_name()}}
+          </a>
+        </div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Patron Address</div>
+        <div class="col-lg-7">
+          <div>{{mrxs.usr_street1()}} {{mrxs.usr_street2()}}</div>
+          <div>{{mrxs.usr_city()}}, {{mrxs.usr_state()}} {{mrxs.usr_post_code()}}</div>
+        </div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Title</div>
+        <div class="col-lg-7">{{mrxs.title()}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Copy Barcode</div>
+        <div class="col-lg-7">
+          <a routerLink="/staff/cat/item/{{mrxs.copy()}}">{{mrxs.copy_barcode()}}</a>
+        </div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Due Date</div>
+        <div class="col-lg-7">
+          {{mrxs.xact().circulation().due_date() | date:'short'}}</div>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-5" i18n>Checkin Date</div>
+        <div class="col-lg-7">
+          {{mrxs.xact().circulation().checkin_time() | date:'short'}}</div>
+      </div>
+      <ng-container *ngIf="mrxs.erp_export_date()">
+        <div class="row border-bottom">
+          <div class="col-lg-5" i18n>Export Date</div>
+          <div class="col-lg-7">{{mrxs.erp_export_date() | date:'short'}}</div>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="mrxs.pause_date()">
+        <div class="row border-bottom">
+          <div class="col-lg-5" i18n>Pause Date</div>
+          <div class="col-lg-7">{{mrxs.pause_date() | date:'short'}}</div>
+        </div>
+        <div class="row border-bottom">
+          <div class="col-lg-5" i18n>Paused By</div>
+          <div class="col-lg-7">
+            <a routerLink="/staff/circ/patron/{{mrxs.paused_by().id()}}/checkout">
+              {{mrxs.paused_by().usrname()}}
+            </a>
+          </div>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="mrxs.approve_date()">
+        <div class="row border-bottom">
+          <div class="col-lg-5">Approve Date</div>
+          <div class="col-lg-7">{{mrxs.approve_date() | date:'short'}}</div>
+        </div>
+        <div class="row border-bottom">
+          <div class="col-lg-5" i18n>Approved By</div>
+          <div class="col-lg-7">
+            <a routerLink="/staff/circ/patron/{{mrxs.approved_by().id()}}/checkout">
+              {{mrxs.approved_by().usrname()}}
+            </a>
+          </div>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="mrxs.reject_date()">
+        <div class="row border-bottom">
+          <div class="col-lg-5">Reject Date</div>
+          <div class="col-lg-7">{{mrxs.reject_date() | date:'short'}}</div>
+        </div>
+        <div class="row border-bottom">
+          <div class="col-lg-5" i18n>Rejected By</div>
+          <div class="col-lg-7">
+            <a routerLink="/staff/circ/patron/{{mrxs.rejected_by().id()}}/checkout">
+              {{mrxs.rejected_by().usrname()}}
+            </a>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+    <div class="col-lg-4">
+      <div class="detail-header" i18n>
+        <h4>Refundable Payments</h4>
+      </div>
+
+      <div *ngFor="let mrps of mrxs.refundable_payments()"
+        class="border-bottom mb-1 pb-2">
+        <div class="row">
+          <div class="col-lg-6">Receipt Code</div>
+          <div class="col-lg-6">{{mrps.receipt_code()}}</div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6">Amount</div>
+          <div class="col-lg-6">{{mrps.amount() | currency}}</div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6">Payment Date</div>
+          <div class="col-lg-6">{{mrps.payment_time() | date:'short'}}</div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6">Payment Type</div>
+          <div class="col-lg-6">
+            <span [ngSwitch]="mrps.payment_type()">
+              <span *ngSwitchCase="'cash_payment'" i18n>Cash</span>
+              <span *ngSwitchCase="'check_payment'" i18n>Check</span>
+              <span *ngSwitchCase="'credit_card_payment'" i18n>Credit Card</span>
+              <span *ngSwitchDefault>{{mrps.payment_type()}}</span>
+            </span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6" i18n>Final Payment</div>
+          <div class="col-lg-6">
+            <span class="label label-success"
+              *ngIf="mrps.final_payment() == 't'">Yes</span>
+            <span *ngIf="mrps.final_payment() != 't'">No</span>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6" i18n>Staff Name</div>
+          <div class="col-lg-6">{{mrps.staff_name()}}</div>
+        </div>
+        <div class="row">
+          <div class="col-lg-6" i18n>Staff Email</div>
+          <div class="col-lg-6">{{mrps.staff_email()}}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3">
+      <div class="detail-header" i18n>
+        <h4>Notes</h4>
+      </div>
+      <div class="row">
+        <div class="col-lg-12">
+          <textarea class="form-control" rows="7"
+            (keyup)="notesUpdatePending=true"
+            i18n-placeholder placeholder="Notes..."
+            [ngModel]="mrxs.notes()" (ngModelChange)="mrxs.notes($event)">
+          </textarea>
+        </div>
+      </div>
+      <div class="row mt-2 d-flex">
+        <div class="flex-1"></div>
+        <button class="btn btn-success" [disabled]="!notesUpdatePending"
+          (click)="updateNotes()" i18n>Save Notes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-3">
+    <div class="col-lg-12">
+      <div class="detail-header">
+        <ng-container *ngIf="state() == 1" i18n>
+          <h4>Refund Actions Applied</h4>
+        </ng-container>
+        <ng-container *ngIf="state() != 1" i18n>
+          <h4>Anticipated Refund Actions
+            <span class="font-italic small">(Subject to change)</span>
+          </h4>
+        </ng-container>
+      </div>
+      <div class="row border-bottom">
+        <div class="col-lg-3 font-weight-bold" i18n>Action</div>
+        <div class="col-lg-1 font-weight-bold" i18n>Transaction</div>
+        <div class="col-lg-1 font-weight-bold" i18n>Amount</div>
+        <div class="col-lg-2 font-weight-bold" i18n>Transaction Balance</div>
+        <div class="col-lg-2 font-weight-bold" i18n>Patron Balance</div>
+        <div class="col-lg-2 font-weight-bold" i18n>Refund Remaining</div>
+      </div>
+
+      <div *ngIf="loading" class="row">
+        <div class="col-lg-6 offset-lg-3">
+          <eg-progress-inline></eg-progress-inline>
+        </div>
+      </div>
+
+      <div class="row border-bottom" *ngFor="let action of refundableActions">
+        <ng-container *ngIf="action.payment">
+          <div class="col-lg-3">
+            <ng-container *ngIf="!action.zeroing" i18n>
+              Payment from Refund
+            </ng-container>
+            <ng-container *ngIf="action.zeroing" i18n>
+              Crediting Refundable Payment(s)
+            </ng-container>
+          </div>
+          <div class="col-lg-1">
+            <a routerLink="/staff/circ/patron/{{mrxs.usr().id()}}/bill/{{action.payment.xact()}}/statement">
+              {{action.payment.xact()}}
+            </a>
+          </div>
+          <div class="col-lg-1">{{action.payment.amount() | currency}}</div>
+          <div class="col-lg-2">{{action.xact_balance | currency}}</div>
+          <div class="col-lg-2">{{action.patron_balance | currency}}</div>
+          <div class="col-lg-2">{{action.refund_remaining | currency}}</div>
+        </ng-container>
+        <ng-container *ngIf="action.refund_due != undefined">
+          <div class="col-lg-3" i18n>Final</div>
+          <div class="col-lg-2 offset-lg-4">
+            {{action.patron_balance | currency}}
+          </div>
+          <div class="col-lg-2 font-weight-bold"
+            [ngClass]="{'text-success': 
+              action.refund_due == 0, 'text-danger': action.refund_due > 0}">
+            <u>{{action.refund_due | currency}}</u>
+            <span *ngIf="action.refund_due > 0" 
+              class="col-lg-1 text-danger">
+              <ng-container *ngIf="state() == 1" i18n>Total Refunded</ng-container>
+              <ng-container *ngIf="state() != 1" i18n>Refund Due</ng-container>
+            </span>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    <div class="col-lg-3">
+    </div>
+  </div>
+
+  <div class="detail-header mt-3" i18n>
+    <h4>All Billings and Payments for Transaction #{{mrxs.xact().id()}}</h4>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-7 border-right border-dark" id="all-billings-list">
+      <h5 i18n>All Billings</h5>
+      <div class="row" style="font-weight:bold">
+        <div class="col-lg-2" i18n>Date</div>
+        <div class="col-lg-1" i18n>ID#</div>
+        <div class="col-lg-2" i18n>Amount</div>
+        <div class="col-lg-3" i18n>Type</div>
+        <div class="col-lg-2" i18n>Voided</div>
+        <div class="col-lg-2" i18n>Void Date</div>
+      </div>
+      <div class="full-details-container" *ngFor="let bill of mrxs.xact().billings()">
+        <div class="row border-bottom">
+          <div class="col-lg-2">{{bill.billing_ts() | date:'shortDate'}}</div>
+          <div class="col-lg-1">{{bill.id()}}</div>
+          <div class="col-lg-2">{{bill.amount() | currency}}</div>
+          <div class="col-lg-3">{{bill.btype().name()}}</div>
+          <div class="col-lg-2">
+            <span *ngIf="bill.voided() == 't'" class="text-danger">Yes</span>
+            <span *ngIf="bill.voided() == 'f'">No</span>
+          </div>
+          <div class="col-lg-2">
+            {{bill.void_time() | date:'shortDate'}}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <h5>All Payments</h5>
+      <div class="row" style="font-weight:bold">
+        <div class="col-lg-3" i18n>Date</div>
+        <div class="col-lg-2" i18n>ID#</div>
+        <div class="col-lg-2" i18n>Amount</div>
+        <div class="col-lg-3" i18n>Type</div>
+        <div class="col-lg-2" i18n>Voided</div>
+      </div>
+      <div class="full-details-container" *ngFor="let pay of mrxs.xact().payments()">
+        <div class="row border-bottom">
+          <div class="col-lg-3">{{pay.payment_ts() | date:'shortDate'}}</div>
+          <div class="col-lg-2">{{pay.id()}}</div>
+          <div class="col-lg-2">{{pay.amount() | currency}}</div>
+          <div class="col-lg-3">
+            <span [ngSwitch]="pay.payment_type()">
+              <span *ngSwitchCase="'cash_payment'" i18n>Cash</span>
+              <span *ngSwitchCase="'check_payment'" i18n>Check</span>
+              <span *ngSwitchCase="'credit_card_payment'" i18n>Credit Card</span>
+              <span *ngSwitchDefault>{{pay.payment_type()}}</span>
+            </span>
+          </div>
+          <div class="col-lg-2">
+            <span *ngIf="pay.voided() == 't'" class="text-danger" i18n>Yes</span>
+            <span *ngIf="pay.voided() == 'f'" i18n>No</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+

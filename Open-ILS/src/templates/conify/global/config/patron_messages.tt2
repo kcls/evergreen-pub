@@ -1,0 +1,39 @@
+[% WRAPPER base.tt2 %]
+[% ctx.page_title = l('Patron Message Editor') %]
+<!--
+<script type="text/javascript" src='[% ctx.media_prefix %]/js/ui/default/conify/global/config/patron_messages.js'> </script>
+-->
+
+<div dojoType="dijit.layout.ContentPane" layoutAlign="client">
+    <div dojoType="dijit.layout.ContentPane" layoutAlign="top" class='oils-header-panel'>
+        <div>[% ctx.page_title %]</div>
+        <div>
+            <button dojoType='dijit.form.Button' onClick='thingGrid.showCreateDialog()'>[% l('New Patron Message') %]</button>
+            <button dojoType='dijit.form.Button' onClick='thingGrid.deleteSelected()'>[% l('Delete Selected') %]</button>
+        </div>
+    </div>
+    <table jsId="thingGrid"
+            dojoType="openils.widget.AutoGrid"
+            fieldOrder="['id', 'message', 'weight']"
+            query="{id: '*'}"
+            fmClass='cpm'
+            editOnEnter='true'>
+
+            <thead>
+                <tr>
+                    <th field="message" get='getField' width='auto'>Message</th>
+                    <th field="weight" get='getField' width='auto'>Weight</th>
+                </tr>
+            </thead>
+
+    </table>
+</div>
+<script>
+    dojo.require('openils.widget.AutoGrid');
+    dojo.addOnLoad(
+        function() {
+            thingGrid.loadAll({order_by : {cpm : 'weight, message'}});
+        }
+    );
+</script>
+[% END %]

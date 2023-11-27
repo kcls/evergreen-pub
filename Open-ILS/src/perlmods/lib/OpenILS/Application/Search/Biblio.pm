@@ -79,6 +79,7 @@ sub _records_to_mods {
         my $mods = $u->finish_mods_batch();
         $mods->doc_id($content->id());
         $mods->tcn($content->tcn_value);
+        $mods->deleted($content->deleted);
         push @results, $mods;
     }
 
@@ -273,7 +274,52 @@ sub record_id_to_copy_count {
         push @count, $d;
     }
 
-    return [ sort { $a->{depth} <=> $b->{depth} } @count ];
+    my $resp = [];
+    for my $c (@count) {
+        $c->{hopeful} = 0;
+
+        # NOTE kcls only cares about the global hopeful holds copy count.
+        if ($c->{depth} eq 0 && $c->{count} > 0) {
+            $c->{hopeful} = record_hopeful_copy_count($record_id);
+        }
+
+        push(@$resp, $c);
+    }
+
+    return $resp;
+}
+
+sub record_hopeful_copy_count {
+    my $record_id = shift;
+
+    return new_editor()->json_query({
+        select => {
+            acp => [{
+                column => 'id', 
+                alias => 'count',
+                transform => 'count', 
+                aggregate => 1
+            }]
+        },
+        from => {
+            acp => {
+                acn => {},
+                ccs => {}
+            }
+        },
+        where => {
+            '+acp' => {
+                deleted => 'f'
+            },
+            '+acn' => {
+                record => $record_id,
+                deleted => 'f'
+            },
+            '+ccs' => {
+                hopeless_prone => 'f'
+            }
+        }
+    })->[0]->{count};
 }
 
 __PACKAGE__->register_method(
@@ -371,12 +417,14 @@ sub biblio_barcode_to_copy {
 __PACKAGE__->register_method(
     method   => "biblio_id_to_copy",
     api_name => "open-ils.search.asset.copy.batch.retrieve",
+    authoritative => 1,
 );
+
 sub biblio_id_to_copy { 
     my( $self, $client, $ids ) = @_;
+    my $e = new_editor();
     $logger->info("Fetching copies @$ids");
-    return $U->cstorereq(
-        "open-ils.cstore.direct.asset.copy.search.atomic", { id => $ids } );
+    return $e->search_asset_copy({id => $ids});
 }
 
 
@@ -836,14 +884,71 @@ sub multiclass_query {
         $query =~ s/\+/ /go;
         $query =~ s/^\s+//go;
         $query =~ s/\s+/ /go;
-        $arghash->{query} = $query
+        $query = kcls_scrub_multiclass_query($query);
+        $arghash->{query} = $query;
     }
 
     $logger->debug("initial search query => $query") if $query;
 
     (my $method = $self->api_name) =~ s/\.query/.staged/o;
     return $self->method_lookup($method)->dispatch($arghash, $docache, $phys_loc);
+}
 
+# KCLS custom query cleanup 
+sub kcls_scrub_multiclass_query {
+    my $query = shift;
+
+    # If it is all punctuation search, clobber any 'contains phrase' madness
+    # [a-z]+:  This matches 'title:', 'subject:', etc. and is returned in $1
+    # ["!?\.@#\$%\^&\*]+  One or more punctuation without any numbers or letters
+    # is returned in $2
+    # $1$2  Replaces the whole string without the "
+	$query =~ s/([a-z]+:)"(["!?\.@#\$%\^&\*]+)"/$1$2/g;
+	
+	# Clobber 'contains phrase' for keyword too
+    # ["!?\.@#\$%\^&\*]+  One or more punctuation without any numbers or letters
+    # is returned in $1
+    # $1  Replaces the whole string without the "
+	$query =~ s/"(["!?\.@#\$%\^&\*]+)"/$1/g;
+	
+	# If it is all punctuation search, clobber any 'exact match' madness
+	# [a-z]+:  This matches 'title:', 'subject:', etc. and is returned in $1
+	# ["!?\.@#\$%\^&\*]+  One or more punctuation without any numbers or letters
+	# is returned in $2
+    # $1$2  Replaces the whole string without ^ and $
+	$query =~ s/([a-z]+:)\^(["!?\.@#\$%\^&\*]+)\$/$1$2/g;
+	
+	# Clobber 'exact match' for keyword too
+    # ["!?\.@#\$%\^&\*]+  One or more punctuation without any numbers or letters
+    # is returned in $1
+    # $1  Replaces the whole string without the ^ and $
+    $query =~ s/\^(["!?\.@#\$%\^&\*]+)\$/$1/g;
+
+    # What the user actually typed in with no modifiers
+    my $actual_query;
+
+    # first seperate the search query from the modifiers
+    my @modifiers = qw/mattype item_lang 
+        audience_group after sort has_browse_entry site depth/;
+
+    for my $i (0 .. $#modifiers) {
+
+        if ($query =~ m/(.*) $modifiers[$i]\(.*/) {
+            $actual_query = $1;
+
+            # Then pull off any extraneous parens
+            if (!$actual_query =~ m/has_browse_entry/){
+                if ($actual_query =~ m/.*[\(\)].*/) {
+                    $actual_query =~ s/[\(\)]//g;
+                    $query =~ s/(.*)( $modifiers[$i]\()/$actual_query$2/g;
+                }
+            }
+
+            last; # Kill the loop
+        }
+    }
+
+    return $query;
 }
 
 __PACKAGE__->register_method(
@@ -865,42 +970,23 @@ sub cat_search_z_style_wrapper {
     my $client = shift;
     my $authtoken = shift;
     my $args = shift;
+    my $is_staff = ($self->api_name =~ /staff$/);
 
-    my $cstore = OpenSRF::AppSession->connect('open-ils.cstore');
+    my $e = new_editor();
+    my $use_elastic = $e->search_config_global_flag(
+        {enabled => 't', name => 'elastic.bib_search.enabled'})->[0];
 
-    my $ou = $cstore->request(
-        'open-ils.cstore.direct.actor.org_unit.search',
-        { parent_ou => undef }
-    )->gather(1);
+    my $list = $use_elastic ?
+        zstyle_elastic($self, $args, $is_staff) : 
+        zstyle_staged($self, $args, $is_staff);
 
-    my $result = { service => 'native-evergreen-catalog', records => [] };
-    my $searchhash = { limit => $$args{limit}, offset => $$args{offset}, org_unit => $ou->id };
-
-    $$searchhash{searches}{title}{term}   = $$args{search}{title}   if $$args{search}{title};
-    $$searchhash{searches}{author}{term}  = $$args{search}{author}  if $$args{search}{author};
-    $$searchhash{searches}{subject}{term} = $$args{search}{subject} if $$args{search}{subject};
-    $$searchhash{searches}{keyword}{term} = $$args{search}{keyword} if $$args{search}{keyword};
-    $$searchhash{searches}{'identifier|isbn'}{term} = $$args{search}{isbn} if $$args{search}{isbn};
-    $$searchhash{searches}{'identifier|issn'}{term} = $$args{search}{issn} if $$args{search}{issn};
-    $$searchhash{searches}{'identifier|upc'}{term} = $$args{search}{upc} if $$args{search}{upc};
-
-    $$searchhash{searches}{keyword}{term} .= join ' ', $$searchhash{searches}{keyword}{term}, $$args{search}{tcn}       if $$args{search}{tcn};
-    $$searchhash{searches}{keyword}{term} .= join ' ', $$searchhash{searches}{keyword}{term}, $$args{search}{publisher} if $$args{search}{publisher};
-    $$searchhash{searches}{keyword}{term} .= join ' ', $$searchhash{searches}{keyword}{term}, $$args{search}{pubdate}   if $$args{search}{pubdate};
-    $$searchhash{searches}{keyword}{term} .= join ' ', $$searchhash{searches}{keyword}{term}, $$args{search}{item_type} if $$args{search}{item_type};
-
-    my $method = 'open-ils.search.biblio.multiclass.staged';
-    $method .= '.staff' if $self->api_name =~ /staff$/;
-
-    my ($list) = $self->method_lookup($method)->run( $searchhash );
+    my $result = {service => 'native-evergreen-catalog', records => []};
 
     if ($list->{count} > 0 and @{$list->{ids}}) {
         $result->{count} = $list->{count};
 
-        my $records = $cstore->request(
-            'open-ils.cstore.direct.biblio.record_entry.search.atomic',
-            { id => [ map { ( $_->[0] ) } @{$list->{ids}} ] }
-        )->gather(1);
+        my $records = $e->search_biblio_record_entry(
+            { id => [ map { ( $_->[0] ) } @{$list->{ids}} ] });
 
         for my $rec ( @$records ) {
             
@@ -908,15 +994,103 @@ sub cat_search_z_style_wrapper {
                         $u->start_mods_batch( $rec->marc );
                         my $mods = $u->finish_mods_batch();
 
-            push @{ $result->{records} }, { mvr => $mods, marcxml => $rec->marc, bibid => $rec->id };
-
+            push @{ $result->{records} }, 
+                { mvr => $mods, marcxml => $rec->marc, bibid => $rec->id };
         }
-
     }
 
-    $cstore->disconnect();
     return $result;
 }
+
+sub zstyle_staged {
+    my ($self, $args, $is_staff) = @_;
+
+    my @classes = qw/title author subject keyword/;
+    my @idents = qw/isbn issn upc/;
+
+    my %vals;
+    $vals{$_} = $$args{search}{$_} for @classes;
+    $vals{$_} = $$args{search}{$_} for @idents;
+
+    # Append these to the keyword search (backwards compat).
+    # TODO: these should search specific indexes instead of keyword.
+    for my $kw (qw/tcn publisher pubdate item_type/) {
+        $vals{keyword} .= join(' ', $vals{keyword}, $$args{search}{$kw}) 
+            if $$args{search}{$kw};
+    }
+
+    my $searchhash = {
+        limit => $$args{limit}, 
+        offset => $$args{offset}, 
+        org_unit => $U->get_org_tree->id
+    };
+
+    for my $class (@classes) {
+        $$searchhash{searches}{$class}{term} = 
+            $vals{$class} if $vals{$class};
+    }
+
+    for my $ident (@idents) {
+        $$searchhash{searches}{"identifier|$ident"}{term} =     
+            $vals{$ident} if $vals{$ident};
+    }
+
+    my $method = 'open-ils.search.biblio.multiclass.staged';
+    $method .= '.staff' if $is_staff;
+
+    my ($list) = $self->method_lookup($method)->run($searchhash);
+    return $list;
+}
+
+sub zstyle_elastic {
+    my ($self, $args, $is_staff) = @_;
+
+    my @classes = qw/title author subject keyword/;
+    my @idents = qw/isbn issn upc tcn publisher pubdate/;
+
+    my %vals;
+    $vals{$_} = $$args{search}{$_} for @classes;
+    $vals{$_} = $$args{search}{$_} for @idents;
+
+    my $search = {
+        from => $$args{offset},
+        size => $$args{limit},
+        sort => [{_score => 'desc'}],
+        query => {bool => {must => []}}
+    };
+
+    my $ops = {disable_facets => 1};
+
+    # use a filter for item_type.
+    my $itype = $$args{item_type};
+    $search->{filter} = [{term => {item_type => $itype}}] if $itype;
+
+    for my $class (grep {$vals{$_}} @classes) {
+        push(@{$search->{query}->{bool}->{must}}, {
+            multi_match => {
+                type => 'best_fields', 
+                fields => "$class|*text*", 
+                query => $vals{$class}
+            }
+        });
+    }
+
+    for my $ident (grep {$vals{$_}} @idents) {
+        push(@{$search->{query}->{bool}->{must}}, 
+            {term => {"identifier|$ident" => $vals{$ident}}});
+    }
+
+    # avoid bogus searches
+    return [] unless (@{$search->{query}->{bool}->{must}});
+
+    my $method = 'open-ils.search.elastic.bib_search' ;
+    $method .= '.staff' if $is_staff;
+
+    my ($list) = $self->method_lookup($method)->run($search, $ops);
+
+    return $list;
+}
+
 
 # ----------------------------------------------------------------------------
 # These are the main OPAC search methods
@@ -2556,11 +2730,20 @@ sub fetch_cn {
     return $cn;
 }
 
+sub fetch_copies_by_cn {
+	my( $self, $client, $id ) = @_;
+
+	my $e = new_editor();
+	my( $cn, $evt ) = $apputils->fetch_copies_by_call_number( $id );
+	return $evt if $evt;
+	return $cn;
+}
+
 __PACKAGE__->register_method(
-    method        => "fetch_fleshed_cn",
-    api_name      => "open-ils.search.callnumber.fleshed.retrieve",
+    method        => "fetch_copies_by_cn",
+    api_name      => "open-ils.search.copies.retrieve.by_cn",
     authoritative => 1,
-    notes         => "retrieves a callnumber based on ID, fleshing prefix, suffix, and label_class",
+    notes         => "retrieves all copies for a given cn",
 );
 
 sub fetch_fleshed_cn {
@@ -2572,6 +2755,12 @@ sub fetch_fleshed_cn {
     return $cn;
 }
 
+__PACKAGE__->register_method(
+    method        => "fetch_fleshed_cn",
+    api_name      => "open-ils.search.callnumber.fleshed.retrieve",
+    authoritative => 1,
+    notes         => "retrieves a callnumber based on ID, fleshing prefix, suffix, and label_class",
+);
 
 __PACKAGE__->register_method(
     method    => "fetch_copy_by_cn",
@@ -2884,13 +3073,14 @@ __PACKAGE__->register_method(
 );
 
 sub bib_copies {
-    my ($self, $client, $rec_id, $org, $depth, $limit, $offset, $pref_ou) = @_;
+    my ($self, $client, $rec_id, $org, $depth, $limit, $offset, $pref_ou, $limit_to_viable) = @_;
     my $is_staff = ($self->api_name =~ /staff/);
+    my $aou_sort_field = $is_staff ? 'shortname' : 'name';
 
     my $cstore = OpenSRF::AppSession->create('open-ils.cstore');
     my $req = $cstore->request(
         'open-ils.cstore.json_query', mk_copy_query(
-        $rec_id, $org, $depth, $limit, $offset, $pref_ou, $is_staff));
+        $rec_id, $org, $depth, $limit, $offset, $pref_ou, $is_staff, $limit_to_viable, $aou_sort_field));
 
     my $resp;
     while ($resp = $req->recv) {
@@ -2920,10 +3110,13 @@ sub mk_copy_query {
     my $copy_offset = shift;
     my $pref_ou = shift;
     my $is_staff = shift;
+    my $limit_to_viable = shift;
+    my $aou_sort_field = shift;
+
     my $base_query = shift;
 
     my $query = $base_query || $U->basic_opac_copy_query(
-        $rec_id, undef, undef, $copy_limit, $copy_offset, $is_staff
+        $rec_id, undef, undef, $copy_limit, $copy_offset, $is_staff, $limit_to_viable, $aou_sort_field
     );
 
     if ($org) { # TODO: root org test
@@ -3020,7 +3213,8 @@ sub record_urls {
 
         my $marc_doc = $U->marc_xml_to_doc($bib->marc);
 
-        for my $node ($marc_doc->findnodes('//*[@tag="856" and @ind1="4"]')) {
+        # KCLS JBAS-2788 Only fields with ind2=0
+        for my $node ($marc_doc->findnodes('//*[@tag="856" and @ind1="4" and @ind2="0"]')) {
 
             # asset.uri's
             next if $node->findnodes('./*[@code="9" or @code="w" or @code="n"]');
@@ -3038,12 +3232,20 @@ sub record_urls {
                 # leave any subsequent $u's as unadorned href's.
                 # use href/link/note keys to be consistent with args.uri's
 
+                my $label_text = $label ? $label->textContent : '';
+                my $note_text = $notes ? $notes->textContent : '';
+
+                # Fall back to using the note as the URL label.
+                if (!$label_text) {
+                    $label_text = $note_text;
+                    $note_text = '';
+                }
+
                 my $href = $href_node->textContent;
                 push(@urls, {
                     href => $href,
-                    label => ($first && $label) ?  $label->textContent : $href,
-                    note => ($first && $notes) ? $notes->textContent : '',
-                    ind2 => $node->getAttribute('ind2')
+                    label => ($first && $label_text) ?  $label_text : $href,
+                    note => ($first && $note_text) ? $note_text : ''
                 });
                 $first = 0;
             }
@@ -3130,8 +3332,8 @@ sub catalog_record_summary {
     for my $rec_id (@$record_ids) {
 
         my $response = $is_meta ? 
-            get_one_metarecord_summary($self, $e, $org_id, $rec_id) :
-            get_one_record_summary($self, $e, $org_id, $rec_id);
+            get_one_metarecord_summary($self, $e, $org_id, $rec_id, $options) :
+            get_one_record_summary($self, $e, $org_id, $rec_id, $options);
 
         ($response->{copy_counts}) = $copy_method->run($org_id, $rec_id);
 
@@ -3206,6 +3408,7 @@ sub get_representative_copies {
 
     my $doc = XML::LibXML->new->parse_string($xml);
 
+    my %locations;
     my $copies = [];
     for my $volume ($doc->documentElement->findnodes('//*[local-name()="volume"]')) {
         my $label = $volume->getAttribute('label');
@@ -3217,7 +3420,7 @@ sub get_representative_copies {
         for my $copy ($copies_node->findnodes('./*[local-name()="copy"]')) {
 
             my $status = $copy->getElementsByTagName('status')->[0]->textContent;
-            my $location = $copy->getElementsByTagName('location')->[0]->textContent;
+            my $loc_id = $copy->getElementsByTagName('location')->[0]->getAttribute('ident');
             my $circ_lib_sn = $copy->getElementsByTagName('circ_lib')->[0]->getAttribute('shortname');
             my $due_date = '';
 
@@ -3226,13 +3429,19 @@ sub get_representative_copies {
                 $due_date = $circ->[0]->getAttribute('due_date');
             }
 
+            # KCLS JBAS-2741
+            # Copy locations are stored with codes for names with display
+            # values stored as translated values.
+            $locations{$loc_id} = $e->retrieve_asset_copy_location($loc_id)
+                unless $locations{$loc_id};
+
             push(@$copies, {
                 call_number_label => $label,
                 call_number_prefix_label => $prefix,
                 call_number_suffix_label => $suffix,
                 circ_lib_sn => $circ_lib_sn,
                 copy_status => $status,
-                copy_location => $location,
+                copy_location => $locations{$loc_id}->name,
                 due_date => $due_date
             });
         }
@@ -3268,14 +3477,14 @@ sub get_one_rec_urls {
 # Start with a bib summary and augment the data with additional
 # metarecord content.
 sub get_one_metarecord_summary {
-    my ($self, $e, $org_id, $rec_id) = @_;
+    my ($self, $e, $org_id, $rec_id, $options) = @_;
 
     my $meta = $e->retrieve_metabib_metarecord($rec_id) or return {};
     my $maps = $e->search_metabib_metarecord_source_map({metarecord => $rec_id});
 
     my $bre_id = $meta->master_record; 
 
-    my $response = get_one_record_summary($self, $e, $org_id, $bre_id);
+    my $response = get_one_record_summary($self, $e, $org_id, $bre_id, $options);
     $response->{urls} = get_one_rec_urls($self, $e, $org_id, $bre_id);
 
     $response->{metabib_id} = $rec_id;
@@ -3301,7 +3510,7 @@ sub get_one_metarecord_summary {
 }
 
 sub get_one_record_summary {
-    my ($self, $e, $org_id, $rec_id) = @_;
+    my ($self, $e, $org_id, $rec_id, $options) = @_;
 
     my $bre = $e->retrieve_biblio_record_entry([$rec_id, {
         flesh => 1,
@@ -3329,85 +3538,32 @@ sub get_one_record_summary {
     $bre->clear_mattrs;
     $bre->clear_compressed_display_entries;
 
+    my $synopsis = '';
+    my $general_note = '';
+    if ($options->{flesh_synopsis}) {
+
+        my $bib = $e->retrieve_biblio_record_entry($rec_id);                   
+        my $marc_doc = $U->marc_xml_to_doc($bib->marc); 
+
+        my @nodes = $marc_doc->findnodes(
+            '//*[@tag="520" and @ind1=" " and @ind2=" "]/*[@code="a" or @code="b"]');
+        $synopsis = join(' ', map {$_->textContent || ''} @nodes);
+
+        @nodes = $marc_doc->findnodes(
+            '//*[@tag="500" and @ind1=" " and @ind2=" "]/*[@code="a"]');
+        $general_note = join(' ', map {$_->textContent || ''} @nodes);
+
+    }
+
     return {
         id => $rec_id,
         record => $bre,
         display => $display,
+        synopsis => $synopsis,
+        general_note => $general_note,
         attributes => $attributes,
         urls => get_one_rec_urls($self, $e, $org_id, $rec_id)
     };
-}
-
-__PACKAGE__->register_method(
-    method    => 'record_copy_counts_global',
-    api_name  => 'open-ils.search.biblio.record.copy_counts.global.staff',
-    signature => {
-        desc   => q/Returns a count of copies and call numbers for each org
-                    unit, including items attached to each org unit plus
-                    a sum of counts for all descendants./,
-        params => [
-            {desc => 'Record ID', type => 'number'}
-        ],
-        return => {
-            desc => 'Hash of org unit ID  => {copy: $count, call_number: $id}'
-        }
-    }
-);
-
-sub record_copy_counts_global {
-    my ($self, $client, $rec_id) = @_;
-
-    my $copies = new_editor()->json_query({
-        select => {
-            acp => [{column => 'id', alias => 'copy_id'}, 'circ_lib'],
-            acn => [{column => 'id', alias => 'cn_id'}, 'owning_lib']
-        },
-        from => {acn => {acp => {type => 'left'}}},
-        where => {
-            '+acp' => {
-                '-or' => [
-                    {deleted => 'f'},
-                    {id => undef} # left join
-                ]
-            },
-            '+acn' => {deleted => 'f', record => $rec_id}
-        }
-    });
-
-    my $hash = {};
-    my %seen_cn;
-
-    for my $copy (@$copies) {
-        my $org = $copy->{circ_lib} || $copy->{owning_lib};
-        $hash->{$org} = {copies => 0, call_numbers => 0} unless $hash->{$org};
-        $hash->{$org}->{copies}++ if $copy->{circ_lib};
-
-        if (!$seen_cn{$copy->{cn_id}}) {
-            $seen_cn{$copy->{cn_id}} = 1;
-            $hash->{$org}->{call_numbers}++;
-        }
-    }
-
-    my $sum;
-    $sum = sub {
-        my $node = shift;
-        my $h = $hash->{$node->id} || {copies => 0, call_numbers => 0};
-        delete $h->{cn_id};
-
-        for my $child (@{$node->children}) {
-            my $vals = $sum->($child);
-            $h->{copies} += $vals->{copies};
-            $h->{call_numbers} += $vals->{call_numbers};
-        }
-
-        $hash->{$node->id} = $h;
-
-        return $h;
-    };
-
-    $sum->($U->get_org_tree);
-
-    return $hash;
 }
 
 

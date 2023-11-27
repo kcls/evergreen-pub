@@ -259,7 +259,15 @@ export class AcqSearchService {
                         });
                     }
                 });
+            } else {
+                if (searchType === 'picklist') {
+                    // Sort picklists newest to oldest by default.
+                    opts.order_by =
+                        [{'class': 'acqpl', field: 'create_time', direction: 'DESC'}];
+                }
             }
+
+            console.log(searchType, opts.order_by);
 
             return this.net.request(
                 'open-ils.acq',

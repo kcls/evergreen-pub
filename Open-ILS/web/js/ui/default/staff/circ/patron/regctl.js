@@ -587,7 +587,7 @@ angular.module('egCoreMod')
         var static_types = [
             'circ.holds_behind_desk', 
             'circ.collections.exempt', 
-            'opac.hold_notify', 
+            'opac.hold_notify',  // KCLS does not use this, harmless here.
             'opac.default_phone', 
             'opac.default_pickup_location', 
             'opac.default_sms_carrier', 
@@ -1355,9 +1355,12 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
             console.log('using default opac.hold_notify');
             notify = notify_stype.reg_default();
         }
-        $scope.hold_notify_type.phone = Boolean(notify.match(/phone/));
-        $scope.hold_notify_type.email = Boolean(notify.match(/email/));
-        $scope.hold_notify_type.sms = Boolean(notify.match(/sms/));
+
+        // KCLS JBAS-2655 we don't use these.  Set them to false
+        // so they will not require values in the form.
+        $scope.hold_notify_type.phone = false;
+        $scope.hold_notify_type.email = false;
+        $scope.hold_notify_type.sms = false;
 
         // staged users may be loaded w/ a profile.
         $scope.set_expire_date();
@@ -1582,6 +1585,11 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
     $scope.show_field = function(field_key) {
         // org settings have not been received yet.
         if (!$scope.org_settings) return false;
+
+        // KCLS JBAS-2408 Hide ident2 fields.
+        if (field_key === 'au.ident_value2' || field_key === 'au.ident_type2') {
+            return false;
+        }
 
         if (field_visibility[field_key] == undefined) {
             // compile and cache the visibility for the selected field
@@ -1906,6 +1914,11 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
     // Translate hold notify preferences from the form/scope back into a 
     // single user setting value for opac.hold_notify.
     function compress_hold_notify() {
+        // KCLS does not use opac.hold_notify nor is the setting
+        // present in the database.  This code is not friendly
+        // to that scenario.  Exit early;
+        return;
+
         var hold_notify_methods = [];
         if ($scope.hold_notify_type.phone) {
             hold_notify_methods.push('phone');
@@ -1988,7 +2001,10 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
         // get the user's opac.hold_notify setting
         var notify = $scope.user_settings['opac.hold_notify'];
 
-        // if it's not set, use the default opac.hold_notify value
+        // KCLS JBAS-2655 we don't use these.  Set them to false
+        // so they will not require values in the form.
+
+        /*
         if (!notify && !(notify === '')) {
             var notify_stype = $scope.user_setting_types['opac.hold_notify'];
             if (notify_stype && notify_stype.reg_default() !== undefined && notify_stype.reg_default() !== null) {
@@ -2002,6 +2018,7 @@ function($scope , $routeParams , $q , $uibModal , $window , egCore ,
         $scope.hold_notify_type.phone = Boolean(notify.match(/phone/));
         $scope.hold_notify_type.email = Boolean(notify.match(/email/));
         $scope.hold_notify_type.sms = Boolean(notify.match(/sms/));
+        */
 
         // stores original loaded values for comparison later
         for (var k in $scope.hold_notify_type){

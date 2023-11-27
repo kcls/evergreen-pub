@@ -46,9 +46,6 @@ export class AuthService {
 
     workstationState: AuthWsState = AuthWsState.PENDING;
 
-    // Used by auth-checking resolvers
-    redirectUrl: string;
-
     // reference to active auth validity setTimeout handler.
     pollTimeout: any;
 
@@ -79,8 +76,15 @@ export class AuthService {
         return this.activeUser ? this.activeUser.workstation : null;
     }
 
+    // Returns the active token once the user session has be verified.
     token(): string {
         return this.activeUser ? this.activeUser.token : null;
+    }
+
+    // Returns true if a token exists in the browser, regardless of
+    // it's validity.
+    hasToken(): boolean {
+        return Boolean(this.store.getLoginSessionItem('eg.auth.token'));
     }
 
     authtime(): number {
@@ -129,6 +133,10 @@ export class AuthService {
     login(args: AuthLoginArgs, isOpChange?: boolean): Promise<void> {
         let service = 'open-ils.auth';
         let method = 'open-ils.auth.login';
+
+        if (args.workstation === '') {
+            delete args.workstation;
+        }
 
         if (isOpChange && this.opChangeIsActive()) {
             // Enforce one op-change at a time.

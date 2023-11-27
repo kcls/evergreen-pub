@@ -233,6 +233,7 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
               [% l('Acquisition Patron Requests') %]
             </a>
           </li>
+          <!-- KCLS
           <li>
             <a href="/eg2/staff/booking/manage_reservations/by_patron/{{patron().id()}}" target="_top">
               [% l('Booking: Manage Reservations') %]
@@ -253,6 +254,7 @@ angular.module('egCoreMod').run(['egStrings', function(s) {
               [% l('Booking: Return Reservations') %]
             </a>
           </li>
+          -->
           <li>
             <a href ng-click="purge_account()" a-disabled="patron().super_user() == 't' || patron().id() == auth_user_id">
               [% l('Completely Purge Account') %]

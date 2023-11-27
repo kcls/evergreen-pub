@@ -521,6 +521,21 @@ $_TT_helpers = {
         return [ sort { $$a{$sortby.'sort'} cmp $$b{$sortby.'sort'} } @sorted_list ];
     },
 
+    create_uuid_string => sub {
+        return $U->create_uuid_string;
+    },
+
+    # JBAS-1306
+    # Lazy initials generator.  Just chops name by spaces, uses the first
+    # letter of each part, separated by a '.'
+    name_to_initials => sub {
+        my $name = shift;
+        return '' unless $name;
+        my @parts = split(/ /, $name);
+        my $initials = join('.', map { substr($_, 0, 1) } @parts) . '.';
+        return $initials;
+    },
+
     # escapes quotes in csv string values
     escape_csv => sub {
         my $string = shift;

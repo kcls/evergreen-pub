@@ -287,9 +287,8 @@ sub init_ro_object_cache {
             $context_org = $context_org->id if ref($context_org);
             my $tz = $locale_subs->{get_org_setting}->($context_org,'lib.timezone');
             if ($tz) {
-                try {
-                    $date->set_time_zone($tz);
-                } catch Error with {
+                eval { $date->set_time_zone($tz); };
+                if ($@) {
                     $logger->warn("Invalid timezone: $tz");
                 };
             }
@@ -694,18 +693,20 @@ sub _get_pref_lib {
         return $self->cgi->cookie('eg_pref_lib');
     }
 
-    if ($ctx->{user}) {
-        # See if the user has a search library preference
-        my $lset = $self->editor->search_actor_user_setting({
-            usr => $ctx->{user}->id, 
-            name => 'opac.default_search_location'
-        })->[0];
-        return OpenSRF::Utils::JSON->JSON2perl($lset->value) if $lset;
+    #the following commented code is for KMAIN-153
+    #kmig57 - default search location is not used by KCLS
+    # if ($ctx->{user}) {
+    #    # See if the user has a search library preference
+    #    my $lset = $self->editor->search_actor_user_setting({
+    #        usr => $ctx->{user}->id, 
+    #        name => 'opac.default_search_location'
+    #    })->[0];
+    #    return OpenSRF::Utils::JSON->JSON2perl($lset->value) if $lset;
 
-        # Otherwise return the user's home library
-        my $ou = $ctx->{user}->home_ou;
-        return ref($ou) ? $ou->id : $ou;
-    }
+    #    # Otherwise return the user's home library
+    #    my $ou = $ctx->{user}->home_ou;
+    #    return ref($ou) ? $ou->id : $ou;
+    #}
 
     if ($ctx->{physical_loc}) {
         return $ctx->{physical_loc};
@@ -1075,6 +1076,53 @@ sub load_perm_funcs {
     }
 }
     
+my $HEADER_FOOTER_URL = 
+    'https://kcls.bibliocommons.com/widgets/external_templates.json';
+my $HEADER_FOOTER_TIMEOUT = 5;
 
+my %bc_parts; # cache
+my @bc_part_keys = qw/css screen_reader_navigation header footer js/;
+sub collect_header_footer {
+    my $self = shift;
+
+    # kiosk == no header/footer
+    return if $self->cgi->param('kiosk');
+
+    if ($bc_parts{header}) {
+        $self->ctx->{"bc_$_"} = $bc_parts{$_} for @bc_part_keys;
+        return;
+    }
+
+    my $agent = LWP::UserAgent->new(timeout => 5);
+    my $res = $agent->get($HEADER_FOOTER_URL); 
+    $logger->info("Self-reg header/footer request returned code ".$res->code);
+    
+    if (!$res->is_success) {
+        $logger->error("Self-reg header/footer request ".
+          "[$HEADER_FOOTER_URL] failed with error " . $res->status_line);
+
+        return;
+    }
+
+    my $json = $res->content;
+
+    if (!$json) {
+        $logger->error("Self-reg header/footer ".
+            "[$HEADER_FOOTER_URL] returned an empty response");
+        return;
+    }
+        
+
+    my $blob;
+    eval { $blob = OpenSRF::Utils::JSON->JSON2perl($json) };
+
+    if ($@) {
+        $logger->error("Self-reg header/footer ".
+            "[$HEADER_FOOTER_URL] returned invalid JSON : $@");
+        return;
+    }
+
+    $self->ctx->{"bc_$_"} = $bc_parts{$_} = $blob->{$_} for @bc_part_keys;
+}
 
 1;

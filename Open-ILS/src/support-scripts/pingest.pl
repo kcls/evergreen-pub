@@ -3,6 +3,8 @@
 # Copyright © 2013,2014 Merrimack Valley Library Consortium
 # Jason Stephenson <jstephenson@mvlc.org>
 #
+# Heavily modified by Bill Erickson
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -13,12 +15,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # ---------------------------------------------------------------
-# TODO: Document with POD.
 # This guy parallelizes a reingest.
 use strict;
 use warnings;
 use DBI;
 use Getopt::Long;
+use DateTime;
+use Sys::Syslog qw(syslog openlog);
 
 # Globals for the command line options: --
 
@@ -26,8 +29,8 @@ use Getopt::Long;
 # i.e. number of bib records as well as the number of cores on your
 # database server.  Using roughly number of cores/2 doesn't seem to
 # have much impact in off peak times.
-my $batch_size = 10000; # records processed per batch
-my $max_child  = 8;     # max number of parallel worker processes
+my $batch_size = 1000; # records processed per batch
+my $max_child  = 2;   # max number of parallel worker processes
 
 my $delay_dym;    # Delay DYM symspell dictionary reification.
 my $skip_browse;  # Skip the browse reingest.
@@ -36,26 +39,21 @@ my $skip_search;  # Skip the search reingest.
 my $skip_facets;  # Skip the facets reingest.
 my $skip_display; # Skip the display reingest.
 my $rebuild_rmsr; # Rebuild reporter.materialized_simple_record.
-my $start_id;     # start processing at this bib ID.
-my $end_id;       # stop processing when this bib ID is reached.
+my $min_id;       # start processing at this bib ID.
+my $max_id;       # stop processing when this bib ID is reached.
 my $max_duration; # max processing duration in seconds
+my $newest_first; # Process records in descending order of edit_date
+my $sort_id_desc; # Sort by record ID descending
+my $log_stdout;   # Clone log messages to stdout
 my $help;         # show help text
-my $opt_pipe;     # Read record ids from STDIN.
 my $record_attrs; # Record attributes for metabib.reingest_record_attributes.
+my $week_batch;   # True if perfming a one-week reingest cycle
 
-# Database connection options with defaults:
-my $db_user = $ENV{PGUSER} || 'evergreen';
-my $db_host = $ENV{PGHOST} || 'localhost';
-my $db_db = $ENV{PGDATABASE} || 'evergreen';
-my $db_password = $ENV{PGPASSWORD} || 'evergreen';
-my $db_port = $ENV{PGPORT} || 5432;
+my $syslog_facility = 'LOCAL6'; # matches Evergreen gateway
+my $syslog_ops      = 'pid';
+my $syslog_ident    = 'pingest';
 
 GetOptions(
-    'user=s'         => \$db_user,
-    'host=s'         => \$db_host,
-    'db=s'           => \$db_db,
-    'password=s'     => \$db_password,
-    'port=i'         => \$db_port,
     'batch-size=i'   => \$batch_size,
     'max-child=i'    => \$max_child,
     'delay-symspell' => \$delay_dym,
@@ -65,11 +63,14 @@ GetOptions(
     'skip-facets'    => \$skip_facets,
     'skip-display'   => \$skip_display,
     'rebuild-rmsr'   => \$rebuild_rmsr,
-    'start-id=i'     => \$start_id,
-    'end-id=i'       => \$end_id,
-    'pipe'           => \$opt_pipe,
     'max-duration=i' => \$max_duration,
     'attr=s@'        => \$record_attrs,
+    'min-id=i'       => \$min_id,
+    'max-id=i'       => \$max_id,
+    'newest-first'   => \$newest_first,
+    'sort-id-desc'   => \$sort_id_desc,
+    'log-stdout'     => \$log_stdout,
+    'week-batch'     => \$week_batch,
     'help'           => \$help
 );
 
@@ -77,7 +78,12 @@ sub help {
     print <<HELP;
 
     $0 --batch-size $batch_size --max-child $max_child \
-        --start-id 1 --end-id 500000 --max-duration 14400
+        --min-id 1 --max-id 500000 --duration 14400
+
+    --week-batch
+        Process 1/7th of the bib records by limiting each run of this script
+        to records whose ID falls in a dow matching the current day of the 
+        week.
 
     --batch-size
         Number of records to process per batch
@@ -109,18 +115,33 @@ sub help {
     --rebuild-rmsr
         Rebuild the reporter.materialized_simple_record table.
 
-    --start-id
-        Start processing at this record ID.
+    --sort-id-desc
+        Process records in descending order of record ID.  This is a
+        rough approximation of sorting by most recently created record
+        first, but is better suited for multiple runs of the script,
+        where batches of records are processed in ID groups.
 
-    --end-id
-        Stop processing when this record ID is reached
-
-    --pipe
-        Read record IDs to reingest from standard input.
-        This option conflicts with --start-id and/or --end-id.
+    --newest-first
+        During the initial bib record query, sort records by edit
+        date in descending order, so that records more recently
+        modified/created are processed before older records.
+        This takes precedence over --sort-id-desc.
 
     --max-duration
         Stop processing after this many total seconds have passed.
+
+    --min-id
+        Only process records whose ID is equal to or greater than min-id.
+
+    --max-id
+        Only process records whose ID is equal to or less than max-id.
+
+    --log-stdout
+        Clone debug and error messages to STDOUT.  Beware that the 
+        contents of 'print' calls from daemonized child process may not 
+        reach STDOUT of the controlling terminal.
+
+        All messages are logged to syslog.
 
     --help
         Show this help text.
@@ -131,19 +152,48 @@ HELP
 
 help() if $help;
 
-# Check for mutually exclusive options:
-if ($opt_pipe && ($start_id || $end_id)) {
-    warn('Mutually exclusive options');
-    help();
+openlog($syslog_ident, $syslog_ops, $syslog_facility);
+
+# options for level match syslog options: DEBUG,INFO,WARNING,ERR
+sub announce {
+    my ($level, $msg, $die) = @_;
+    syslog("LOG_$level", "$level $msg");
+
+    my $date_str = DateTime->now(time_zone => 'local')->strftime('%F %T');
+    my $msg_str = "$date_str [$$] $level $msg\n";
+
+    if ($die) {
+        die $msg_str;
+
+    } else {
+        if ($level eq 'ERR' or $level eq 'WARNING') {
+            # always clone error messages to stdout
+            warn $msg_str; # avoid dupe messages
+        } elsif ($log_stdout) {
+            print $msg_str;
+        }
+    }
 }
 
+announce('DEBUG', 
+    "pingest starting with batch-size $batch_size and max_child $max_child");
+
 my $where = "WHERE deleted = 'f'";
-if ($start_id && $end_id) {
-    $where .= " AND id BETWEEN $start_id AND $end_id";
-} elsif ($start_id) {
-    $where .= " AND id >= $start_id";
-} elsif ($end_id) {
-    $where .= " AND id <= $end_id";
+if ($min_id && $max_id) {
+    $where .= " AND id BETWEEN $min_id AND $max_id";
+} elsif ($min_id) {
+    $where .= " AND id >= $min_id";
+} elsif ($max_id) {
+    $where .= " AND id <= $max_id";
+}
+
+my $order_by = 'ORDER BY ';
+if ($newest_first) {
+    $order_by .= 'edit_date DESC, id DESC';
+} elsif ($sort_id_desc) {
+    $order_by .= 'id DESC';
+} else {
+    $order_by .= 'id ASC';
 }
 
 # "Gimme the keys!  I'll drive!"
@@ -151,7 +201,7 @@ my $q = <<END_OF_Q;
 SELECT id
 FROM biblio.record_entry
 $where
-ORDER BY id ASC
+$order_by
 END_OF_Q
 
 # Stuffs needed for looping, tracking how many lists of records we
@@ -178,24 +228,43 @@ sub duration_expired {
 #
 # 2) edit the DBI->connect() calls in this program so that it can
 # connect to your database.
+my $dbh = DBI->connect('DBI:Pg:');
+my $dow_start_pos = 0;
+my $dow_end_pos;
 
-# Get the input records from either standard input or the database.
-my @input;
-if ($opt_pipe) {
-    while (<STDIN>) {
-        # Assume any string of digits is an id.
-        if (my @subs = /([0-9]+)/g) {
-            push(@input, @subs);
-        }
+# When processing a week batch, first find the dow cut-off boundaries
+if ($week_batch) {
+    my $count_query = "SELECT COUNT(id) FROM biblio.record_entry $where";
+    my $result = $dbh->selectall_arrayref($count_query);
+    my $bib_count = $result->[0][0];
+    my $buk_size = int($bib_count / 7);
+    my $dow = DateTime->now->day_of_week - 1; # Monday is 1
+    my $day = 0;
+    while ($day <= $dow) {
+        $dow_start_pos = $day * $buk_size;
+        $dow_end_pos = $dow_start_pos + $buk_size;
+        $day++;
     }
-} else {
-    my $dbh = DBI->connect("DBI:Pg:database=$db_db;host=$db_host;port=$db_port;application_name=pingest",
-                           $db_user, $db_password);
-    @input = @{$dbh->selectcol_arrayref($q)};
-    $dbh->disconnect();
+
+    announce('INFO', "Processing bib ID dow start_pos=$dow_start_pos ".
+        "to end_pos=$dow_end_pos");
 }
 
-foreach my $record (@input) {
+my $results = $dbh->selectall_arrayref($q);
+my $week_counter = -1;
+foreach my $r (@$results) {
+
+    if ($week_batch) {
+        $week_counter++;
+        if ($week_counter < $dow_start_pos ||
+            $week_counter > $dow_end_pos) {
+            # In weekly batch mode ignore records that do not fall in the
+            # day-of-week dow.
+            next;
+        }
+    }
+
+    my $record = $r->[0];
     push(@blist, $record); # separate list of browse-only ingest
     push(@$records, $record);
     if (++$count == $batch_size) {
@@ -204,8 +273,10 @@ foreach my $record (@input) {
         $records = [];
     }
 }
-$lol[$lists++] = $records if ($count); # Last batch is likely to be
-                                       # small.
+$lol[$lists++] = $records if ($count); # Last batch is likely to be small.
+$dbh->disconnect();
+
+announce('INFO', 'Processing '.scalar(@blist).' bib records');
 
 # We're going to reuse $count to keep track of the total number of
 # batches processed.
@@ -227,12 +298,14 @@ browse_ingest(@blist) unless ($skip_browse);
 
 # We loop until we have processed all of the batches stored in @lol
 # or the maximum processing duration has been reached.
+my $last_record;
 while ($count < $lists) {
     my $duration_expired = duration_expired();
 
     if (scalar(@lol) && scalar(@running) < $max_child && !$duration_expired) {
         # Reuse $records for the lulz.
         $records = shift(@lol);
+        $last_record = $records->[-1];
         if ($skip_search && $skip_facets && $skip_attrs && $skip_display) {
             $count++;
         } else {
@@ -243,13 +316,14 @@ while ($count < $lists) {
         if (grep {$_ == $pid} @running) {
             @running = grep {$_ != $pid} @running;
             $count++;
-            print "$count of $lists processed\n";
+            announce('DEBUG', "reingest() processed $count of ".
+                "$lists batches; last record = $last_record");
         }
     }
 
     if ($duration_expired && scalar(@running) == 0) {
-        symspell_reification() if ($delay_dym);
-        warn "Exiting on max_duration ($max_duration)\n";
+        announce('INFO', 
+            "reingest() stopping on $last_record at max duration");
         exit(0);
     }
 }
@@ -296,20 +370,33 @@ sub browse_ingest {
         # previously counted.
         $lists++;
     } elsif ($pid == 0) {
-        my $dbh = DBI->connect("DBI:Pg:database=$db_db;host=$db_host;port=$db_port;application_name=pingest",
-                               $db_user, $db_password);
-        my $sth = $dbh->prepare('SELECT metabib.reingest_metabib_field_entries(bib_id := ?, skip_facet := TRUE, skip_browse := FALSE, skip_search := TRUE, skip_display := TRUE)');
+        my $dbh = DBI->connect('DBI:Pg:');
+        my $sth = $dbh->prepare(<<SQL);
+SELECT metabib.reingest_metabib_field_entries(
+    bib_id := ?, 
+    skip_facet := TRUE, 
+    skip_browse := FALSE, 
+    skip_search := TRUE, 
+    skip_display := TRUE
+)
+SQL
+        my $total = scalar(@list);
+        my $count = 0;
         foreach (@list) {
             if ($sth->execute($_)) {
                 my $crap = $sth->fetchall_arrayref();
             } else {
-                warn ("Browse ingest failed for record $_");
+                announce('WARNING', "Browse ingest failed for record $_");
             }
             if (duration_expired()) {
-                warn "browse_ingest() stopping on record $_ ".
-                    "after max duration reached\n";
+                announce('INFO', 
+                    "browse_ingest() stopping on record $_ on max duration");
                 last;
             }
+
+            announce('DEBUG', "browse_ingest() processed $count ".
+                "of $total records; last record = $_") 
+                if ++$count % $batch_size == 0;
         }
         $dbh->disconnect();
         exit(0);
@@ -326,10 +413,9 @@ sub reingest {
     } elsif ($pid > 0) {
         push(@running, $pid);
     } elsif ($pid == 0) {
-        my $dbh = DBI->connect("DBI:Pg:database=$db_db;host=$db_host;port=$db_port;application_name=pingest",
-                               $db_user, $db_password);
+        my $dbh = DBI->connect('DBI:Pg:');
         reingest_attributes($dbh, $list) unless ($skip_attrs);
-        reingest_field_entries($dbh, $list)
+        reingest_field_entries($dbh, $list) 
             unless ($skip_facets && $skip_search && $skip_display);
         $dbh->disconnect();
         exit(0);
@@ -340,7 +426,15 @@ sub reingest {
 sub reingest_field_entries {
     my $dbh = shift;
     my $list = shift;
-    my $sth = $dbh->prepare('SELECT metabib.reingest_metabib_field_entries(bib_id := ?, skip_facet := ?, skip_browse := TRUE, skip_search := ?, skip_display := ?)');
+    my $sth = $dbh->prepare(<<SQL);
+SELECT metabib.reingest_metabib_field_entries(
+    bib_id := ?, 
+    skip_facet := ?, 
+    skip_browse := TRUE, 
+    skip_search := ?, 
+    skip_display := ?
+)
+SQL
     # Because reingest uses "skip" options we invert the logic of do variables.
     $sth->bind_param(2, ($skip_facets) ? 1 : 0);
     $sth->bind_param(3, ($skip_search) ? 1 : 0);
@@ -350,7 +444,8 @@ sub reingest_field_entries {
         if ($sth->execute()) {
             my $crap = $sth->fetchall_arrayref();
         } else {
-            warn ("metabib.reingest_metabib_field_entries failed for record $_");
+            announce('WARNING', 
+                "metabib.reingest_metabib_field_entries failed for record $_");
         }
     }
 }
@@ -371,16 +466,17 @@ END_OF_INGEST
         if ($sth->execute()) {
             my $crap = $sth->fetchall_arrayref();
         } else {
-            warn ("metabib.reingest_record_attributes failed for record $_");
+            announce('WARNING', 
+                "metabib.reingest_record_attributes failed for record $_");
         }
     }
 }
 
 # Rebuild/refresh reporter.materialized_simple_record
-sub rmsr_rebuild {
-    print("Rebuilding reporter.materialized_simple_record\n");
-    my $dbh = DBI->connect("DBI:Pg:database=$db_db;host=$db_host;port=$db_port;application_name=pingest",
-                           $db_user, $db_password);
-    $dbh->selectall_arrayref("SELECT reporter.refresh_materialized_simple_record();");
-    $dbh->disconnect();
-}
+#sub rmsr_rebuild {
+    #print("Rebuilding reporter.materialized_simple_record\n");
+    #my $dbh = DBI->connect("DBI:Pg:database=$db_db;host=$db_host;port=$db_port;application_name=pingest",
+                           #$db_user, $db_password);
+    #$dbh->selectall_arrayref("SELECT reporter.refresh_materialized_simple_record();");
+    #$dbh->disconnect();
+#}

@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2004-2008  Georgia Public Library Service
  * Copyright (C) 2008-2010  Equinox Software, Inc.
- * Mike Rylander <miker@esilibrary.com> 
+ * Mike Rylander <miker@esilibrary.com>
  *
  * Copyright (C) 2010 Dan Scott <dan@coffeecode.net>
  * Copyright (C) 2010 Internationaal Instituut voor Sociale Geschiedenis <info@iisg.nl>
@@ -15,7 +15,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.  
+ * GNU General Public License for more details.
  *
  */
 // Pretty printing kills whitespace too, so disable it.
@@ -33,6 +33,7 @@ var current_focus;
 var _record;
 var _record_type;
 var bib_data;
+var current_bib;
 
 var xml_record;
 
@@ -110,19 +111,19 @@ function mangle_005() {
 
     var m = now.getUTCMonth() + 1;
     if (m < 10) m = '0' + m;
-    
+
     var d = now.getUTCDate();
     if (d < 10) d = '0' + d;
-    
+
     var H = now.getUTCHours();
     if (H < 10) H = '0' + H;
-    
+
     var M = now.getUTCMinutes();
     if (M < 10) M = '0' + M;
-    
+
     var S = now.getUTCSeconds();
     if (S < 10) S = '0' + S;
-    
+
 
     var stamp = '' + y + m + d + H + M + S + '.0';
     createControlField('005',stamp);
@@ -163,7 +164,7 @@ function xml_escape_unicode ( str ) {
 
 function wrap_long_fields (node) {
     var text_size = dojo.attr(node, 'size');
-    var hard_width = 100; 
+    var hard_width = 100;
     if (text_size > hard_width) {
         dojo.attr(node, 'multiline', 'true');
         dojo.attr(node, 'cols', hard_width);
@@ -261,8 +262,8 @@ function my_init() {
         document.getElementById('save-button').setAttribute('oncommand',
             'var to_save = function() { ' + /* begin to_save() */
             'if ($("xul-editor").hidden) set_flat_editor(false); ' +
-            'mangle_005(); ' + 
-            'var xml_string = xml_escape_unicode( xml_record.toXMLString() ); ' + 
+            'mangle_005(); ' +
+            'var xml_string = xml_escape_unicode( xml_record.toXMLString() ); ' +
             'save_attempt( xml_string ); ' +
             'loadRecord(); ' +
             '}; ' + /* end to_save() */
@@ -320,16 +321,16 @@ function my_init() {
         switch (window.xulG.record.rtype) {
             case 'bre':
                 tooltip_doc = 'marcedit-tooltips.xml';
-                break; 
+                break;
             case 'are':
                 tooltip_doc = 'marcedit-tooltips-authority.xml';
                 locale = 'en-US'; // FIXME - note TODO above; at moment only en-US has this
-                break; 
+                break;
             case 'sre':
                 tooltip_doc = 'marcedit-tooltips-mfhd.xml';
                 locale = 'en-US'; // FIXME - note TODO above; at moment only en-US has this
-                break; 
-            default: 
+                break;
+            default:
                 tooltip_doc = 'marcedit-tooltips.xml';
         }
 
@@ -345,7 +346,7 @@ function my_init() {
         tag_menu.appendChild(
             createMenuitem(
                 { label : $('catStrings').getString('staff.cat.marcedit.add_row.label'),
-                  oncommand : 
+                  oncommand :
                     'var e = document.createEvent("KeyEvents");' +
                     'e.initKeyEvent("keypress",1,1,null,1,0,0,0,13,0);' +
                     'current_focus.inputField.dispatchEvent(e);'
@@ -356,7 +357,7 @@ function my_init() {
         tag_menu.appendChild(
             createMenuitem(
                 { label : $('catStrings').getString('staff.cat.marcedit.insert_row.label'),
-                  oncommand : 
+                  oncommand :
                     'var e = document.createEvent("KeyEvents");' +
                     'e.initKeyEvent("keypress",1,1,null,1,0,1,0,13,0);' +
                     'current_focus.inputField.dispatchEvent(e);'
@@ -367,7 +368,7 @@ function my_init() {
         tag_menu.appendChild(
             createMenuitem(
                 { label : $('catStrings').getString('staff.cat.marcedit.remove_row.label'),
-                  oncommand : 
+                  oncommand :
                     'var e = document.createEvent("KeyEvents");' +
                     'e.initKeyEvent("keypress",1,1,null,1,0,0,0,46,0);' +
                     'current_focus.inputField.dispatchEvent(e);'
@@ -380,7 +381,7 @@ function my_init() {
         tag_menu.appendChild(
             createMenuitem(
                 { label : $('catStrings').getString('staff.cat.marcedit.replace_006.label'),
-                  oncommand : 
+                  oncommand :
                     'var e = document.createEvent("KeyEvents");' +
                     'e.initKeyEvent("keypress",1,1,null,1,0,0,0,117,0);' +
                     'current_focus.inputField.dispatchEvent(e);'
@@ -391,7 +392,7 @@ function my_init() {
         tag_menu.appendChild(
             createMenuitem(
                 { label : $('catStrings').getString('staff.cat.marcedit.replace_007.label'),
-                  oncommand : 
+                  oncommand :
                     'var e = document.createEvent("KeyEvents");' +
                     'e.initKeyEvent("keypress",1,1,null,1,0,0,0,118,0);' +
                     'current_focus.inputField.dispatchEvent(e);'
@@ -402,7 +403,7 @@ function my_init() {
         tag_menu.appendChild(
             createMenuitem(
                 { label : $('catStrings').getString('staff.cat.marcedit.replace_008.label'),
-                  oncommand : 
+                  oncommand :
                     'var e = document.createEvent("KeyEvents");' +
                     'e.initKeyEvent("keypress",1,1,null,1,0,0,0,119,0);' +
                     'current_focus.inputField.dispatchEvent(e);'
@@ -442,6 +443,7 @@ function my_init() {
             xulG.record.bre = bib;
 
             buildBibSourceList(authtoken, xulG.record.id);
+        fillCatDate(authtoken, xulG.record.id);
         }
 
         preparePhysCharWizardContext();
@@ -483,7 +485,7 @@ function createComplexXULElement (e, attrs, objects) {
                 l.setAttribute(i,attrs[i]);
             }
         }
-    } 
+    }
 
     if (objects) {
         for ( var i in objects ) l.appendChild( objects[i] );
@@ -653,7 +655,7 @@ function createMARCTextbox (element,attrs) {
                     move_data = event.target.value.substring(start,end);
                     event.target.value = event.target.value.substring(0,start) + event.target.value.substring(end);
                     event.target.setAttribute('size', event.target.value.length + 2);
-    
+
                     element.setChildren( event.target.value );
 
                 } else if (element.localName() == 'code') {
@@ -831,16 +833,16 @@ function createMARCTextbox (element,attrs) {
             return true;
 
         } else { // event on a control field
-            if (event.keyCode == 38) { 
-                return setFocusToNextTag(row, 'up'); 
-            } else if (event.keyCode == 40) { 
+            if (event.keyCode == 38) {
+                return setFocusToNextTag(row, 'up');
+            } else if (event.keyCode == 40) {
                 return setFocusToNextTag(row, 'down');
             }
         }
     };
 
     box.addEventListener(
-        'keypress', 
+        'keypress',
         function () {
             if (element.nodeKind() == 'attribute') element[0]=box.value;
             else element.setChildren( box.value );
@@ -850,7 +852,7 @@ function createMARCTextbox (element,attrs) {
     );
 
     box.addEventListener(
-        'change', 
+        'change',
         function () {
             if (element.nodeKind() == 'attribute') element[0]=box.value;
             else element.setChildren( box.value );
@@ -860,7 +862,7 @@ function createMARCTextbox (element,attrs) {
     );
 
     box.addEventListener(
-        'keypress', 
+        'keypress',
         function () {
             if (element.nodeKind() == 'attribute') element[0]=box.value;
             else element.setChildren( box.value );
@@ -871,7 +873,7 @@ function createMARCTextbox (element,attrs) {
 
     // 'input' event catches the box value after the keypress
     box.addEventListener(
-        'input', 
+        'input',
         function () {
             if (element.nodeKind() == 'attribute') element[0]=box.value;
             else element.setChildren( box.value );
@@ -881,7 +883,7 @@ function createMARCTextbox (element,attrs) {
     );
 
     box.addEventListener(
-        'keyup', 
+        'keyup',
         function () {
             if (element.localName() == 'controlfield')
                 eval('fillFixedFields();');
@@ -1193,7 +1195,7 @@ function stackSubfields(checkbox) {
 
     var o = 'vertical';
     if (!checkbox.checked) o = 'horizontal';
-    
+
     for (var i = 0; i < list.length; i++) {
         if (list[i]) list[i].setAttribute('orient',o);
     }
@@ -1330,7 +1332,7 @@ function marcDatafield (field) {
     return row;
 }
 
-function marcSubfield (sf) {            
+function marcSubfield (sf) {
     return createHbox(
         { class : 'marcSubfieldBox' },
         createLabel(
@@ -1356,7 +1358,7 @@ function marcSubfield (sf) {
             sf,
             { value : sf.text(),
               name : sf.parent().@tag + ':' + sf.@code,
-              class : 'plain marcSubfield', 
+              class : 'plain marcSubfield',
               align: 'start',
               onmouseover : 'getTooltip(this, "subfield");',
               contextmenu : function (event) { getAuthorityContextMenu(event.target, sf) },
@@ -1407,11 +1409,11 @@ function loadRecord() {
 function genToolTips () {
     for (var i in bib_data.field) {
         var f = bib_data.field[i];
-    
+
         tag_menu.appendChild(
             createMenuitem(
                 { label : f.@tag,
-                  oncommand : 
+                  oncommand :
                       'current_focus.value = "' + f.@tag + '";' +
                     'var e = document.createEvent("MutationEvents");' +
                     'e.initMutationEvent("change",1,1,null,0,0,0,0);' +
@@ -1420,26 +1422,26 @@ function genToolTips () {
                   tooltiptext : f.description }
             )
         );
-    
+
         var i1_popup = createMenuPopup({position : 'after_start', id : 't' + f.@tag + 'i1' });
         context_menus.appendChild( i1_popup );
-    
+
         var i2_popup = createMenuPopup({position : 'after_start', id : 't' + f.@tag + 'i2' });
         context_menus.appendChild( i2_popup );
-    
+
         var sf_popup = createMenuPopup({position : 'after_start', id : 't' + f.@tag + 'sf' });
         context_menus.appendChild( sf_popup );
-    
+
         tooltip_hash['tag' + f.@tag] = f.description;
         for (var j in f.indicator) {
             var ind = f.indicator[j];
             tooltip_hash['tag' + f.@tag + 'ind' + ind.@position + 'val' + ind.@value] = ind.description;
-    
+
             if (ind.@position == 1) {
                 i1_popup.appendChild(
                     createMenuitem(
                         { label : ind.@value,
-                          oncommand : 
+                          oncommand :
                               'current_focus.value = "' + ind.@value + '";' +
                             'var e = document.createEvent("MutationEvents");' +
                             'e.initMutationEvent("change",1,1,null,0,0,0,0);' +
@@ -1448,12 +1450,12 @@ function genToolTips () {
                     )
                 );
             }
-    
+
             if (ind.@position == 2) {
                 i2_popup.appendChild(
                     createMenuitem(
                         { label : ind.@value,
-                          oncommand : 
+                          oncommand :
                               'current_focus.value = "' + ind.@value + '";' +
                             'var e = document.createEvent("MutationEvents");' +
                             'e.initMutationEvent("change",1,1,null,0,0,0,0);' +
@@ -1463,15 +1465,15 @@ function genToolTips () {
                 );
             }
         }
-    
+
         for (var j in f.subfield) {
             var sf = f.subfield[j];
             tooltip_hash['tag' + f.@tag + 'sf' + sf.@code] = sf.description;
-    
+
             sf_popup.appendChild(
                 createMenuitem(
                     { label : sf.@code,
-                      oncommand : 
+                      oncommand :
                           'current_focus.value = "' + sf.@code + '";' +
                         'var e = document.createEvent("MutationEvents");' +
                         'e.initMutationEvent("change",1,1,null,0,0,0,0);' +
@@ -1809,7 +1811,7 @@ function getAuthorityContextMenu (target, sf) {
             show_auth_menu = false;
             getAuthorityContextMenu(target, sf);
             dojo.byId(menu_id).openPopup();
-        }  
+        }
     }, false);
 
     context_menus.appendChild( sf_popup );
@@ -1902,14 +1904,14 @@ function validateAuthority (button) {
         dojo.forEach(acs.controlSetList(), function (acs_id) {
             if (done) return;
             var control_map = acs.controlSet(acs_id).control_map;
-    
+
             if (!control_map[tag.value]) return;
             button.setAttribute('label', label + ' - ' + tag.value);
-    
+
             var ind1 = tag.nextSibling;
             var ind2 = ind1.nextSibling;
             var subfields = ind2.nextSibling.childNodes;
-    
+
             var sf_list = [];
             for (var j = 0; j < subfields.length; j++) {
                 var sf = subfields[j];
@@ -1939,7 +1941,7 @@ function validateAuthority (button) {
                 }
             }
 
-    
+
             // XXX If adt, etc should be validated separately from vxz, etc then move this up into the above for loop
             for (var j = 0; j < subfields.length; j++) {
                 var sf = subfields[j];
@@ -2064,7 +2066,7 @@ function browseAuthority (sf_popup, menu_id, target, sf, limit, page) {
 
         cm_popup.appendChild(
             createMenuitem({ label : $('catStrings').getString('staff.cat.marcedit.create_authority_now.label'),
-                command : function() { 
+                command : function() {
                     // Call middle-layer function to create and save the new authority
                     var source_f = summarizeField(sf);
                     var new_auth = fieldmapper.standardRequest(
@@ -2080,7 +2082,7 @@ function browseAuthority (sf_popup, menu_id, target, sf, limit, page) {
 
         cm_popup.appendChild(
             createMenuitem({ label : $('catStrings').getString('staff.cat.marcedit.create_authority_edit.label'),
-                command : function() { 
+                command : function() {
                     // Generate the new authority by calling the new middle-layer
                     // function (a non-saving variant), then display in another
                     // MARC editor
@@ -2103,7 +2105,7 @@ function browseAuthority (sf_popup, menu_id, target, sf, limit, page) {
         // append "Previous page" results browser
         sf_popup.appendChild(
             createMenuitem({ label : $('catStrings').getString('staff.cat.marcedit.previous_page.label'),
-                command : function(event) { 
+                command : function(event) {
                     auth_pages[menu_id] -= 1;
                     show_auth_menu = true;
                 }
@@ -2176,7 +2178,7 @@ function browseAuthority (sf_popup, menu_id, target, sf, limit, page) {
             sf_popup.appendChild( createComplexXULElement( 'menuseparator' ) );
             sf_popup.appendChild(
                 createMenuitem({ label : $('catStrings').getString('staff.cat.marcedit.next_page.label'),
-                    command : function(event) { 
+                    command : function(event) {
                         auth_pages[menu_id] += 1;
                         show_auth_menu = true;
                     }
@@ -2336,7 +2338,7 @@ function buildBibSourceList (authtoken, recId) {
 
     dojo.require('openils.PermaCrud');
 
-    // cbsList = the XUL menulist that contains the available bib sources 
+    // cbsList = the XUL menulist that contains the available bib sources
     var cbsList = dojo.byId('bib-source-list');
 
     // bibSources = an array containing all of the bib source objects
@@ -2380,11 +2382,119 @@ function onBibSourceSelect() {
     var cbs = dojo.byId('bib-source-list').selectedItem.value;
     var bib = xulG.record.bre;
     if (bib.source() != cbs) {
-        dojo.byId('bib-source-list-button').disabled = false;   
+        dojo.byId('bib-source-list-button').disabled = false;
     } else {
-        dojo.byId('bib-source-list-button').disabled = true;   
+        dojo.byId('bib-source-list-button').disabled = true;
     }
 }
+
+function fillCatDate(authtoken, recId) {
+    if (!recId) {
+        return false;
+    }
+
+    var bib = xulG.record.bre;
+
+    dojo.require('openils.PermaCrud');
+
+    // catDateField = the XUL date picker that displays the cataloging date
+    var catDateField = dojo.byId('cat-date-value');
+
+    var catDate;
+    //If cataloging_date is already set use the incoming date, else use the current system time
+    if(bib.cataloging_date() != null) {
+        catDate = new Date(bib.cataloging_date());
+        dojo.byId('clear-cat-date-button').disabled = false;
+    } else {
+        catDate = new Date();
+        dojo.byId('clear-cat-date-button').disabled = true;
+    }
+
+    // Show the current value of the bib source for this record
+    catDateField.date = catDate.getDate();
+    catDateField.month = catDate.getMonth()
+    catDateField.year = catDate.getFullYear();
+
+    // Display the bib source selection widget
+    dojo.byId('cat-date-caption').hidden = false;
+    dojo.byId('cat-date-value').hidden = false;
+    dojo.byId('cat-date-button').disabled = false;
+    dojo.byId('cat-date-button').hidden = false;
+    dojo.byId('clear-cat-date-button').hidden = false;
+
+}
+
+// Fired when the "Update date" button is clicked
+// Updates the value of the bib source for the current record
+function updateCatDate() {
+    var authtoken = ses();
+    var catDate= dojo.byId('cat-date-value').dateValue;
+    var recId = xulG.record.id;
+    var pcrud = new openils.PermaCrud({"authtoken": authtoken});
+    current_bib = pcrud.retrieve('bre', recId);
+    var originalCatDate = new Date(current_bib.cataloging_date());
+    if (originalCatDate.getDate() != catDate.getDate() || originalCatDate.getMonth() != catDate.getMonth() || originalCatDate.getFullYear() != catDate.getFullYear()) {
+        current_bib.cataloging_date(catDate.getFullYear() + "-" + (catDate.getMonth() + 1) + "-" + catDate.getDate());
+        current_bib.editor(ses('staff_id'));
+        current_bib.edit_date('now');
+        pcrud.update(current_bib);
+        dojo.byId('cat-date-button').disabled = true;
+        dojo.byId('clear-cat-date-button').disabled = false;
+    }
+}
+
+function onCatDateSelect(){
+
+    if (!current_bib){
+
+        var pcrud = new openils.PermaCrud({"authtoken": ses()});
+        current_bib = pcrud.retrieve('bre', xulG.record.id);
+    }
+
+    var catDate= dojo.byId('cat-date-value').dateValue;
+    var recId = xulG.record.id;
+
+    if (catDate.getFullYear() + "-" + (catDate.getMonth() + 1) + "-" + catDate.getDate() != current_bib.cataloging_date()){
+
+        dojo.byId('cat-date-button').disabled = false;
+    }
+
+    else{
+
+        dojo.byId('cat-date-button').disabled = true;
+    }
+}
+
+// Fired when the "Clear date" button is clicked
+// Sets the bib record catatalog_date to null.
+function clearCatDate() {
+
+    dojo.byId('clear-cat-date-button').disabled = true;
+    var pcrud = new openils.PermaCrud({authtoken : ses()});
+
+    if (!current_bib) {
+        current_bib = pcrud.retrieve('bre', xulG.record.id);
+    }
+
+    // already clear.. nothing to do.  We should never get here.
+    if (current_bib.cataloging_date() === null) return;
+
+    current_bib.cataloging_date(null);
+    current_bib.editor(ses('staff_id'));
+    current_bib.edit_date('now');
+    pcrud.update(current_bib);
+
+    // set the UI back to the today
+    catDate = new Date();
+    var catDateField = dojo.byId('cat-date-value');
+    catDateField.date = catDate.getDate();
+    catDateField.month = catDate.getMonth()
+    catDateField.year = catDate.getFullYear();
+
+    // re-enable the set-cat-date button
+    dojo.byId('cat-date-button').disabled = false;
+}
+
 
 function addNewAuthorityID(authority, sf, target) {
     var id_sf = <subfield code="0" xmlns="http://www.loc.gov/MARC21/slim">({xulG.marc_control_number_identifier}){authority.id()}</subfield>;
@@ -2410,7 +2520,7 @@ function loadMarcEditor(pcrud, marcxml, target, sf) {
     // Match marc2are.pl last_xact_id format, roughly
     var now = new Date;
     var xact_id = 'IMPORT-' + Date.parse(now);
-    
+
     win.xulG = {
         "record": {"marc": marcxml, "rtype": "are"},
         "save": {

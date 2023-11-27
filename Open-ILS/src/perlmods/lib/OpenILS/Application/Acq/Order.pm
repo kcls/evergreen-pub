@@ -181,6 +181,8 @@ use MARC::Batch;
 use MARC::File::XML (BinaryEncoding => 'UTF-8');
 use Digest::MD5 qw(md5_hex);
 use Data::Dumper;
+use OpenILS::Application::Acq::Common;
+my $AC = 'OpenILS::Application::Acq::Common';
 $Data::Dumper::Indent = 0;
 my $U = 'OpenILS::Application::AppUtils';
 
@@ -343,6 +345,7 @@ sub delete_lineitem {
 sub create_lineitem_list_assets {
     my($mgr, $li_ids, $vandelay, $bib_only) = @_;
 
+    my $noVl = $vandelay->{noVl};
     # Do not create line items if none are specified
     return {} unless (scalar(@$li_ids));
 
@@ -351,19 +354,33 @@ sub create_lineitem_list_assets {
         return undef;
     }
 
-    my $res = import_li_bibs_via_vandelay($mgr, $li_ids, $vandelay);
-    return undef unless $res;
-    return $res if $bib_only;
-
-    # create the bibs/volumes/copies for the successfully imported records
-    for my $li_id (@{$res->{li_ids}}) {
-        $mgr->editor->xact_begin;
-        my $data = create_lineitem_assets($mgr, $li_id) or return undef;
-        $mgr->editor->xact_commit;
-        $mgr->respond;
+    if ($noVl)
+    {
+        # No Vandelay, From EG 2_1
+        # create the bibs/volumes/copies and ingest the records
+        for my $li_id (@$li_ids) {
+            $mgr->editor->xact_begin;
+            my $data = create_lineitem_assets($mgr, $li_id, $noVl) or return undef;
+            $mgr->editor->xact_commit;
+            $mgr->respond;
+        }
+        return $li_ids;
     }
+    else
+    {
+        my $res = import_li_bibs_via_vandelay($mgr, $li_ids, $vandelay);
+        return undef unless $res;
+        return $res if $bib_only;
 
-    return $res;
+        # create the bibs/volumes/copies for the successfully imported records
+        for my $li_id (@{$res->{li_ids}}) {
+            $mgr->editor->xact_begin;
+            my $data = create_lineitem_assets($mgr, $li_id) or return undef;
+            $mgr->editor->xact_commit;
+            $mgr->respond;
+        }
+        return $res;
+    }
 }
 
 sub test_vandelay_import_args {
@@ -632,6 +649,8 @@ sub receive_lineitem {
 
     $li->clear_cancel_reason; # un-cancel on receive
 
+    return 0 if create_li_recv_note($mgr, $li_id);
+
     my $lid_ids = $mgr->editor->search_acq_lineitem_detail(
         {lineitem => $li_id, recv_time => undef}, {idlist => 1});
 
@@ -656,9 +675,48 @@ sub receive_lineitem {
     return $result;
 }
 
+# KCLS ---
+# Creates a note for each line item marked as received
+# Returns undef on success, event on error.
+sub create_li_recv_note {
+    my ($mgr, $li_id, $check_exists) = @_;
+
+    my $e = $mgr->editor;
+
+    if ($check_exists) {
+        # Skip creating the note if we already have such a note
+        # on the line item.
+
+        my $n = $e->json_query({
+            select => {acqlin => ['id']},
+            from => 'acqlin',
+            where => {
+                lineitem => $li_id,
+                value => {like => 'received:%'}
+            }
+        })->[0];
+
+        return undef if $n; # we already have one, all good.
+    }
+
+    my $note = Fieldmapper::acq::lineitem_note->new;
+
+    $note->lineitem($li_id);
+    $note->creator($e->requestor->id);
+    $note->editor($e->requestor->id);
+    $note->value('received: ' . $e->requestor->usrname);
+
+    $e->create_acq_lineitem_note($note) or return $e->die_event;
+
+    return undef;
+}
+
+
 sub rollback_receive_lineitem {
     my($mgr, $li_id) = @_;
     my $li = $mgr->editor->retrieve_acq_lineitem($li_id) or return 0;
+
+    return 0 unless ($li->state eq 'received' || $li->state eq 'on-order');
 
     my $lid_ids = $mgr->editor->search_acq_lineitem_detail(
         {lineitem => $li_id, recv_time => {'!=' => undef}}, {idlist => 1});
@@ -745,7 +803,7 @@ sub delete_lineitem_detail {
 
 
 sub receive_lineitem_detail {
-    my($mgr, $lid_id, $skip_complete_check) = @_;
+    my ($mgr, $lid_id, $skip_complete_check, $copy_stat) = @_;
     my $e = $mgr->editor;
 
     my $lid = $e->retrieve_acq_lineitem_detail([
@@ -779,12 +837,18 @@ sub receive_lineitem_detail {
     if ($lid->eg_copy_id) {
         my $copy = $e->retrieve_asset_copy($lid->eg_copy_id) or return 0;
         # only update status if it hasn't already been updated
+
         if ($copy->status == OILS_COPY_STATUS_ON_ORDER) {
-            my $custom_status = $U->ou_ancestor_setting_value(
-                $e->requestor->ws_ou, 'acq.copy_status_on_receiving', $e);
-            my $new_status = $custom_status || OILS_COPY_STATUS_IN_PROCESS;
-            $copy->status($new_status);
+            if ($copy_stat) {
+                $copy->status($copy_stat);
+            } else {
+                my $custom_status = $U->ou_ancestor_setting_value(
+                    $e->requestor->ws_ou, 'acq.copy_status_on_receiving', $e);
+                my $new_status = $custom_status || OILS_COPY_STATUS_IN_PROCESS;
+                $copy->status($new_status);
+            }
         }
+
         $copy->edit_date('now');
         $copy->editor($e->requestor->id);
         $copy->creator($e->requestor->id) if $U->ou_ancestor_setting_value(
@@ -906,6 +970,21 @@ sub create_lineitem_debits {
                 flesh_fields => {acqlid => ['fund']}
             }
         ]);
+
+        if (!$lid->owning_lib) {
+            # It's OK to create copies with no owning lib, but activating
+            # an order with such copies creates problems.
+            $mgr->editor->event(OpenILS::Event->new('ACQ_COPY_NO_OWNING_LIB', payload => $li->id));
+            $mgr->editor->rollback;
+            return 0;
+        }
+
+        # KCLS requires this
+        if (!$lid->location) {
+            $mgr->editor->event(OpenILS::Event->new('ACQ_COPY_NO_LOCATION', payload => $li->id));
+            $mgr->editor->rollback;
+            return 0;
+        }
 
         create_lineitem_detail_debit($mgr, $li, $lid, $dry_run) or return 0;
     }
@@ -1254,7 +1333,7 @@ sub check_purchase_order_received {
 # ----------------------------------------------------------------------------
 
 sub create_lineitem_assets {
-    my($mgr, $li_id) = @_;
+    my($mgr, $li_id, $noVl) = @_;
     my $evt;
 
     my $li = $mgr->editor->retrieve_acq_lineitem([
@@ -1263,6 +1342,15 @@ sub create_lineitem_assets {
             flesh_fields => {jub => ['purchase_order', 'attributes']}
         }
     ]) or return 0;
+    # -----------------------------------------------------------------
+    # If not using Vandelay, create the bib record if necessary
+    # -----------------------------------------------------------------
+    if ($noVl) {
+        unless($li->eg_bib_id) {
+            create_bib($mgr, $li) or return 0;
+            $logger->info("acq-noVl: created bib for acq lineitem $li");
+        }
+    }
 
     # note: at this point, the bib record this LI links to should already be created
 
@@ -1304,6 +1392,28 @@ sub create_lineitem_assets {
     }
 
     return { li => $li };
+}
+
+sub create_bib {
+    my($mgr, $li) = @_;
+
+    my $record = OpenILS::Application::Cat::BibCommon->biblio_record_xml_import(
+        $mgr->editor,
+        $li->marc,
+        undef, # bib source
+        undef,
+        1, # override tcn collisions
+    );
+
+    if($U->event_code($record)) {
+        $mgr->editor->event($record);
+        $mgr->editor->rollback;
+        return 0;
+    }
+
+    $li->eg_bib_id($record->id);
+    $mgr->add_bib;
+    return update_lineitem($mgr, $li);
 }
 
 sub create_volume {
@@ -2072,11 +2182,11 @@ sub lineitem_detail_CUD_batch {
                 create_lineitem_detail_debit($mgr, $li, $lid, 0, 1) or return $e->die_event;
             }
 
-        } elsif($lid->ischanged) {
-            return $evt if $evt = handle_changed_lid($e, $lid, $dry_run, $fund_cache);
-
         } elsif($lid->isdeleted) {
             delete_lineitem_detail($mgr, $lid) or return $e->die_event;
+
+        } elsif($lid->ischanged) {
+            return $evt if $evt = handle_changed_lid($e, $lid, $dry_run, $fund_cache);
         }
 
         $mgr->respond(li => $li);
@@ -2302,7 +2412,10 @@ sub receive_lineitem_batch_api {
             'RECEIVE_PURCHASE_ORDER', $li->purchase_order->ordering_agency
         );
 
-        receive_lineitem($mgr, $li_id) or return $e->die_event;
+        # Editor may have no die_event to return
+        receive_lineitem($mgr, $li_id) or return 
+            $e->die_event || OpenILS::Event->new('ACQ_LI_RECEIVE_FAILED');
+
         $mgr->respond;
     }
 
@@ -2490,7 +2603,12 @@ sub rollback_receive_lineitem_batch_api {
         return $e->die_event unless
             $e->allowed('RECEIVE_PURCHASE_ORDER', $po->ordering_agency);
 
-        $li = rollback_receive_lineitem($mgr, $li_id) or return $e->die_event;
+        unless ($li = rollback_receive_lineitem($mgr, $li_id)) {
+            return (
+                $e->die_event || # may not be an event here
+                OpenILS::Event->new('ACQ_LI_ROLLBACK_RECEIVE_FAILED')
+            );
+        }
 
         my $result = {"li" => {$li->id => {"state" => $li->state}}};
         if ($po->state eq "received") { # should happen first time, not after
@@ -2692,12 +2810,14 @@ sub delete_picklist_api {
 
 __PACKAGE__->register_method(
     method   => 'activate_purchase_order',
-    api_name => 'open-ils.acq.purchase_order.activate.dry_run'
+    api_name => 'open-ils.acq.purchase_order.activate.dry_run',
+    max_bundle_count => 1
 );
 
 __PACKAGE__->register_method(
     method    => 'activate_purchase_order',
     api_name  => 'open-ils.acq.purchase_order.activate',
+    max_bundle_count => 1,
     signature => {
         desc => q/Activates a purchase order.  This updates the status of the PO / .
                 q/and Lineitems to 'on-order'.  Activated PO's are ready for EDI delivery if appropriate./,
@@ -2780,6 +2900,17 @@ sub activate_purchase_order_impl {
         create_lineitem_debits($mgr, $li, $options) or return $e->die_event;
         update_lineitem($mgr, $li) or return $e->die_event;
         $mgr->post_process( sub { create_lineitem_status_events($mgr, $li->id, 'aur.ordered'); });
+
+        # -----------------------------------------------
+        # KCLS create lineitem note containing PO activator
+        my $note = Fieldmapper::acq::lineitem_note->new;
+        $note->lineitem($li->id);
+        $note->creator($e->requestor->id);
+        $note->editor($e->requestor->id);
+        $note->value('ordered: ' . $e->requestor->usrname);
+        $e->create_acq_lineitem_note($note) or return $e->die_event;
+        # -----------------------------------------------
+
         $mgr->respond;
     }
 
@@ -3159,6 +3290,16 @@ sub cancel_lineitem {
 
     $li->state("cancelled");
     $li->cancel_reason($cancel_reason->id);
+
+    # KCLS add cancelation note ------
+    my $e = $mgr->editor;
+    my $note = Fieldmapper::acq::lineitem_note->new;
+    $note->lineitem($li->id);
+    $note->creator($e->requestor->id);
+    $note->editor($e->requestor->id);
+    $note->value('canceled: ' . $e->requestor->usrname);
+    $e->create_acq_lineitem_note($note) or return 0;
+    # ------------
 
     my $lids = $mgr->editor->search_acq_lineitem_detail([{
         "lineitem" => $li_id
@@ -3939,30 +4080,8 @@ sub po_note_CUD_batch {
 # retrieves a lineitem, fleshes its PO and PL, checks perms
 # returns ($li, $evt, $org)
 sub fetch_and_check_li {
-    my $e = shift;
-    my $li_id = shift;
-    my $perm_mode = shift || 'read';
-
-    my $li = $e->retrieve_acq_lineitem([
-        $li_id,
-        {   flesh => 1,
-            flesh_fields => {jub => ['purchase_order', 'picklist']}
-        }
-    ]) or return (undef, $e->die_event);
-
-    my $org;
-    if(my $po = $li->purchase_order) {
-        $org = $po->ordering_agency;
-        my $perms = ($perm_mode eq 'read') ? 'VIEW_PURCHASE_ORDER' : 'CREATE_PURCHASE_ORDER';
-        return ($li, $e->die_event) unless $e->allowed($perms, $org);
-
-    } elsif(my $pl = $li->picklist) {
-        $org = $pl->org_unit;
-        my $perms = ($perm_mode eq 'read') ? 'VIEW_PICKLIST' : 'CREATE_PICKLIST';
-        return ($li, $e->die_event) unless $e->allowed($perms, $org);
-    }
-
-    return ($li, undef, $org);
+    my ($e, $li_id, $perm_mode) = @_;
+    return $AC->fetch_and_check_li($e, $li_id, $perm_mode);
 }
 
 
@@ -4317,47 +4436,375 @@ sub li_existing_copies {
     my ($self, $client, $auth, $li_id) = @_;
     my $e = new_editor("authtoken" => $auth);
     return $e->die_event unless $e->checkauth;
+    return $AC->li_existing_copies($e, $li_id);
+}
 
-    my ($li, $evt, $org) = fetch_and_check_li($e, $li_id);
-    return 0 if $evt;
+__PACKAGE__->register_method(
+    method     => 'transfer_lineitem',
+    api_name   => 'open-ils.acq.lineitem.transfer_to_bib',
+    signature  => {
+        desc   => q/Transfers a lineitem and all associated 
+                    assets to a different target bib record /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'The lineitem id', type => 'number'},
+            {desc => 'The target bib record id', type => 'number'},
+        ],
+        return => {desc => q/Updated lineitem on success, event on error/}
+    }
+);
 
-    # No fuzzy matching here (e.g. on ISBN).  Only exact matches are supported.
-    return 0 unless $li->eg_bib_id;
+sub transfer_lineitem {
+    my($self, $conn, $auth, $li_id, $bib_id, $ops) = @_;
+    $ops ||= {}; # future use
 
-    my $counts = $e->json_query({
-        select => {acp => [{
-            column => 'id', 
-            transform => 'count', 
-            aggregate => 1
-        }]},
-        from => {
-            acp => {
-                acqlid => {
-                    fkey => 'id',
-                    field => 'eg_copy_id',
-                    type => 'left'
-                },
-                acn => {join => {bre => {}}}
-            }
-        },
-        where => {
-            '+bre' => {id => $li->eg_bib_id},
-            # don't count copies linked to the lineitem in question
-            '+acqlid' => {
-                '-or' => [
-                    {lineitem => undef},
-                    {lineitem => {'<>' => $li_id}}
-                ]
-            },
-            '+acn' => {
-                owning_lib => $U->get_org_descendants($org)
-            },
-            # NOTE: should the excluded copy statuses be an AOUS?
-            '+acp' => {status => {'not in' => [3, 4, 13, 17]}}
-        }
+    my $e = new_editor(authtoken=>$auth, xact=>1);
+    return $e->die_event unless $e->checkauth;
+
+    my ($li, $evt, $perm_org) = fetch_and_check_li($e, $li_id, 'write');
+    return $evt if $evt;
+
+    my $orig_bib_id = $li->eg_bib_id; # capture for later.
+
+    if ($orig_bib_id eq $bib_id) {
+        # Transferring to the same bib.  Nothing to do.
+        $e->rollback;
+        return $li;
+    }
+
+    # Sanity check the target bib.
+    
+    my $bre = $e->retrieve_biblio_record_entry($bib_id) 
+        or return $e->die_event;
+
+    if ($U->is_true($bre->deleted)) {
+        $e->rollback;
+        return OpenILS::Event->new(
+            'BAD_PARAMS', {note => 'Target bib is deleted'});
+    }
+
+    # Point the lineitem at the selected bib record.  Note this will
+    # work even if the lineitem is not currently pointing at any bib
+    # record.  IOW, this could be used to manually link LI's to bibs.
+
+    $li->eg_bib_id($bib_id);
+    $li->edit_time('now');
+    $li->editor($e->requestor->id);
+    $e->update_acq_lineitem($li) or return $e->die_event;
+
+
+    # Transfer any asset.call_number's (with their linked asset.copy's) 
+    # that were created for this lineitem to the new bib record.
+    my $acp_ids = $e->json_query({
+        select => {acqlid => ['eg_copy_id']},
+        from => 'acqlid',
+        where => {lineitem => $li_id}
     });
 
-    return $counts->[0]->{id};
+    if (@$acp_ids) {
+
+        my $copies = $e->search_asset_copy(
+            {id => [map {$_->{eg_copy_id}} @$acp_ids]});
+
+        # Group copies into call number batches so each call number can
+        # be assessed and processed once.
+        my %cn_batches;
+        for my $copy (@$copies) {
+            my $cn_id = $copy->call_number;
+            $cn_batches{$cn_id} = [] unless $cn_batches{$cn_id};
+            push(@{$cn_batches{$cn_id}}, $copy);
+        }
+
+        while (my ($cn_id, $cn_copies) = each %cn_batches) {
+            my $evt = transfer_order_volume($e, $bib_id, $cn_id, $cn_copies);
+            return $evt if $evt;
+        }
+
+        # Transfer parts as needed to the target bib record.
+        my $part_maps = $e->search_asset_copy_part_map([   
+            {target_copy => [map {$_->id} @$copies]},
+            {flesh => 1, flesh_fields => {acpm => ['part']}}
+        ]);
+
+        for my $map (@$part_maps) {
+            my $evt = transfer_order_copy_parts($e, $bib_id, $map);
+            return $evt if $evt;
+        }
+    }
+
+    $e->commit;
+
+    return $li;
+}
+
+# Transfer copy part map from the source bib to the target bib
+# If a part exists on the target bib with the same label, use it.
+# Otherwise, create a new part linked to the target bib to be used
+# by the migrated copy.
+#
+# Returns undef on success, event on error.
+sub transfer_order_copy_parts {
+    my ($e, $bib_id, $map) = @_;
+
+    # See if the same part exists on the target bib.
+    my $existing = $e->search_biblio_monograph_part({
+        record => $bib_id, 
+        label => $map->part->label, 
+        deleted => 'f'
+    })->[0];
+
+    if ($existing) {
+        # matching part exists on target record. 
+        # Teach existing copy part map to use it.
+
+        $map->part($existing->id);
+
+    } else { 
+        # No matching part exists on the target record.
+        # Create one and teach the existing copy part map to use it.
+
+        my $new_part = Fieldmapper::biblio::monograph_part->new;
+        $new_part->record($bib_id);
+        $new_part->label($map->part->label);
+        $new_part->label_sortkey($map->part->label_sortkey);
+        $e->create_biblio_monograph_part($new_part) or return $e->die_event;
+
+        $map->part($new_part->id);
+    }
+
+    $e->update_asset_copy_part_map($map) or return $e->die_event;
+
+    return undef;
+}
+
+# 1. If every copy linked to the CN is represented by ordered copies
+# -- the ones we're processing here -- then transfer the call number
+# wholesale to the new bib record.
+#
+# 2. Otherwise, find-or-create a like call number for the target
+# bib record and update the ordered copies to use the new/found
+# call number.
+#
+# Returns undef on success, event on error.
+sub transfer_order_volume {
+    my ($e, $bib_id, $cn_id, $cn_copies) = @_;
+
+    my $cn = $e->retrieve_asset_call_number($cn_id) or return $e->die_event;
+
+    my $copy_count = $e->json_query({
+        select => {acp => [{
+            aggregate => 1, 
+            transform => 'count',
+            column => 'id'
+        }]},
+        from => 'acp',
+        where => {call_number => $cn_id}
+    })->[0];
+
+    my $target_cn;
+    my $evt;
+
+    if ($copy_count->{count} == scalar(@$cn_copies)) {
+        # Order copies represent all copies linked to the callnumber
+        # See if a matching CN exists at the target bib and, if so,
+        # transfer our copies to the existing CN.  Otherwise,
+        # simply point our call number at the new bib.
+
+        # See if a matching CN already exists at the target bib
+        $target_cn = OpenILS::Application::Cat::AssetCommon->volume_exists(
+            $e, $bib_id, $cn->label, $cn->owning_lib, $cn->prefix, $cn->suffix
+        );
+
+        if ($target_cn) {
+            # We are transferring all attached copies to the matching
+            # callnumber on the target bib.  This call number is no 
+            # longer needed.  Delete it.
+            $evt = OpenILS::Application::Cat::AssetCommon->delete_volume(
+                $e, $cn, 
+                1, # override
+                0, # delete copies
+                1  # skip copy checks
+            );
+
+            return $evt if $evt;
+
+        } else {
+            # No matching CN exists.  Point our CN at the target bib.
+            $cn->record($bib_id);
+            $cn->edit_date('now');
+            $cn->editor($e->requestor->id);
+            $e->update_asset_call_number($cn) or return $e->die_event;
+            return undef; # all done
+        }
+    }
+
+    # Copies need to be migrated to the target call number.
+
+    ($target_cn, $evt) = 
+        OpenILS::Application::Cat::AssetCommon->find_or_create_volume(
+            $e, $cn->label, $bib_id, $cn->owning_lib, 
+            $cn->prefix, $cn->suffix, $cn->label_class
+        ) unless $target_cn;
+
+    return $evt if $evt;
+
+    # ... transfer copies.
+    # Transfer order copies to the new call number.
+    for my $copy (@$cn_copies) {
+        $copy->call_number($target_cn->id);
+        $copy->edit_date('now');
+        $copy->editor($e->requestor->id);
+        $e->update_asset_copy($copy) or return $e->die_event;
+    }
+
+    return undef;
+}
+
+
+__PACKAGE__->register_method(
+    method => 'asn_receive_items',
+    api_name => 'open-ils.acq.shipment_notification.receive_items',
+    max_bundle_count => 1,
+    signature => {
+        desc => q/
+            Mark items from a shipment notification as received.
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Shipment Notification ID', type => 'number'}
+        ],
+        return => {desc => q/Stream of status updates, event on error/}
+    }
+);
+
+__PACKAGE__->register_method(
+    method => 'asn_receive_items',
+    api_name => 'open-ils.acq.shipment_notification.receive_items.dry_run',
+    max_bundle_count => 1,
+    signature => q/dry_run variant of open-ils.acq.shipment_notification.receive_items/
+);
+
+sub asn_receive_items {
+    my ($self, $client, $auth, $asn_id) = @_;
+
+    my $e = new_editor(xact => 1, authtoken => $auth);
+    return $e->die_event unless $e->checkauth;
+
+    my $mgr = OpenILS::Application::Acq::BatchManager->new(
+        editor => $e, conn => $client, throttle => 1);
+
+    my $asn = $e->retrieve_acq_shipment_notification([$asn_id, 
+        {flesh => 1, flesh_fields => {acqsn => ['provider', 'entries']}}
+    ]) || return $e->die_event;
+
+    return $e->die_event unless 
+        $e->allowed('MANAGE_SHIPMENT_NOTIFICATION', $asn->provider->owner);
+
+    my $resp = {
+        lineitems => [],
+        progress => 0,
+    };
+
+    my @entries = sort {$a->lineitem cmp $b->lineitem} @{$asn->entries};
+
+    for my $entry (@entries) {
+
+        my $li = $e->retrieve_acq_lineitem($entry->lineitem)
+            or return $e->die_event;
+
+        my $li_resp = {
+            id => $entry->lineitem, 
+            po => $li->purchase_order, 
+            lids => []
+        };
+
+        push(@{$resp->{lineitems}}, $li_resp);
+            
+        # Include canceled items.
+        my $lids = $e->search_acq_lineitem_detail([{  
+            lineitem => $entry->lineitem, 
+            recv_time => undef
+        }, {   
+            flesh => 1,
+            flesh_fields => {
+                acqlid => ['cancel_reason', 'owning_lib'],
+            }
+        }]);
+
+        # Start by receiving un-canceled items, followed by "delayed" 
+        # items, in case it comes to that.
+        # KCLS JBAS-3045 Sort each sub-group by owning lib.
+
+        my @active_lids = 
+            sort {$a->owning_lib->shortname cmp $b->owning_lib->shortname} 
+            grep {!$_->cancel_reason} 
+            @$lids;
+
+        my @canceled_lids = 
+            sort {$a->owning_lib->shortname cmp $b->owning_lib->shortname} 
+            grep { $_->cancel_reason && $U->is_true($_->cancel_reason->keep_debits) } 
+            @$lids;
+
+        my @potential_lids = (@active_lids, @canceled_lids);
+
+        if (scalar(@potential_lids) < $entry->item_count) {
+            $logger->warn(sprintf(
+                "ASN $asn_id entry %d found %d receivable items for lineitem %d, but wanted %d",
+                $entry->id, scalar(@potential_lids), $entry->lineitem, $entry->item_count
+            ));
+        }
+
+        my $s = '';
+        $s .= $_->id . ':' . $_->owning_lib->shortname . ' ' for @potential_lids;
+        $logger->info("ASN receiving items: $s");
+
+        my $copy_stat = $U->ou_ancestor_setting_value(
+            $e->requestor->ws_ou, 'acq.copy_status_on_asn_receiving', $e);
+
+        my $recv_count = 0;
+
+        for my $lid (@potential_lids) {
+
+            return $e->die_event unless 
+                receive_lineitem_detail($mgr, $lid->id, 0, $copy_stat);
+
+            # Get an updated copy to pick up the recv_time
+            $lid = $e->retrieve_acq_lineitem_detail($lid->id);
+
+            my $note = $lid->note ? $lid->note . "\n" : '';
+            $note .= "Received via shipment notification #$asn_id";
+            $lid->note($note);
+
+            $e->update_acq_lineitem_detail($lid) or return $e->die_event;
+
+            push(@{$li_resp->{lids}}, $lid->id);
+            $resp->{progress}++;
+            $client->respond($resp);
+
+            last if ++$recv_count >= $entry->item_count;
+        }
+
+        if ($recv_count > 0) {
+            my $evt = create_li_recv_note($mgr, $entry->lineitem, 1);
+            return $evt if $evt;
+        }
+    }
+
+    $asn->process_date('now');
+    $asn->processed_by($e->requestor->id);
+
+    return $e->die_event unless $e->update_acq_shipment_notification($asn);
+
+    if ($self->api_name =~ /dry_run/) {
+        $e->rollback;
+    } else {
+        $e->commit;
+    }
+
+    $resp->{complete} = 1;
+    $client->respond_complete($resp);
+
+    undef;
 }
 
 

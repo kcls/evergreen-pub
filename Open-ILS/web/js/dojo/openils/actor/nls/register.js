@@ -20,7 +20,7 @@
     "USER_SETTINGS" : "User Settings",
     "ADDRESS_HEADER" : "Address",
     "ADDRESS_MAILING" : "Mailing",
-    "ADDRESS_BILLING" : "Billing",
+    "ADDRESS_BILLING" : "Residence",
     "ADDRESS_PENDING" : "This is a pending address: ",
     "ADDRESS_APPROVE" : "Approve Address",
     "ADDRESS_OWNED" : "This address is owned by another user: ",

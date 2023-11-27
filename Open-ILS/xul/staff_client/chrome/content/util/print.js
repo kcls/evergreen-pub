@@ -108,8 +108,100 @@ util.print.prototype = {
         if (typeof data != 'string') { return data; }
         return data.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     },
+'simple' : function(msg,params) {
+        try {
+            if (!params) params = {};
+            params.msg = msg;
 
-    'simple' : function(msg,params) {
+            var obj = this;
+
+            obj.data.last_print = js2JSON({ 'msg' : msg, 'params' : params, 'context' : this.context});
+            obj.data.stash('last_print');
+
+            var silent = false;
+            if ( params && params.no_prompt && (params.no_prompt == true || params.no_prompt == 'true') ) {
+                silent = true;
+            }
+
+            var content_type;
+            if (params && params.content_type) {
+                content_type = params.content_type;
+            } else {
+                content_type = 'text/html';
+            }
+
+            var w;
+
+            netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+            obj.data.init({'via':'stash'});
+
+            if (typeof obj.data.print_strategy == 'undefined') {
+                obj.data.print_strategy = {};
+                obj.data.stash('print_strategy');
+            }
+
+            if (params.print_strategy || obj.data.print_strategy[obj.context] || obj.data.print_strategy['default']) {
+
+                switch(params.print_strategy || obj.data.print_strategy[obj.context] || obj.data.print_strategy['default']) {
+                    case 'dos.print':
+                        params.dos_print = true;
+                    case 'custom.print':
+                        /* FIXME - this it a kludge.. we're going to sidestep window-based html rendering for printing */
+                        /* I'm using regexps to mangle the html receipt templates; it'd be nice to use xsl but the */
+                        /* templates aren't guaranteed to be valid xml.  The unadulterated msg is still preserved in */
+                        /* params */
+                        if (content_type=='text/html') {
+                            w = obj.html2txt(msg);
+                        } else {
+                            w = msg;
+                        }
+                        if (! params.no_form_feed) { w = w + '\f'; }
+                        obj.NSPrint(w, silent, params);
+                        return;
+                    break;
+                }
+            }
+
+            switch(content_type) {
+                case 'text/html' :
+                    var jsrc = 'data:text/javascript,' + window.escape('var params = { "data" : ' + js2JSON(params.data) + ', "list" : ' + js2JSON(params.list) + '}; function my_init() { if (typeof go_print == "function") { go_print(); } else { setTimeout( function() { if (typeof go_print == "function") { alert("Please tell the developers that the 2-second go_print workaround executed, and let them know whether this job printed successfully.  Thanks!"); go_print(); } else { alert("Please tell the developers that the 2-second go_print workaround did not work.  We will try to print one more time; there have been reports of wasted receipt paper at this point.  Please check the settings in the print dialog and/or prepare to power off your printer.  Thanks!"); window.print(); } }, 2000 ); } /* FIXME - mozilla bug#301560 - xpcom kills it too */ }');
+                    var print_url = 'data:text/html,'
+                        + '<html id="top"><head><script src="/xul/server/main/JSAN.js"></script><script src="' + window.escape(jsrc) + '"></script></head>'
+                        + '<body onload="try{my_init();}catch(E){alert(E);}">' + window.escape(msg) + '</body></html>';
+                    w = obj.win.open(print_url,'receipt_temp','chrome,resizable');
+                    w.minimize();
+                    w.go_print = function() { 
+                        try {
+                            obj.NSPrint(w, silent, params);
+                        } catch(E) {
+                            obj.error.standard_unexpected_error_alert("Print Error in util.print.simple.  After this dialog we'll try a second print attempt. content_type = " + content_type,E);
+                            w.print();
+                        }
+                        w.minimize(); w.close();
+                    }
+                break;
+                default:
+                    w = obj.win.open('data:' + content_type + ',' + window.escape(msg),'receipt_temp','chrome,resizable');
+                    w.minimize();
+                    setTimeout(
+                        function() {
+                            try {
+                                obj.NSPrint(w, silent, params);
+                            } catch(E) {
+                                obj.error.standard_unexpected_error_alert("Print Error in util.print.simple.  After this dialog we'll try a second print attempt. content_type = " + content_type,E);
+                                w.print();
+                            }
+                            w.minimize(); w.close();
+                        }, 1000
+                    );
+                break;
+            }
+
+        } catch(E) {
+            this.error.standard_unexpected_error_alert('util.print.simple',E);
+        }
+    },
+    'simple_new' : function(msg,params) {
         try {
             if (!params) params = {};
             params.msg = msg;
@@ -164,6 +256,11 @@ util.print.prototype = {
 
             switch(content_type) {
                 case 'text/html' :
+				var jsrc = 'data:text/javascript,' + window.escape('var params = window.arguments[0]; window.go_print = window.arguments[1];');
+                   var print_url = 'data:text/html,'
+                       + '<html id="top"><head><script src="/xul/server/main/JSAN.js"></script><script src="' + window.escape(jsrc) + '"></script></head>'
+                     + '<body onload="try{go_print();}catch(E){alert(E);}">' + window.escape(msg) + '</body></html>';
+/* temporary backport to re-enable javascript templates
                     if(!params.type) {
                         params.type = '';
                     }
@@ -184,6 +281,8 @@ util.print.prototype = {
                     }
                     print_url += '</head><body onload="try{print_init(\'' + params.type + '\');}catch(E){alert(E);}">' + msg.replace(/<script[^>]*>.*?<\/script>/gi,'') + '</body></html>';
                     print_url = 'data:text/html;charset=utf-8,' + encodeURIComponent(print_url);
+*/
+
                     obj.win.openDialog(print_url,'receipt_temp','chrome,resizable,modal', { "data" : params.data, "list" : params.list}, function(w) { 
                         try {
                             obj.NSPrint(w, silent, params);
@@ -289,12 +388,13 @@ util.print.prototype = {
             }
         }
         if (params.footer) s += this.template_sub( params.footer, cols, params );
-
+/* Insanity Check - temporary backport to re-enable javascript templates
         // Sanity check, no javascript in templates
         // Note: [\s\S] is a workaround for . not including newlines.
         s=s.replace(/<script[^>]*>[\s\S]*?<\/script[^>]*>/gi,'')
         s=s.replace(/onload\s*=\s*"[^"]*"/gi,'');
         s=s.replace(/onload\s*=\s*'[^']*'/gi,'');
+*/
 
         if (params.sample_frame) {
             var jsrc = 'data:text/javascript,' + encodeURIComponent('var params = { "data" : ' + js2JSON(params.data) + ', "list" : ' + js2JSON(params.list) + '};');
@@ -302,7 +402,6 @@ util.print.prototype = {
         } else {
             this.simple(s,params);
         }
-        if(this.context != this.default_context) this.set_context(this.default_context);
     },
 
     'template_sub' : function( msg, cols, params ) {
@@ -334,8 +433,12 @@ util.print.prototype = {
 
             try{b = s; s = s.replace(/%patron_barcode%/g,this.escape_html(params.patron_barcode));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
+			try{b = s; s = s.replace(/%recurring_fine_rule%/g,this.escape_html(params.row.recurring_fine_rule));}
+				catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
 
             try{b = s; s = s.replace(/%LIBRARY%/g,this.escape_html(params.lib.name()));}
+                catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
+            try{b = s; s = s.replace(/%LIBRARY_PHONE%/g,this.escape_html(params.lib.phone()));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s = s.replace(/%PINES_CODE%/g,this.escape_html(params.lib.shortname()));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
@@ -353,6 +456,8 @@ util.print.prototype = {
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s = s.replace(/%PATRON_ALIAS_OR_FIRSTNAME%/g,this.escape_html((params.patron.alias() == '' || params.patron.alias() == null) ? params.patron.first_given_name() : params.patron.alias()));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
+	        try{b = s; s = s.replace(/%PATRON_ALIAS_OR_FIRSTNAME_ABBR%/,(params.patron.alias() == '' || params.patron.alias() == null) ? params.data['hold_for_first_given_name'].substr(0,3).toUpperCase() : params.patron.alias());}
+                catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s = s.replace(/%PATRON_ALIAS%/g,this.escape_html((params.patron.alias() == '' || params.patron.alias() == null) ? '' : params.patron.alias()));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s = s.replace(/%PATRON_FIRSTNAME%/g,this.escape_html(params.patron.first_given_name()));}
@@ -360,6 +465,12 @@ util.print.prototype = {
             try{b = s; s = s.replace(/%PATRON_MIDDLENAME%/g,this.escape_html(params.patron.second_given_name() || ''));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s = s.replace(/%PATRON_LASTNAME%/g,this.escape_html(params.patron.family_name()));}
+                catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
+            try{b = s; s = s.replace(/%PATRON_HOLD_LASTNAME_ABBR%/,(params.data['hold_for_family_name'].substr(0,4).toUpperCase()));}
+                catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
+            try{b = s; s = s.replace(/%PATRON_HOLD_FIRSTNAME_ABBR%/,(params.data['hold_for_first_given_name'].substr(0,3).toUpperCase()));}
+                catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');} 
+            try{b = s; s = s.replace(/%PATRON_ID%/,params.patron.a[28]);}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s = s.replace(/%PATRON_BARCODE%/g,this.escape_html(typeof params.patron.card() == 'object' ? params.patron.card().barcode() : util.functional.find_id_object_in_list( params.patron.cards(), params.patron.card() ).barcode() )) ;}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
@@ -388,6 +499,8 @@ util.print.prototype = {
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
             try{b = s; s=s.replace(/%TODAY_F%/g,(util.date.formatted_date(new Date(),'%F')));}
                 catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
+            try{b = s; s=s.replace(/%TODAY_MMM%/g,(util.date.formatted_date(new Date(),'%MMM %d, %Y')));}         
+                catch(E){s = b; this.error.sdump('D_WARN','string = <' + s + '> error = ' + js2JSON(E)+'\n');}
 
             try {
                 if (typeof params.row != 'undefined') {
@@ -401,9 +514,38 @@ util.print.prototype = {
                     } else { 
                         /* for dump_with_keys */
                         for (var i in params.row) {
+
+                                // some legacy data has NULL values where empty 
+                                // strings should be.  This dies on .toString().
+                                if (params.row[i] == null) params.row[i] = '';
+
+                                switch(i) {         
+                                case "due_date":          
+                                    var re = new RegExp('%'+i+'%',"g");           
+                                    try{b = s; s=s.replace(re, params.row[i]);}           
+                                        catch(E){s = b; this.error.standard_unexpected_error_alert('print.js, template_sub(): 2 string = <' + s + '>',E);}        
+                                    var re =  RegExp('%due_date_EN%',"g");        
+                                    var s1 = params.row[i].replace(/-/gi, '/');           
+                                             
+                                    var s2 = new Date(s1);        
+                                    var s3 = util.date.formatted_date(s2, '%MMM %d, %Y');         
+                                             
+                                    var new_date_today = new Date(Date.now());
+                                    var one_day = (util.date.interval_to_seconds('1 day')*1000);
+                                    var diff_days = (s2 - new_date_today);
+                                    if (diff_days < one_day){
+                                        s3 = util.date.formatted_date(s2, '%MMM %d, %Y %I:%M');
+                                    }
+                                    try{b = s; s=s.replace(re, this.escape_html(s3));}          
+                                        catch(E){s = b; this.error.standard_unexpected_error_alert('print.js, template_sub(): 2 string = <' + s + '>',E);}        
+
+                                break;        
+                                default:          
                             var re = new RegExp('%'+i+'%',"g");
                             try{b = s; s=s.replace(re, this.escape_html(params.row[i].toString()));}
                                 catch(E){s = b; this.error.standard_unexpected_error_alert('print.js, template_sub(): 2 string = <' + s + '>',E);}
+                                break;
+							}
                         }
                     }
                 }

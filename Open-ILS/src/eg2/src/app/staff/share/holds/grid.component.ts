@@ -1,14 +1,19 @@
-import {Component, OnInit, Input, ViewChild} from '@angular/core';
-import {Observable, Observer, of} from 'rxjs';
+import {Component, OnInit, Input, Output, EventEmitter, ViewChild} from '@angular/core';
+import {Location} from '@angular/common';
+import {Observable, Observer, empty, of, from} from 'rxjs';
+import {concatMap, tap, last} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
 import {AuthService} from '@eg/core/auth.service';
+import {EventService} from '@eg/core/event.service';
 import {Pager} from '@eg/share/util/pager';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {GridDataSource, GridColumn, GridCellTextGenerator} from '@eg/share/grid/grid';
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {ProgressDialogComponent} from '@eg/share/dialog/progress.component';
+import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
+import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
 import {MarkDamagedDialogComponent
     } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
@@ -20,8 +25,12 @@ import {HoldRetargetDialogComponent
 import {HoldTransferDialogComponent} from './transfer-dialog.component';
 import {HoldCancelDialogComponent} from './cancel-dialog.component';
 import {HoldManageDialogComponent} from './manage-dialog.component';
-import {PrintService} from '@eg/share/print/print.service';
+import {PrintService, HATCH_BROWSER_PRINTING_PRINTER} from '@eg/share/print/print.service';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
+import {HoldsService} from './holds.service';
+import {PcrudService} from '@eg/core/pcrud.service';
+import {StringComponent} from '@eg/share/string/string.component';
+import {ToastService} from '@eg/share/toast/toast.service';
 
 /** Holds grid with access to detail page and other actions */
 
@@ -31,16 +40,32 @@ import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 })
 export class HoldsGridComponent implements OnInit {
 
+    // Hide the "Holds Count" header
+    @Input() hideHoldsCount = false;
+
+    @Input() hidePrintOption = false;
+
+    @Input() disablePaging = false;
+
     // If either are set/true, the pickup lib selector will display
     @Input() initialPickupLib: number | IdlObject;
     @Input() hidePickupLibFilter: boolean;
 
-    // Setting a value here puts us into "pull list" mode.
-    @Input() pullListOrg: number;
+    // Optionally override the default grid page size
+    @Input() pageSize: number = null;
 
     // If true, only retrieve holds with a Hopeless Date
     // and enable related Actions
     @Input() hopeless: boolean;
+
+    // Setting a value here puts us into "pull list" mode.
+    @Input() pullListOrg: number;
+
+    // Setting a value here puts us into "holds shelf" mode.
+    @Input() shelfOrg: number;
+
+    // Limit to clearable holds for hold shelf clearing
+    @Input() showClearable = false;
 
     // Grid persist key
     @Input() persistKey: string;
@@ -48,6 +73,10 @@ export class HoldsGridComponent implements OnInit {
     @Input() preFetchSetting: string;
 
     @Input() printTemplate: string;
+
+    // Adds a Place Hold grid toolbar button that emits
+    // placeHoldRequested on click.
+    @Input() showPlaceHoldButton = false;
 
     // If set, all holds are fetched on grid load and sorting/paging all
     // happens in the client.  If false, sorting and paging occur on
@@ -62,6 +91,14 @@ export class HoldsGridComponent implements OnInit {
     // To pass through to the underlying eg-grid
     @Input() showFields: string;
 
+    // If true, avoid popping up the progress dialog.  Note the grid
+    // has it's own generic embedded 'loading' progress indicator.
+    @Input() noLoadProgress = false;
+
+    // Some default columns and actions do or don't make sense when
+    // displaying holds for a specific patron vs. e.g. a specific title.
+    @Input() patronFocused = false;
+
     // Display bib record summary along the top of the detail page.
     @Input() showRecordSummary = false;
 
@@ -69,11 +106,15 @@ export class HoldsGridComponent implements OnInit {
     initDone = false;
     holdsCount: number;
     pickupLib: IdlObject;
-    plCompLoaded = false;
+    orgSelectLoaded = false;
     gridDataSource: GridDataSource;
     detailHold: any;
     editHolds: number[];
     transferTarget: number;
+    uncancelHoldCount: number;
+    clearHoldsActions: {[id: number]: string} = {};
+    clearHoldsExecuted = false;
+    disablePrint = false;
 
     @ViewChild('holdsGrid', { static: false }) private holdsGrid: GridComponent;
     @ViewChild('progressDialog', { static: true })
@@ -92,6 +133,14 @@ export class HoldsGridComponent implements OnInit {
         private cancelDialog: HoldCancelDialogComponent;
     @ViewChild('manageDialog', { static: true })
         private manageDialog: HoldManageDialogComponent;
+    @ViewChild('uncancelDialog') private uncancelDialog: ConfirmDialogComponent;
+
+    @ViewChild('postClearShelf') postClearShelf: StringComponent;
+    @ViewChild('postClearHold') postClearHold: StringComponent;
+    @ViewChild('postClearTransit') postClearTransit: StringComponent;
+    @ViewChild('postClearPlChanged') postClearPlChanged: StringComponent;
+    @ViewChild('uncancelFail') uncancelFail: AlertDialogComponent;
+    @ViewChild('uncancelSuccess') uncancelSuccess: StringComponent;
 
     // Bib record ID.
     _recordId: number;
@@ -102,23 +151,23 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
-    _userId: number;
-    @Input() set userId(id: number) {
-        this._userId = id;
+    get recordId(): number {
+        return this._recordId;
+    }
+
+    _patronId: number;
+    @Input() set patronId(id: number) {
+        this._patronId = id;
         if (this.initDone) {
             this.holdsGrid.reload();
         }
     }
-
-    // Include holds canceled on or after the provided date.
-    // If no value is passed, canceled holds are not displayed.
-    _showCanceledSince: Date;
-    @Input() set showCanceledSince(show: Date) {
-        this._showCanceledSince = show;
-        if (this.initDone) { // reload on update
-            this.holdsGrid.reload();
-        }
+    get patronId(): number {
+        return this._patronId;
     }
+
+    // If true, show recently canceled holds only.
+    @Input() showRecentlyCanceled = false;
 
     // Include holds fulfilled on or after hte provided date.
     // If no value is passed, fulfilled holds are not displayed.
@@ -128,6 +177,9 @@ export class HoldsGridComponent implements OnInit {
         if (this.initDone) { // reload on update
             this.holdsGrid.reload();
         }
+    }
+    get showFulfilledSince(): Date {
+        return this._showFulfilledSince;
     }
 
 
@@ -151,12 +203,20 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
+    // Notify the caller the place hold button was clicked.
+    @Output() placeHoldRequested: EventEmitter<void> = new EventEmitter<void>();
+
     constructor(
+        private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
+        private pcrud: PcrudService,
         private store: ServerStoreService,
         private auth: AuthService,
+        private evt: EventService,
         private printer: PrintService,
+        private toast: ToastService,
+        private holds: HoldsService,
         private holdings: HoldingsService
     ) {
         this.gridDataSource = new GridDataSource();
@@ -171,6 +231,12 @@ export class HoldsGridComponent implements OnInit {
             this.store.getItem(this.preFetchSetting).then(
                 applied => this.enablePreFetch = Boolean(applied)
             );
+        } else {
+            this.enablePreFetch = false;
+        }
+
+        if (this.showClearable) {
+            this.disablePrint = true;
         }
 
         if (!this.defaultSort) {
@@ -184,6 +250,11 @@ export class HoldsGridComponent implements OnInit {
                     {name: 'ancs_label', dir: 'asc'} // NOTE: API typo "ancs"
                 ];
 
+            } else if (this.shelfOrg) {
+                this.defaultSort = [
+                    {name: 'shelf_expire_time', dir: 'asc', nulls: 'last'}
+                ];
+
             } else {
                 this.defaultSort = [{name: 'request_time', dir: 'asc'}];
             }
@@ -191,11 +262,12 @@ export class HoldsGridComponent implements OnInit {
 
         this.gridDataSource.getRows = (pager: Pager, sort: any[]) => {
 
-            if (!this.hidePickupLibFilter && !this.plCompLoaded) {
-                // When the pickup lib selector is active, avoid any
+            if (!this.orgSelectLoaded && (
+                !this.hidePickupLibFilter || this.shelfOrg || this.pullListOrg)) {
+                // When an org select is active, avoid any
                 // data fetches until it has settled on a default value.
                 // Once the final value is applied, its onchange will
-                // fire and we'll be back here with plCompLoaded=true.
+                // fire and we'll be back here with orgSelectLoaded=true.
                 return of([]);
             }
 
@@ -207,9 +279,8 @@ export class HoldsGridComponent implements OnInit {
         this.cellTextGenerator = {
             title: row => row.title,
             cp_barcode: row => (row.cp_barcode == null) ? '' : row.cp_barcode,
-            current_item: row => row.current_copy ? row.cp_barcode : '',
-            requested_item: row => this.isCopyHold(row) ? row.cp_barcode : '',
-            ucard_barcode: row => row.ucard_barcode
+            ucard_barcode: row => row.ucard_barcode,
+            hold_status: row => row.hold_status // TODO labels
         };
     }
 
@@ -227,6 +298,23 @@ export class HoldsGridComponent implements OnInit {
     pullListOrgChanged(org: IdlObject) {
         this.pullListOrg = org.id();
         this.holdsGrid.reload();
+    }
+
+    shelfOrgChanged(org: IdlObject) {
+        this.shelfOrg = org.id();
+        this.holdsGrid.reload();
+    }
+
+    setClearableFilter(clearable: boolean) {
+        this.showClearable = clearable;
+        this.holdsGrid.reload();
+
+        // When showing all holds, clear info for the previous clear
+        // holds shelf run.
+        if (!clearable) {
+            this.clearHoldsExecuted = false;
+            this.clearHoldsActions = {};
+        }
     }
 
     preFetchHolds(apply: boolean) {
@@ -251,10 +339,6 @@ export class HoldsGridComponent implements OnInit {
             filters.capture_time = null;
             filters.frozen = 'f';
 
-            // cp.* fields are set for copy-level holds even if they
-            // have no current_copy.  Make sure current_copy is set.
-            filters.current_copy = {'is not': null};
-
             // There are aliases for these (cp_status, cp_circ_lib),
             // but the API complains when I use them.
             filters['cp.status'] = [0, 7];
@@ -263,16 +347,36 @@ export class HoldsGridComponent implements OnInit {
             return filters;
         }
 
-        if (this._showFulfilledSince) {
-            filters.fulfillment_time = this._showFulfilledSince.toISOString();
-        } else {
+        if (this.shelfOrg) {
+
+            if (this.clearHoldsExecuted) {
+                // We just completed a Clear Holds Shelf.
+                // Display the just-cleared holds.
+                filters['h.id'] = Object.keys(this.clearHoldsActions);
+                return filters;
+            }
+
+            filters.is_staff_request = 'true';
+            filters.last_captured_hold = 'true';
+            filters.capture_time = {not: null};
+            filters.cs_id = 8; // On Holds Shelf
+            filters.cp_deleted = 'f';
             filters.fulfillment_time = null;
+            filters.current_shelf_lib = this.shelfOrg;
+
+            filters['cp.status'] = 8; // ON HOLDS SHELF
+
+            if (this.showClearable) {
+                filters.clear_me = 't';
+            }
+
+            return filters;
         }
 
-        if (this._showCanceledSince) {
-            filters.cancel_time = this._showCanceledSince.toISOString();
+        if (this.showFulfilledSince) {
+            filters.fulfillment_time = this.showFulfilledSince.toISOString();
         } else {
-            filters.cancel_time = null;
+            filters.fulfillment_time = null;
         }
 
         if (this.hopeless) {
@@ -301,12 +405,12 @@ export class HoldsGridComponent implements OnInit {
                 this.org.descendants(this.pickupLib, true);
         }
 
-        if (this._recordId) {
-            filters.record_id = this._recordId;
+        if (this.recordId) {
+            filters.record_id = this.recordId;
         }
 
-        if (this._userId) {
-            filters.usr_id = this._userId;
+        if (this.patronId) {
+            filters.usr_id = this.patronId;
         }
 
         return filters;
@@ -315,35 +419,73 @@ export class HoldsGridComponent implements OnInit {
     fetchHolds(pager: Pager, sort: any[]): Observable<any> {
 
         // We need at least one filter.
-        if (!this._recordId && !this.pickupLib && !this._userId && !this.pullListOrg) {
-            return of([]);
+        if (!this.recordId && !this.pickupLib && !this.patronId &&
+            !this.pullListOrg && !this.shelfOrg) {
+            return empty();
         }
 
         const filters = this.applyFilters();
-
         const orderBy: any = [];
+
+        if (this.clearHoldsExecuted &&
+            filters['h.id'] && filters['h.id'].length === 0) {
+            return empty();
+        }
+
         if (sort.length > 0) {
             sort.forEach(obj => {
                 const subObj: any = {};
-                subObj[obj.name] = {dir: obj.dir, nulls: 'last'};
+                let fieldName = obj.name;
+
+                if (fieldName === 'status_string') {
+                    // status_string is a locally derived value which
+                    // cannot be server-sorted.  Instead, sort by the
+                    // status number for consistent sort behavior and to
+                    // avoid API explosions
+                    fieldName = 'hold_status';
+                }
+
+                subObj[fieldName] = {dir: obj.dir, nulls: 'last'};
                 orderBy.push(subObj);
             });
+
+        } else if (this.pullListOrg) {
+            // TODO: can remove this?  should be covered by this.defaultSort
+            orderBy.push(
+                {copy_location_order_position: {dir: 'asc', nulls: 'last'}},
+                {acpl_name: {dir: 'asc', nulls: 'last'}},
+                {cn_label_sortkey: {dir: 'asc'}}
+            );
         }
 
         const limit = this.enablePreFetch ? null : pager.limit;
         const offset = this.enablePreFetch ? 0 : pager.offset;
+        const options: any = {};
+        if (this.showRecentlyCanceled) {
+            options.recently_canceled = true;
+
+        } else if (!this.shelfOrg) {
+            // A holds shelf may contain canceled holds.
+            filters.cancel_time = null;
+        }
 
         let observer: Observer<any>;
         const observable = new Observable(obs => observer = obs);
 
-        this.progressDialog.open();
+        if (!this.noLoadProgress) {
+            // Note remaining dialog actions have no impact
+            this.progressDialog.reset();
+            this.progressDialog.open();
+        }
+
         this.progressDialog.update({value: 0, max: 1});
+
         let first = true;
         let loadCount = 0;
         this.net.request(
             'open-ils.circ',
             'open-ils.circ.hold.wide_hash.stream',
-            this.auth.token(), filters, orderBy, limit, offset
+            this.auth.token(), filters, orderBy, limit, offset, options
         ).subscribe(
             holdData => {
 
@@ -352,6 +494,14 @@ export class HoldsGridComponent implements OnInit {
                     first = false;
 
                 } else { // Subsequent responses are hold data blobs
+
+                    if (holdData.tr_source) {
+                        holdData.tr_source = this.org.get(holdData.tr_source).shortname();
+                    }
+
+                    if (holdData.tr_source) {
+                        holdData.tr_dest = this.org.get(holdData.tr_dest).shortname();
+                    }
 
                     this.progressDialog.update(
                         {value: ++loadCount, max: this.holdsCount});
@@ -393,7 +543,19 @@ export class HoldsGridComponent implements OnInit {
     }
 
     showDetails(rows: any[]) {
+        if (!rows || rows.length == 0) {
+            rows = this.holdsGrid.context.getSelectedRows();
+        }
         this.showDetail(rows[0]);
+    }
+
+    showHoldsForTitle(rows: any[]) {
+        if (rows.length === 0) { return; }
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/catalog/record/${rows[0].record_id}/holds`);
+
+        window.open(url, '_blank');
     }
 
     showDetail(row: any) {
@@ -419,24 +581,44 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
-
-
     showRecentCircs(rows: any[]) {
-        const copyIds = Array.from(new Set( rows.map(r => r.cp_id).filter( cp_id => Boolean(cp_id)) ));
-        copyIds.forEach( copyId => {
-            const url =
-                '/eg/staff/cat/item/' + copyId + '/circ_list';
-            window.open(url, '_blank');
-        });
+        const copyIds = rows.filter(r => Boolean(r.cp_id)).map(r => r.cp_id);
+        if (copyIds.length > 0) {
+            const url = this.ngLocation.prepareExternalUrl(
+                `/staff/cat/item/${copyIds[0]}/circ-history`);
+            window.open(url);
+        }
     }
 
+    openItemStatusList(rows: any[]) {
+        const ids = rows.filter(r => r.cp_id).map(r => r.cp_id);
+        if (ids.length > 0) {
+            const url = this.ngLocation.prepareExternalUrl(
+                `/staff/cat/item/list/${ids.join(',')}`);
+            window.open(url);
+        }
+    }
+
+    openItemStatus(rows: any[]) {
+        const ids = rows.filter(r => r.cp_id).map(r => r.cp_id);
+        if (ids.length > 0) {
+            const url = this.ngLocation.prepareExternalUrl(
+                `/staff/cat/item/list/${ids.join(',')}?routeToDetails=1`);
+            window.open(url);
+        }
+    }
+
+
     showPatron(rows: any[]) {
+
         const usrIds = Array.from(new Set( rows.map(r => r.usr_id).filter( usr_id => Boolean(usr_id)) ));
-        usrIds.forEach( usrId => {
-            const url =
-                '/eg/staff/circ/patron/' + usrId + '/checkout';
-            window.open(url, '_blank');
-        });
+        // Browser only allows one window.open() per click
+
+        if (usrIds.length > 0) {
+            const url = this.ngLocation.prepareExternalUrl(
+                `/staff/circ/patron/${usrIds[0]}/checkout`);
+            window.open(url);
+        }
     }
 
     showOrder(rows: any[]) {
@@ -471,6 +653,13 @@ export class HoldsGridComponent implements OnInit {
     showManageDialog(rows: any[]) {
         const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
         if (holdIds.length > 0) {
+
+            if (holdIds.length === 1) {
+                this.manageDialog.title = rows[0].title;
+            } else {
+                this.manageDialog.title = null;
+            }
+
             this.manageDialog.holdIds = holdIds;
             this.manageDialog.open({size: 'lg'}).subscribe(
                 rowsModified => {
@@ -483,7 +672,15 @@ export class HoldsGridComponent implements OnInit {
     }
 
     showTransferDialog(rows: any[]) {
-        const holdIds = rows.filter(r => r.hold_type === 'T').map(r => r.id).filter(id => Boolean(id));
+        const holdIds = rows
+            .filter(r => r.hold_type === 'T')
+            .filter(r => !Boolean(r.cancel_time))
+            .filter(r => !Boolean(r.fulfillment_time))
+            .filter(r => !Boolean(r.capture_time))
+            .filter(r => !Boolean(r.current_copy)) // Targeted
+            .filter(r => Boolean(r.id))
+            .map(r => r.id);
+
         if (holdIds.length > 0) {
             this.transferDialog.holdIds = holdIds;
             this.transferDialog.open({}).subscribe(
@@ -566,6 +763,35 @@ export class HoldsGridComponent implements OnInit {
         }
     }
 
+    setTopOfQueue(rows: any[], undo?: boolean) {
+        const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
+        if (holdIds.length === 0) { return; }
+
+        const holds = [];
+        this.pcrud.search('ahr', {id: holdIds})
+        .pipe(tap(hold => {
+            hold.cut_in_line(undo ? 'f' : 't');
+            holds.push(hold);
+        })).toPromise()
+        .then(_ => this.holds.updateHolds(holds).toPromise())
+        .then(_ => this.holdsGrid.reload());
+    }
+
+    activateHolds(rows: any[]) {
+        const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
+        if (holdIds.length === 0) { return; }
+
+        const holds = [];
+        this.pcrud.search('ahr', {id: holdIds})
+        .pipe(tap(hold => {
+            hold.frozen('f');
+            hold.thaw_date(null);
+            holds.push(hold);
+        })).toPromise()
+        .then(_ => this.holds.updateHolds(holds).toPromise())
+        .then(_ => this.holdsGrid.reload());
+    }
+
     showCancelDialog(rows: any[]) {
         const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
         if (holdIds.length > 0) {
@@ -578,6 +804,54 @@ export class HoldsGridComponent implements OnInit {
                 }
             );
         }
+    }
+
+    showUncancelDialog(rows: any[]) {
+        const holdIds = rows.map(r => r.id).filter(id => Boolean(id));
+        if (holdIds.length === 0) { return; }
+        this.uncancelHoldCount = holdIds.length;
+
+        this.uncancelDialog.open().subscribe(confirmed => {
+            if (!confirmed) { return; }
+            this.progressDialog.reset();
+            this.progressDialog.open();
+
+            from(holdIds).pipe(concatMap(holdId => {
+
+                let notified = false;
+                return this.net.request(
+                    'open-ils.circ',
+                    'open-ils.circ.hold.uncancel',
+                    this.auth.token(), holdId
+                ).pipe(tap(resp => {
+                    console.debug("Hold un-cancel returned: ", JSON.stringify(resp));
+
+                    // Sometimes an error event will be returned from the
+                    // API before the trailing "1" is returned.
+                    if (notified) { return; }
+                    notified = true;
+
+                    if (Number(resp) === 1 || !resp?.result?.last_event) {
+                        this.toast.success(this.uncancelSuccess.text);
+                        return;
+                    }
+
+                    console.error('Failed uncanceling hold', resp);
+                    const evt = this.evt.parse(resp?.result?.last_event);
+                    const str = evt ? evt.toString() : 'Unknown Error';
+
+                    this.uncancelFail.dialogBody = str;
+                    this.progressDialog.close();
+
+                    setTimeout(() => this.uncancelFail.open());
+
+                }));
+            }))
+            .toPromise().then(_ => {
+                this.progressDialog.close();
+                this.holdsGrid.reload();
+            });
+        });
     }
 
     printHolds() {
@@ -593,19 +867,145 @@ export class HoldsGridComponent implements OnInit {
             this.gridDataSource.sort = this.defaultSort;
         }
 
-        this.gridDataSource.requestPage(pager).then(() => {
-            if (this.gridDataSource.data.length > 0) {
-                this.printer.print({
-                    templateName: this.printTemplate || 'holds_for_bib',
-                    contextData: this.gridDataSource.data,
-                    printContext: 'default'
-                });
+        // If paging is disabled, we already have all the data.
+        const promise = this.disablePaging ? Promise.resolve() :
+            this.gridDataSource.requestPage(pager);
+
+        promise.then(_ => {
+
+            // Propagate the post-clear action into the print data
+            this.gridDataSource.data.forEach(hold => {
+                hold.post_clear = this.getPostClearLabel(
+                    this.clearHoldsActions[Number(hold.id)]);
+            });
+
+            if (this.gridDataSource.data.length === 0) { return; }
+
+            if (this.shelfOrg) {
+                // After initiating a print, disable the print button
+                // for a few seconds until something meaningful can happen
+                // on the print side.  We can't say for sure when printing
+                // is done.
+                this.disablePrint = true;
+                setTimeout(() => this.disablePrint = false, 10_000);
             }
+
+            this.printer.print({
+                templateName: this.printTemplate || 'holds_for_bib',
+                contextData: this.gridDataSource.data,
+                printContext: 'default',
+                // KCLS always uses browser printing when processing
+                // huge lists of holds.
+                printerName: this.shelfOrg ? HATCH_BROWSER_PRINTING_PRINTER : null
+            });
+
         });
     }
 
     isCopyHold(holdData: any): boolean {
-        return holdData.hold_type.match(/C|R|F/) !== null;
+        if (holdData && holdData.hold_type) {
+            return holdData.hold_type.match(/C|R|F/) !== null;
+        } else {
+            return false;
+        }
+    }
+
+    clearHolds() {
+        setTimeout(() => {
+            this.progressDialog.reset();
+            this.progressDialog.open();
+        });
+
+        this.clearHoldsExecuted = true;
+        this.clearHoldsActions = {};
+
+        let cacheKey;
+
+        this.net.request(
+            'open-ils.circ',
+            'open-ils.circ.hold.clear_shelf.process',
+            this.auth.token(), this.shelfOrg, null, 1
+        ).subscribe(
+            resp => {
+
+                cacheKey = resp.cache_key;
+
+                const progress: any = {};
+                if (resp.maximum) { progress.max = resp.maximum; }
+                if (resp.progress) { progress.value = resp.progress; }
+
+                console.debug('Updating progress with', resp);
+
+                if (progress.max || progress.value) {
+                    this.progressDialog.update(progress);
+                }
+            },
+            err => {
+                console.error(err);
+                this.progressDialog.close();
+            },
+            () => {
+                this.getClearHoldsCache(cacheKey);
+            }
+        );
+    }
+
+    getClearHoldsCache(cacheKey: string) {
+
+        const handleOneResponse = (resp: any) => {
+
+            [].concat(resp).forEach(info => {
+
+                console.debug('Updating progress with', info);
+
+                if (info.action) { // some updates are just progress info
+
+                    const holdId = Number(info.hold_details.id);
+                    this.clearHoldsActions[holdId] = info.action;
+
+                    const hold = this.gridDataSource.data
+                        .filter(h => Number(h.id) === holdId)[0];
+
+                    hold.cs_name = info.hold_details.cs_name;
+                    hold.hold_status = info.hold_details.hold_status;
+                }
+
+                const progress: any = {};
+                if (info.maximum) { progress.max = info.maximum; }
+                if (info.progress) { progress.value = info.progress; }
+
+                if (progress.max || progress.value) {
+                    this.progressDialog.update(progress);
+                }
+            });
+        };
+
+        this.net.request(
+            'open-ils.circ',
+            'open-ils.circ.hold.clear_shelf.get_cache',
+            this.auth.token(), cacheKey, 1
+        ).subscribe(
+            resp => handleOneResponse(resp),
+            err => {
+                console.error(err);
+                this.progressDialog.close();
+            },
+            () => {
+                this.printHolds();
+                this.progressDialog.close();
+                this.disablePrint = false;
+            }
+        );
+    }
+
+    getPostClearLabel(action: string): string {
+        switch (action) {
+            case 'shelf': return this.postClearShelf.text;
+            case 'hold': return this.postClearHold.text;
+            case 'transit': return this.postClearTransit.text;
+            case 'pl_changed': return this.postClearPlChanged.text;
+        }
+        return '';
     }
 }
 

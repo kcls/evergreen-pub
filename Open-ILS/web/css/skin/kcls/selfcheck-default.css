@@ -1,0 +1,164 @@
+/*
+	Basic Colors for Self-checkout interface
+ */
+html, body {
+    font-size: 18px;
+}
+a {
+    color: #003399;
+}
+
+label {
+    font-size:16px;
+}
+
+h1 {
+    font-size: 22px;
+}
+
+h2 {
+    font-size: 20px;
+}
+
+#header {
+    color: #bda964;
+}
+
+#main-content-scko h1 {
+    font-size: 20px;
+}
+
+#main-content-scko h1 {
+    font-size: 16px;
+}
+
+#main-content-scko li {
+    margin-top: 12px;
+}
+
+.navbar-scko {
+    background:#D2232A
+}
+
+.navbar-text-scko {
+    color:white;
+    font-size:25px;
+}
+
+.scko-container {
+    color: #585d5e;
+    font-size: 13px;
+    background-color: #FFF;
+}
+
+.scko-table-suspended {
+    color:#A8A8A8;
+}
+
+.btn-high-contrast {
+    color: #FFF;
+    background-color: #353535;
+    border-color: #ccc
+}
+
+.container-background {
+    background: #353535;
+}
+
+.checkout .header1 {
+    border-bottom:1px solid #a83135;
+}
+
+.checkout .userid {
+    border:2px solid black !important;
+}
+
+.checkout {
+    font-size:14px;
+}
+
+.checkout h1 {
+    font-size:20px;
+}
+
+.checkout h2 {
+    font-size:16px;
+}
+
+.checkout .userid {
+    font-size:18px;
+}
+
+.checkout .item_table td {
+    font-size:18px;
+    border:2px solid black;
+}
+
+.scko-table-striped>tbody>tr:nth-of-type(odd) {
+    background-color: #f3f3f3
+}
+
+.checkout .status_box {
+    color:red;
+}
+
+.checkout .oils-selfck-status-div {
+    color: blue;
+}
+
+.checkout_failure {
+    color: red !important;
+}
+@media screen and (min-width:768px) {
+    .scko-footer-btn {
+        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #008ec2), color-stop(1, #023a4f));
+        background:-moz-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:-webkit-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:-o-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:-ms-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:linear-gradient(to bottom, #008ec2 5%, #023a4f 100%);
+        font-size:18px;
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#008ec2', endColorstr='#023a4f',GradientType=0);
+        background-color:#02729E;
+        color:#ffffff;
+        text-shadow:0px 1px 5px #000000;
+    }
+
+    .scko-footer-btn:hover {
+        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #023a4f), color-stop(1, #008ec2));
+        background:-moz-linear-gradient(top, #023a4f 5%, #008ec2 100%);
+        background:-webkit-linear-gradient(top, #023a4f 5%, #008ec2 100%);
+        background:-o-linear-gradient(top, #023a4f 5%, #008ec2 100%);
+        background:-ms-linear-gradient(top, #023a4f 5%, #008ec2 100%);
+        background:linear-gradient(to bottom, #023a4f 5%, #008ec2 100%);
+        background-color:#02729E;
+    }
+}
+
+
+/* Use bigger fonts for bigger monitors.
+ * Current monitor screen resolutions are:
+ *  1280x1024
+ *  1920x1080
+ */
+
+@media screen and (min-width:1600px) {
+    html, body { font-size: 26px; }
+    label { font-size:24px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 28px; }
+    #main-content-scko h1 { font-size: 28px; }
+    #main-content-scko h1 { font-size: 24px; }
+    #main-content-scko li { margin-top: 16px; }
+    .navbar-text-scko { font-size:29px; }
+    .scko-container { font-size: 21px; }
+    .btn { font-size: 22px; }
+    .checkout { font-size:22px; }
+    .checkout h1 { font-size:28px; }
+    .checkout h2 { font-size:24px; }
+    .checkout .userid { font-size:26px; }
+    .checkout .item_table td { font-size:26px; }
+    .scko-footer-btn { font-size:24px; }
+}
+
+

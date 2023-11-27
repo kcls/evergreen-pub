@@ -72,6 +72,7 @@
                 x.setAttribute('value', g.data.precat_circ_modifier);
                 x.value = g.data.precat_circ_modifier;
             }
+            document.getElementById('dummy_barcode').value = g.data.dummy_barcode;
             document.getElementById('dummy_title').focus();
         }
 
@@ -109,6 +110,10 @@
                 <row>
                     <label value="&staff.circ.pre_cat.dummy_isbn.label;" accesskey="&staff.circ.pre_cat.dummy_isbn.accesskey;" control="dummy_isbn"/>
                     <textbox id="dummy_isbn" context="clipboard"/>
+                </row>
+                <row>
+                    <label value="&staff.circ.pre_cat.dummy_barcode.label;" control="dummy_barcode"/>
+                    <label id="dummy_barcode" class="barcode_highlight"/>
                 </row>
                 <row>
                     <label value="&staff.circ.pre_cat.dummy_circ_modifier.label;" accesskey="&staff.circ.pre_cat.dummy_circ_modifier.accesskey;" control="dummy_circ_modifier"/>

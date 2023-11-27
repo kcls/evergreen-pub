@@ -67,6 +67,11 @@ function my_init() {
 
         g.funcs.push( function() { g.safe_for_refresh = true; } );
 
+        if (g.data.hash.aous['circ.external_register.active']) {
+            dump("Activating credit card payments for register recover");
+            $('payment_type_menuitem3').style.display = 'inline';
+        }
+
     } catch(E) {
         var err_msg = $("commonStrings").getFormattedString('common.exception', ['patron/bill2.xul', E]);
         try { g.error.sdump('D_ERROR',err_msg); } catch(E) { dump(err_msg); }
@@ -129,6 +134,18 @@ function event_listeners() {
             handle_copy_details,
             false
         );
+        
+        window.bill_event_listeners.add($('printthis'), 
+			'command',
+			handle_printthis,
+			false
+		);
+
+        window.bill_event_listeners.add($('printlostpaid'), 
+			'command',
+			handle_printlostpaid,
+			false
+		);
 
         window.bill_event_listeners.add($('payment'), 
             'change',
@@ -233,6 +250,147 @@ function event_listeners() {
     } catch(E) {
         alert('Error in bill2.js, event_listeners(): ' + E);
     }
+}
+
+
+
+/**
+ * Launch secondary authentication dialog.
+ * "Skip" option bypasses the secondary authentication step.
+ * "Cancel" option prevents the payment from proceeding.
+ * "Submit" option requests a secondary authentication token from the   
+ * server, which is later used by the payment create API.               
+ * If a login failure occurs, the dialog is reopened for additional 
+ * authentication attempts.
+ *
+ * Returns null on Cancel
+ * Returns unaltered payment_blob if no applicable (LOST) payments are 
+ * being processed OR if the dialog is manually skipped.
+ * Returns payment args (with 2ndry auth data) on successful Submit.
+ */
+// TODO: move this designation into the database
+var NO_REFUND_CIRC_MODIFIERS = ['1', '7', '45', '46', '66', '40', '41'];
+function handle_lost_payment_dialog(payment_blob) {
+
+    var lostpaid_xacts = [];
+    var row_ids = g.bill_list.dump_retrieve_ids();
+
+    // Find LOST transactions in the pending payments.
+    payment_blob.payments.forEach(function(xact) {
+        // xact[0] == transaction_id, xact[1] == payment amount
+        row_ids.forEach(function(row_id) {
+            var row_params = g.row_map[row_id];
+            var circ = row_params.row.my.circ;
+            var copy = row_params.row.my.acp;
+
+            if (!circ || !copy) return;
+            if (circ.id() != xact[0]) return;
+
+            // precats are not refundable
+            if (Number(copy.call_number()) == -1) return;
+
+            if (circ.stop_fines() == 'LOST' && // lost payment
+                !circ.checkin_time()        && // still checked out
+                NO_REFUND_CIRC_MODIFIERS.indexOf(''+copy.circ_modifier()) < 0) {
+
+                lostpaid_xacts.push(xact[0]);
+            }
+        });
+    });
+
+    // No lost+paid transcactions to process.
+    if (lostpaid_xacts.length == 0) return payment_blob;
+
+    // If we have any LOST payments, do the secondary auth dance.
+
+    var authkey = secondary_auth();
+
+    if (!authkey) { return null; } // payment canceled
+
+    // Secondary auth succeeded.  
+    // Embed the refundable args data in the in-progress payment blob. 
+    payment_blob.refundable_args = {
+        secondary_auth_key : authkey,
+        transactions : 
+            lostpaid_xacts.map( function(x) { return {xact : x} })
+    };
+
+    return payment_blob;
+}
+
+// Returns the secondary auth key on success, null on cancel.
+function secondary_auth() {
+    JSAN.use('util.window');
+
+    while (true) {
+
+        var win = new util.window();
+        var dialog = win.open(
+            urls.XUL_PATRON_BILL_APPLY_PAYMENT_FORM,
+            'applypayment',
+            'chrome,resizable,modal'
+        );
+
+        if (!dialog.process_lost_payment) {
+            // Payment canceled from dialog
+            return null;
+        }
+
+        // Attempt secondary authentication
+
+        var resp = g.network.request(
+            'open-ils.circ',
+            'open-ils.circ.staff.secondary_auth.ldap',
+            [ses(), dialog.username, dialog.password]
+        );
+
+        if (resp && typeof resp == 'string') {
+            // Auth succeeded
+            return resp; // auth key
+        }
+
+        if (resp && resp.textcode) {
+            // If the secondary auth fails for any reason, re-open the
+            // dialog.  User may Cancel at any time to break out
+            // of the loop.
+
+            if (resp.textcode == 'LDAP_AUTH_FAILED') {
+                alert('Secondary Authentication Failed');
+
+            } else {
+                g.error.standard_unexpected_error_alert(
+                    'Secondary Authentication Error', resp);
+            }
+
+        } else { // unknown failure
+            g.error.standard_unexpected_error_alert(
+                'Secondary Authentication Error');
+        }
+    }
+}
+
+
+
+function apply_payment_skip_form() {
+    this.skip_lost_payment = true;
+    this.close();
+}
+
+function apply_payment_cancel() {
+    this.process_lost_payment = false;
+    this.close();
+}
+
+function apply_payment_submit_form() {
+    this.process_lost_payment = true;
+
+    this.username = $('apply_payment_username').value;
+    this.password = $('apply_payment_password').value;
+
+    // leave the dialog open if required fields are empty.
+    if (!this.username || !this.password) return;
+
+    this.close();
 }
 
 function $(id) { return document.getElementById(id); }
@@ -580,6 +738,8 @@ function init_lists() {
             $('refund').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('opac').setAttribute('disabled', g.bill_list_selection.length == 0);
             $('copy_details').setAttribute('disabled', g.bill_list_selection.length == 0);
+            $('printthis').setAttribute('disabled', g.bill_list_selection.length == 0);
+            $('printlostpaid').setAttribute('disabled', g.bill_list_selection.length == 0);
         },
         'on_click' : function(ev) {
             var row = {}; var col = {}; var nobj = {};
@@ -760,6 +920,89 @@ function handle_void_all() {
     }
 }
 
+function handle_printthis() {
+
+    var params = {
+        'list': g.bill_list.dump_selected_with_keys(0),
+        'patron' : patron.util.retrieve_fleshed_au_via_id(ses(), g.patron_id),
+        'printer_context' : 'receipt',
+        'template' : 'bills_current'
+    };
+
+    g.bill_list.print(params);
+}
+
+// Temporarily override the forced silent print option for lost &
+// paid receipts where we /always/ want to show the print dialog.
+// Returns true if silent printing is enabled.
+function disable_silent_print() {
+    var prefs = Components.classes['@mozilla.org/preferences-service;1']
+        .getService(Components.interfaces['nsIPrefBranch']);
+
+    var silentPrintApplied = (
+        prefs.prefHasUserValue('print.always_print_silent')
+        && prefs.getBoolPref('print.always_print_silent')
+    );
+
+    if (silentPrintApplied) {
+        // Note setting the value to 'false' does not work.
+        prefs.clearUserPref('print.always_print_silent');
+    }
+
+    return silentPrintApplied;
+}
+
+function enable_silent_print() {
+    var prefs = Components.classes['@mozilla.org/preferences-service;1']
+        .getService(Components.interfaces['nsIPrefBranch']);
+
+    prefs.setBoolPref('print.always_print_silent', true);
+}
+
+function handle_printlostpaid() {
+    var selected = g.bill_list.dump_selected_with_keys(0);
+    var xact_ids = selected.map(function(sel) { return sel.mbts_id });
+
+    var silentPrintApplied = disable_silent_print();
+
+    for (var i = 0; i < xact_ids.length; i++) {
+        xact_id = xact_ids[i];
+
+        var receipt = g.network.request(
+            'open-ils.circ', 
+            'open-ils.circ.refundable_payment.receipt.by_xact.html',
+            [ses(), xact_id]
+        );
+
+        if (receipt && 
+            receipt.textcode == 'MONEY_REFUNDABLE_XACT_SUMMARY_NOT_FOUND') {
+            alert('Cannot generate lost/paid receipt for transaction #' + xact_id);
+            continue;
+        }
+
+        if (!receipt || !receipt.template_output()) {
+            return alert(
+                'Error creating refundable payment receipt for payment ' + xact_id);
+        }
+
+        var html = receipt.template_output().data();
+        JSAN.use('util.print'); 
+        var print = new util.print('default');
+
+
+        print.simple(html , {
+            no_prompt: false,
+            content_type: 'text/html'
+        });
+    }
+
+    if (silentPrintApplied) {
+        // Re-apply the silent print preference after the
+        // current thread is done.
+        setTimeout(enable_silent_print, 200);
+    }
+}
+
 function handle_opac() {
     try {
         var ids = [];
@@ -901,49 +1144,64 @@ function verify_amount() {
 
 
 function apply_payment() {
+
+
+    // forgive payments never happen via external register.
+    var usingRegister = g.data.hash.aous['circ.external_register.active'] 
+        && $('payment_type').value !== 'forgive_payment';
+
     try {
         var payment_blob = {};
-        JSAN.use('util.window');
-        var win = new util.window();
-        switch($('payment_type').value) {
-            case 'credit_card_payment' :
-                g.data.temp = '';
-                g.data.stash('temp');
-                var my_xulG = win.open(
-                    urls.XUL_PATRON_BILL_CC_INFO,
-                    'billccinfo',
-                    'chrome,resizable,modal',
-                    {'patron_id': g.patron_id}
-                );
-                g.data.stash_retrieve();
-                payment_blob = JSON2js( g.data.temp ); // FIXME - replace with my_xulG and update_modal_xulG, though it looks like we were using that before and moved away from it
-            break;
-            case 'check_payment' :
-                g.data.temp = '';
-                g.data.stash('temp');
-                var my_xulG = win.open(
-                    urls.XUL_PATRON_BILL_CHECK_INFO,
-                    'billcheckinfo',
-                    'chrome,resizable,modal'
-                );
-                g.data.stash_retrieve();
-                payment_blob = JSON2js( g.data.temp );
-            break;
+
+        if (!usingRegister) {
+            // Avoid the extra dialogs when using a register, since the
+            // assumption is the staff does not have answers to these 
+            // questions.  Whatever data they have goes into the note.
+
+            JSAN.use('util.window');
+            var win = new util.window();
+            switch($('payment_type').value) {
+                case 'credit_card_payment' :
+                    g.data.temp = '';
+                    g.data.stash('temp');
+                    var my_xulG = win.open(
+                        urls.XUL_PATRON_BILL_CC_INFO,
+                        'billccinfo',
+                        'chrome,resizable,modal',
+                        {'patron_id': g.patron_id}
+                    );
+                    g.data.stash_retrieve();
+                    payment_blob = JSON2js( g.data.temp );
+                break;
+                case 'check_payment' :
+                    g.data.temp = '';
+                    g.data.stash('temp');
+                    var my_xulG = win.open(
+                        urls.XUL_PATRON_BILL_CHECK_INFO,
+                        'billcheckinfo',
+                        'chrome,resizable,modal'
+                    );
+                    g.data.stash_retrieve();
+                    payment_blob = JSON2js( g.data.temp );
+                break;
+            }
+
+            if (
+                (typeof payment_blob == 'undefined') || 
+                payment_blob=='' || 
+                payment_blob.cancelled=='true'
+            ) { 
+                alert( $('commonStrings').getString('common.cancelled') ); 
+                return; 
+            }
         }
-        if (
-            (typeof payment_blob == 'undefined') || 
-            payment_blob=='' || 
-            payment_blob.cancelled=='true'
-        ) { 
-            alert( $('commonStrings').getString('common.cancelled') ); 
-            return; 
-        }
+
         payment_blob.userid = g.patron_id;
         payment_blob.note = payment_blob.note || '';
-        //payment_blob.cash_drawer = 1; // FIXME: get new Config() to work
         payment_blob.payment_type = $('payment_type').value;
         var tally_blob = tally_pending();
         payment_blob.payments = tally_blob.payments;
+
         // Handle patron credit
         if ( payment_blob.payment_type == 'credit_payment' ) { // paying with patron credit
             if ( $('convert_change_to_credit').checked ) {
@@ -963,6 +1221,60 @@ function apply_payment() {
             alert($("patronStrings").getString('staff.patron.bills.apply_payment.nothing_applied'));
             return;
         }
+
+
+        if (usingRegister) {
+
+            var msg = 
+'\n\nPayments should only be made in Evergreen when managing refunds or applying ' +
+'cash register vouchers.  All other payments should be submitted via the cash register.';
+
+            var r = g.error.yns_alert(msg, 'External Cash Register Alert', 
+                'Continue', 'Cancel Payment', null, 'Confirm',
+                '/xul/server/skin/media/images/stop_sign.png');
+
+            if (r != 0) { return; }
+        }
+
+        if (payment_blob.payment_type == 'cash_payment' || 
+            payment_blob.payment_type == 'check_payment') {
+            payment_blob = handle_lost_payment_dialog(payment_blob);
+
+            if (payment_blob === null) return; // canceled via dialog
+        }
+
+        if (usingRegister) {
+
+            if (payment_blob.refundable_args) {
+                // If we have a refudnable_args collection, then the
+                // user has already authenticated.
+
+                payment_blob.secondary_auth_key = 
+                    payment_blob.refundable_args.secondary_auth_key;
+
+            } else {
+                // Otherwise force the user to authenticate.
+
+                var authkey = secondary_auth();
+                if (authkey === null) { return; } // canceled via dialog
+    
+                payment_blob.secondary_auth_key = authkey;
+            }
+
+            // Fill in dummy data to cover required fields for which
+            // staff have no data.
+            payment_blob.check_number = 'VOUCHER'; 
+            payment_blob.cc_args = {
+                type: 'VOUCHER',
+                processor: 'VOUCHER', 
+                approval_code: 'VOUCHER'
+            };
+
+            // Force staff to enter a note
+            $('annotate_payment').checked = true;
+        }
+
+
         if ( pay( payment_blob ) ) {
 
             $('payment').value = ''; $('payment').select(); $('payment').focus();
@@ -1086,6 +1398,11 @@ function pay(payment_blob) {
             alert('Error logging payment in bill2.js: ' + E);
         }
 
+        if (robj && robj.refundable_payments 
+                && robj.refundable_payments.length) {
+                print_refundable_payments_receipt(robj.refundable_payments);
+        }
+
         if (typeof robj.ilsevent != 'undefined') {
             switch(robj.textcode) {
                 case 'SUCCESS' : return true; break;
@@ -1109,6 +1426,42 @@ function pay(payment_blob) {
         return false;
     }
 }
+
+function print_refundable_payments_receipt(mrp_ids) {
+
+    var silentPrintApplied = disable_silent_print();
+
+    for (var i = 0; i < mrp_ids.length; i++) {
+        mrp_id = mrp_ids[0];
+        var receipt = g.network.request(
+            'open-ils.circ', 
+            'open-ils.circ.refundable_payment.receipt.html', 
+            [ses(), mrp_id]
+        );
+
+        if (!receipt || !receipt.template_output()) {
+            return alert(
+                'Error creating refundable payment receipt for payment ' + mrp_id);
+        }
+
+        var html = receipt.template_output().data();
+        JSAN.use('util.print'); 
+        var print = new util.print('default');
+
+
+        print.simple(html , {
+            no_prompt: false, // always prompt for lost payment receipts
+            content_type: 'text/html'
+        });
+    }
+
+    if (silentPrintApplied) {
+        // Re-apply the silent print preference after the
+        // current thread is done.
+        setTimeout(enable_silent_print, 200);
+    }
+}
+
 
 function refresh(params) {
     try {
@@ -1219,3 +1572,4 @@ function check_perms_for_patron_ou(perms) {
         g.error.standard_unexpected_error_alert('check_perms_for_patron_ou()',E);
     }
 }
+

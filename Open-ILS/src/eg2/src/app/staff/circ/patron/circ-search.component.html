@@ -1,0 +1,25 @@
+<eg-staff-banner i18n-bannerText bannerText="Find Circulation by ID"></eg-staff-banner>
+
+<div class="row">
+  <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" i18n>Circulation ID:</span>
+      </div>
+      <input type='number' id='circ-id-search-input' class="form-control" 
+        placeholder="Circulation ID..." i18n-placeholder [(ngModel)]='circId'
+        (keydown.enter)="findCirc()" min="1"/>
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary" 
+          (click)="findCirc()" i18n>Submit</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div *ngIf="notFound" class="alert alert-warning" i18n>
+      No match found for Circulation IDl "{{circId}}".
+    </div>
+  </div>
+</div>
+
+

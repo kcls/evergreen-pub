@@ -42,10 +42,11 @@ var my_constants = {
     'magical_statuses' : {
         '1' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | Checked out    | t */
         '3' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | Lost           | f */
+        '4' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | Missing        | t*/
         '6' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | In transit     | t */
         '8' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : false }, /* | On holds shelf | t */
         '16' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }, /* | Long Overdue  | f */
-        '18' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : false} /* | Canceled Transit | t */
+        '17' : { 'disable_in_copy_editor' : true, 'block_mark_item_damaged' : false, 'block_mark_item_action' : true }  /* | Lost & Paid */
     }
 }
 
@@ -86,6 +87,10 @@ var api = {
     'CLEAR_HOLD_SHELF' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.hold.clear_shelf.process', 'secure' : false },
     'FM_ACN_RETRIEVE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.callnumber.fleshed.retrieve', 'secure' : false },
     'FM_ACN_RETRIEVE.authoritative' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.callnumber.fleshed.retrieve.authoritative', 'secure' : false },
+    'FM_OPEN_LI_RETRIEVE_BY_TCN' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.lineitem.latest_by_tcn', 'secure' : false },
+    'FM_LI_NOTES_RETRIEVE_BY_ID' : { 'app' : 'open-ils.acq', 'method' : 'open-ils.acq.get_lineitem_notes_by_id', 'secure' : false },
+    'FM_OPEN_LI_RETRIEVE_BY_ID' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.lineitem.lineitem_by_id', 'secure' : false },
+    'FM_CUD_LI_NOTE' : { 'app' : 'open-ils.acq', 'method' : 'open-ils.acq.lineitem_note.cud.batch', 'secure' : false },
     'FM_ACN_TREE_UPDATE' : { 'app' : 'open-ils.cat', 'method' : 'open-ils.cat.asset.volume.fleshed.batch.update' },
     'FM_ACN_TREE_LIST_RETRIEVE_VIA_RECORD_ID_AND_ORG_IDS' : { 'app' : 'open-ils.cat', 'method' : 'open-ils.cat.asset.copy_tree.retrieve', 'secure' : false },
     'FM_ACN_TREE_LIST_RETRIEVE_VIA_RECORD_ID_AND_ORG_IDS.authoritative' : { 'app' : 'open-ils.cat', 'method' : 'open-ils.cat.asset.copy_tree.retrieve.authoritative', 'secure' : false },
@@ -101,10 +106,13 @@ var api = {
     //'FM_ACP_RETRIEVE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.fleshed.retrieve' },
     'FM_ACP_RETRIEVE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.fleshed2.retrieve', 'secure' : false },
     //'FM_ACP_RETRIEVE_VIA_BARCODE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.find_by_barcode' },
+    'FM_ACP_BATCH_RETRIEVE_VIA_ACN_LIST' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.copies.retrieve.by_cn', 'secure' : false },
+    'FM_ACP_BATCH_RETRIEVE_VIA_ACN_LIST.authoritative' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.copies.retrieve.by_cn.authoritative', 'secure' : false },
     'FM_ACP_RETRIEVE_VIA_BARCODE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.fleshed2.find_by_barcode', 'secure' : false },
     'FM_ACP_RETRIEVE_VIA_BARCODE.authoritative' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.fleshed2.find_by_barcode.authoritative', 'secure' : false },
     'FM_ACP_FLESHED_BATCH_RETRIEVE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.fleshed.batch.retrieve', 'secure' : false },
     'FM_ACP_UNFLESHED_BATCH_RETRIEVE' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.batch.retrieve', 'secure' : false },
+    'FM_ACP_UNFLESHED_BATCH_RETRIEVE.authoritative' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.batch.retrieve.authoritative', 'secure' : false },
     'FM_ACP_FLESHED_BATCH_RETRIEVE.authoritative' : { 'app' : 'open-ils.search', 'method' : 'open-ils.search.asset.copy.fleshed.batch.retrieve.authoritative', 'secure' : false },
     'FM_ACP_FLESHED_BATCH_UPDATE' : { 'app' : 'open-ils.cat', 'method' : 'open-ils.cat.asset.copy.fleshed.batch.update' },
     'FM_ACP_TRANSFER_COPIES_BATCH' : { 'app' : 'open-ils.cat', 'method' : 'open-ils.cat.transfer_copies_to_volume' },
@@ -115,6 +123,7 @@ var api = {
     'FM_ACPL_RETRIEVE_VIA_ID.authoritative' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.copy_location.retrieve.authoritative', 'secure' : false },
     'FM_ACPN_RETRIEVE_ALL' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.copy_note.retrieve.all.authoritative', 'secure' : false },
     'FM_ACPN_CREATE' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.copy_note.create' },
+    'FM_ACPN_BATCH_CREATE' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.create_batch_copy_note' },
     'FM_ACPN_DELETE' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.copy_note.delete', 'secure' : false },
     'FM_ACTSC_RETRIEVE_BATCH' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.stat_cat.actor.retrieve.batch', 'secure' : false },
     'FM_ACTSC_RETRIEVE_VIA_AOU' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.stat_cat.actor.retrieve.all', 'secure' : false },
@@ -374,7 +383,9 @@ var api = {
     'USER_ORG_UNIT_OPT_IN_CHECK' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.org_unit_opt_in.check' },
     'USER_ORG_UNIT_OPT_IN_CREATE' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.user.org_unit_opt_in.create' },
     'GET_BARCODES' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.get_barcodes' },
-    'ADJUST_BILLS_TO_ZERO' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.money.billable_xact.adjust_to_zero' }
+    'MAP_ASSET' : { 'app' : 'open-ils.cat', 'method' : 'open-ils.cat.asset.map_asset_by_call_number' },
+    'ADJUST_BILLS_TO_ZERO' : { 'app' : 'open-ils.circ', 'method' : 'open-ils.circ.money.billable_xact.adjust_to_zero' },
+    'PATRON_MESSAGE_LIST' : { 'app' : 'open-ils.actor', 'method' : 'open-ils.actor.patron_message_list' }
 }
 
 var urls = {
@@ -399,6 +410,7 @@ var urls = {
     'AUDIO_event_ASSET_COPY_NOT_FOUND' : '/xul/server/skin/media/audio/redalert.wav',
 
     'AUTHORITY_MANAGE' : 'cat/authority/list',
+    'FIND_AUTHORITY_BY_ID' : 'cat/authority/list_id',
     'MANAGE_MULTI_HOME_ITEMS' : 'oils://remote/xul/server/cat/manage_multi_home_items.xul',
     'XUL_AUTH_SIMPLE' : 'oils://remote/xul/server/main/simple_auth.xul',
     'XUL_BIB_BRIEF' : 'oils://remote/xul/server/cat/bib_brief.xul',
@@ -416,6 +428,7 @@ var urls = {
     'XUL_COPY_EDITOR' : 'oils://remote/xul/server/cat/copy_editor.xul',
     'XUL_COPY_LOCATION_EDIT' : 'oils://remote/xul/server/admin/copy_locations.xhtml',
     'XUL_COPY_NOTES' : 'oils://remote/xul/server/cat/copy_notes.xul',
+    'XUL_UPDATE_ITEMS' : 'oils://remote/xul/server/cat/update_items.xul',
     'XUL_COPY_STATUS' : 'oils://remote/xul/server/circ/copy_status.xul',
     'XUL_COPY_SUMMARY' : 'oils://remote/xul/server/cat/copy_summary.xul',
     'XUL_COPY_VOLUME_BROWSE' : 'oils://remote/xul/server/cat/copy_browser.xul',
@@ -455,6 +468,7 @@ var urls = {
     'XUL_PATRON_BILL_DETAILS' : 'oils://remote/xul/server/patron/bill_details.xul',
     'XUL_PATRON_BILL_HISTORY' : 'oils://remote/xul/server/patron/bill_history.xul',
     'XUL_PATRON_BILL_WIZARD' : 'oils://remote/xul/server/patron/bill_wizard.xul',
+    'XUL_PATRON_BILL_APPLY_PAYMENT_FORM' : 'oils://remote/xul/server/patron/bill_apply_payment_form.xul',
     'XUL_PATRON_DISPLAY' : 'oils://remote/xul/server/patron/display.xul',
     'XUL_PATRON_HORIZ_DISPLAY' : 'oils://remote/xul/server/patron/display_horiz.xul',
     'XUL_PATRON_EDIT' : 'oils://remote/eg/actor/user/register',
@@ -486,10 +500,12 @@ var urls = {
     'XUL_STANDING_PENALTIES' : 'oils://remote/xul/server/patron/standing_penalties.xul',
     'XUL_NEW_STANDING_PENALTY' : 'oils://remote/xul/server/patron/new_standing_penalty.xul',
     'XUL_EDIT_STANDING_PENALTY' : 'oils://remote/xul/server/patron/edit_standing_penalty.xul',
+    'XUL_VIEW_STANDING_PENALTY' : 'oils://remote/xul/server/patron/view_standing_penalty.xul',
     'XUL_SCAN_ITEM_AS_MISSING_PIECES' : 'oils://remote/xul/server/circ/missing_pieces.xul',
     'XUL_STAT_CAT_EDIT' : 'oils://remote/xul/server/admin/stat_cat_editor.xhtml',
     'XUL_SURVEY_WIZARD' : 'chrome://open_ils_staff_client/content/admin/survey_wizard.xul',
     'XUL_TIMESTAMP_DIALOG' : 'oils://remote/xul/server/util/timestamp.xul',
+    'XUL_TRIGGER_EVENTS' : 'oils://remote/xul/server/patron/trigger_events.xul',
     'XUL_TOOLBAR_CONFIG' : 'oils://remote/xul/server/admin/toolbar.xul',
     'XUL_USER_BUCKETS' : 'oils://remote/xul/server/patron/user_buckets.xul',
     'XUL_VERIFY_CREDENTIALS' : 'oils://remote/xul/server/main/verify_credentials.xul',
@@ -515,6 +531,7 @@ var urls = {
     'EG_MARCEDIT_PHYS_CHAR_WIZARD' : 'oils://remote/eg/cat/marcedit/phys_char_wizard',
     'CUSTOM_JS' : '/xul/server/skin/custom.js',
     'ACQ_LINEITEM' : 'oils://remote/eg/acq/lineitem/related/',
+    'PRINT_LINEITEM_WORKSHEET' : 'oils://remote/eg/acq/lineitem/worksheet/',
     'SERIAL_LIST_SUBSCRIPTION' : 'oils://remote/eg/serial/list_subscription',
     'BOOKING_RESOURCE' : 'oils://remote/eg/conify/global/booking/resource',
     'BOOKING_RESERVATION' : 'oils://remote/eg/booking/reservation',

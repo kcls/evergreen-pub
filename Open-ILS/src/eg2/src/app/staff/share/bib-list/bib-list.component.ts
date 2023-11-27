@@ -23,6 +23,7 @@ export class BibListComponent implements OnInit {
     @Input() bibIds: number[];
     // Dynamic source of bib record IDs
     @Input() bibIdSource: (pager: Pager, sort: any) => Promise<number[]>;
+
     @Input() gridPersistKey: string;
 
     dataSource: GridDataSource;

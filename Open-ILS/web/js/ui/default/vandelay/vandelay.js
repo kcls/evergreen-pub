@@ -753,6 +753,7 @@ function vlLoadMatchUI(recId) {
 
                 var matchSeenMap = {};
 
+                //need to figure out what this is doing, without this, check boxes dont work
                 for(var i = 0; i < dataStore.items.length; i++) {
                     var item = dataStore.items[i];
                     item._id = i; // just need something unique
@@ -1447,7 +1448,10 @@ function vlImportRecordQueue(type, queueId, recList, onload, sessionKey) {
     var options = {
         overlay_map : currentOverlayRecordsMap, 
         session_key: sessionKey, // link to upload session if possible
-        exit_early: true
+        exit_early: true,
+        // KCLS JBAS-1148
+        // Set bre.cataloging_date = now for all newly created bib records.
+        set_cat_date : true
     };
 
     if(vlUploadQueueImportNoMatch.checked) {

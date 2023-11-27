@@ -15,7 +15,7 @@ function(egCore , $q) {
     service.prototype.flesh = {   
         flesh : 3,
         flesh_fields : {
-            acp : ['status','location','circ_lib','parts','age_protect','copy_alerts', 'latest_inventory'],
+            acp : ['status','location','circ_lib','parts','age_protect','copy_alerts', 'latest_inventory', 'circ_modifier'],
             acn : ['prefix','suffix','copies','label_class','record'],
             bre : ['simple_record'],
             alci : ['inventory_workstation']
@@ -71,12 +71,15 @@ function(egCore , $q) {
         svc.org_use_map = {};
         org_list.map(function(o){svc.org_use_map[''+o]=0;})
 
+        svc.fetching = true;
+
         var p = egCore.pcrud.search(
             'acn',
             {record : rid, owning_lib : org_list, deleted : 'f', label : {'!=' : '##URI##'}},
             svc.flesh
         ).then(
             function() { // finished
+                svc.fetching = false;
                 if (p.cancel) return;
 
                 // create virtual field for displaying active parts
@@ -87,87 +90,56 @@ function(egCore , $q) {
                         cp.monograph_parts_sortkeys = cp.parts.map(function(obj) { return obj.label_sortkey; }).join();
                     }
                 });
-
-                if (empty_org) {
-
-                    var empty_org_list = [];
-                    angular.forEach(svc.org_use_map,function(v,k){
-                        if (v == 0) empty_org_list.push(k);
-                    });
-
-                    angular.forEach(empty_org_list, function (oid) {
-                        var owner = egCore.org.get(oid);
-                        if (owner.ou_type().can_have_vols() != 't') return;
-
-                        var owner_list = [];
-                        while (owner.parent_ou()) { // we're going to skip the top of the tree...
-                            owner_list.unshift(owner.shortname());
-                            owner = egCore.org.get(owner.parent_ou());
-                        }
-
-                        var owner_label = owner_list.join(' ... ');
-
-                        svc.copies.push({
-                            index      : index++,
-                            id_list    : [],
-                            call_number: { label : '' },
-                            barcode    : '',
-                            owner_id   : oid,
-                            owner_list : owner_list,
-                            owner_label: owner_label,
-                            copy_count : 0,
-                            cn_count   : 0,
-                            copy_alert_count : 0
-                        });
-                    });
-                }
-
-                svc.ongoing = false;
-
-
-                svc.copies = svc.copies.sort(
-                    function (a, b) {
-                        function compare_array (x, y, i) {
-                            if (x[i] && y[i]) { // both have values
-                                if (x[i] == y[i]) { // need to look deeper
-                                    return compare_array(x, y, ++i);
+                    
+                function copySort(copies) {
+                    copies.sort(
+                        function (a, b) {
+                            function compare_array (x, y, i) {
+                                if (x[i] && y[i]) { // both have values
+                                    if (x[i] == y[i]) { // need to look deeper
+                                        return compare_array(x, y, ++i);
+                                    }
+    
+                                    if (x[i] < y[i]) { // x is first
+                                        return -1;
+                                    } else if (x[i] > y[i]) { // y is first
+                                        return 1;
+                                    }
+    
+                                } else { // no orgs to compare ...
+                                    if (x[i]) return -1;
+                                    if (y[i]) return 1;
                                 }
-
-                                if (x[i] < y[i]) { // x is first
-                                    return -1;
-                                } else if (x[i] > y[i]) { // y is first
-                                    return 1;
-                                }
-
-                            } else { // no orgs to compare ...
-                                if (x[i]) return -1;
-                                if (y[i]) return 1;
+                                return 0;
                             }
-                            return 0;
+    
+                            var owner_order = compare_array(a.owner_list, b.owner_list, 0);
+                            if (!owner_order) {
+                                // now compare on CN label
+                                if (a.call_number.label < b.call_number.label) return -1;
+                                if (a.call_number.label > b.call_number.label) return 1;
+    
+                                // also parts sortkeys combined string
+                                if (a.monograph_parts_sortkeys < b.monograph_parts_sortkeys) return -1;
+                                if (a.monograph_parts_sortkeys > b.monograph_parts_sortkeys) return 1;
+    
+                                // try copy number
+                                if (a.copy_number < b.copy_number) return -1;
+                                if (a.copy_number > b.copy_number) return 1;
+    
+                                // finally, barcode
+                                if (a.barcode < b.barcode) return -1;
+                                if (a.barcode > b.barcode) return 1;
+                            }
+                            return owner_order;
                         }
+                    );
+                    return copies;
+                }
+                
+                svc.copies = copySort(svc.copies);
 
-                        var owner_order = compare_array(a.owner_list, b.owner_list, 0);
-                        if (!owner_order) {
-                            // now compare on CN label
-                            if (a.call_number.label < b.call_number.label) return -1;
-                            if (a.call_number.label > b.call_number.label) return 1;
-
-                            // also parts sortkeys combined string
-                            if (a.monograph_parts_sortkeys < b.monograph_parts_sortkeys) return -1;
-                            if (a.monograph_parts_sortkeys > b.monograph_parts_sortkeys) return 1;
-
-                            // try copy number
-                            if (a.copy_number < b.copy_number) return -1;
-                            if (a.copy_number > b.copy_number) return 1;
-
-                            // finally, barcode
-                            if (a.barcode < b.barcode) return -1;
-                            if (a.barcode > b.barcode) return 1;
-                        }
-                        return owner_order;
-                    }
-                );
-
+                
                 // create virtual fields for copy alert count and most recent circ
                 angular.forEach(svc.copies, function (cp) {
                     if (cp.copy_alerts) {
@@ -315,7 +287,42 @@ function(egCore , $q) {
                     }
                 }
 
+                if (empty_org) {
+
+                    var empty_org_list = [];
+                    angular.forEach(svc.org_use_map,function(v,k){
+                        if (v == 0) empty_org_list.push(k);
+                    });
+
+                    angular.forEach(empty_org_list, function (oid) {
+                        var owner = egCore.org.get(oid);
+                        if (owner.ou_type().can_have_vols() != 't') return;
+
+                        var owner_list = [];
+                        while (owner.parent_ou()) { // we're going to skip the top of the tree...
+                            owner_list.unshift(owner.shortname());
+                            owner = egCore.org.get(owner.parent_ou());
+                        }
+
+                        var owner_label = owner_list.join(' ... ');
+
+                        new_list.push({
+                            index      : index++,
+                            id_list    : [],
+                            call_number: { label : '' },
+                            barcode    : '',
+                            owner_id   : oid,
+                            owner_list : owner_list,
+                            owner_label: owner_label,
+                            copy_count : 0,
+                            cn_count   : 0,
+                            copy_alert_count : 0
+                        });
+                    });
+                }
+
                 svc.copies = new_list;
+                svc.copies = copySort(svc.copies);
                 svc.ongoing = false;
             },
 

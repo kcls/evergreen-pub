@@ -1,0 +1,9 @@
+
+
+#staff-catalog-browse-results-container .heading-row:nth-child(even) {
+  color: #212121;
+  /*background-color: #d6d7d9;*/
+  background-color: rgb(214, 215, 217, 0.5);
+}
+
+

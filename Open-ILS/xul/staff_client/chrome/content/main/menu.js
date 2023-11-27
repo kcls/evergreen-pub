@@ -275,6 +275,35 @@ main.menu.prototype = {
                 ['oncommand'],
                 function() { obj.close_all_tabs(); }
             ],
+            
+            'cmd_open_record_windows_horizontal' : [
+                ['oncommand'],
+                function(event) {
+                    var bibURLs = obj.get_opac_record_urls();
+                    if(bibURLs && bibURLs.length > 0)
+                    {
+                    var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].
+                        getService(Components.interfaces.nsIWindowMediator);
+                    wm.getMostRecentWindow('eg_main').tileWindows(bibURLs, false, bibURLs.length, 0, false);
+                    } else {
+                        alert("No Records to Display");
+                    }
+                }
+            ],
+            'cmd_open_record_windows_vertical' : [
+                ['oncommand'],
+                function(event) {
+                    var bibURLs = obj.get_opac_record_urls();
+                    if(bibURLs && bibURLs.length > 0)
+                    {
+                    var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].
+                        getService(Components.interfaces.nsIWindowMediator);
+                    wm.getMostRecentWindow('eg_main').tileWindows(bibURLs, true, bibURLs.length, 0, false);
+                    } else {
+                        alert("No Records to Display");
+                    }
+                }
+            ],
 
             /* Edit Menu */
             'cmd_edit_copy_buckets' : [
@@ -745,6 +774,12 @@ main.menu.prototype = {
                 ['oncommand'],
                 function(event) { open_admin_page('font_settings.xul', 'menu.cmd_local_admin_fonts_and_sounds.tab', false, event); }
             ],
+            'cmd_local_admin_search_templates' : [
+                ['oncommand'],
+                function(event) {
+                    open_eg_web_page('conify/global/config/search_templates', 'menu.cmd_local_admin_search_templates.tab', event);
+                }
+            ],
             'cmd_local_admin_printer' : [
                 ['oncommand'],
                 function(event) { open_admin_page('printer_settings.xul', 'menu.cmd_local_admin_printer.tab', false, event); }
@@ -778,6 +813,10 @@ main.menu.prototype = {
             'cmd_local_admin_standing_penalty' : [
                 ['oncommand'],
                 function(event) { open_eg_web_page('conify/global/config/standing_penalty', null, event); }
+            ],
+            'cmd_local_admin_patron_messages' : [
+                ['oncommand'],
+                function(event) { open_eg_web_page('conify/global/config/patron_messages', null, event); }
             ],
             'cmd_local_admin_grp_penalty_threshold' : [
                 ['oncommand'],
@@ -1355,6 +1394,17 @@ main.menu.prototype = {
                 }
             ],
 
+            'cmd_find_authority_by_id' : [
+                ['oncommand'],
+                function(event) {
+                    open_eg_web_page(
+                        urls.FIND_AUTHORITY_BY_ID,
+                        "menu.cmd_find_authority_by_id.tab",
+                        event
+                    );
+                }
+            ],
+
             'cmd_marc_batch_edit' : [
                 ['oncommand'],
                 function(event) {
@@ -1818,6 +1868,19 @@ main.menu.prototype = {
         obj.controller.view.tabscroller = window.document.getElementById('main_tabs_scrollbox');
 
         obj.sort_menu(document.getElementById('main.menu.admin'), true);
+        document.addEventListener(
+            'refresh_checkout',
+            function() {
+                try {
+                    obj.set_tab(obj.url_prefix('XUL_PATRON_BARCODE_ENTRY'));
+                } catch(E) {
+                    obj.error.sdump('D_ERROR','tab_refresh_checkout_handler: ' + js2JSON(E));
+                }
+            }
+            ,
+            false,
+            true
+        );
 
         document.addEventListener(
             'refresh_checkout',
@@ -2969,6 +3032,42 @@ commands:
         } catch(E) {
             alert('Error in menu.js, render_toolbar_layout('+layout+'): ' + E);
         }
+    },
+
+    'get_opac_record_urls'  : function() {
+        var bibURLs = [];
+        var panelCount = this.controller.view.panels.childNodes.length;
+        for (var i = 1; i < panelCount; i++) {
+            var panel = this.controller.view.panels.childNodes[ i ];
+            if (panel
+                && panel.firstChild
+                && panel.firstChild.nodeName == 'iframe'
+                && panel.firstChild.contentWindow
+                )
+            {
+                var cw = panel.firstChild.contentWindow;
+                var iframes = cw.document.getElementsByTagName('iframe');
+
+                if(iframes.length > 0)
+                {
+                    for (var y = 0; y < iframes.length; y++) {
+                        if(iframes[y].getAttribute('src').match(/^[https|chrome|oils].*/)
+                            && iframes[y].contentDocument
+                            && iframes[y].contentDocument.getElementsByTagName('browser')[0]
+                            && iframes[y].contentDocument.getElementsByTagName('browser')[0].contentWindow
+                            && iframes[y].contentDocument.getElementsByTagName('browser')[0].contentWindow.location)
+                            {
+                                var opac_url = iframes[y].contentDocument.getElementsByTagName('browser')[0].contentWindow.location;
+                                opac_url = opac_url.toString();
+                                if (opac_url.match(/eg\/opac\/record\/\d+/) || opac_url.match(/\/skin\/default\/xml\/rdetail.xml\?r=\d+/)) {
+                                        bibURLs.push(urls.XUL_OPAC_WRAPPER + '?opac_url=' + window.escape( opac_url ) + '&show_nav_buttons=false,&default_view=marc_edit');
+                                    }
+                            }
+                    }
+                }
+            }
+         }
+         return bibURLs;
     }
 }
 

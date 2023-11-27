@@ -1,5 +1,4 @@
 <div class="d-flex">
-  <h3 class="mt-3" i18n>Holdings Preferences</h3>
   <div class="flex-1"></div>
   <div i18n class="font-italic">Changes are saved automatically.</div>
 </div>
@@ -169,50 +168,49 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<hr class="p-2"/>
-<h3 i18n>Item Attribute Settings</h3>
-
-<div class="row">
-  <div class="col-lg-6">
-    <div class="card">
-      <div class="card-header" i18n>Item Attributes Behavior</div>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item">
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" 
-              id="circ_lib_mod_with_owning_lib-column" 
-              [(ngModel)]="volcopy.defaults.values.circ_lib_mod_with_owning_lib">
-            <label class="form-check-label" 
-              for="circ_lib_mod_with_owning_lib-column" i18n>
-              Change Circ Lib When Owning Lib Changes
-            </label>
-          </div>
-        </li>
-        <li class="list-group-item">
-          <div class="form-check form-check-inline">
-            <eg-org-select
-              domId="statcat_filter"
-              placeholder="Stat Cat Filter..." i18n-placeholder
-              [initialOrgId]="volcopy.defaults.values.statcat_filter"
-              (onChange)="volcopy.defaults.values.statcat_filter = $event ? $event.id() : null">
-            </eg-org-select>
-            <label class="ml-2" for="statcat_filter" i18n>
-              Default Stat Cat Library Filter
-            </label>
-          </div>
-        </li>
-      </ul>
+    <div class="row mt-2">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-header" i18n>Item Attributes Behavior</div>
+          <ul class="list-group list-group-flush">
+            <!-- KCLS ENFORCES THIS
+            <li class="list-group-item">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" 
+                  id="circ_lib_mod_with_owning_lib-column" 
+                  [(ngModel)]="volcopy.defaults.values.circ_lib_mod_with_owning_lib">
+                <label class="form-check-label" 
+                  for="circ_lib_mod_with_owning_lib-column" i18n>
+                  Change Circ Lib When Owning Lib Changes
+                </label>
+              </div>
+            </li>
+            -->
+            <li class="list-group-item">
+              <div class="form-check form-check-inline">
+                <eg-org-select
+                  domId="statcat_filter"
+                  placeholder="Stat Cat Filter..." i18n-placeholder
+                  [initialOrgId]="volcopy.defaults.values.statcat_filter"
+                  (onChange)="volcopy.defaults.values.statcat_filter = $event ? $event.id() : null">
+                </eg-org-select>
+                <label class="ml-2" for="statcat_filter" i18n>
+                  Default Stat Cat Library Filter
+                </label>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
+
   </div>
 </div>
-
 
 <hr class="p-2"/>
 
 <h3 i18n>Hide Item Attributes</h3>
+
 <span class="font-italic" i18n>
   Selected Fields Will be <span class="font-weight-bold">Hidden</span>
   from the Item Attributes Form.
@@ -446,12 +444,24 @@
       <ul class="list-group list-group-flush">
         <li class="list-group-item">
           <div class="form-check form-check-inline">
+
+            <!-- KCLS JBAS-2533 -->
+            <input class="form-check-input" type="checkbox" 
+              id="show-alert_message-attr" 
+              [(ngModel)]="volcopy.defaults.hidden.alert_message">
+            <label class="form-check-label" for="show-alert_message-attr" i18n>
+              Alert Message
+            </label>
+
+            <!-- KCLS JBAS-2533
             <input class="form-check-input" type="checkbox" 
               id="show-copy_alerts-attr" 
               [(ngModel)]="volcopy.defaults.hidden.copy_alerts">
             <label class="form-check-label" for="show-copy_alerts-attr" i18n>
               Item Alerts
             </label>
+            -->
+
           </div>
         </li>
         <li class="list-group-item">

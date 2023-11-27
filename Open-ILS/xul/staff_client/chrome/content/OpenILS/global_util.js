@@ -2,6 +2,11 @@
         xulG = window.arguments[0];
     }
 
+    var dump = function(e) {
+        /*if (window.IAMBROWSER)*/ console.debug(e);
+        //else dump(e);
+    }
+
     function $(id) { return document.getElementById(id); }
 
     function oils_unsaved_data_V() {
@@ -28,35 +33,35 @@
         }
 
         data.stash('unsaved_data');
-        dump('\n=-=-=-=-=\n');
-        dump('oils_unsaved_data_V for ' + location.href + '\n');
-        dump('incrementing window.oils_lock\n');
-        dump('incrementing data.unsaved_data\n');
-        dump('\twindow.oils_lock == ' + window.oils_lock + '\n');
-        dump('\tdata.unsaved_data == ' + data.unsaved_data + '\n');
+         console.log('\n=-=-=-=-=\n');
+         console.log('oils_unsaved_data_V for ' + location.href + '\n');
+         console.log('incrementing window.oils_lock\n');
+         console.log('incrementing data.unsaved_data\n');
+         console.log('\twindow.oils_lock == ' + window.oils_lock + '\n');
+         console.log('\tdata.unsaved_data == ' + data.unsaved_data + '\n');
     }
 
     function oils_unsaved_data_P(count) {
-        dump('\n=-=-=-=-=\n');
-        dump('oils_unsaved_data_P for ' + location.href + '\n');
+         console.log('\n=-=-=-=-=\n');
+         console.log('oils_unsaved_data_P for ' + location.href + '\n');
         if (!count) { count = 1; }
-        dump('decrementing window.oils_lock by ' + count + '\n');
+         console.log('decrementing window.oils_lock by ' + count + '\n');
         window.oils_lock -= count;
         if (window.oils_lock < 0) { window.oils_lock = 0; }
         JSAN.use('OpenILS.data'); var data = new OpenILS.data(); data.stash_retrieve();
         data.stash_retrieve();
         if (typeof data.unsaved_data == 'undefined') { data.unsaved_data = 0; }
-        dump('decrementing data.unsaved_data by ' + count + '\n');
+         console.log('decrementing data.unsaved_data by ' + count + '\n');
         data.unsaved_data -= count;
         if (data.unsaved_data < 0) { data.unsaved_data = 0; }
         data.stash('unsaved_data');
-        dump('\twindow.oils_lock == ' + window.oils_lock + '\n');
-        dump('\tdata.unsaved_data == ' + data.unsaved_data + '\n');
+         console.log('\twindow.oils_lock == ' + window.oils_lock + '\n');
+         console.log('\tdata.unsaved_data == ' + data.unsaved_data + '\n');
     }
 
     function oils_lock_page(params) {
-        dump('\n=-=-=-=-=\n');
-        dump('oils_lock_page for ' + location.href + '\n');
+         console.log('\n=-=-=-=-=\n');
+         console.log('oils_lock_page for ' + location.href + '\n');
         if (!params) { params = {}; }
         if (window.oils_lock > 0) {
             if (!params.allow_multiple_locks) {
@@ -72,7 +77,7 @@
 
         if (typeof xulG != 'undefined') {
             if (typeof xulG.unlock_tab == 'function') {
-                dump('\twith xulG.lock_tab\n');
+                 console.log('\twith xulG.lock_tab\n');
                 xulG.lock_tab();
                 //make sure we are not in the marc edit window
                 var marceditRe = /\/marcedit.xul$/;
@@ -86,46 +91,46 @@
                 }
                 window.oils_lock++; // different window scope than the chrome of xulG.lock_tab
             } else {
-                dump('\twithout xulG.lock_tab\n');
+                 console.log('\twithout xulG.lock_tab\n');
                 oils_unsaved_data_V();
             }
         } else {
-            dump('\twithout xulG.lock_tab\n');
+             console.log('\twithout xulG.lock_tab\n');
             oils_unsaved_data_V();
         }
         return window.oils_lock;
     }
 
     function oils_unlock_page(params) {
-        dump('\n=-=-=-=-=\n');
-        dump('oils_unlock_page for ' + location.href + '\n');
+         console.log('\n=-=-=-=-=\n');
+         console.log('oils_unlock_page for ' + location.href + '\n');
 
         if (typeof xulG != 'undefined') {
             if (typeof xulG.unlock_tab == 'function') {
-                dump('\twith xulG.unlock_tab\n');
+                 console.log('\twith xulG.unlock_tab\n');
                 xulG.unlock_tab();
                 window.oils_lock--; // different window scope than the chrome of xulG.unlock_tab
                 if (window.oils_lock < 0) { window.oils_lock = 0; }
             } else {
-                dump('\twithout xulG.unlock_tab\n');
+                 console.log('\twithout xulG.unlock_tab\n');
                 oils_unsaved_data_P();
             }
         } else {
-            dump('\twithout xulG.unlock_tab\n');
+             console.log('\twithout xulG.unlock_tab\n');
             oils_unsaved_data_P();
         }
         return window.oils_lock;
     }
 
     window.oils_lock = 0;
-    dump('\n=-=-=-=-=\n');
-    dump('init window.oils_lock == ' + window.oils_lock + ' for ' + location.href + '\n');
+     console.log('\n=-=-=-=-=\n');
+     console.log('init window.oils_lock == ' + window.oils_lock + ' for ' + location.href + '\n');
     window.addEventListener(
         'close',
         function(ev) {
             try {
-                dump('\n=-=-=-=-=\n');
-                dump('oils_lock_page/oils_unlock_page onclose handler for ' + location.href + '\n');
+                 console.log('\n=-=-=-=-=\n');
+                 console.log('oils_lock_page/oils_unlock_page onclose handler for ' + location.href + '\n');
                 if (window.oils_lock > 0) {
                     var confirmation = window.confirm($('offlineStrings').getString('menu.close_window.unsaved_data_warning'));
                     if (!confirmation) {
@@ -144,7 +149,7 @@
                     oils_unsaved_data_P( window.oils_lock );
                 }
                 window.oils_lock = 0;
-                dump('forcing window.oils_lock == ' + window.oils_lock + '\n');
+                 console.log('forcing window.oils_lock == ' + window.oils_lock + '\n');
 
                 // Dispatching the window close event doesn't always close the window, even though the event does happen
                 setTimeout(
@@ -152,14 +157,14 @@
                         try {
                             window.close();
                         } catch(E) {
-                            dump('Error inside global_util.js, onclose handler, setTimeout window.close KLUDGE: ' + E + '\n');
+                             console.log('Error inside global_util.js, onclose handler, setTimeout window.close KLUDGE: ' + E + '\n');
                         }
                     }, 0
                 );
 
                 return true;
             } catch(E) {
-                dump('Error inside global_util.js, onclose handler: ' + E + '\n');
+                 console.log('Error inside global_util.js, onclose handler: ' + E + '\n');
                 return true;
             }
         },
@@ -202,7 +207,7 @@
                 break;
             }
         } catch(E) {
-            alert(location.href + '\nError in global_utils.js, ses(): ' + E);
+            console.log(location.href + '\nError in global_utils.js, ses(): ' + E);
             throw(E);
         }
     }
@@ -222,7 +227,7 @@
             addCSSClass(document.documentElement,data.global_font_adjust);
         } catch(E) {
             var Strings = $('offlineStrings') || $('commonStrings');
-            alert(Strings.getFormattedString('openils.global_util.font_size.error', [E]));
+            console.log(Strings.getFormattedString('openils.global_util.font_size.error', [E]));
         }
     }
 
@@ -234,7 +239,7 @@
             evt.initEvent( 'oils_persist', false, cancelable ); // event name, bubbles, cancelable
             e.dispatchEvent(evt);
         } catch(E) {
-            alert('Error with oils_persist():' + E);
+            console.log('Error with oils_persist():' + E);
         }
     }
 
@@ -261,7 +266,7 @@
                     try {
                         oils_persist(ev.target);
                     } catch(E) {
-                        alert('Error in persist_helper, firing virtual event oils_persist after ' + etype + ' event on ' + node.nodeName + '.id = ' + node.id + ': ' + E);
+                        console.log('Error in persist_helper, firing virtual event oils_persist after ' + etype + ' event on ' + node.nodeName + '.id = ' + node.id + ': ' + E);
                     }
                 };
             };
@@ -282,36 +287,36 @@
                         var filename = location.pathname.split('/')[ location.pathname.split('/').length - 1 ];
                         var base_key = 'oils_persist_' + String(oils_persist_hostname() + '_' + filename + '_' + target.getAttribute('id')).replace('/','_','g') + '_' + base_key_suffix;
                         var attribute_list = target.getAttribute('oils_persist').split(' ');
-                        dump('on_oils_persist: <<< ' + target.nodeName + '.id = ' + target.id + '\t' + bk + '\n');
+                         console.log('on_oils_persist: <<< ' + target.nodeName + '.id = ' + target.id + '\t' + bk + '\n');
                         for (var j = 0; j < attribute_list.length; j++) {
                             var key = base_key + attribute_list[j];
                             var value;
                             try {
                                 value = encodeURI(target.getAttribute( attribute_list[j] ));
                             } catch(E) {
-                                dump('Error in persist_helper with encodeURI: ' + E + '\n');
+                                 console.log('Error in persist_helper with encodeURI: ' + E + '\n');
                                 value = target.getAttribute( attribute_list[j] );
                             }
                             if ( attribute_list[j] == 'checked' && ['checkbox','toolbarbutton'].indexOf( target.nodeName ) > -1 ) {
                                 value = target.checked;
-                                dump('\t' + value + ' <== .' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== .' + attribute_list[j] + '\n');
                             } else if ( attribute_list[j] == 'value' && ['menulist'].indexOf( target.nodeName ) > -1 ) {
                                 value = target.value;
-                                dump('\t' + value + ' <== .' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== .' + attribute_list[j] + '\n');
                             } else if ( attribute_list[j] == 'value' && ['textbox'].indexOf( target.nodeName ) > -1 ) {
                                 value = target.value;
-                                dump('\t' + value + ' <== .' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== .' + attribute_list[j] + '\n');
                             } else if ( attribute_list[j] == 'sizemode' && ['window'].indexOf( target.nodeName ) > -1 ) {
                                 value = window.windowState;
-                                dump('\t' + value + ' <== window.windowState, @' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== window.windowState, @' + attribute_list[j] + '\n');
                             } else if ( attribute_list[j] == 'height' && ['window'].indexOf( target.nodeName ) > -1 ) {
                                 value = window.outerHeight;
-                                dump('\t' + value + ' <== window.outerHeight, @' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== window.outerHeight, @' + attribute_list[j] + '\n');
                             } else if ( attribute_list[j] == 'width' && ['window'].indexOf( target.nodeName ) > -1 ) {
                                 value = window.outerWidth;
-                                dump('\t' + value + ' <== window.outerWidth, @' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== window.outerWidth, @' + attribute_list[j] + '\n');
                             } else {
-                                dump('\t' + value + ' <== @' + attribute_list[j] + '\n');
+                                 console.log('\t' + value + ' <== @' + attribute_list[j] + '\n');
                             }
                             prefs.setCharPref( key, value );
                             // TODO: Need to add logic for splitter repositioning, grippy state, etc.
@@ -320,12 +325,12 @@
                         if (target.hasAttribute('oils_persist_peers') && ! ev.cancelable) { // We abuse the .cancelable field on the oils_persist event to prevent looping
                             var peer_list = target.getAttribute('oils_persist_peers').split(' ');
                             for (var j = 0; j < peer_list.length; j++) {
-                                dump('on_oils_persist: dispatching oils_persist to peer ' + peer_list[j] + '\n');
+                                 console.log('on_oils_persist: dispatching oils_persist to peer ' + peer_list[j] + '\n');
                                 oils_persist( document.getElementById( peer_list[j] ), true );
                             } 
                         }
                     } catch(E) {
-                        alert('Error in persist_helper() event listener for ' + bk + ': ' + E);
+                        console.log('Error in persist_helper() event listener for ' + bk + ': ' + E);
                     }
                 };
             }
@@ -336,7 +341,7 @@
                 var filename = location.pathname.split('/')[ location.pathname.split('/').length - 1 ];
                 var base_key = 'oils_persist_' + String(oils_persist_hostname() + '_' + filename + '_' + nodes[i].getAttribute('id')).replace('/','_','g') + '_' + base_key_suffix;
                 var attribute_list = nodes[i].getAttribute('oils_persist').split(' ');
-                dump('persist_helper: >>> ' + nodes[i].nodeName + '.id = ' + nodes[i].id + '\t' + base_key + '\n');
+                 console.log('persist_helper: >>> ' + nodes[i].nodeName + '.id = ' + nodes[i].id + '\t' + base_key + '\n');
                 for (var j = 0; j < attribute_list.length; j++) {
                     var key = base_key + attribute_list[j];
                     var has_key = prefs.prefHasUserValue(key);
@@ -344,7 +349,7 @@
                     try {
                         value = has_key ? decodeURI(prefs.getCharPref(key)) : null;
                     } catch(E) {
-                        dump('Error in persist_helper with decodeURI: ' + E + '\n');
+                         console.log('Error in persist_helper with decodeURI: ' + E + '\n');
                         value = has_key ? prefs.getCharPref(key) : null;
                     }
                     if (value == 'true') { value = true; }
@@ -352,17 +357,17 @@
                     if (has_key) {
                         if ( attribute_list[j] == 'checked' && ['checkbox','toolbarbutton'].indexOf( nodes[i].nodeName ) > -1 ) {
                             nodes[i].checked = value; 
-                            dump('\t' + value + ' ==> .' + attribute_list[j] + '\n');
+                             console.log('\t' + value + ' ==> .' + attribute_list[j] + '\n');
                             if (!value) {
                                 nodes[i].removeAttribute('checked');
-                                dump('\tremoving @checked\n');
+                                 console.log('\tremoving @checked\n');
                             }
                         } else if ( attribute_list[j] == 'value' && ['textbox'].indexOf( nodes[i].nodeName ) > -1 ) {
                             nodes[i].value = value;
-                            dump('\t' + value + ' ==> .' + attribute_list[j] + '\n');
+                             console.log('\t' + value + ' ==> .' + attribute_list[j] + '\n');
                         } else if ( attribute_list[j] == 'value' && ['menulist'].indexOf( nodes[i].nodeName ) > -1 ) {
                             nodes[i].value = value;
-                            dump('\t' + value + ' ==> .' + attribute_list[j] + '\n');       
+                             console.log('\t' + value + ' ==> .' + attribute_list[j] + '\n');       
                         } else if ( attribute_list[j] == 'sizemode' && ['window'].indexOf( nodes[i].nodeName ) > -1 ) {
                             switch(value) {
                                 case window.STATE_MAXIMIZED:
@@ -372,16 +377,16 @@
                                     window.minimize();
                                     break;
                             };
-                            dump('\t' + value + ' ==> window.windowState, @' + attribute_list[j] + '\n');
+                             console.log('\t' + value + ' ==> window.windowState, @' + attribute_list[j] + '\n');
                         } else if ( attribute_list[j] == 'height' && ['window'].indexOf( nodes[i].nodeName ) > -1 ) {
                             window.outerHeight = value;
-                            dump('\t' + value + ' ==> window.outerHeight, @' + attribute_list[j] + '\n');
+                             console.log('\t' + value + ' ==> window.outerHeight, @' + attribute_list[j] + '\n');
                         } else if ( attribute_list[j] == 'width' && ['window'].indexOf( nodes[i].nodeName ) > -1 ) {
                             window.outerWidth = value;
-                            dump('\t' + value + ' ==> window.outerWidth, @' + attribute_list[j] + '\n');
+                             console.log('\t' + value + ' ==> window.outerWidth, @' + attribute_list[j] + '\n');
                         } else {
                             nodes[i].setAttribute( attribute_list[j], value);
-                            dump('\t' + value + ' ==> @' + attribute_list[j] + '\n');
+                             console.log('\t' + value + ' ==> @' + attribute_list[j] + '\n');
                         }
                     }
                 }
@@ -391,15 +396,15 @@
                     var no_poke = nodes[i].getAttribute('oils_persist_no_poke');
                     if (no_poke && no_poke == 'true') {
                         // Timing issue for some checkboxes; don't poke them with an event
-                        dump('\tnot poking\n');
+                         console.log('\tnot poking\n');
                     } else {
                         if (cmd_el) {
-                            dump('\tpoking @command\n');
+                             console.log('\tpoking @command\n');
                             var evt = document.createEvent("Events");
                             evt.initEvent( 'command', true, true );
                             cmd_el.dispatchEvent(evt);
                         } else {
-                            dump('\tpoking\n');
+                             console.log('\tpoking\n');
                             var evt = document.createEvent("Events");
                             evt.initEvent( 'command', true, true );
                             nodes[i].dispatchEvent(evt);
@@ -452,7 +457,7 @@
                 }
             }
         } catch(E) {
-            alert('Error in persist_helper(): ' + E);
+            console.log('Error in persist_helper(): ' + E);
         }
     }
 
@@ -460,7 +465,7 @@
         try {
             window.persist_helper_event_listeners.removeAll();
         } catch(E) {
-            alert('Error in persist_helper_cleanup(): ' + E);
+            console.log('Error in persist_helper_cleanup(): ' + E);
         }
     }
 
@@ -478,35 +483,33 @@
                                      return frame.contentWindow.wrappedJSObject;
                           }
                 } catch(E) {
-                    var Strings = $('offlineStrings') || $('commonStrings');
-                    alert(Strings.getFormattedString('openils.global_util.content_window_jsobject.error', [frame, E]));
+                    console.error('get_contentWindow failed', E);
                 }
                 return frame.contentWindow;
             } else {
                 return null;
             }
         } catch(E) {
-            var Strings = $('offlineStrings') || $('commonStrings');
-            alert(Strings.getFormattedString('openils.global_util.content_window.error', [frame, E]));
+            console.error('get_contentWindow failed', E);
         }
     }
 
     function xul_param(param_name,_params) {
         /* By default, this function looks for a CGI-style query param identified by param_name.  If one isn't found, it then looks in xulG.  If one still isn't found, and _params.stash_name is true, it looks in the global xpcom stash for the field identified by stash_name.  If _params.concat is true, then it looks in all these places and concatenates the results.  There are also options for converting JSON to javascript objects, and clearing the xpcom stash_name field after retrieval.  Also added, ability to search a specific spot in the xpcom stash that implements a stack to hold xulG's for modal windows */
         try {
-            //dump('xul_param('+param_name+','+js2JSON(_params)+')\n');
+            // console.log('xul_param('+param_name+','+js2JSON(_params)+')\n');
             var value = undefined; if (!_params) _params = {};
             if (typeof _params.no_cgi == 'undefined') {
                 var cgi = new CGI();
                 if (cgi.param(param_name)) {
                     var x = cgi.param(param_name);
-                    //dump('\tfound via location.href = ' + x + '\n');
+                    // console.log('\tfound via location.href = ' + x + '\n');
                     if (typeof _params.JSON2js_if_cgi != 'undefined') {
                         x = JSON2js( x );
-                        //dump('\tJSON2js = ' + x + '\n');
+                        // console.log('\tJSON2js = ' + x + '\n');
                     }
                     if (typeof _params.concat == 'undefined') {
-                        //alert(param_name + ' x = ' + x);
+                        //console.log(param_name + ' x = ' + x);
                         return x; // value
                     } else {
                         if (value) {
@@ -521,13 +524,13 @@
             if (typeof _params.no_xulG == 'undefined') {
                 if (typeof xulG == 'object' && typeof xulG[ param_name ] != 'undefined') {
                     var x = xulG[ param_name ];
-                    //dump('\tfound via xulG = ' + x + '\n');
+                    // console.log('\tfound via xulG = ' + x + '\n');
                     if (typeof _params.JSON2js_if_xulG != 'undefined') {
                         x = JSON2js( x );
-                        //dump('\tJSON2js = ' + x + '\n');
+                        // console.log('\tJSON2js = ' + x + '\n');
                     }
                     if (typeof _params.concat == 'undefined') {
-                        //alert(param_name + ' x = ' + x);
+                        //console.log(param_name + ' x = ' + x);
                         return x; // value
                     } else {
                         if (value) {
@@ -545,16 +548,16 @@
                     JSAN.use('OpenILS.data'); var data = new OpenILS.data(); data.init({'via':'stash'});
                     if (typeof data[ _params.stash_name ] != 'undefined') {
                         var x = data[ _params.stash_name ];
-                        //dump('\tfound via xpcom = ' + x + '\n');
+                        // console.log('\tfound via xpcom = ' + x + '\n');
                         if (typeof _params.JSON2js_if_xpcom != 'undefined') {
                             x = JSON2js( x );
-                            //dump('\tJSON2js = ' + x + '\n');
+                            // console.log('\tJSON2js = ' + x + '\n');
                         }
                         if (_params.clear_xpcom) { 
                             data[ _params.stash_name ] = undefined; data.stash( _params.stash_name ); 
                         }
                         if (typeof _params.concat == 'undefined') {
-                            //alert(param_name + ' x = ' + x);
+                            //console.log(param_name + ' x = ' + x);
                             return x; // value
                         } else {
                             if (value) {
@@ -567,10 +570,10 @@
                     }
                 }
             }
-            //alert(param_name + ' value = ' + value);
+            //console.log(param_name + ' value = ' + value);
             return value;
         } catch(E) {
-            dump('xul_param error: ' + E + '\n');
+             console.log('xul_param error: ' + E + '\n');
         }
     }
 
@@ -611,10 +614,10 @@
                 .getService(Components.interfaces.nsIClipboardHelper);
             gClipboardHelper.copyString(text);
             var Strings = $('offlineStrings') || $('commonStrings');
-            // alert(Strings.getFormattedString('openils.global_util.clipboard', [text]));
+            // console.log(Strings.getFormattedString('openils.global_util.clipboard', [text]));
         } catch(E) {
             var Strings = $('offlineStrings') || $('commonStrings');
-            alert(Strings.getFormattedString('openils.global_util.clipboard.error', [E]));    
+            console.log(Strings.getFormattedString('openils.global_util.clipboard.error', [E]));    
         }
     }
 
@@ -626,7 +629,7 @@
             cacheService.evictEntries(Components.interfaces.nsICache.STORE_IN_MEMORY);
         } catch(E) {
             var Strings = $('offlineStrings') || $('commonStrings');
-            alert(Strings.getFormattedString('openils.global_util.clear_cache.error', [E]));
+            console.log(Strings.getFormattedString('openils.global_util.clear_cache.error', [E]));
         }
     }
 
@@ -644,7 +647,7 @@
         }
         if (url.match(/^\//)) url = urls.remote + url;
         if (! url.match(/^(http|https|chrome|oils):\/\//) && ! url.match(/^data:/) ) url = 'http://' + url;
-        dump('url_prefix = ' + url + '\n');
+         console.log('url_prefix = ' + url + '\n');
         return url;
     }
 
@@ -675,7 +678,7 @@
                 return my_xulG.value;
             }
         } catch(E) {
-            alert('Error in global_utils.js, widget_prompt(): ' + E);
+            console.log('Error in global_utils.js, widget_prompt(): ' + E);
         }
     }
 
@@ -688,7 +691,7 @@
                 JSAN.use('addon.autoloader');
                 window.oils_autoloaded = new addon.autoloader();
             } catch(E) {
-                dump('Error in global_util.js with addon.autoloader: ' + E + '\n');
+                 console.log('Error in global_util.js with addon.autoloader: ' + E + '\n');
             }
         },
         false

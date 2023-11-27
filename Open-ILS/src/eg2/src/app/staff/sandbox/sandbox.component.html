@@ -2,6 +2,17 @@
 <eg-staff-banner bannerText="Sandbox" i18n-bannerText>
 </eg-staff-banner>
 
+<h2>Native Date Select</h2>
+<div class="row mb-3">
+  <div class="col-lg-3">
+    <eg-date-select-native min="2021-10-01" 
+      max="2021-10-20" [(ngModel)]="nativeDate"></eg-date-select-native>
+  </div>
+  <div class="col-lg-3">
+    Value: {{nativeDate}}
+  </div>
+</div>
+
 <eg-title 
   i18n-prefix i18n-suffix
   prefix=":) {{dynamicTitleText}}"
@@ -162,6 +173,8 @@
       (click)="testServerPrint()">Test Server-Generated Print</button>
   </div>
 </div>
+
+<button class="btn btn-secondary" (click)="printWithDialog()">Print with dialog</button>
 
 <br/><br/>
 <div class="row">
@@ -453,5 +466,16 @@
     <div class="col-lg-4">
       valueChange Handler Produced: {{aLocation ? aLocation.name() : '(none)'}}
     </div>
+  </div>
+</div>
+
+
+<div class="mt-4 mb-4">
+  <h4>Due Date Pipe Examples</h4>
+  <div class="row">
+    <div class="col-lg-2">Due Date Daily Duration:</div>
+    <div class="col-lg-2">{{circDaily | egDueDate}}</div>
+    <div class="col-lg-2">Due Date Hourly Duration:</div>
+    <div class="col-lg-2">{{circHourly | egDueDate}}</div>
   </div>
 </div>

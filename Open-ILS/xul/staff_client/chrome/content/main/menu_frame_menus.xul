@@ -15,6 +15,8 @@
     <command id="cmd_close_all_tabs" />
     <command id="cmd_shutdown" />
     <command id="cmd_portal" />
+    <command id="cmd_open_record_windows_horizontal" />
+    <command id="cmd_open_record_windows_vertical" />
 
     <command id="cmd_edit_copy_buckets" />
     <command id="cmd_edit_volume_buckets" />
@@ -24,6 +26,7 @@
     <command id="cmd_cat_main" />
     <command id="cmd_create_marc" />
     <command id="cmd_authority_manage" />
+    <command id="cmd_find_authority_by_id" />
     <command id="cmd_url_verify" />
     <command id="cmd_circ_checkout" />
     <command id="cmd_patron_search" />
@@ -122,6 +125,7 @@
 
     <!-- local admin menu commands -->
     <command id="cmd_local_admin_fonts_and_sounds" />
+    <command id="cmd_local_admin_search_templates" />
     <command id="cmd_local_admin_printer" />
     <command id="cmd_local_admin_do_not_auto_attempt_print_setting" />
     <command id="cmd_local_admin_closed_dates"
@@ -140,6 +144,11 @@
     <command id="cmd_local_admin_standing_penalty" 
              perm="ADMIN_STANDING_PENALTY" 
              />
+
+    <command id="cmd_local_admin_patron_messages"
+             perm="ADMIN_STANDING_PENALTY"
+             />
+
     <command id="cmd_local_admin_grp_penalty_threshold" 
              perm="ADMIN_GROUP_PENALTY_THRESHOLD" 
              />
@@ -378,6 +387,8 @@
         <menuitem label="&staff.main.menu.file.close_tab.label;" accesskey="&staff.main.menu.file.close_tab.accesskey;" command="cmd_close_tab"/>
         <menuitem label="&staff.main.menu.tabs.close;" accesskey="&staff.main.menu.tabs.close.accesskey;" command="cmd_close_all_tabs"/>
         <menuitem label="&staff.main.menu.file.close.label;" accesskey="&staff.main.menu.file.close.accesskey;" command="cmd_close_window"/>
+        <menuitem label="&staff.main.menu.file.open.record.windows.vertical;" command="cmd_open_record_windows_vertical"/>
+        <menuitem label="&staff.main.menu.file.open.record.windows.horizontal;" command="cmd_open_record_windows_horizontal"/>
         <menuseparator />
         <menuitem label="&staff.main.menu.quit;" accesskey="&staff.main.menu.quit.accesskey;" command="cmd_shutdown"/>
     </menupopup>
@@ -453,6 +464,7 @@
         <menuitem label="&staff.main.menu.cat.retrieve_last_record.label;" accesskey="&staff.main.menu.cat.retrieve_last_record.accesskey;" command="cmd_retrieve_last_record"/>
         <menuseparator />
         <menuitem label="&staff.main.menu.cat.authority_manage.label;" accesskey="&staff.main.menu.cat.authority_manage.accesskey;" command="cmd_authority_manage"/>
+        <menuitem label="&staff.main.menu.cat.find_authority_by_id.label;" accesskey="&staff.main.menu.cat.find_authority_by_id.accesskey;" command="cmd_find_authority_by_id"/>
         <menuseparator />
         <menuitem label="&staff.main.menu.cat.url_verify.label;" accesskey="&staff.main.menu.cat.url_verify.accesskey;" command="cmd_url_verify"/>
     </menupopup>
@@ -534,6 +546,7 @@
                 <menuitem label="&staff.server.admin.index.printer;" command="cmd_local_admin_printer"/>
                 <menuitem label="&staff.main.menu.admin.template_edit.label;" accesskey="&staff.main.menu.admin.template_edit.accesskey;" command="cmd_print_list_template_edit"/>
                 <menuitem label="&staff.server.admin.index.fonts_and_sounds;" command="cmd_local_admin_fonts_and_sounds"/>
+                <menuitem label="&staff.server.admin.index.search_templates;" command="cmd_local_admin_search_templates"/>
                 <menuitem label="&staff.main.menu.admin.client.search_prefs.label;" command="cmd_search_prefs"/>
                 <menuitem label="&staff.main.menu.admin.client.server_addon_ws_configure.label;" command="cmd_server_addon_ws_configure"/>
                 <menuitem type="checkbox" label="&staff.main.menu.admin.client.copy_editor.copy_location.label;" command="cmd_copy_editor_copy_location_first_toggle"/>
@@ -635,6 +648,7 @@
                 <menuitem label="&staff.server.admin.index.reports;" command="cmd_local_admin_reports"/>
                 <menuitem label="&staff.main.menu.admin.local_admin.search_filter_group.label;" command="cmd_local_admin_search_filter_group"/>
                 <menuitem label="&staff.main.menu.admin.local_admin.conify.standing_penalty.label;" command="cmd_local_admin_standing_penalty"/>
+                <menuitem label="&staff.main.menu.admin.local_admin.conify.patron_message_editor.label;" command="cmd_local_admin_patron_messages"/>
                 <menuitem label="&staff.server.admin.index.statistical_categories;" command="cmd_local_admin_stat_cats"/>
                 <menuitem label="&staff.main.menu.admin.local_admin.conify.survey.label;" command="cmd_local_admin_survey"/>
                 <menuitem label="&staff.server.admin.index.transit_list;" command="cmd_local_admin_transit_list"/>

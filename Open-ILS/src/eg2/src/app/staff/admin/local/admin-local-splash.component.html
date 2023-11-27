@@ -3,6 +3,8 @@
 
 <div class="container">
   <eg-link-table columnCount="3">
+    <eg-link-table-link i18n-label label="ADA Requests"
+      routerLink="/staff/circ/ada-requests"></eg-link-table-link>
     <eg-link-table-link i18n-label label="Address Alerts" 
       routerLink="/staff/admin/local/actor/address_alert"></eg-link-table-link>
     <eg-link-table-link i18n-label label="Age Overdue Circulations to Lost" 
@@ -53,7 +55,7 @@
     <eg-link-table-link i18n-label label="Notifications / Action Triggers" 
       routerLink="/staff/admin/local/action_trigger/event_definition"></eg-link-table-link>
     <eg-link-table-link i18n-label label="Patrons with Negative Balances" 
-      url="/eg/staff/admin/local/circ/neg_balance_users"></eg-link-table-link>
+      routerLink="/staff/admin/local/negative-balances"></eg-link-table-link>
     <eg-link-table-link i18n-label label="Permission Tree Display Entries" 
       url="/eg/staff/admin/local/permission/grp_tree_display_entry"></eg-link-table-link>
     <eg-link-table-link i18n-label label="Search Filter Groups" 
@@ -77,6 +79,6 @@
     <eg-link-table-link i18n-label label="Transit List" 
       url="/eg/staff/circ/transits/list"></eg-link-table-link>
     <eg-link-table-link i18n-label label="Work Log" 
-      url="/eg/staff/admin/workstation/log"></eg-link-table-link>
+      routerLink="/staff/circ/worklog"></eg-link-table-link>
   </eg-link-table>
 </div>

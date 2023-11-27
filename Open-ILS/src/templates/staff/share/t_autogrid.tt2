@@ -13,7 +13,8 @@
     <button type="button" class="btn btn-default eg-grid-menu-item" uib-dropdown-toggle>
       {{menuLabel}}<span class="caret"></span>
     </button>
-    <ul class="scrollable-menu" uib-dropdown-menu>
+    <!-- KCLS JBAS-2216 disable grid actions menu scrolling -->
+    <ul class="xscrollable-menu" uib-dropdown-menu>
       <li ng-repeat="item in menuItems | filter : { standalone : 'false' }" ng-if="!item.checkbox && !item.hidden()" ng-class="{divider: item.divider}">
         <a ng-if="!item.divider" href a-disabled="item.disabled()"
           ng-click="item.handler()">{{item.label}}</a>
@@ -98,7 +99,8 @@
       <button type="button" class="btn btn-default" uib-dropdown-toggle>
         [% l('Actions') %] <span class="caret"></span>                       
       </button>                                                              
-      <ul class="pull-right grid-action-dropdown scrollable-menu" uib-dropdown-menu>
+      <!-- KCLS JBAS-2216 disable grid actions menu scrolling -->
+      <ul class="pull-right grid-action-dropdown xscrollable-menu" uib-dropdown-menu>
         <li ng-repeat-start="group in actionGroups">
           <span style="padding-left: 1em;" ng-if="group.label"><strong><u>{{group.label}}</u></strong></span>
         </li>
@@ -206,7 +208,7 @@
           [% l('Print Full Grid') %]
         </a></li>
         <li role="presentation" class="divider"></li>
-        <li ng-repeat="col in columns">
+        <li ng-repeat="col in columnsForPicker()">
           <a href title="{{col.idlclass}}" ng-click="toggleColumnVisibility(col)">
               <span ng-if="col.visible" 
                 class="label label-success">&#x2713;</span>
@@ -294,8 +296,11 @@
   </div>
 
   <div class="eg-grid-content-body">
-    <div ng-show="items.length == 0" 
+    <div ng-show="items.length == 0 && !gridCollecting" 
       class="alert alert-info">[% l('No Items To Display') %]</div>
+
+    <div ng-show="items.length == 0 && gridCollecting" 
+      class="alert alert-info">[% l('Loading...') %]</div>
 
     <div class="eg-grid-row" 
         id="eg-grid-row-{{$index + 1}}"

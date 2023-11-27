@@ -11,24 +11,26 @@
 <ng-template #barcodeTemplate let-copy="row" let-context="userContext">
   <div>{{copy.barcode}}</div>
   <div>
-  <a class="pl-1" target="_blank" 
-    href="/eg/staff/cat/item/{{copy.id}}" i18n>View</a>
+    <a class="pl-1" target="_blank" 
+      routerLink="/staff/cat/item/{{copy.id}}/summary" i18n>View</a>
+    | 
     <ng-container *ngIf="context.editable(copy)">
-      | <a class="pl-1" target="_blank"
-        routerLink="/staff/cat/volcopy/attrs/item/{{copy.id}}" i18n>Edit</a>
+    <a class="pl-1" target="_blank"
+      routerLink="/staff/cat/volcopy/attrs/item/{{copy.id}}" i18n>Edit</a>
     </ng-container>
   </div>
 </ng-template>
 
 <ng-template #holdableTemplate let-copy="row" let-context="userContext">
   <div *ngIf="context.holdable(copy)">
-    <div class="border-bottom">
+    <div>
       <a routerLink="/staff/catalog/hold/C"
         [queryParams]="{target: copy.id}"
         queryParamsHandling="merge" i18n>
         Item Hold
       </a>
     </div>
+    <!--
     <div>
       <a routerLink="/staff/catalog/hold/V"
         [queryParams]="{target: copy.call_number}"
@@ -36,6 +38,7 @@
         Call Number Hold
       </a>
     </div>
+    -->
   </div>
   <div *ngIf="!context.holdable(copy)" i18n>No</div>
 </ng-template>
@@ -52,10 +55,22 @@
   {{copy.age_protect_label}}
 </ng-template>
 
-<div class='eg-copies w-100 mt-3'>
+<ng-template #circModTemplate let-row="row" let-userContext="userContext">
+  <ng-container *ngIf="row.circ_modifier_code" i18n>
+    {{row.circ_modifier_code}} : {{row.circ_modifier_name}}
+  </ng-container>
+</ng-template>
+
+<div class='eg-copies w-100 mt-3' *ngIf="limitToViable !== null">
   <eg-grid #copyGrid [dataSource]="gridDataSource" 
     [disableSelect]="true" [cellTextGenerator]="cellTextGenerator"
     [sortable]="false" persistKey="catalog.record.copies">
+
+    <eg-grid-toolbar-checkbox i18n-label label="Limit to Viable Items"
+      [initialValue]="limitToViable"                                           
+      #limitToViableCbox (onChange)="toggleLimitToViable($event)">
+    </eg-grid-toolbar-checkbox>
+
     <eg-grid-column i18n-label label="Item ID" path="id" 
       [hidden]="true" [index]="true">
     </eg-grid-column>
@@ -71,13 +86,17 @@
     </eg-grid-column>
     <eg-grid-column i18n-label label="Shelving Location" path="copy_location">
     </eg-grid-column>
-    <eg-grid-column i18n-label label="Circulation Modifier" path="circ_modifier">
+    <eg-grid-column i18n-label label="Circulation Modifier"
+      [cellTemplate]="circModTemplate" name="circ_modifier">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Age Hold Protection" path="age_protect"
       [cellTemplate]="ageTemplate">
     </eg-grid-column>
-    <eg-grid-column i18n-label label="Active/Create Date" 
+    <eg-grid-column i18n-label label="Active Date" 
       path="active_date" datatype="timestamp">
+    </eg-grid-column>
+    <eg-grid-column i18n-label label="Create Date" 
+      path="create_date" datatype="timestamp">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Holdable?" name="holdable" 
       [cellTemplate]="holdableTemplate" [cellContext]="copyContext">
@@ -88,6 +107,8 @@
     <eg-grid-column i18n-label label="Status" path="copy_status">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Due Date" path="due_date" datatype="timestamp">
+    </eg-grid-column>
+    <eg-grid-column i18n-label label="Alert Message" path="alert_message">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Last Circ Date" path="last_circ" datatype="timestamp">
     </eg-grid-column>

@@ -6,11 +6,13 @@
       <ng-container *ngIf="summary.record.deleted() == 't'">
         <span class="text-danger" i18n>(Deleted)</span>
       </ng-container>
-      <ng-container *ngIf="summary.attributes.icon_format && summary.attributes.icon_format[0]">
-        <ng-container *ngFor="let icon of summary.attributes.icon_format">
+      <ng-container *ngIf="summary.attributes.mattype && summary.attributes.mattype[0]">
+        <ng-container *ngFor="let icon of summary.attributes.mattype">
           <span class="pr-1 pl-2">
+            <!--
             <img class="pr-1"
-              src="/images/format_icons/icon_format/{{icon}}.png"/>
+              src="/images/format_icons/mattype/{{icon}}.png"/>
+              -->
             <span class="font-weight-normal">{{iconFormatLabel(icon)}}</span>
           </span>
         </ng-container>
@@ -18,7 +20,23 @@
     </div>
     <div class="flex-1"></div>
     <div>
-      <a class="with-material-icon no-href text-primary"
+      <span i18n>Holds: {{summary.holdCount}}</span>
+        <span class="pl-2 pr-2"> | </span>
+    </div>
+    <ng-container *ngFor="let copyCount of summary.holdingsSummary; let copyIdx = index">
+      <ng-container *ngIf="orgIsRoot(copyCount.org_unit)">
+        <span i18n>Total Items: {{copyCount.count}}</span>
+        <span class="pl-2 pr-2"> | </span>
+        <span i18n
+          [ngClass]="{'alert-danger rounded pl-1 pr-1 mb-1': !copyCount.hopeful && copyCount.count > 0}">
+          Viable Items: {{copyCount.hopeful || 0}}</span>
+        <span class="pl-2 pr-2"> | </span>
+        <span i18n>Available Items: {{copyCount.available}}</span>
+        <span class="mr-4"></span>
+      </ng-container>
+    </ng-container>
+    <div>
+      <a class="with-material-icon no-href text-primary" 
         title="Show More" i18n-title
         *ngIf="!expand" (click)="expand=true">
         <span class="material-icons">expand_more</span>
@@ -61,7 +79,7 @@
               <div class="flex-1">{{summary.record.tcn_value()}}</div>
               <div class="flex-1 font-weight-bold pl-1" i18n>Created By:</div>
               <div class="flex-1" *ngIf="summary.record.creator().usrname">
-                <a href="/eg/staff/circ/patron/{{summary.record.creator().id()}}/checkout">
+                <a routerLink="/staff/circ/patron/{{summary.record.creator().id()}}/checkout">
                   {{summary.record.creator().usrname()}}
                 </a>
               </div>
@@ -70,14 +88,19 @@
           <li class="list-group-item" *ngIf="expand">
             <div class="d-flex">
               <div class="flex-1 font-weight-bold" i18n>Author:</div>
-              <div class="flex-3">{{summary.display.author}}</div>
+              <div class="flex-3">
+                <a routerLink="/staff/catalog/search" 
+                  [queryParams]="{fieldClass: 'author', query: summary.display.author}">
+                  {{summary.display.author}}
+                </a>
+              </div>
               <div class="flex-1 font-weight-bold pl-1" i18n>Pubdate:</div>
               <div class="flex-1">{{summary.display.pubdate}}</div>
               <div class="flex-1 font-weight-bold" i18n>Database ID:</div>
               <div class="flex-1">{{summary.id}}</div>
               <div class="flex-1 font-weight-bold pl-1" i18n>Last Edited By:</div>
               <div class="flex-1" *ngIf="summary.record.editor().usrname">
-                <a href="/eg/staff/circ/patron/{{summary.record.editor().id()}}/checkout">
+                <a routerLink="/staff/circ/patron/{{summary.record.editor().id()}}/checkout">
                   {{summary.record.editor().usrname()}}
                 </a>
               </div>
@@ -87,8 +110,12 @@
             <div class="d-flex">
               <div class="flex-1 font-weight-bold" i18n>Bib Call #:</div>
               <div class="flex-3">{{summary.bibCallNumber}}</div>
+              <div class="flex-1 font-weight-bold" i18n>Cataloging Date:</div>
+              <div class="flex-1">{{summary.record.cataloging_date() | date:'shortDate'}}</div>
+              <!--
               <div class="flex-1 font-weight-bold" i18n>Record Owner:</div>
               <div class="flex-1">{{orgName(summary.record.owner())}}</div>
+              -->
               <div class="flex-1 font-weight-bold pl-1" i18n>Created On:</div>
               <div class="flex-1">{{summary.record.create_date() | date:'short'}}</div>
               <div class="flex-1 font-weight-bold pl-1" i18n>Last Edited On:</div>
@@ -130,7 +157,7 @@
                   </ng-container>
                 </div>
                 <div class="flex-5">
-                  <div><a href="{{url.href}}">{{url.label}}</a></div>
+                  <div><a target="_blank" href="{{url.href}}">{{url.label}}</a></div>
                   <div class="pt-1">{{url.note}}</div>
                 </div>
               </div>

@@ -1,0 +1,85 @@
+<div class="row pad-vert">
+  <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-btn" uib-dropdown>
+        <button type="button" class="btn btn-default" uib-dropdown-toggle>
+          <span ng-switch on="ctx.search_param">
+            <span ng-switch-when="receipt_code">Receipt Code</span>
+            <span ng-switch-when="usr_name">Patron Last, First</span>
+            <span ng-switch-when="usr_barcode">Patron Barcode</span>
+            <span ng-switch-when="usr">Patron ID</span>
+            <span ng-switch-default>Search By</span>
+          </span>
+          <span class="caret"></span>
+        </button>
+        <ul uib-dropdown-menu>
+          <li><a href ng-click="ctx.search_param='receipt_code'">Receipt Code</a></li>
+          <li><a href ng-click="ctx.search_param='usr_name'">Patron Last, First</a></li>
+          <li><a href ng-click="ctx.search_param='usr_barcode'">Patron Barcode</a></li>
+          <li><a href ng-click="ctx.search_param='usr'">Patron ID</a></li>
+        </ul>
+      </div><!-- /btn-group -->
+      <input type="text" class="form-control" ng-model="ctx.search_query" 
+        placeholder="Search for..."/>
+    </div><!-- /input-group -->
+  </div>
+  <div class="col-md-1">
+    <button ng-click="ctx.perform_search()" class="btn btn-default">Search</button>
+  </div>
+  <div class="col-md-6">
+    <!-- bootstrap checkboxes don't want to sit next to each other 
+        unless they're in a form wrapper, etc.  Just use spans. -->
+    <div style='margin-top:10px'>
+      <span class='pad-right'>
+        <input type='checkbox' ng-model="ctx.limit_to_refundable" 
+          ng-change='ctx.perform_search()'
+          ng-disabled="ctx.search_param=='receipt_code'"/>
+        <span class='pad-all-min'>Limit to Refund Pending</span>
+      </span>
+      <span>
+        <input type='checkbox' ng-model="ctx.limit_to_1year"
+          ng-change='ctx.perform_search()'
+          ng-disabled="ctx.search_param=='receipt_code'"/>
+        <span class='pad-all-min'>Limit to Last 12 Months</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+
+    <eg-grid
+      idl-class="mrxs" 
+      items-provider="gridDataProvider"
+      grid-controls="gridControls"
+      persist-key="circ.refunds.list">
+
+      <eg-grid-field path="id" required hidden></eg-grid-field>
+      <eg-grid-field path="xact" required hidden></eg-grid-field>
+      <eg-grid-field name="last_payment" label="Last Payment" nonsortable>
+        {{item._last_payment.receipt_code()}} ({{item.num_refundable_payments()}})
+      </eg-grid-field>
+      <eg-grid-field name="last_payment" label="Last Payment Date" nonsortable>
+        {{item._last_payment.payment_time() | date:'short' }}
+      </eg-grid-field>
+      <eg-grid-field path="refundable_paid" label="Amount Paid"></eg-grid-field>
+      <eg-grid-field path="usr" label="Patron ID"></eg-grid-field>
+      <eg-grid-field path="copy_barcode"></eg-grid-field>
+      <eg-grid-field path="usr_first_name" hidden></eg-grid-field>
+      <eg-grid-field path="usr_middle_name" hidden></eg-grid-field>
+      <eg-grid-field path="usr_family_name"></eg-grid-field>
+      <eg-grid-field path="usr_street1" flex="3" label="Patron Street Addr."></eg-grid-field>
+      <eg-grid-field path="refund_amount" label="B.O. Refund Amount"></eg-grid-field>
+      <eg-grid-field path="action_date" label="B.O. Action Date"></eg-grid-field>
+      <eg-grid-field path="title" hidden></eg-grid-field>
+      <eg-grid-field path="usr_street2" hidden></eg-grid-field>
+      <eg-grid-field path="usr_city" hidden></eg-grid-field>
+      <eg-grid-field path="usr_state" hidden></eg-grid-field>
+      <eg-grid-field path="usr_post_code" hidden></eg-grid-field>
+      <eg-grid-field path="rejected" hidden></eg-grid-field>
+      <eg-grid-field path="notes" hidden></eg-grid-field>
+      <eg-grid-field path="num_refundable_payments" label="Payments" hidden required></eg-grid-field>
+  </div>
+</div>
+

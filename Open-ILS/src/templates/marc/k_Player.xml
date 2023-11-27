@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<record xmlns="http://www.loc.gov/MARC21/slim">
+  <leader>00433nim a22     Ka 4500</leader>
+  <controlfield tag="008">110818s        xx   nn           n     d</controlfield>
+  <datafield tag="020" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">NTG</subfield>
+  </datafield>
+  <datafield tag="099" ind1=" " ind2=" ">
+    <subfield code="a">PLAYER ON ORDER</subfield>
+  </datafield>
+  <datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="245" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+    <subfield code="h">[sound recording]</subfield>
+  </datafield>
+  <datafield tag="250" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="260" ind1=" " ind2=" ">
+    <subfield code="b"></subfield>
+    <subfield code="c"></subfield>
+  </datafield>
+  <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="998" ind1=" " ind2=" ">
+    <subfield code="d">u</subfield>
+  </datafield>
+</record>

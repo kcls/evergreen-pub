@@ -50,8 +50,10 @@
   </ng-container>
 
   <div ngbDropdown placement="bottom-right">
-    <button class="btn btn-light" id="searchTemplates" 
-      ngbDropdownToggle i18n>Search Templates</button>
+    <button class="btn btn-light" id="searchTemplates" ngbDropdownToggle>
+      <span *ngIf="!selectedTemplate()" i18n>Search Templates</span>
+      <span *ngIf="selectedTemplate()" i18n>Template: {{selectedTemplate()}}</span>
+    </button>
     <div ngbDropdownMenu aria-labelledby="searchTemplates">
       <button class="dropdown-item" i18n (click)="open()"
         [disabled]="searchTab === 'cnbrowse'">Save Template</button>
@@ -59,6 +61,7 @@
         [disabled]="!selectedTemplate()" i18n>Delete Selected</button>
       <button class="dropdown-item" (click)="deleteAllTemplates()" 
         [disabled]="templates.length === 0" i18n>Delete All Templates</button>
+      <button class="dropdown-item" (click)="resetTemplate()" i18n>Default Template</button>
       <div class="dropdown-divider"></div>
       <button [disabled]="true" *ngIf="templates.length === 0" 
         class="dropdown-item font-italic" i18n>No Saved Templates</button>

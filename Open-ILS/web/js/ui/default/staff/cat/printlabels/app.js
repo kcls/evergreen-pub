@@ -531,6 +531,9 @@ function ($scope, $q, $window, $routeParams, $location, $timeout, egCore, egNet,
             if ($scope.checkForToolboxCustomizations(html)) {
                 html = html.replace(/eg\_plt\_\d+/, "eg_plt_" + d);
                 $scope.print.template_content = html;
+            } else if (egCore.hatch.keyCache['eg.print.template.item_label']) {
+                // Item template is served from a setting.
+                // Avoid clobbering.
             } else {
                 var table = "<table id=\"eg_plt_" + d + "_{{$index}}\" eg-print-label-table style=\"border-collapse: collapse; border: 0 solid transparent; border-spacing: 0; margin: {{$index === 0 ? toolbox_settings.page.margins.top.size : 0}} 0 0 0;\" class=\"custom-label-table{{$index % toolbox_settings.page.dimensions.rows === 0 && $index > 0 && toolbox_settings.feed_option.selected === 'sheet' ? ' page-break' : ''}}\" ng-init=\"parentIndex = $index\" ng-repeat=\"row in label_output_copies\">\n";
                 table += "<tr>\n";

@@ -61,7 +61,9 @@ function($routeProvider , $locationProvider) {
             egCore.strings['PAGE_TITLE_LOGIN']);
 			
         // if the user is already logged in, jump to splash page
-        if (egCore.auth.user()) $location.path('/');
+        if (egCore.auth.user()) {
+            $location.href = '/eg2/staff/splash';
+        }
 
         egCore.hatch.getWorkstations()
         .then(function(all) {
@@ -124,7 +126,7 @@ function($routeProvider , $locationProvider) {
                     // confusing intermediate page loads, since
                     // path(...) is a setter function.  Build the URL by
                     // hand instead from the configured base path.
-                    var route_to = egCore.env.basePath;
+                    var route_to = '/eg2/staff/splash';
 
                     if (result.invalid_workstation) {
                         // route to WS admin page to delete the offending

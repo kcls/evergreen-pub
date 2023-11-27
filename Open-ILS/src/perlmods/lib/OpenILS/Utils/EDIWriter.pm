@@ -153,7 +153,8 @@ sub compile_po {
         po_name => $self->escape_edi($po->name),
         provider_id => $po->provider->id,
         vendor_san => $po->provider->san || '',
-        org_unit_san => defined($po->ordering_agency->mailing_address) ? ($po->ordering_agency->mailing_address->san || '') : '',
+        org_unit_san => $po->provider->buyer_san ||
+            $po->ordering_agency->mailing_address->san || '',
         currency_type => $po->provider->currency_type,
         edi_attrs => {},
         lineitems => []
@@ -280,6 +281,12 @@ sub get_li_ftx {
             my @parts = ($note =~ m/.{1,512}/g);
             push(@trimmed_notes, @parts);
         }
+    }
+
+    if (@trimmed_notes && $self->{compiled}->{edi_attrs}->{COLLAPSE_VENDOR_NOTES}) {
+        # Collapse all vendor notes down to a single note, trimmed
+        # at the max-length of an EDI FTX value.
+        @trimmed_notes = (substr(join(' ', @trimmed_notes), 0, 512));
     }
 
     return \@trimmed_notes;
@@ -526,7 +533,7 @@ sub build_lineitem_segments {
 
     for my $note (@{$li_hash->{notes}}) {
         if ($note) {
-            $edi .= "FTX+LIN+1+$note'\n"
+            $edi .= "FTX+LIN+1++$note'\n"
         } else {
             $edi .= "FTX+LIN+1'\n"
         }

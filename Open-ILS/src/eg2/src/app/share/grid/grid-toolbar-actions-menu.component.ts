@@ -40,7 +40,7 @@ export class GridToolbarActionsMenuComponent {
         this.gridContext.columnSet.displayColumns().forEach(col => {
             values.push({
                 label: col.label,
-                value: this.gridContext.getRowColumnValue(row, col)
+                value: this.gridContext.getColumnTextContent(row, col)
             });
         });
 

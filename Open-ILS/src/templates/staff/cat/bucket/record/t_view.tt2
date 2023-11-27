@@ -2,7 +2,7 @@
   ng-hide="forbidden"
   id-field="id"
   idl-class="rmsr"
-  auto-fields="true"
+  features="allowAll"
   grid-controls="gridControls"
   menu-label="[% l('Buckets') %]"
   persist-key="cat.bucket.record.view">
@@ -33,6 +33,8 @@
     handler="openExportBucketDialog"></eg-grid-action>
 
   <eg-grid-field path="id" required hidden></eg-grid-field>
+  <eg-grid-field path="tcn_value" label="[% l('TCN Value') %]"></eg-grid-field>
+  <eg-grid-field path="tcn_source" label="[% l('TCN Source') %]"></eg-grid-field>
 
   <eg-grid-field label="[% l('Title') %]" path="title">
     <a href="/eg2/staff/catalog/record/{{item.id}}">
@@ -40,6 +42,16 @@
     </a>
   </eg-grid-field>
 
+  <eg-grid-field path="author" label="[% l('Author') %]"></eg-grid-field>
+  <eg-grid-field path="pubdate" label="[% l('Publication Year') %]"></eg-grid-field>
+  <eg-grid-field path="isbn" label="[% l('ISBN') %]"></eg-grid-field>
+  <eg-grid-field path="issn" label="[% l('ISSN') %]"></eg-grid-field>
+
   <eg-grid-field label="[% l('Deleted?') %]" path="biblio_record.deleted"></eg-grid-field>
+
+  <!-- TODO: this adds much delay to call
+  <eg-grid-field label="[% l('Edition') %]" 
+    path="biblio_record.wide_display_entry.edition"></eg-grid-field>
+  -->
 
 </eg-grid>

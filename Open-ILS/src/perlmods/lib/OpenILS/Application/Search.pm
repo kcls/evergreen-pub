@@ -17,14 +17,18 @@ use OpenILS::Application::Search::Zips;
 use OpenILS::Application::Search::CNBrowse;
 use OpenILS::Application::Search::Serial;
 use OpenILS::Application::Search::Browse;
+use OpenILS::Application::Search::Elastic;
 
+use OpenILS::Utils::CStoreEditor qw/:funcs/;
+use Data::Dumper;
 
 use OpenILS::Application::AppUtils;
 
 use Time::HiRes qw(time);
 use OpenSRF::EX qw(:try);
 
-use Text::Aspell; 
+use Text::Aspell;
+use Switch;
 
 # Houses generic search utilites 
 
@@ -39,6 +43,64 @@ sub child_init {
 }
     
 
+__PACKAGE__->register_method(
+    method    => "browseSetNav",
+    api_name  => "open-ils.search.metabib.browse.setnav"
+);
+
+#---------------------------------------------------------------------
+# This osrf call is to allow the navigation links on the browse_items
+# page to be populated with the next and previous record. 
+#---------------------------------------------------------------------
+#["10248","id|bibcn","YR973.003%20CON","1"]
+sub browseSetNav {
+    my $self = shift;
+    my $client = shift;
+    my $browseEntry = shift;
+    my $searchClass = shift;
+    my $searchTerm = shift;
+    my $locg = shift;
+    my $mattype = shift; # JBAS-1929
+
+    my $e = new_editor;
+
+    #Hardcoding to true becaue at time of creation browse search will only be available through the staff client
+    my $isStaffClient = 't'; 
+
+    my $results = $e->json_query({
+        from => [ "metabib.browse", $searchClass, $searchTerm, 
+            $locg, undef, $isStaffClient, $browseEntry, '3' ]# , $mattype ]
+    });
+
+    my $navResults = {};
+$logger->debug(Dumper($results));
+    foreach (@$results) {
+
+        my $current = $_;
+
+        switch ($current->{row_number}) {
+
+            case -1 {
+$logger->debug("next: " . Dumper($current));
+                $navResults->{next_browse} = $current->{browse_entry};
+                $navResults->{next_field} = $current->{fields};
+            }
+
+            case 0 {
+$logger->debug("current: " . Dumper($current));
+                $navResults->{current_value} = $current->{value};
+            }
+
+            case 1 {
+$logger->debug("previous: " . Dumper($current));
+                $navResults->{previous_browse} = $current->{browse_entry};
+                $navResults->{previous_field} = $current->{fields};
+            }
+        }
+    }
+
+    return $navResults;
+}
 
 # ------------------------------------------------------------------
 # Create custom dictionaries like so:

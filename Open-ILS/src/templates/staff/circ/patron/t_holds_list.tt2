@@ -14,6 +14,8 @@
     label="[% l('Show Last Few Circulations') %]"></eg-grid-action>
   <eg-grid-action handler="grid_actions.show_holds_for_title"
     label="[% l('Show Holds for Title') %]"></eg-grid-action>
+  <eg-grid-action handler="grid_actions.show_item_details"
+    label="[% l('Show Item Details') %]"></eg-grid-action>
   <eg-grid-action divider="true"></eg-grid-action>
   <eg-grid-action handler="grid_actions.set_copy_quality"
     label="[% l('Set Desired Item Quality') %]"></eg-grid-action>
@@ -56,7 +58,7 @@
   </eg-grid-field>
 
   <eg-grid-field label="[% l('Circulation Modifier') %]" path="copy.circ_modifier" hidden></eg-grid-field>
-  <eg-grid-field label="[% l('Circulation Library') %]" path="copy.circ_lib.shortname" hidden></eg-grid-field>
+  <eg-grid-field label="[% l('Item Circulating Library') %]" path="copy.circ_lib.shortname" hidden></eg-grid-field>
   <eg-grid-field label="[% l('Patron Barcode') %]" path="patron_barcode" hidden>{{item.patron_barcode}}</eg-grid-field>
   <eg-grid-field label="[% l('Patron alias') %]" path="patron_alias" hidden>{{item.patron_alias}}</eg-grid-field>
   <eg-grid-field label="[% l('Request Date') %]" path='hold.request_time' datatype="timestamp"></eg-grid-field>
@@ -73,11 +75,13 @@
 
   <eg-grid-field label="[% l('Author') %]" path='mvr.author'></eg-grid-field>
   <eg-grid-field label="[% l('Potential Items') %]" path='potential_copies'></eg-grid-field>
-  <eg-grid-field label="[% l('Status') %]" path='status_string'></eg-grid-field>
+  <eg-grid-field label="[% l('Hold Status') %]" path='status_string'></eg-grid-field>
 
   <eg-grid-field label="[% l('Queue Position') %]" path='queue_position' hidden></eg-grid-field>
   <eg-grid-field label="[% l('Cancel Cause') %]" path='hold.cancel_cause.label' hidden></eg-grid-field>
   <eg-grid-field path='hold.*' parent-idl-class="ahr" ignore="current_copy" hidden></eg-grid-field>
+  <eg-grid-field path='copy.status.name' parent-idl-class="acp" 
+    label="[% l('Item Status') %]"></eg-grid-field>
   <eg-grid-field path='copy.*' parent-idl-class="acp" hidden></eg-grid-field>
 
   <eg-grid-field path='hold.usr.id' parent-idl-class="ahr" label="[% l('User ID') %]" hidden></eg-grid-field>

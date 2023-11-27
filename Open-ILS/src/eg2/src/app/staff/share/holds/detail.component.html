@@ -29,9 +29,9 @@
       <span *ngIf="hold.hold_type == 'P'">&nbsp;-&nbsp;{{hold.part_label}}</span>
       -->
     </div>
-    <div class="well-label" i18n>Current Item</div>
+    <div class="well-label" i18n>Targeted Item</div>
     <div class="well-value">
-      <a href="/eg/staff/cat/item/{{hold.cp_id}}">{{hold.cp_barcode}}</a>
+      <a routerLink="/staff/cat/item/{{hold.cp_id}}">{{hold.cp_barcode}}</a>
     </div>
     <div class="well-label" i18n>Call Number</div>
     <div class="well-value">{{hold.cn_full_label}}</div>
@@ -84,14 +84,14 @@
   <div class="well-row">
     <div class="well-label" i18n>Patron Name</div>
     <div class="well-value">
-      <a href="/eg/staff/circ/patron/{{hold.usr_id}}/checkout">
+      <a routerLink="/staff/circ/patron/{{hold.usr_id}}/checkout">
         {{hold.usr_display_name}}
       </a>
     </div>
     <!-- force consistent width -->
     <div class="well-label" i18n>Patron Barcode</div>
     <div class="well-value">
-      <a href="/eg/staff/circ/patron/{{hold.usr_id}}/checkout">
+      <a routerLink="/staff/circ/patron/{{hold.usr_id}}/checkout">
         {{hold.ucard_barcode}}
       </a>
     </div>

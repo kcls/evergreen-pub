@@ -359,5 +359,8 @@ Open-ILS/web/js/ui/default/staff/build/
 Open-ILS/web/js/ui/default/staff/node_modules/
 Open-ILS/web/js/ui/default/staff/bower_components/
 Open-ILS/web/js/ui/default/common/build/
+KCLS/test-scripts/sip/pysip2-client.ini
+Open-ILS/web/js/ui/default/common/build/
 Open-ILS/web/eg2/
 Open-ILS/web/opac/deps/node_modules/
+KCLS/admin-scripts/ansible/playbook.retry

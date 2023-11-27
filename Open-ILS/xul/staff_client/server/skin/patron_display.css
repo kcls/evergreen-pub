@@ -24,7 +24,7 @@ row#row_billing_zip { padding-bottom: 10px; }
 
 .NO_PENALTIES .patronNameLarge { border-color: lime; }
 .ONE_PENALTY .patronNameLarge { border-color: #66FFFF; }
-.MULTIPLE_PENALTIES .patronNameLarge { border-color: #FF6633; }
+.MULTIPLE_PENALTIES .patronNameLarge { border-color: #66FFFF; }
 
 .PATRON_HAS_STAFF_ALERT .patronNameLarge { border-color: blue; }
 
@@ -110,6 +110,8 @@ row#row_billing_zip { padding-bottom: 10px; }
 .PATRON_JUVENILE .dob { color: purple; }
 .PATRON_JUVENILE label.juvenile_indicator { display: inline; color: purple; }
 
+.PATRON_PC_ONLY .patronNameLarge { border-color: #faff00; }
+.PATRON_PC_ONLY .label_pc_only { display: inline; color: yellow; }
 
 /* New user perm editor stuff */
 row.odd { background-color: lightcyan; }

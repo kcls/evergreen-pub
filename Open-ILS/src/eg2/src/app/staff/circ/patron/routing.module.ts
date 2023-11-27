@@ -1,20 +1,84 @@
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
+import {PatronComponent} from './patron.component';
+import {BcSearchComponent} from './bcsearch.component';
+import {PatronResolver} from './resolver.service';
+import {TestPatronPasswordComponent} from './test-password.component';
+import {RegisterPatronComponent} from './register.component';
+import {LastPatronComponent} from './last.component';
+import {CanDeactivateGuard} from '@eg/share/util/can-deactivate.guard';
+import {PendingPatronsComponent} from './pending.component';
+import {CircSearchComponent} from './circ-search.component';
 
-const routes: Routes = [
-  { path: 'bcsearch',
+const routes: Routes = [{
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'search'
+  }, {
+    path: 'register',
+    component: RegisterPatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: 'last',
+    component: LastPatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: 'register/clone/:cloneId',
+    component: RegisterPatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: 'register/stage/:stageUsername',
+    component: RegisterPatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: 'credentials',
+    component: TestPatronPasswordComponent
+  }, {
+    path: 'pending',
+    component: PendingPatronsComponent
+  }, {
+    path: 'search',
+    component: PatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: 'search/recents',
+    component: PatronComponent,
+    resolve: {resolver : PatronResolver},
+    data: {showRecentPatrons: true}
+  }, {
+    path: 'circ-search',
+    component: CircSearchComponent
+  }, {
+    path: 'bcsearch',
+    component: BcSearchComponent
+  }, {
+    path: 'bcsearch/:barcode',
+    component: BcSearchComponent
+  }, {
+    path: ':id',
+    redirectTo: ':id/checkout'
+  }, {
+    path: ':id/:tab/:xactId/statement',
+    component: PatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: ':id/:tab/history/:billingHistoryTab',
+    component: PatronComponent,
+    resolve: {resolver : PatronResolver}
+  }, {
+    path: ':id/:tab',
+    component: PatronComponent,
+    resolve: {resolver : PatronResolver},
+    canDeactivate: [CanDeactivateGuard]
+  }, {
+    path: 'event-log',
     loadChildren: () =>
-      import('./bcsearch/bcsearch.module').then(m => m.BcSearchModule)
-  },
-  { path: 'event-log',
-    loadChildren: () =>
-      import('./event-log/event-log.module').then(m => m.EventLogModule)
-  }
-];
+        import('./event-log/event-log.module').then(m => m.EventLogModule)
+}];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 
-export class CircPatronRoutingModule {}
+export class PatronRoutingModule {}

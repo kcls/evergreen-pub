@@ -1,8 +1,8 @@
 import {Component, OnInit, AfterViewInit, Input, Output, ViewChild,
     EventEmitter, forwardRef} from '@angular/core';
 import {ControlValueAccessor, FormGroup, FormControl, NG_VALUE_ACCESSOR} from '@angular/forms';
-import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {Observable, from, of} from 'rxjs';
+import {tap, map, switchMap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
 import {AuthService} from '@eg/core/auth.service';
@@ -10,6 +10,7 @@ import {PermService} from '@eg/core/perm.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {ComboboxComponent, ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {StringComponent} from '@eg/share/string/string.component';
+import {ItemLocationService} from './item-location-select.service';
 
 /**
  * Item (Copy) Location Selector.
@@ -62,35 +63,69 @@ export class ItemLocationSelectComponent
     // Emits an acpl object or null on combobox value change
     @Output() valueChange: EventEmitter<IdlObject>;
 
+    @Output() keyUpEnter: EventEmitter<void> = new EventEmitter<void>();
+
     @Input() required: boolean;
 
     @Input() domId = 'eg-item-location-select-' +
         ItemLocationSelectComponent.domIdAuto++;
 
+    // If false, selector will be click-able
+    @Input() loadAsync = true;
+
+    @Input() disabled = false;
+
+    // Display the selected value as text instead of within
+    // the typeahead
+    @Input() readOnly = false;
+
+    // See combobox
+    @Input() startsWith = false;
+
+    // See combobox
+    @Input() asyncSupportsEmptyTermClick: boolean;
+
+    // Show <Unset> when no value is applied.
+    // This only applies to non-required fields, since <Unset> would
+    // trick the combobox into thinking a valid value had been applied
+    @Input() showUnsetString = true;
+
     @ViewChild('comboBox', {static: false}) comboBox: ComboboxComponent;
     @ViewChild('unsetString', {static: false}) unsetString: StringComponent;
 
-    startId: number = null;
+    @Input() startId: number = null;
     filterOrgs: number[] = [];
-    cache: {[id: number]: IdlObject} = {};
+    filterOrgsApplied = false;
+
+    localOrgs: number[] = [];
 
     initDone = false; // true after first data load
     propagateChange = (id: number) => {};
     propagateTouch = () => {};
 
+    getLocationsAsyncHandler = term => this.getLocationsAsync(term);
+
     constructor(
         private org: OrgService,
         private auth: AuthService,
         private perm: PermService,
-        private pcrud: PcrudService
+        private pcrud: PcrudService,
+        private loc: ItemLocationService
     ) {
         this.valueChange = new EventEmitter<IdlObject>();
     }
 
     ngOnInit() {
-        this.setFilterOrgs()
-        .then(_ => this.getLocations())
-        .then(_ => this.initDone = true);
+
+        this.localOrgs = this.org.ancestors(this.auth.user().ws_ou(), true);
+
+        if (this.loadAsync) {
+            this.initDone = true;
+        } else {
+            this.setFilterOrgs()
+            .then(_ => this.getLocations())
+            .then(_ => this.initDone = true);
+        }
     }
 
     ngAfterViewInit() {
@@ -99,7 +134,10 @@ export class ItemLocationSelectComponent
         this.comboBox.formatDisplayString = (result: ComboboxEntry) => {
             let display = result.label || result.id;
             display = (display + '').trim();
-            if (result.userdata) {
+
+            // KCLS only shows location owning lib if it's outside
+            // of the display scope.
+            if (result.userdata && this.locationIsRemote(result.userdata)) {
                 display += ' (' +
                     this.orgName(result.userdata.owning_lib()) + ')';
             }
@@ -107,7 +145,18 @@ export class ItemLocationSelectComponent
         };
     }
 
+    // True if the provided location is not within our filterOrgs scope.
+    locationIsRemote(loc: IdlObject): boolean {
+        if (!this.localOrgs) { return false; } // still loading
+        return !this.localOrgs.includes(loc.owning_lib());
+    }
+
     getLocations(): Promise<any> {
+
+        if (this.loc.allLocationEntries) {
+            this.comboBox.entries = this.loc.allLocationEntries;
+            return Promise.resolve();
+        }
 
         if (this.filterOrgs.length === 0) {
             this.comboBox.entries = [];
@@ -130,18 +179,79 @@ export class ItemLocationSelectComponent
 
         const entries: ComboboxEntry[] = [];
 
-        if (!this.required) {
+        if (!this.required && this.showUnsetString) {
             entries.push({id: null, label: this.unsetString.text});
         }
 
         return this.pcrud.search('acpl', search, {order_by: {acpl: 'name'}}
         ).pipe(map(loc => {
-            this.cache[loc.id()] = loc;
+            this.loc.locationCache[loc.id()] = loc;
             entries.push({id: loc.id(), label: loc.name(), userdata: loc});
         })).toPromise().then(_ => {
             this.comboBox.entries = entries;
+            this.loc.allLocationEntries = entries;
         });
     }
+
+    getLocationsAsync(term: string): Observable<ComboboxEntry> {
+
+        if (this.loc.allLocationEntries) {
+            return from(this.loc.allLocationEntries);
+        }
+
+        // "1" is ignored, but a value is needed for pipe() below
+        let obs = of([1]);
+
+        if (!this.filterOrgsApplied) {
+            // Apply filter orgs the first time they are needed.
+            obs = from(this.setFilterOrgs());
+        }
+
+        return obs.pipe(switchMap(_ => this.getLocationsAsync2(term)));
+    }
+
+    getLocationsAsync2(term: string): Observable<ComboboxEntry> {
+
+        if (this.filterOrgs.length === 0) {
+            return of();
+        }
+
+        const ilike = this.startsWith ? `${term}%` : `%${term}%`;
+
+        const search: any = {
+            deleted: 'f',
+            name: {'ilike': ilike}
+        };
+
+        if (this.startId) {
+            // Guarantee we have the load-time copy location, which
+            // may not be included in the org-scoped set of locations
+            // we fetch by default.
+            search['-or'] = [
+                {id: this.startId},
+                {owning_lib: this.filterOrgs}
+            ];
+        } else {
+            search.owning_lib = this.filterOrgs;
+        }
+
+        return new Observable<ComboboxEntry>(observer => {
+            if (!this.required && this.showUnsetString) {
+                observer.next({id: null, label: this.unsetString.text});
+            }
+
+            this.pcrud.search('acpl', search, {order_by: {acpl: 'name'}}
+            ).subscribe(
+                loc => {
+                    this.loc.locationCache[loc.id()] = loc;
+                    observer.next({id: loc.id(), label: loc.name(), userdata: loc});
+                },
+                err => {},
+                () => observer.complete()
+            );
+        });
+    }
+
 
     registerOnChange(fn) {
         this.propagateChange = fn;
@@ -154,7 +264,7 @@ export class ItemLocationSelectComponent
     cboxChanged(entry: ComboboxEntry) {
         const id = entry ? entry.id : null;
         this.propagateChange(id);
-        this.valueChange.emit(id ? this.cache[id] : null);
+        this.valueChange.emit(id ? this.loc.locationCache[id] : null);
     }
 
     writeValue(id: number) {
@@ -166,13 +276,23 @@ export class ItemLocationSelectComponent
     }
 
     getOneLocation(id: number) {
-        if (!id || this.cache[id]) { return Promise.resolve(); }
+        if (!id) { return Promise.resolve(); }
 
-        return this.pcrud.retrieve('acpl', id).toPromise()
-        .then(loc => {
-            this.cache[loc.id()] = loc;
-            this.comboBox.addAsyncEntry(
-                {id: loc.id(), label: loc.name(), userdata: loc});
+        const promise = this.loc.locationCache[id] ?
+            Promise.resolve(this.loc.locationCache[id]) :
+            this.pcrud.retrieve('acpl', id).toPromise();
+
+        return promise.then(loc => {
+
+            this.loc.locationCache[loc.id()] = loc;
+            const entry: ComboboxEntry = {
+                id: loc.id(), label: loc.name(), userdata: loc};
+
+            if (this.comboBox.entries) {
+                this.comboBox.entries.push(entry);
+            } else {
+                this.comboBox.entries = [entry];
+            }
         });
     }
 
@@ -187,9 +307,15 @@ export class ItemLocationSelectComponent
 
         let orgIds = [];
         contextOrgIds.forEach(id => orgIds = orgIds.concat(this.org.ancestors(id, true)));
+        this.filterOrgsApplied = true;
 
         if (!this.permFilter) {
             return Promise.resolve(this.filterOrgs = [...new Set(orgIds)]);
+        }
+
+        const orgsFromCache = this.loc.filterOrgsCache[this.permFilter];
+        if (orgsFromCache) {
+            return Promise.resolve(this.filterOrgs = orgsFromCache);
         }
 
         return this.perm.hasWorkPermAt([this.permFilter], true)
@@ -204,12 +330,18 @@ export class ItemLocationSelectComponent
                 }
             });
 
-            return this.filterOrgs = [...new Set(trimmedOrgIds)];
+            this.filterOrgs = [...new Set(trimmedOrgIds)];
+            this.loc.filterOrgsCache[this.permFilter] = this.filterOrgs;
+            return this.filterOrgs;
         });
     }
 
     orgName(orgId: number): string {
         return this.org.get(orgId)[this.orgUnitLabelField]();
+    }
+
+    clear() {
+        this.comboBox.selectedId = null;
     }
 }
 

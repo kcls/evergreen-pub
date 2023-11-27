@@ -150,7 +150,7 @@ function($scope , $q , $routeParams , $window , egCore , egAcqRequests , egUser 
         if (!rows) return;
         if (!angular.isArray(rows)) rows = [rows];
         if (rows.length == 0) return;
-        location.href = "/eg/staff/circ/patron/" + rows[0]['usr.id'] + "/checkout";
+        location.href = "/eg2/staff/circ/patron/" + rows[0]['usr.id'] + "/checkout";
     }
 
     $scope.clear_requests = function(rows) {

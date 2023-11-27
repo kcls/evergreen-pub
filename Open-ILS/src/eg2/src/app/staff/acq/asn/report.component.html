@@ -1,0 +1,95 @@
+<eg-staff-banner bannerText="ASN Report" i18n-bannerText></eg-staff-banner>
+
+<div class="row mt-2">
+  <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" i18n>Invoice Identifier:</span>
+      </div>
+      <input type='text' id='invoice-ident-input' class="form-control" 
+        (keyup.enter)="load()" placeholder="Invoice Identifier..." 
+        i18n-placeholder [(ngModel)]="invoiceIdent"/>
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary" (click)="load()" i18n>Go</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <button class="btn btn-outline-primary" (click)="printWorksheets()" 
+      [disabled]="!grid || grid.context.getSelectedRows().length === 0" i18n>
+      Print Selected Worksheets
+    </button>
+  </div>
+</div>
+
+<ng-template #liTmpl let-row="row">
+  <a target="_blank" 
+    routerLink="/staff/acq/po/{{row['purchase_order.id']}}/lineitem/{{row['lineitem.id']}}/items">
+    {{row['lineitem.id']}}
+  </a>
+</ng-template>
+
+<ng-template #procByTmpl let-row="row">
+  <a target="_blank" *ngIf="row['shipment_notification.processed_by.id']"
+    routerLink="/staff/circ/patron/{{row['shipment_notification.processed_by.id']}}">
+    {{row['shipment_notification.processed_by.usrname']}}
+  </a>
+</ng-template>
+
+<div class="row mt-3">
+  <div class="col-lg-12">
+    <eg-grid #grid [dataSource]="dataSource" idlClass="acqsns" 
+      persistKey="acq.asn.report" [sortable]="true" [showDeclaredFieldsOnly]="true">
+
+      <eg-grid-column path="_index" [hidden]="true" [index]="true"
+        [required]="true" label="Row Index" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="inv_ident" label="Invoice Identifier" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="invoice" label="Invoice ID" i18n-label [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="container_code" label="Container Code" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="shipment_notification.recv_date" label="ASN Receive Date" 
+        [datePlusTime]="true" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="shipment_notification.process_date" label="ASN Process Date" 
+        [datePlusTime]="true" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column name="processed_by" label="Processed By" i18n-label
+        [cellTemplate]="procByTmpl">
+      </eg-grid-column>
+
+      <eg-grid-column label="Processed By Username" i18n-label [required]="true"
+        path="shipment_notification.processed_by.usrname" [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column label="Processed By ID" i18n-label [required]="true"
+        path="shipment_notification.processed_by.id" [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="provider.name" label="Provider" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column name="lineitem.id" label="Line Item ID" i18n-label 
+        [required]="true" [cellTemplate]="liTmpl">
+      </eg-grid-column>
+
+      <eg-grid-column path="item_count_for_lineitem" label="Item Count" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="purchase_order.id" label="PO ID" i18n-label
+        [required]="true" [hidden]="true">
+      </eg-grid-column>
+
+    </eg-grid>
+  </div>
+</div>
+
+

@@ -22192,6 +22192,20 @@ VALUES (
         'Library Selector Show Combined Names',
         'cwst', 'label'
     )
+), (
+    'eg.grid.admin.local.negative_balances', 'gui', 'object', 
+    oils_i18n_gettext(
+        'eg.grid.admin.local.negative_balances',
+        'Patrons With Negative Balances Grid Settings',
+        'cwst', 'label'
+    )
+), (
+    'eg.orgselect.admin.local.negative_balances', 'gui', 'integer',
+    oils_i18n_gettext(
+        'eg.orgselect.admin.local.negative_balances',
+        'Default org unit for patron negative balances interface',
+        'cwst', 'label'
+    )
 );
 
 INSERT INTO config.global_flag (name, value, enabled, label)

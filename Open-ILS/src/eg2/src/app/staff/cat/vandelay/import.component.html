@@ -30,9 +30,12 @@
       </eg-combobox>
     </div>
     <div class="col-lg-6">
-      <button class="btn btn-success"
+      <button class="btn btn-success" *ngIf="!templateInputMatch"
         [disabled]="!selectedTemplate"
         (click)="saveTemplate()" i18n>Save As New Template</button>
+      <button class="btn btn-success" *ngIf="templateInputMatch"
+        [disabled]="!selectedTemplate"
+        (click)="saveTemplate()" i18n>Modify Template</button>
       <button class="btn btn-outline-primary ml-3"
         [disabled]="!selectedTemplate"
         (click)="markTemplateDefault()" i18n>Mark Template as Default</button>
@@ -50,7 +53,7 @@
       <eg-combobox #recordTypeSelector
         domId="type-select"
         (onChange)="selectEntry($event, 'recordType')"
-        [disabled]="importSelection()" [required]="true"
+        [readOnly]="importSelection()" [required]="true"
         [startId]="recordType" placeholder="Record Type..." i18n-placeholder>
         <eg-combobox-entry entryId="bib" entryLabel="Bibliographic Records" 
           i18n-entryLabel></eg-combobox-entry>
@@ -83,7 +86,7 @@
         domId="queue-select"
         [startId]="startQueueId"
         [startIdFiresOnChange]="true"
-        [disabled]="startQueueId"
+        [readOnly]="startQueueId"
         (onChange)="selectedQueue=$event" i18n-placeholder
         [required]="true"
         [allowFreeText]="true" placeholder="Select or Create a Queue...">
@@ -97,7 +100,7 @@
         #bucketSelector
         domId="bucket-select"
         [startId]="selectedBucket"
-        [disabled]="(selectedQueue && !selectedQueue.freetext) || importSelection()"
+        [readOnly]="(selectedQueue && !selectedQueue.freetext) || importSelection()"
         (onChange)="selectEntry($event, 'bibBuckets')"
         placeholder="Buckets..." i18n-placeholder></eg-combobox>
     </div>
@@ -110,7 +113,7 @@
       <eg-combobox #matchSetSelector
         domId="match-set-select"
         [entries]="formatEntries('matchSets')" 
-        [disabled]="(selectedQueue && !selectedQueue.freetext) || importSelection()"
+        [readOnly]="(selectedQueue && !selectedQueue.freetext) || importSelection()"
         [startId]="selectedMatchSet || defaultMatchSet"
         (onChange)="selectEntry($event, 'matchSets')"
         placeholder="Match Set..." i18n-placeholder></eg-combobox>
@@ -133,7 +136,7 @@
         domId="item-import-def"
         [entries]="formatEntries('importItemDefs')"
         [startId]="selectedHoldingsProfile"
-        [disabled]="(selectedQueue && !selectedQueue.freetext) || importSelection()"
+        [readOnly]="(selectedQueue && !selectedQueue.freetext) || importSelection()"
         (onChange)="selectEntry($event, 'importItemDefs')"
         placeholder="Holdings Import Profile..." i18n-placeholder>
       </eg-combobox>
@@ -287,7 +290,10 @@
     <div class="col-lg-6 offset-lg-3">
       <button class="btn btn-success btn-lg btn-block font-weight-bold"
         [disabled]="isUploading || !hasNeededData()" 
-        (click)="upload()" i18n>Upload</button>
+        (click)="upload()">
+        <ng-container *ngIf="importSelection()" i18n>Import</ng-container>
+        <ng-container *ngIf="!importSelection()" i18n>Upload</ng-container>
+      </button>
     </div>
   </div>
   <!-- hide instead of *ngIf so ViewChild can find the progress bars -->

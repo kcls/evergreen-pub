@@ -12,12 +12,14 @@ import {ComboboxComponent, IdlClassTemplateDirective} from '@eg/share/combobox/c
 import {ComboboxEntryComponent} from '@eg/share/combobox/combobox-entry.component';
 import {DateSelectComponent} from '@eg/share/date-select/date-select.component';
 import {OrgSelectComponent} from '@eg/share/org-select/org-select.component';
+import {OrgSelectManualComponent} from '@eg/share/org-select-manual/org-select-manual.component';
 import {DateRangeSelectComponent} from '@eg/share/daterange-select/daterange-select.component';
 import {DateTimeSelectComponent} from '@eg/share/datetime-select/datetime-select.component';
 import {ContextMenuModule} from '@eg/share/context-menu/context-menu.module';
 import {FileReaderComponent} from '@eg/share/file-reader/file-reader.component';
 import {IntervalInputComponent} from '@eg/share/interval-input/interval-input.component';
 import {ClipboardDialogComponent} from '@eg/share/clipboard/clipboard-dialog.component';
+import {DateSelectNativeComponent} from '@eg/share/date-select-native/date-select-native.component';
 
 
 @NgModule({
@@ -26,11 +28,13 @@ import {ClipboardDialogComponent} from '@eg/share/clipboard/clipboard-dialog.com
     ComboboxEntryComponent,
     DateSelectComponent,
     OrgSelectComponent,
+    OrgSelectManualComponent,
     DateRangeSelectComponent,
     DateTimeSelectComponent,
     FileReaderComponent,
     ClipboardDialogComponent,
     IdlClassTemplateDirective,
+    DateSelectNativeComponent,
     IntervalInputComponent,
   ],
   imports: [
@@ -50,11 +54,13 @@ import {ClipboardDialogComponent} from '@eg/share/clipboard/clipboard-dialog.com
     ComboboxEntryComponent,
     DateSelectComponent,
     OrgSelectComponent,
+    OrgSelectManualComponent,
     DateRangeSelectComponent,
     DateTimeSelectComponent,
     ClipboardDialogComponent,
     ContextMenuModule,
     FileReaderComponent,
+    DateSelectNativeComponent,
     IntervalInputComponent,
   ],
 })

@@ -3,11 +3,11 @@
     <script>window.empty_barcode_string = "[% l('Missing Barcode') %]";</script>
     <script>window.empty_label_string = "[% l('Missing Call Number') %]";</script>
     <div ng-show="!only_vols" class="btn-group">
-        <label class="btn btn-default" ng-click="show_vols = !show_vols">
+        <label class="btn btn-default" ng-click="updateShowVols()">
             <span ng-show="show_vols" style="padding-right: 5px;">[% l('Hide Holdings Details') %]</span>
             <span ng-hide="show_vols" style="padding-right: 5px;">[% l('Show Holdings Details') %]</span>
         </label>
-        <label class="btn btn-default" ng-click="show_copies = !show_copies">
+        <label class="btn btn-default" ng-click="updateShowCopies()">
             <span ng-show="show_copies" style="padding-right: 5px;">[% l('Hide Item Attributes') %]</span>
             <span ng-hide="show_copies" style="padding-right: 5px;">[% l('Show Item Attributes') %]</span>
         </label>
@@ -18,40 +18,50 @@
             <div class="col-xs-2"><h4 class="center-block">[% l('Batch Apply') %]</h4></div>
             <div class="col-xs-10">
                 <div class="row">
-                    <div class="col-xs-2">
+                    <div class="col-xs-2" ng-hide="true">
                         <select class="form-control" ng-model="batch.classification" ng-options="cl.id() as cl.name() for cl in classification_list"></select>
                     </div>
-                    <div class="col-xs-1">
+                    <div class="col-xs-1" ng-hide="true">
                         <select class="form-control" ng-model="batch.prefix" ng-options="p.id() as p.label() for p in prefix_list"></select>
                     </div>
-                    <div class="col-xs-2">
+                    <div class="col-xs-3">
                         <eg-basic-combo-box list="batch.marcCallNumbers" selected="batch.label"></eg-basic-combo-box>
                     </div>
-                    <div class="col-xs-1">
+                    <div class="col-xs-1" ng-hide="true">
                         <select class="form-control" ng-model="batch.suffix" ng-options="s.id() as s.label() for s in suffix_list"></select>
                     </div>
-                    <div class="col-xs-1"></div>
-                    <div class="col-xs-5">
+                    <div class="col-xs-2">
                         <button class="btn btn-default center-block" ng-click="applyBatchCNValues()" type="button">[% l('Apply') %]</button>
+                    </div>
+                    <div class="col-xs-3">
+                      <button class="btn btn-default center-block" 
+                        ng-click="applyAutogenBarcodes()" type="button">
+                        [% l('Auto-generate Barcodes') %]
+                      </button>
+                    </div>
+                    <div class="col-xs-3">
+                      <b class="pad-right">Use Checkdigit</b>
+                      <input type='checkbox' ng-model='defaults.barcode_checkdigit'
+                        ng-change='saveCheckdigitPref(newVal)'/>
                     </div>
                 </div>
             </div>
         </div>
         <div class="row pad-vert">
             <div class="col-xs-1"><b>[% l('Owning Library') %]</b></div>
-            <div class="col-xs-1"><b>[% l('Call Numbers') %]</b></div>
+            <div class="col-xs-1"><b>[% l('# of Volumes') %]</b></div>
             <div class="col-xs-10">
                 <div class="row">
-                    <div class="col-xs-2"><b>[% l('Classification') %]</b></div>
-                    <div class="col-xs-1"><b>[% l('Prefix') %]</b></div>
-                    <div class="col-xs-2"><b>[% l('Call Number Label') %]</b></div>
-                    <div class="col-xs-1"><b>[% l('Suffix') %]</b></div>
+                    <div class="col-xs-2" ng-hide="true"><b>[% l('Classification') %]</b></div>
+                    <div class="col-xs-1" ng-hide="true"><b>[% l('Prefix') %]</b></div>
+                    <div class="col-xs-5"><b>[% l('Call Number Label') %]</b></div>
+                    <div class="col-xs-1" ng-hide="true"><b>[% l('Suffix') %]</b></div>
                     <div class="col-xs-1" ng-hide="only_vols"><b>[% l('Items') %]</b></div>
                     <div class="col-xs-5" ng-hide="only_vols">
                         <div class="row">
-                            <div class="col-xs-5"><b>[% l('Barcode') %]</b></div>
-                            <div class="col-xs-3"><b>[% l('Item #') %]</b></div>
-                            <div class="col-xs-4"><b>[% l('Part') %]</b></div>
+                            <div class="col-xs-8"><b>[% l('Barcode') %]</b></div>
+                            <div class="col-xs-3" ng-hide="true"><b>[% l('Item #') %]</b></div>
+                            <div class="col-xs-4" ng-hide="true"><b>[% l('Part') %]</b></div>
                         </div>
                     </div>
                     <div class="col-xs-2" ng-show="only_vols">
@@ -65,7 +75,7 @@
         </div> <!-- row -->
         <eg-vol-edit
             focus-next="focusNextFirst"
-            ng-repeat="(lib,callnumbers) in data.tree"
+            ng-repeat="lib in sortedOrgs()"
             ng-init="ind = $index"
             record="{{record_id}}"
             only-vols="only_vols"
@@ -87,7 +97,7 @@
 </div>
 <div class="pad-vert">
 
-    <div class="pad-vert" ng-show="show_copies">
+    <div class="" ng-show="show_copies">
 
         <ul ng-model="copytab" class="nav nav-tabs">
           <li ng-class="{active : copytab == 'working'}">
@@ -108,7 +118,7 @@
                         <div ng-include="'[% ctx.base_path %]/staff/cat/volcopy/t_attr_edit'"></div>
                     </div>
                 </div>
-                <div class="row">
+                <div class="row" ng-show="false">
                     <div class="col-lg-12">
 
                         <eg-grid
@@ -138,6 +148,10 @@
                           <eg-grid-field label="[% l('Call Number') %]" path="call_number.label" hidden></eg-grid-field>
                           <eg-grid-field label="[% l('CN Suffix') %]"   path="call_number.suffix.label" hidden></eg-grid-field>
                           <eg-grid-field label="[% l('Item ID') %]"     path="id" hidden></eg-grid-field>
+                          <eg-grid-field label="[% l('Alert Message') %]" path="alert_message"></eg-grid-field>
+                          <eg-grid-field label="[% l('Editor') %]" path="editor.usrname"></eg-grid-field>
+                          <eg-grid-field label="[% l('Creator') %]" path="creator.usrname"></eg-grid-field>
+                          <eg-grid-field label="[% l('Owning Lib') %]" path="call_number.owning_lib"></eg-grid-field>
 
                         </eg-grid>
 
@@ -180,11 +194,34 @@
                  <eg-grid-field label="[% l('Status') %]"      flesher="statusById" path="status.name" visible></eg-grid-field>
                  <eg-grid-field label="[% l('OPAC Visible') %]" path="opac_visible" visible></eg-grid-field>
                  <eg-grid-field label="[% l('Item ID') %]"      path="id" hidden></eg-grid-field>
+                 <eg-grid-field label="[% l('Alert Message') %]" path="alert_message"></eg-grid-field>
+                 <eg-grid-field label="[% l('Editor') %]" path="editor.usrname"></eg-grid-field>
+                 <eg-grid-field label="[% l('Creator') %]" path="creator.usrname"></eg-grid-field>
+                 <eg-grid-field label="[% l('Owning Lib') %]" flesher="orgById" path="call_number.owning_lib"></eg-grid-field>
 
                </eg-grid>
             </div>
           </div>
         </div>
 
+    </div>
+
+    <hr/>
+    <div class="flex-row">
+
+      <input type='checkbox' 
+        ng-model='defaults.print_item_labels' ng-change='saveDefaults(newVal)'/>
+      <span class="pad-left">Print Labels</span>
+
+      <div class="flex-cell"> </div>
+
+      <button class="btn btn-success"
+        style="font-size:120%; margin-right: 10px" ng-click="workingSaveAndContinue()">
+        [% l('Save Changes') %]
+      </button>
+
+      <button class="btn btn-success" style="font-size:120%" ng-click="workingSaveAndExit()">
+        [% l('Save & Exit') %]
+      </button>
     </div>
 </div>

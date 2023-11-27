@@ -183,6 +183,40 @@ sub oils_login {
 	return $authtoken;
 }
 
+#----------------------------------------------------------------
+# Login to the internal auth server and set the global $authtoken var
+#----------------------------------------------------------------
+sub oils_login_internal {
+	my ($username, $type, $workstation) = @_;
+	$type |= "staff";
+
+    my $user = $apputils->simplereq(
+        'open-ils.cstore',
+        'open-ils.cstore.direct.actor.user.search.atomic',
+        {usrname => $username, deleted => 'f'}
+    )->[0];
+
+    err("No such user: $username") unless $user;
+
+	my $response = $apputils->simplereq(
+        'open-ils.auth_internal',
+        'open-ils.auth_internal.session.create', {
+            user_id => $user->id, 
+            login_type => $type, 
+            workstation => $workstation
+        }
+    );
+
+	oils_event_die($response);
+
+	$authtime  = $response->{payload}->{authtime};
+	$authtoken = $response->{payload}->{authtoken};
+
+	return $authtoken;
+}
+
+
+
 
 #----------------------------------------------------------------
 # Destroys the login session on the server

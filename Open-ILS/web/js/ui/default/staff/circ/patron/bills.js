@@ -17,7 +17,7 @@ function($q , egCore , egWorkLog , patronSvc) {
             'ui.circ.billing.amount_warn', 'ui.circ.billing.amount_limit',
             'circ.staff_client.do_not_auto_attempt_print',
             'circ.disable_patron_credit',
-            'credit.processor.default'
+            'circ.external_register.active'
         ]).then(function(s) {return service.settings = s});
     }
 
@@ -28,8 +28,8 @@ function($q , egCore , egWorkLog , patronSvc) {
         .then(function(summary) {return service.summary = summary})
     }
 
-    service.applyPayment = function(
-        type, payments, note, check, cc_args, patron_credit) {
+    service.applyPayment = function(type, payments,
+        note, check, cc_args, patron_credit, refundable_args) {
 
         return egCore.net.request(
             'open-ils.circ',
@@ -41,6 +41,12 @@ function($q , egCore , egWorkLog , patronSvc) {
                 check_number : check,
                 payments : payments,
                 patron_credit : patron_credit,
+                refundable_args: refundable_args,
+                // Clone the 2ndry auth key onto the top-level payment
+                // object for registerIsActive() payments which may or may
+                // not include LOST item payments.
+                secondary_auth_key: refundable_args ? 
+                    refundable_args.secondary_auth_key : null,
                 cc_args : cc_args
             },
             patronSvc.current.last_xact_id()
@@ -79,11 +85,49 @@ function($q , egCore , egWorkLog , patronSvc) {
             // for future payments without having to refresh the user.
             patronSvc.current.last_xact_id(resp.last_xact_id);
 
-            // reload patron data if credit balance has changed:
-            if(type === 'credit_payment' || patron_credit){ patronSvc.refreshPrimary(); }
+            var promise = $q.when();
+            if (resp.refundable_payments && resp.refundable_payments.length) {
+                promise = 
+                    service.printRefundablePaymentReceipts(resp.refundable_payments);
+            }
 
-            return resp.payments;
+            return promise.then(function() {
+                return resp.payments;
+            });
         });
+    }
+
+
+    // Returns a promise after all payments have been queued for printing.
+    service.printRefundablePaymentReceipts = function(mrpIds) {
+        
+        function printOne() {
+            mrpId = mrpIds.shift();
+            if (!mrpId) { return $q.when(); }
+
+            return egCore.net.request(
+                'open-ils.circ', 
+                'open-ils.circ.refundable_payment.receipt.html', 
+                egCore.auth.token(), mrpId
+            ).then(function(receipt) {
+                if (!receipt || !receipt.template_output()) {
+                    return alert(
+                        'Error creating refundable payment receipt for payment ' 
+                        + mrpId);
+                }
+
+                var html = receipt.template_output().data();
+                return egCore.print.print({
+                    context : 'default', 
+                    content_type: 'text/html',
+                    content: html,
+                    show_dialog: true,
+                    scope : {}
+                });
+            }).then(function() { return printOne() });
+        }
+
+        return printOne();
     }
 
     service.fetchBills = function(xact_id) {
@@ -173,10 +217,10 @@ function($q , egCore , egWorkLog , patronSvc) {
 .controller('PatronBillsCtrl',
        ['$scope','$q','$routeParams','egCore','egConfirmDialog','$location',
         'egGridDataProvider','billSvc','patronSvc','egPromptDialog', 'egAlertDialog',
-        'egBilling','$uibModal', '$sce',
+        'egBilling','$uibModal','$sce','$window'
 function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
          egGridDataProvider , billSvc , patronSvc , egPromptDialog, egAlertDialog,
-         egBilling , $uibModal, $sce) {
+         egBilling , $uibModal , $sce , $window) {
 
     $scope.initTab('bills', $routeParams.id);
     billSvc.userId = $routeParams.id;
@@ -195,6 +239,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
     $scope.max_amount = 100000;
     $scope.amount_verified = false;
     $scope.disable_auto_print = false;
+    $scope.registerActive = false;
 
     // Load persistant settings
     egCore.hatch.getItem('circ.bills.receiptonpay')
@@ -322,7 +367,8 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         return -(amount / 100);
     }
     $scope.invalid_check_number = function() { 
-        return $scope.payment_type == 'check_payment' && ! $scope.check_number; 
+        if ($scope.registerIsActive()) { return false; }
+        return $scope.payment_type == 'check_payment' && ! $scope.check_number;
     }
 
     // update the item.payment_pending value each time the user
@@ -388,16 +434,168 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         $scope.gridControls.refresh();
     }
 
+    function extractLostPayments(payments) {
+
+        var lostXacts = [];
+        var promises = [];
+
+        payments.forEach(function(pay) {
+            var circId = pay[0];
+            promises.push(
+                egCore.net.request(
+                    'open-ils.circ',
+                    'open-ils.circ.refundable_payment.circ.refundable',
+                    egCore.auth.token(), circId
+                ).then(function(response) {
+                    if (response == 1) { lostXacts.push(circId); }
+                })
+            );
+        });
+
+        return $q.all(promises).then(function() { return lostXacts });
+    }
+
+    // Returns a promise resolved to the list of payments altered as
+    // necessary to include lost payment authorization data, rejected
+    // if the payment is canceled.
+    function handleLostPaymentAuth(payments) {
+        return extractLostPayments(payments).then(function(lostXacts) {
+
+            if (lostXacts.length === 0) { return null; }
+
+            return checkSecondaryAuth().then(
+                function(authKey) {
+                    return {
+                        secondary_auth_key: authKey,
+                        transactions: 
+                            lostXacts.map(function(id) {return {xact: id}})
+                    };
+                },
+                function() { return $q.reject(); }
+            );
+        });
+    }
+
+    function checkSecondaryAuth(deferred) {
+
+        if (!deferred) {
+           // Create the deferred object on the first run of this function.
+           deferred = $q.defer();
+        }
+
+        showSecondaryAuthDialog().then(
+            function(authKey) {
+                if (authKey) {
+                    deferred.resolve(authKey);
+                } else {
+                    return checkSecondaryAuth(deferred);
+                }
+            }, 
+            function() {
+                deferred.reject();
+            }
+        );
+
+        return deferred.promise;
+    }
+
+    // Returns promise.
+    // Resolves to true on auth success, false on auth failure, and
+    // rejects on Cancel.
+    function showSecondaryAuthDialog() {
+            
+        return $uibModal.open({
+            templateUrl : './circ/patron/t_lost_payment_auth',
+            backdrop: 'static',
+            controller : [
+                        '$scope','$uibModalInstance',
+                function($scope , $uibModalInstance) {
+                    $scope.context = {username: '',password: ''};
+
+                    $scope.ok = function() {
+                        getSecondaryAuthKey(
+                            $scope.context.username, $scope.context.password
+                        ).then(
+                            function(res) {
+                                $uibModalInstance.close(res);
+                            }
+                        );
+                    }
+
+                    $scope.cancel = function() {
+                        $uibModalInstance.dismiss();
+                    }
+                }
+            ]
+        }).result;
+    }
+
+    function getSecondaryAuthKey(username, password) {
+
+        console.log('Checking secondary auth for ' + username);
+
+        return egCore.net.request(
+            'open-ils.circ',
+            'open-ils.circ.staff.secondary_auth.ldap',
+            egCore.auth.token(), username, password
+        ).then(function(result) {
+            var evt = egCore.evt.parse(result);
+            console.log('2nd auth returned', result);
+
+            if (evt) {
+                if (evt.textcode === 'LDAP_AUTH_FAILED') {
+                    console.log("Secondary auth failed for " + username);
+                } else {
+                    alert(evt);
+                }
+            } else if (typeof result === 'string') {
+                console.debug('Secondary auth succeeded with ' + result);
+                return result;
+            }
+
+            return null;
+        });
+    }
+
+
+    // 1. confirm staff meant to make the payment here
+    // 2. request authentication for staff for creating the payment.
+    function confirmRegisterPayment() {
+
+        if (!$scope.registerIsActive()) { return $q.when(); }
+
+        var msg = // TODO: move to template when moving to Angular.
+'\n\nPayments should only be made in Evergreen when managing refunds or applying ' +
+'cash register vouchers.  All other payments should be submitted via the cash register.';
+
+        return egConfirmDialog.open(
+            'External Cash Register Alert', msg, {}).result
+        .then(function() { return checkSecondaryAuth(); });
+    }
+
     // generates payments, collects user note if needed, and sends payment
     // to server.
-    function sendPayment(note, cc_args) {
+    function sendPayment(note, cc_args, secondary_auth) {
         $scope.applyingPayment = true;
         var make_payments = generatePayments();
         var patron_credit = $scope.convert_to_credit.isChecked ?
             $scope.pending_change() : 0; 
-        billSvc.applyPayment($scope.payment_type, 
-            make_payments, note, $scope.check_number, cc_args, patron_credit)
-        .then(
+        
+        // If we have not already requested authentication, see if
+        // we are making payments for lost items then request auth
+        // if needed.
+        var promise1 = secondary_auth ? 
+            $q.when({secondary_auth_key: secondary_auth}) : 
+            handleLostPaymentAuth(make_payments);
+
+        promise1.then(function(refundable_args) {
+
+        var checkno = 
+            $scope.registerIsActive() ? 'VOUCHER' : $scope.check_number;
+
+        billSvc.applyPayment($scope.payment_type, make_payments, 
+            note, checkno, cc_args, patron_credit, refundable_args
+        ).then(
             function(payment_ids) {
                 var approval_code = cc_args ? cc_args.approval_code : '';
                 if (!$scope.disable_auto_print && $scope.receipt_on_pay.isChecked) {
@@ -411,6 +609,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
                 console.error('Payment was rejected: ' + msg);
             }
         )
+        })
         .finally(function() { $scope.applyingPayment = false; })
     }
 
@@ -549,14 +748,15 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         if (s['circ.disable_patron_credit']) {
             $scope.disablePatronCredit = true;
         }
-        if (!s['credit.processor.default']) {
-            // If we don't have a CC processor, we should disable the "internal" CC form
-            $scope.disableCreditCardForm = true;
-        } else {
-            // Stripe isn't supported in the staff client currently, so disable here too
-            $scope.disableCreditCardForm = (s['credit.processor.default'] == 'Stripe');
+        if (s['circ.external_register.active']) {
+            $scope.registerActive = true;
         }
     });
+
+    $scope.registerIsActive = function() {
+        return $scope.registerActive && 
+            $scope.payment_type !== 'forgive_payment';
+    }
 
     $scope.gridControls.allItemsRetrieved = function() {
         if (selectOnLoad) {
@@ -580,6 +780,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         // (Consider an alternate approach..)
         var ids = selected.map(function(t){ return t.id });
         var xacts = [];
+        var totalOwed = 0;
         egCore.pcrud.search('mbt', 
             {id : ids},
             {flesh : 5, flesh_fields : {
@@ -594,6 +795,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
         ).then(
             function() {
                 var cusr = patronSvc.current;
+                totalOwed /= 100;
                 egCore.print.print({
                     context : 'receipt', 
                     template : 'bills_current', 
@@ -601,6 +803,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
                         transactions : xacts,
                         current_location : egCore.idl.toHash(
                             egCore.org.get(egCore.auth.user().ws_ou())),
+                        owed_for_selected: totalOwed,
                         patron : {
                             prefix : cusr.prefix(),
                             first_given_name : cusr.first_given_name(),
@@ -648,6 +851,7 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
                         }
                     }
                 }
+                totalOwed += (Number(newXact.summary.balance_owed) * 100);
                 xacts.push(newXact);
             }
         );
@@ -667,20 +871,27 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
             return;
         }
 
-        verify_payment_amount().then(
-            function() { // amount confirmed
-                add_payment_note().then(function(pay_note) {
-                    add_cc_args().then(function(cc_args) {
-                        var note_text = pay_note ? pay_note.value || '' : null;
-                        sendPayment(note_text, cc_args);
-                    })
-                });
-            },
-            function() { // amount rejected
-                console.warn('payment amount rejected');
-                $scope.payment_amount = 0;
-            }
-        );
+        // KCLS prompt for paying in EG when registers are active
+        confirmRegisterPayment().then(function(secondary_auth) {
+
+            verify_payment_amount().then(
+                function() { // amount confirmed
+                    add_payment_note().then(function(pay_note) {
+                        add_cc_args().then(function(cc_args) {
+                            var note_text = pay_note ? pay_note.value || '' : null;
+                            sendPayment(note_text, cc_args, secondary_auth);
+                        })
+                    });
+                },
+                function() { // amount rejected
+                    console.warn('payment amount rejected');
+                    $scope.payment_amount = 0;
+                }
+            );
+        },
+        function() {
+            console.warn('Payment at register-active site canceled');
+        });
     }
 
     function verify_payment_amount() {
@@ -695,16 +906,27 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
     }
 
     function add_payment_note() {
-        if (!$scope.annotate_payment) return $q.when();
-        return egPromptDialog.open(
-            egCore.strings.ANNOTATE_PAYMENT_MSG, '').result;
+        // Always annotate in register mode.
+        if ($scope.annotate_payment || $scope.registerIsActive()) {
+            return egPromptDialog.open(
+                egCore.strings.ANNOTATE_PAYMENT_MSG, '').result;
+        }
+        return $q.when();
     }
 
     function add_cc_args() {
-        if ($scope.payment_type != 'credit_card_payment') 
+        // skip CC dialog when registers are active, because such
+        // payments are generally made after the fact via payment vouncher.
+        if ($scope.payment_type != 'credit_card_payment')
             return $q.when();
 
-        var disableCreditCardForm = $scope.disableCreditCardForm;
+        if ($scope.registerIsActive())  {
+            return $q.when({
+                type: 'VOUCHER',
+                processor: 'VOUCHER', 
+                approval_code: 'VOUCHER'
+            });
+        }
 
         return $uibModal.open({
             templateUrl : './circ/patron/t_cc_payment_dialog',
@@ -812,6 +1034,67 @@ function($scope , $q , $routeParams , egCore , egConfirmDialog , $location,
 
     }
 
+    // Reprints the lost/paid (refundable payment) receipt for the
+    // most recent payment on a refundable transaction.
+    $scope.printLostPaidReceipt = function(items) {
+        if (items.length == 0) return;
+
+        var ids = items.map(function(item) {return item.id});
+
+        function printOne() {
+            var id = ids.shift();
+            if (!id) return $q.when();
+
+            return egCore.net.request(
+                'open-ils.circ', 
+                'open-ils.circ.refundable_payment.receipt.by_xact.html',
+                egCore.auth.token(), id
+            ).then(function(receipt) {
+
+                if (receipt && 
+                    receipt.textcode == 'MONEY_REFUNDABLE_XACT_SUMMARY_NOT_FOUND') {
+                    alert('Cannot generate lost/paid receipt for transaction #' + id);
+                    return;
+                }
+
+                if (!receipt || !receipt.template_output()) {
+                    return alert(
+                        'Error creating refundable payment receipt for transaction #' + id);
+                }
+
+                var html = receipt.template_output().data();
+                return egCore.print.print({
+                    context : 'default', 
+                    content_type: 'text/html',
+                    content: html,
+                    show_dialog: true,
+                    scope : {}
+                });
+            }).then(printOne);
+        }
+
+        printOne();
+    }
+
+    $scope.viewLostPaidDetails = function(items) {
+        var ids = items.map(function(item) {return item.id});
+        var id = ids.shift();
+        if (!id) return;
+
+        egCore.pcrud.search('mrxs', {xact: id}).then(
+            function(mrxs) {
+                if (!mrxs) { 
+                    egAlertDialog.open( 
+                        // NOTE: i18n -> this will be Angular some day.
+                        'No details to display for the selected transaction.');
+                    return; 
+                }
+                var url = '/eg2/staff/circ/refunds/' + mrxs.id();
+                $window.open(url, '_blank').focus();
+            }
+        );
+    }
+
     // note this is functionally equivalent to selecting a neg. transaction
     // then clicking Apply Payment -- this just adds a speed bump (ditto
     // the XUL client).
@@ -874,7 +1157,29 @@ function($scope,  $q , $routeParams , egCore , egGridDataProvider , patronSvc , 
 
     var paymentGrid = $scope.paymentGridControls = {
         setQuery : function() { return {xact : xact_id} },
-        setSort : function() { return ['payment_ts'] }
+        setSort : function() { return ['payment_ts'] },
+        allItemsRetrieved: function() {
+            // See if any of these payments are refundable.
+            // If so, fetch the staff A/D login name for display.
+            var items = $scope.paymentGridControls.allItems().concat([]);
+
+            function fetchOne() {
+                var item = items.shift();
+                if (!item) { return $q.when(); }
+                return egCore.net.request(
+                    'open-ils.circ',
+                    'open-ils.circ.refundable_payment.retrieve.by_payment',
+                    egCore.auth.token(), item.id
+                ).then(function(rfPayment) {
+                    if (rfPayment) {
+                        item.refundable_payment_staff = 
+                            rfPayment.staff_email().replace(/@.*/g, ''); // remove @kcls.org
+                    }
+                    fetchOne();
+                })
+            }
+            fetchOne();
+        }
     }
 
     // -- actions
@@ -1015,6 +1320,47 @@ function($scope,  $q , $routeParams , egCore , patronSvc , billSvc , egPromptDia
         if (end == today) end = 'now';
         return [start, end];
     }
+
+    // Reprints the lost/paid (refundable payment) receipt for selected payments
+    $scope.printLostPaidReceipt = function(items) {
+        if (items.length == 0) return;
+
+        var ids = items.map(function(item) {return item.id});
+
+        function printOne() {
+            var id = ids.shift();
+            if (!id) return $q.when();
+
+            return egCore.net.request(
+                'open-ils.circ', 
+                'open-ils.circ.refundable_payment.receipt.by_pay.html',
+                egCore.auth.token(), id
+            ).then(function(receipt) {
+
+                if (receipt && 
+                    receipt.textcode == 'MONEY_REFUNDABLE_PAYMENT_SUMMARY_NOT_FOUND') {
+                    alert('Cannot generate lost/paid receipt for payment #' + id);
+                    return;
+                }
+
+                if (!receipt || !receipt.template_output()) {
+                    return alert(
+                        'Error creating refundable payment receipt for payment #' + id);
+                }
+
+                var html = receipt.template_output().data();
+                return egCore.print.print({
+                    context : 'default', 
+                    content_type: 'text/html',
+                    content: html,
+                    show_dialog: true,
+                    scope : {}
+                });
+            }).then(printOne);
+        }
+
+        printOne();
+    }
 }])
 
 
@@ -1116,6 +1462,7 @@ function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location
         // (Consider an alternate approach..)
         var ids = selected.map(function(t){ return t.id });
         var xacts = [];
+        var totalOwed = 0;
         egCore.pcrud.search('mbt', 
             {id : ids},
             {flesh : 5, flesh_fields : {
@@ -1130,6 +1477,7 @@ function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location
         ).then(
             function() {
                 var cusr = patronSvc.current;
+                totalOwed /= 100;
                 egCore.print.print({
                     context : 'receipt', 
                     template : 'bills_historical', 
@@ -1137,6 +1485,7 @@ function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location
                         transactions : xacts,
                         current_location : egCore.idl.toHash(
                             egCore.org.get(egCore.auth.user().ws_ou())),
+                        owed_for_selected: totalOwed,
                         patron : {
                             prefix : cusr.prefix(),
                             pref_prefix : cusr.pref_prefix(),
@@ -1152,7 +1501,7 @@ function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location
                             expire_date : cusr.expire_date(),
                             alias : cusr.alias(),
                             has_email : Boolean(cusr.email() && cusr.email().match(/.*@.*/)),
-                            has_phone : Boolean(cusr.day_phone() || cusr.evening_phone() || cusr.other_phone())
+                            has_phone : Boolean(cusr.day_phone() || cusr.evening_phone() || cusr.other_phone()),
                         }
                     }
                 });
@@ -1184,6 +1533,8 @@ function($scope,  $q , egCore , patronSvc , billSvc , egPromptDialog , $location
                         }
                     }
                 }
+
+                totalOwed += (Number(newXact.summary.balance_owed) * 100);
                 xacts.push(newXact);
             }
         );

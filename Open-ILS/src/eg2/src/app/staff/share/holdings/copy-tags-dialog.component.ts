@@ -38,7 +38,8 @@ export class CopyTagsDialogComponent
 
     // If true, no attempt is made to save the new tags to the
     // database.  It's assumed this takes place in the calling code.
-    @Input() inPlaceCreateMode = false;
+    // This is useful for creating tags for new copies.
+    @Input() inPlaceMode = false;
 
     // In 'create' mode, we may be adding notes to multiple copies.
     copies: IdlObject[] = [];
@@ -101,7 +102,7 @@ export class CopyTagsDialogComponent
         this.newTags = [];
         this.deletedMaps = [];
 
-        if (this.copyIds.length === 0 && !this.inPlaceCreateMode) {
+        if (this.copyIds.length === 0 && !this.inPlaceMode) {
             return throwError('copy ID required');
         }
 
@@ -135,6 +136,8 @@ export class CopyTagsDialogComponent
     }
 
     getCopies(): Promise<any> {
+        if (this.inPlaceMode) { return Promise.resolve(); }
+
         return this.pcrud.search('acp', {id: this.copyIds},
             {flesh: 3, flesh_fields: {
                 acp: ['tags'], acptcm: ['tag'], acpt: ['tag_type']}},
@@ -206,7 +209,7 @@ export class CopyTagsDialogComponent
 
     applyChanges() {
 
-        if (this.inPlaceCreateMode) {
+        if (this.inPlaceMode) {
             this.close({ newTags: this.newTags, deletedMaps: this.deletedMaps });
             return;
         }

@@ -16,6 +16,8 @@ export class GridToolbarCheckboxComponent implements OnInit {
     // This does NOT fire the onChange handler.
     @Input() initialValue: boolean;
 
+    @Input() disabled = false;
+
     @Output() onChange: EventEmitter<boolean>;
 
     private cb: GridToolbarCheckbox;
@@ -28,6 +30,7 @@ export class GridToolbarCheckboxComponent implements OnInit {
         // grid is fully rendered.
         this.cb = new GridToolbarCheckbox();
         this.cb.isChecked = null;
+        this.cb.disabled = false;
         this.initialValue = null;
     }
 
@@ -39,6 +42,7 @@ export class GridToolbarCheckboxComponent implements OnInit {
 
         this.cb.label = this.label;
         this.cb.onChange = this.onChange;
+        this.cb.disabled = this.disabled;
 
         if (this.cb.isChecked === null && this.initialValue !== null) {
             this.cb.isChecked = this.initialValue;

@@ -262,7 +262,7 @@ However, you will still have the option to change individual holds regardless of
 Please see a librarian to renew your account.">
 <!ENTITY myopac.summary.notes "* Staff Notes *">
 <!ENTITY myopac.summary.phone.day "Day Phone">
-<!ENTITY myopac.summary.phone.evening "Evening Phone">
+<!ENTITY myopac.summary.phone.evening "Secondary Phone">
 <!ENTITY myopac.summary.phone.other "Other Phone">
 <!ENTITY myopac.summary.change "Change">
 <!ENTITY myopac.summary.username.enter "Enter new username:">

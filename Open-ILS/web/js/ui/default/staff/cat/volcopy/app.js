@@ -59,16 +59,22 @@ function(egCore , $q) {
         copies : [] // raw copy list
     };
 
-    service.nextBarcode = function(bc) {
+    service.nextBarcode = function(bc, count, skipDupes) {
         service.currently_generating = true;
+        if (!count) count = 1;
         return egCore.net.request(
             'open-ils.cat',
             'open-ils.cat.item.barcode.autogen',
-            egCore.auth.token(),
-            bc, 1, { checkdigit: service.barcode_checkdigit }
+            egCore.auth.token(), bc, count, { 
+                checkdigit: service.barcode_checkdigit,
+                skip_dupes: skipDupes === true
+            }
         ).then(function(resp) { // get_barcodes
             var evt = egCore.evt.parse(resp);
-            if (!evt) return resp[0];
+            if (!evt) {
+                if (resp.length > 1) return resp;
+                return resp[0];
+            }
             return '';
         });
     };
@@ -182,6 +188,7 @@ function(egCore , $q) {
     };
 
     service.fetch_locations = function(locs) {
+        if (locs.length == 0) return $q.when([]);
         return egCore.pcrud.search('acpl',
             {id : locs},
             {
@@ -233,7 +240,6 @@ function(egCore , $q) {
             ,6  /* In transit */
             ,8  /* On holds shelf */
             ,16 /* Long overdue */
-            ,18 /* Canceled Transit */
         ]);
     }
 
@@ -256,6 +262,9 @@ function(egCore , $q) {
 
         return egCore.pcrud.retrieveAll('ccm', {}, {atomic : true}).then(
             function(list) {
+                angular.forEach(list, function (value, key) {
+                    value._displayName = value.code() + ":" + value.name();
+                });
                 egCore.env.absorbList(list, 'ccm');
                 return list;
             }
@@ -550,6 +559,59 @@ function(egCore , $q) {
         return promise;
     }
 
+    // KCLS JBAS-2184
+    // Limit copy location selector to locations at the current
+    // workstation (and parent orgs) regardless of the copy's
+    // circ/owning lib.  Nightly CRON job applies the correct 
+    // location (matching by name) to any copies whose circ_lib
+    // does not match the location's owning lib.
+    service.selectableLocations = function(location_list, working_location) {
+        var orgs = egCore.org.fullPath(egCore.auth.user().ws_ou(), true)
+            .map(function(o) { return Number(o); });
+
+        var locs = location_list.filter(function(loc) {
+            return orgs.indexOf(Number(loc.owning_lib().id())) >= 0;
+        });
+
+        // See if the current working location points to a copy location
+        // that is outside of the set of local copy locations.
+        if (working_location) {
+            var curLoc = Number(working_location);
+
+            var exists = locs.filter(
+                function(l) {return Number(l.id()) === curLoc})[0];
+
+            if (!exists) {
+                // The current working location points to a remote copy
+                // location, add the remote copy location to the selector
+                // so we can accurately represent the current copy location
+                // value for the copy.
+
+                var remoteLoc = location_list.filter(
+                    function(l) {return Number(l.id()) === curLoc})[0];
+
+                if (remoteLoc) {
+                    if (!remoteLoc.name().match(/\)$/)) { // boo hack
+                        // When adding a remote copy location back to the
+                        // list, append the location name with the owning
+                        // library to differentiate it from the set of
+                        // local copy locations.  This helps avoid
+                        // confusing duplicates.
+                        remoteLoc.name(remoteLoc.name() + 
+                            ' (' + remoteLoc.owning_lib().shortname() + ')');
+                    }
+                    locs.push(remoteLoc);
+                    locs.sort(function(a, b) {
+                        // Ensure the new copy location is sorted into place
+                        return a.name().toUpperCase() < b.name().toUpperCase() ? -1 : 1
+                    });
+                }
+            }
+        }
+
+        return locs;
+    }
+
     return service;
 }])
 
@@ -558,18 +620,17 @@ function(egCore , $q) {
         restrict: 'E',
         replace: true,
         template:
-            '<div class="row" ng-class="{'+"'new-cp'"+':is_new}">'+
-                '<span ng-if="is_new" class="sr-only">' + egCore.strings.VOL_COPY_NEW_ITEM + '</span>' +
-                '<div class="col-xs-5" ng-class="{'+"'has-error'"+':barcode_has_error}">'+
+            '<div class="row">'+
+                '<div class="col-xs-8" ng-class="{'+"'has-error'"+':barcode_has_error}">'+
                     '<input id="{{callNumber.id()}}_{{copy.id()}}"'+
-                    ' eg-enter="nextBarcode(copy.id())" class="form-control"'+
+                    ' eg-enter="nextBarcode(copy.id())" class="form-control barcode-input"'+
                     ' type="text" ng-model="barcode" ng-model-options="{ debounce: 500 }" ng-change="updateBarcode()"'+
                     ' ng-focus="selectOnFocus($event)" autofocus/>'+
                     '<div class="label label-danger" ng-if="duplicate_barcode">{{duplicate_barcode_string}}</div>'+
                     '<div class="label label-danger" ng-if="empty_barcode">{{empty_barcode_string}}</div>'+
                 '</div>'+
-                '<div class="col-xs-3"><input class="form-control" type="number" min="1" ng-model="copy_number" ng-change="updateCopyNo()"/></div>'+
-                '<div class="col-xs-3"><eg-basic-combo-box list="parts" selected="part"></eg-basic-combo-box></div>'+
+                '<div ng-hide="true" class="col-xs-3"><input class="form-control" type="number" min="1" ng-model="copy_number" ng-change="updateCopyNo()"/></div>'+
+                '<div class="col-xs-3" ng-hide="true"><eg-basic-combo-box list="parts" selected="part"></eg-basic-combo-box></div>'+
             '</div>',
 
         scope: { focusNext: "=", copy: "=", callNumber: "=", index: "@", record: "@" },
@@ -601,20 +662,23 @@ function(egCore , $q) {
                         $scope.copy.empty_barcode = $scope.empty_barcode = false;
                         $scope.barcode_has_error = !Boolean(itemSvc.checkBarcode($scope.barcode));
 
-                        var duplicate_check_id = ++duplicate_check_count;
-                        itemSvc.checkDuplicateBarcode($scope.barcode, $scope.copy.id())
-                            .then(function (state) {
-                                if (duplicate_check_id == duplicate_check_count)
-                                    $scope.copy.duplicate_barcode = $scope.duplicate_barcode = state;
-                            });
+                        if (!itemSvc.handlingDupes) {
+                            var duplicate_check_id = ++duplicate_check_count;
+                            itemSvc.checkDuplicateBarcode($scope.barcode, $scope.copy.id())
+                                .then(function (state) {
+                                    if (duplicate_check_id == duplicate_check_count)
+                                        $scope.copy.duplicate_barcode = $scope.duplicate_barcode = state;
+                                });
+                        }
                     } else {
                         $scope.copy.empty_barcode = $scope.empty_barcode = true;
                     }
                         
                     $scope.copy.barcode($scope.barcode);
                     $scope.copy.ischanged(1);
-                    if (itemSvc.currently_generating)
+                    if (itemSvc.currently_generating) {
                         $scope.focusNext($scope.copy.id(), $scope.barcode);
+                    }
                 };
 
                 $scope.updateCopyNo = function () { $scope.copy.copy_number($scope.copy_number); $scope.copy.ischanged(1); };
@@ -671,20 +735,29 @@ function(egCore , $q) {
         replace: true,
         transclude: true,
         template:
-            '<div class="row" ng-class="{'+"'new-cn'"+':!callNumber.not_ephemeral}">'+
-                '<span ng-if="!callNumber.not_ephemeral" class="sr-only">' + egCore.strings.VOL_COPY_NEW_CALL_NUMBER + '</span>' +
-                '<div class="col-xs-2">'+
+            '<div class="row">'+
+                '<div class="col-xs-5">'+
                     '<button aria-label="Delete" style="margin:-5px -15px; float:left;" ng-hide="callNumber.not_ephemeral" type="button" class="close" ng-click="removeCN()">&times;</button>' +
-                    '<select class="form-control" ng-model="classification" ng-change="updateClassification()" ng-options="cl.name() for cl in classification_list"></select>'+
+                    '<select ng-hide="true" class="form-control" ng-model="classification" ng-change="updateClassification()" ng-options="cl.name() for cl in classification_list"></select>'+
+
+                // schooch the call number label entry over
+                // next to the call number delete X icon.
+                // Leave form controls in place but hidden so code
+                // that assumes their existence will continue to work.
+      
+                /*
                 '</div>'+
-                '<div class="col-xs-1">'+
-                    '<select class="form-control" ng-model="prefix" ng-change="updatePrefix()" ng-options="p.label() for p in prefix_list"></select>'+
+                '<div class="col-xs-1" ng-hide="true">'+
+                */
+                    '<select ng-hide="true" class="form-control" ng-model="prefix" ng-change="updatePrefix()" ng-options="p.label() for p in prefix_list"></select>'+
+                /*
                 '</div>'+
-                '<div class="col-xs-2">'+
+                '<div class="col-xs-3">'+
+                */
                     '<input class="form-control" type="text" ng-change="updateLabel()" ng-model="label"/>'+
                     '<div class="label label-danger" ng-if="empty_label && require_label">{{empty_label_string}}</div>'+
                 '</div>'+
-                '<div class="col-xs-1">'+
+                '<div class="col-xs-1" ng-hide="true">'+
                     '<select class="form-control" ng-model="suffix" ng-change="updateSuffix()" ng-options="s.label() for s in suffix_list"></select>'+
                 '</div>'+
                 '<div ng-hide="onlyVols" class="col-xs-1"><input class="form-control" type="number" ng-model="copy_count" min="{{orig_copy_count}}" ng-change="changeCPCount()"></div>'+
@@ -707,14 +780,42 @@ function(egCore , $q) {
 
                 $scope.idTracker = function (x) { if (x && x.id) return x.id() };
 
+                // KCLS JBAS-2505
+                // Alternate version of focusNextBarcode which is able
+                // to span call numbers.
+                $scope.focusNextBarcode = function(id, barcode) {
+                    const barcodeInputs = 
+                        document.getElementsByClassName('barcode-input');
+                    const inputs = Array.from(barcodeInputs);
+
+                    var found = false;
+                    var nextInput;
+                    var firstInput;
+                    inputs.forEach(function(input, idx) {
+                        if (nextInput) { return; }
+
+                        if (!firstInput) { firstInput = input; }
+
+                        if (found) { nextInput = input; return; }
+
+                        var copyId = input.id.split('_')[1];
+
+                        if (copyId == id) { found = true; }
+                    });
+
+                    (nextInput || firstInput).focus();
+                }
+
                 // XXX $() is not working! arg
-                $scope.focusNextBarcode = function (i, prev_bc) {
+                $scope._focusNextBarcode = function (i, prev_bc) {
                     var n;
+                    var copy_index;
                     var yep = false;
                     angular.forEach($scope.copies, function (cp) {
                         if (n) return;
 
                         if (cp.id() == i) {
+                            copy_index = $scope.copies.indexOf(cp);
                             yep = true;
                             return;
                         }
@@ -727,12 +828,17 @@ function(egCore , $q) {
                         var el = $(next);
                         if (el) {
                             if (!itemSvc.currently_generating) el.focus();
-                            if (prev_bc && itemSvc.auto_gen_barcode && el.val() == "") {
-                                itemSvc.nextBarcode(prev_bc).then(function(bc){
-                                    el.focus();
-                                    el.val(bc);
-                                    el.trigger('change');
-                                });
+                            if (prev_bc && itemSvc.auto_gen_barcode) {
+                                if (el.val() != "") {
+                                    copy_index++;
+                                    $scope._focusNextBarcode($scope.copies[copy_index].id(), prev_bc)
+                                } else {
+                                    itemSvc.nextBarcode(prev_bc).then(function(bc){
+                                        el.focus();
+                                        el.val(bc);
+                                        el.trigger('change');
+                                    });
+                                }
                             } else {
                                 itemSvc.currently_generating = false;
                             }
@@ -962,6 +1068,7 @@ function(egCore , $q) {
 
                         if (cn == prev_cn) {
                             yep = true;
+                            $scope.cn_index = Object.keys($scope.struct).sort().indexOf(cn);
                             return;
                         }
 
@@ -969,8 +1076,7 @@ function(egCore , $q) {
                     });
 
                     if (n) {
-                        var next = '#' + n + '_' + $scope.struct[n][0].id();
-                        var el = $(next);
+                        var el = $scope.loop_vol_copy(n, 0);
                         if (el) {
                             if (!itemSvc.currently_generating) el.focus();
                             if (prev_bc && itemSvc.auto_gen_barcode && el.val() == "") {
@@ -985,6 +1091,26 @@ function(egCore , $q) {
                         }
                     } else {
                         $scope.focusNext($scope.lib, prev_bc);
+                    }
+                }
+
+                $scope.loop_vol_copy = function(cn, cp) {
+                    if ($scope.struct[cn]) {
+                        // When we run out of copies in a volume...
+                        if (!$scope.struct[cn][cp]) {
+                            $scope.cn_index++;
+                            cn = Object.keys($scope.struct).sort()[$scope.cn_index];
+                            return $scope.loop_vol_copy(cn, 0);
+                        } else {
+                            var next = '#' + cn + '_' + $scope.struct[cn][cp].id();
+                            var el = $(next);
+                            if (el && el.val() != "") {
+                                cp++
+                                return $scope.loop_vol_copy(cn, cp)
+                            } else {
+                                return el;
+                            }
+                        }
                     }
                 }
 
@@ -1071,13 +1197,23 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
     $scope.forms = {}; // Accessed by t_attr_edit.tt2
     $scope.i18n = egCore.i18n;
 
+    var wants_hide_holding_details = false;
+    var wants_hide_item_attrs = false;
+
     $scope.defaults = { // If defaults are not set at all, allow everything
         barcode_checkdigit : false,
         auto_gen_barcode : false,
         statcats : true,
         copy_notes : true,
         copy_tags : true,
+        owning_lib: true,
+        creator: true, // fleshed
+        editor: true, // fleshed
         attributes : {
+            barcode: true,
+            create_date: true,
+            active_date: true,
+            edit_date: true,
             status : true,
             loan_duration : true,
             fine_level : true,
@@ -1097,7 +1233,8 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
             holdable : true,
             age_protect : true,
             floating : true,
-            alerts : true
+            alerts : true,
+            alert_message: true
         }
     };
 
@@ -1171,18 +1308,89 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                     $scope.working.statcat_filter = $scope.defaults.statcat_filter.id();
                 }
                 if ($scope.defaults.always_volumes) $scope.show_vols = true;
-                if ($scope.defaults.barcode_checkdigit) itemSvc.barcode_checkdigit = true;
+                // see cat.copy.use_checkdigit below
+                //if ($scope.defaults.barcode_checkdigit) itemSvc.barcode_checkdigit = true;
                 if ($scope.defaults.auto_gen_barcode) itemSvc.auto_gen_barcode = true;
             }
+        }).then(function() {
+
+            return egCore.hatch.getItemBatch([
+                'cat.copy.use_checkdigit',
+                'eg.cat.holdings.hide_holding_details',
+                'eg.cat.holdings.hide_item_attrs'
+            ]);
+
+        }).then(function(settings) {
+
+            wants_hide_holding_details = settings['eg.cat.holdings.hide_holding_details'];
+            wants_hide_item_attrs = settings['eg.cat.holdings.hide_item_attrs'];
+
+            if (wants_hide_holding_details !== null) { 
+                $scope.show_vols = !wants_hide_holding_details;
+            }
+
+            if (wants_hide_item_attrs !== null) { 
+                $scope.show_copies = !wants_hide_item_attrs;
+            }
+
+            var useCd = settings['cat.copy.use_checkdigit'];
+            $scope.defaults.barcode_checkdigit = useCd;
+            // itemSvc.barcode_checkdigit requires an explicit 'false'
+            // to disable checkdigit'ing.  A 'null' wont' suffice.
+            itemSvc.barcode_checkdigit = useCd || false;
+            populateBatchCallNumbers();
+        });
+    }
+
+    $scope.updateShowVols = function() {
+        $scope.show_vols = !$scope.show_vols;
+        egCore.hatch.setItem(
+            'eg.cat.holdings.hide_holding_details', !$scope.show_vols)
+    }
+
+    $scope.updateShowCopies = function() {
+        $scope.show_copies = !$scope.show_copies;
+        egCore.hatch.setItem(
+            'eg.cat.holdings.hide_item_attrs', !$scope.show_copies);
+    }
+
+    $scope.saveCheckdigitPref = function() {
+        var val = $scope.defaults.barcode_checkdigit;
+        egCore.hatch.setItem('cat.copy.use_checkdigit', val || null);
+        itemSvc.barcode_checkdigit = val;
+    }
+
+    function populateBatchCallNumbers() {
+
+        var promise;
+
+        if (!$scope.defaults.classification) {
+            promise = egCore.org.settings(
+                ['cat.default_classification_scheme'], 
+                // In batch mode there's no context org unit,
+                // so default to the classification of the workstation org.
+                egCore.auth.user().ws_ou()
+            ).then(function (val) {
+                $scope.defaults.classification = 
+                    $scope.batch.classification = 
+                    val['cat.default_classification_scheme'] || 1;
+            });
+        } else {
+            promise = $q.resolve();
+        }
+
+        promise.then(function() {
 
             // Fetch the list of bib-level callnumbers based on the applied
             // classification scheme.  If none is defined, default to "1"
             // (Generic) since it provides the most options.
+            console.debug('fetching call numbers for scheme ', 
+                $scope.batch.classification);
+
             egCore.net.request(
                 'open-ils.cat',
                 'open-ils.cat.biblio.record.marc_cn.retrieve',
-                $scope.record_id,
-                $scope.batch.classification || 1
+                $scope.record_id, $scope.batch.classification
             ).then(function(list) {
                 $scope.batch.marcCallNumbers = [];
                 list.forEach(function(hash) {
@@ -1200,9 +1408,14 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         itemSvc.auto_gen_barcode = n
     });
 
+    /*
+     * See scope.saveCheckdigitPref()
+     * $watch() was cuasing the hatch.setItem call to always
+     * clear the preference when navigating away from this page.
     $scope.$watch('defaults.barcode_checkdigit', function (n,o) {
         itemSvc.barcode_checkdigit = n
     });
+    */
 
     $scope.dirty = false;
     $scope.$watch('dirty',
@@ -1255,6 +1468,80 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         });
 
         return true;
+    }
+
+    // KCLS JBAS-2214 : Changing owning lib changes circ lib.
+    $scope.owningLibChanged = function(newVal /* org unit */) {
+        if (!newVal) { return; }
+
+        if (!$scope.workingGridControls || 
+            !$scope.workingGridControls.selectedItems) {
+            // Controls not yet initialized.  Happens on page load.
+            // Avoid console errors.
+            return;
+        }
+
+        // Set the circ lib values to match the new owning lib.
+        console.debug('Changing owning + circ lib to ', newVal.shortname());
+
+        // Update the form.
+        $scope.working.circ_lib = newVal;
+
+        // Update the copies and call numbers.
+        var orgId = newVal.id();
+
+        // Map existing vol IDs to their replacements.
+        var newVols = {};
+
+        angular.forEach(
+            $scope.workingGridControls.selectedItems(),
+            function (cp) {
+
+                if (cp.circ_lib() != orgId) {
+                    cp.circ_lib(orgId);
+                    cp.ischanged(true);
+                    $scope.dirty = true;
+                }
+
+                // Changing the owning lib on a copy means ensuring
+                // a call number exists for the copy to live under
+                // at the new owning lib.  It does not necessarily mean
+                // the current call number should just be modified,
+                // because there could be other copies attached we
+                // do not want to modify.
+
+                var vol = cp.call_number();
+                if (vol.owning_lib() == orgId) {
+                    return;  // Call number already matches requested org.
+                }
+
+                var newVol;
+                if (newVols[vol.id()]) {
+
+                    console.debug('Using locally created new vol in copy update');
+                    newVol = newVols[vol.id()];
+
+                } else {
+
+
+                    // The open-ils.cat.asset.volume.fleshed.batch.update API
+                    // will use the existing volume when trying to create a
+                    // new volume with the same parameters as an existing volume.
+                    newVol = egCore.idl.Clone(vol);
+                    newVol.owning_lib(orgId);
+                    newVol.id(--itemSvc.new_cn_id);
+                    newVol.isnew(true);
+                    newVols[vol.id()] = newVol;
+
+                    console.debug('Creating new vol with label ' +
+                        newVol.label() + ' and owning lib ' + orgId);
+                }
+
+                cp.call_number(newVol);
+                cp.ischanged(true);
+                $scope.dirty = true;
+            }
+        );
     }
 
     createSimpleUpdateWatcher = function (field,exclude_copies_with_one_of_these_values) {
@@ -1460,12 +1747,17 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
 
         $scope.applyTemplate = function (n) {
             angular.forEach($scope.templates[n], function (v,k) {
-                if (k == 'circ_lib') {
+                if (k == 'circ_lib' || k == 'owning_lib') {
                     $scope.working[k] = egCore.org.get(v);
                 } else if (k == 'copy_notes' && v.length) {
                     $scope.copyNoteUpdate(v);
                 } else if (k == 'copy_alerts' && v.length) {
                     $scope.copyAlertUpdate(v);
+                } else if (k === 'circ_modifier') {
+                    // KCLS JBAS-2308
+                    // Coerce value to string.  Fixes circ_modifier whose
+                    // code()'s are typically numeric-ish
+                    $scope.working[k] = '' + angular.copy(v);
                 } else if (!angular.isObject(v)) {
                     $scope.working[k] = angular.copy(v);
                 } else {
@@ -1496,6 +1788,66 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         $scope.location_cache = {};
         $scope.statcats = [];
         if (!$scope.batch) $scope.batch = {};
+
+        $scope.applyAutogenBarcodes = function() {
+            var el;
+            const barcodeInputs = document.getElementsByClassName('barcode-input');
+
+            // make sure we have a seed value.
+            if (!barcodeInputs[0].value) { return; }
+
+            // Assumes the first item has a barcode value and all other 
+            // items will be updated with the generated barcode regardless
+            // of whether a barcode value is already applied.
+
+            const inputs = Array.from(barcodeInputs);
+            const seed = inputs[0].value;
+            inputs.shift(); // avoid replacing the seed barcode
+
+            var replacing = 0;
+            inputs.forEach(function(input) {
+                if (input.value) { replacing++; }
+            });
+
+            if (replacing > 0) {
+                const ok = confirm(
+                    'Replace barcodes for ' + replacing + ' items?');
+
+                if (!ok) { return; }
+            }
+
+            itemSvc.nextBarcode(seed, inputs.length, true)
+            .then(function(barcodes) {
+
+                // nextBarcode() de-arrayifies
+                if (!Array.isArray(barcodes)) { barcodes = [barcodes]; }
+
+                var needsChangeTrigger = [];
+                inputs.forEach(function(input, idx) {
+                    el = $(input);
+                    input.value = barcodes[idx];
+                    needsChangeTrigger.push(el);
+                });
+
+                itemSvc.currently_generating = false;
+
+                // Tell the change handler not to check for dupes
+                // since nextBarcode() does that for us.
+                itemSvc.handlingDupes = true;
+
+                // Fire barcode change handler after all have been
+                // updated to reduce unexpected parallel activity.
+                // Focus the last barcode input.
+                needsChangeTrigger.forEach(function(el, idx) { 
+                    el.trigger('change'); 
+                    if (idx === needsChangeTrigger.length - 1) {
+                        el.focus();
+                    }
+                });
+
+                itemSvc.handlingDupes = false;
+            });
+        }
 
         $scope.applyBatchCNValues = function () {
             if ($scope.data.tree) {
@@ -1537,7 +1889,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                 if (!angular.isObject(v)) {
                     if (typeof v != 'undefined')
                         $scope.working[k] = undefined;
-                } else if (k != 'circ_lib' && k != 'MultiMap') {
+                } else if (k != 'circ_lib' && k != 'owning_lib' && k != 'MultiMap') {
                     angular.forEach(v, function (sv,sk) {
                         if (typeof v != 'undefined')
                             $scope.working[k][sk] = undefined;
@@ -1545,6 +1897,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                 }
             });
             $scope.working.circ_lib = undefined; // special
+            $scope.working.owning_lib = undefined; // special
         }
 
         $scope.completedGridDataProvider = egGridDataProvider.instance({
@@ -1571,7 +1924,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         angular.forEach(
             ['circulate','status','circ_lib','ref','location','opac_visible','circ_modifier','price',
              'loan_duration','cost','circ_as_type','deposit','holdable','deposit_amount','age_protect',
-             'mint_condition','fine_level','floating'],
+             'mint_condition','fine_level','floating', 'alert_message'],
             function (field) {
                 $scope['select_by_' + field] = function (x) {
                     $scope.workingGridControls.selectItemsByValue(field,x);
@@ -1655,8 +2008,13 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         ).then(function (data) {
 
             if (data) {
-                if (data.hide_vols && !$scope.defaults.always_volumes) $scope.show_vols = false;
-                if (data.hide_copies) {
+                
+                if ((data.hide_vols && !$scope.defaults.always_volumes)
+                    || wants_hide_holding_details) {
+                    $scope.show_vols = false;
+                }
+
+                if (data.hide_copies && !wants_hide_item_attrs) {
                     $scope.show_copies = false;
                     $scope.only_vols = true;
                 }
@@ -1829,6 +2187,17 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
             return !$scope.can_save;
         }
 
+        // Array of org unit IDs sorted by org unit shortname for orgs
+        // in the holdings tree.
+        $scope.sortedOrgs = function() {
+            if (!$scope.data.tree) { return []; }
+
+            return Object.keys($scope.data.tree)
+            .map(function(id) { return egCore.org.get(id) })
+            .sort(function(a, b) { return a.shortname() < b.shortname() ? -1 : 1; })
+            .map(function(org) { return org.id() });
+        }
+
         $scope.focusNextFirst = function(prev_lib,prev_bc) {
             var n;
             var yep = false;
@@ -1837,6 +2206,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
 
                 if (lib == prev_lib) {
                     yep = true;
+                    $scope.ou_index = Object.keys($scope.data.tree).sort().indexOf(lib);
                     return;
                 }
 
@@ -1845,18 +2215,42 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
 
             if (n) {
                 var first_cn = Object.keys($scope.data.tree[n])[0];
-                var next = '#' + first_cn + '_' + $scope.data.tree[n][first_cn][0].id();
-                var el = $(next);
+                var el = $scope.loop_vol_copy(n, first_cn, 0);
                 if (el) {
                     if (!itemSvc.currently_generating) el.focus();
-                    if (prev_bc && itemSvc.auto_gen_barcode && el.val() == "") {
+                    if (prev_bc && itemSvc.auto_gen_barcode) {
                         itemSvc.nextBarcode(prev_bc).then(function(bc){
                             el.focus();
-                            el.val(bc);
-                            el.trigger('change');
+                            if (el.val() =="") {
+                                el.val(bc);
+                                el.trigger('change');
+                            } else {
+                                $scope.focusNextFirst(prev_lib, prev_bc);
+                            }
                         });
                     } else {
                         itemSvc.currently_generating = false;
+                    }
+                }
+            }
+        }
+
+        $scope.loop_vol_copy = function(ou, cn, cp) {
+            if ($scope.data.tree[ou]) {
+                // When we run out of volumes in an org...
+                if (!$scope.data.tree[ou][cn]) {
+                    $scope.ou_index++;
+                    ou = Object.keys($scope.data.tree).sort()[$scope.ou_index];
+                    cn = Object.keys($scope.data.tree[ou])[0];
+                    return $scope.loop_vol_copy(ou, cn);
+                } else if($scope.data.tree[ou][cn][cp]) {
+                    var next = '#' + cn + '_' + $scope.data.tree[ou][cn][cp].id();
+                    var el = $(next);
+                    if (el && el.val() != "") {
+                        cp++;
+                        return $scope.loop_vol_copy(ou, cn, cp);
+                    } else {
+                        return el;
                     }
                 }
             }
@@ -1867,6 +2261,41 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         $scope.handleItemSelect = function (item_list) {
             if (item_list && item_list.length > 0) {
                 $scope.in_item_select = true;
+
+
+                // KCLS owning lib support ---
+                var owner_hash = {};
+                var owner_list = [];
+                item_list.forEach(function(item) {
+                    var v = item.call_number().owning_lib();
+                    owner_list.push(v);
+                    owner_hash[v] = 1;
+                });
+                $scope.working.MultiMap.owning_lib = owner_list;
+                if (Object.keys(owner_hash).length == 1) {
+                    $scope.working.owning_lib = egCore.org.get(owner_list[0]);
+                } else {
+                    $scope.working.owning_lib = undefined;
+                }
+                // ---
+                
+                // KCLS creator / editor support.
+                // Values are fleshed on the copy.
+                ['creator', 'editor'].forEach(function(field) {
+                    user_list = [];
+                    user_hash = [];
+                    item_list.forEach(function(item) {
+                        var usr = item[field]() ? item[field]().usrname() : '';
+                        user_list.push(usr);
+                        user_hash[usr] = 1;
+                    });
+                    $scope.working.MultiMap[field] = user_list;
+                    if (Object.keys(user_hash).length == 1) {
+                        $scope.working[field] = user_list[0];
+                    } else {
+                        $scope.working[field] = undefined;
+                    }
+                });
 
                 angular.forEach(Object.keys($scope.defaults.attributes), function (attr) {
 
@@ -1881,7 +2310,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                             }
                             value_list.push(v);
                             value_hash[v] = 1;
-                        }
+                       }
                     });
 
                     $scope.working.MultiMap[attr] = value_list;
@@ -2041,6 +2470,12 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         $scope.location_list = [];
         createSimpleUpdateWatcher('location');
 
+        $scope.selectableLocations = function() {
+            return itemSvc.selectableLocations(
+                $scope.location_list, 
+                $scope.working ? $scope.working.location : null);
+        }
+
         $scope.status_list = [];
         itemSvc.get_magic_statuses().then(function(list){
             $scope.magic_status_list = list;
@@ -2073,6 +2508,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
             $scope.floating_list = list;
         });
         createSimpleUpdateWatcher('floating');
+        createSimpleUpdateWatcher('alert_message');
 
         createSimpleUpdateWatcher('circ_lib');
         createSimpleUpdateWatcher('circulate');
@@ -2170,6 +2606,11 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
         }
 
         $scope.saveAndContinue = function () {
+            $scope.saveCompletedCopies(false);
+        }
+
+        $scope.workingSaveAndContinue = function () {
+            $scope.workingToComplete();
             $scope.saveCompletedCopies(false);
         }
 
@@ -2472,6 +2913,10 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                     copy_tags : true,
                     copy_alerts : true,
                     attributes : {
+                        barcode: true,
+                        create_date: true,
+                        active_date: true,
+                        edit_date: true,
                         status : true,
                         loan_duration : true,
                         fine_level : true,
@@ -2490,7 +2935,8 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                         location : true,
                         holdable : true,
                         age_protect : true,
-                        floating : true
+                        floating : true,
+                        alert_message: true
                     }
                 };
 
@@ -2541,7 +2987,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
             
                 $scope.applyTemplate = function (n) {
                     angular.forEach($scope.templates[n], function (v,k) {
-                        if (k == 'circ_lib') {
+                        if (k == 'circ_lib' || k == 'owning_lib') {
                             $scope.working[k] = egCore.org.get(v);
                         } else if (angular.isArray(v) || !angular.isObject(v)) {
                             $scope.working[k] = angular.copy(v);
@@ -2690,13 +3136,14 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                         if (!angular.isObject(v)) {
                             if (typeof v != 'undefined')
                                 $scope.working[k] = undefined;
-                        } else if (k != 'circ_lib' && k != 'MultiMap') {
+                        } else if (k != 'circ_lib' && k != 'owning_lib' && k != 'MultiMap') {
                             angular.forEach(v, function (sv,sk) {
                                 $scope.working[k][sk] = undefined;
                             });
                         }
                     });
                     $scope.working.circ_lib = undefined; // special
+                    $scope.working.owning_lib = undefined; // special
                     $scope.dirty = false;
                 }
 
@@ -2711,6 +3158,10 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                     $scope.location_list = list;
                 });
                 createSimpleUpdateWatcher('location');
+
+                $scope.selectableLocations = function() {
+                    return itemSvc.selectableLocations($scope.location_list);
+                }
 
                 $scope.statcat_filter_list = egCore.org.fullPath( egCore.auth.user().ws_ou() );
 
@@ -2898,6 +3349,7 @@ function($scope , $q , $window , $routeParams , $location , $timeout , egCore , 
                     $scope.floating_list = list;
                 });
                 createSimpleUpdateWatcher('floating');
+                createSimpleUpdateWatcher('alert_message');
 
                 createSimpleUpdateWatcher('circulate');
                 createSimpleUpdateWatcher('holdable');

@@ -321,7 +321,7 @@ sub can_close_circ {
     my ($class, $e, $circ) = @_;
     my $can_close = 0;
 
-    my $reason = $circ->stop_fines;
+    my $reason = $circ->stop_fines || '';
 
     # We definitely want to close if this circulation was
     # checked in or renewed.
@@ -501,7 +501,6 @@ sub generate_fines {
 
     my $handling_resvs = 0;
     for my $c (@$circs) {
-
         my $ctype = ref($c);
 
         if (!$ctype) { # we received only an idlist, not objects
@@ -579,20 +578,31 @@ sub generate_fines {
                 "\tItem was due on or before: ".localtime($due)."\n") if $conn;
     
             my @fines = @{$e->search_money_billing([
-                { xact => $c->id,
-                  btype => 1,
-                  billing_ts => { '>' => $c->$due_date_method } },
+                { xact => $c->id, btype => 1 },
                 { order_by => {mb => 'billing_ts DESC'},
                   flesh => 1,
                   flesh_fields => {mb => ['adjustments']} }
             ])};
 
-            my $f_idx = 0;
-            my $fine = $fines[$f_idx] if (@fines);
+            # Calcuate fine totals using all overdue fines, regardless
+            # of billing creation time.
             my $current_fine_total = 0;
             $current_fine_total += $_->amount * 100 for (grep { $_ and !$U->is_true($_->voided) } @fines);
             $current_fine_total -= $_->amount * 100 for (map { @{$_->adjustments} } @fines);
+
+            $logger->info(
+                sprintf("Current overdue fine total for xact %d is %0.2f",
+                $c->id, ($current_fine_total / 100)));
+
+            # Determine the billing period of the next fine to generate
+            # based on the billing time of the most recent fine *which
+            # occurred after the current due date*.  Otherwise, when a 
+            # due date changes, the fine generator will back-fill billings
+            # for a period of time where the item was not technically overdue.
+            @fines = grep { $_->billing_ts gt $c->$due_date_method } @fines;
     
+            my $f_idx = 0;
+            my $fine = $fines[$f_idx] if (@fines);
             my $last_fine;
             if ($fine) {
                 $conn->respond( "Last billing time: ".$fine->billing_ts." (clensed format: ".clean_ISO8601( $fine->billing_ts ).")") if $conn;

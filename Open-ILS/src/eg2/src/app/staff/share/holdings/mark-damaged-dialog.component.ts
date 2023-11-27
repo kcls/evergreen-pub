@@ -13,6 +13,9 @@ import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {BibRecordService, BibRecordSummary} from '@eg/share/catalog/bib-record.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
+import {PauseRefundDialogComponent} from '@eg/staff/share/holdings/pause-refund-dialog.component';
+import {ServerStoreService} from '@eg/core/server-store.service';
+import {BillingService} from '@eg/staff/share/billing/billing.service';
 
 /**
  * Dialog for marking items damaged and asessing related bills.
@@ -27,6 +30,10 @@ export class MarkDamagedDialogComponent
     extends DialogComponent implements OnInit {
 
     @Input() copyId: number;
+
+    // If the item is checked out, ask the API to check it in first.
+    @Input() handleCheckin = false;
+
     copy: IdlObject;
     bibSummary: BibRecordSummary;
     billingTypes: ComboboxEntry[];
@@ -36,13 +43,17 @@ export class MarkDamagedDialogComponent
     newCharge: number;
     newNote: string;
     newBtype: number;
+    pauseArgs: any = {};
 
-    @ViewChild('successMsg', { static: true }) private successMsg: StringComponent;
-    @ViewChild('errorMsg', { static: true }) private errorMsg: StringComponent;
-
+    @ViewChild('successMsg', {static: false}) private successMsg: StringComponent;
+    @ViewChild('errorMsg', {static: false}) private errorMsg: StringComponent;
+    @ViewChild('pauseRefundDialog', {static: false})
+        pauseRefundDialog: PauseRefundDialogComponent;
 
     // Charge data returned from the server requesting additional charge info.
     chargeResponse: any;
+
+    autoRefundsActive = false;
 
     constructor(
         private modal: NgbModal, // required for passing to parent
@@ -51,13 +62,18 @@ export class MarkDamagedDialogComponent
         private evt: EventService,
         private pcrud: PcrudService,
         private org: OrgService,
+        private billing: BillingService,
         private bib: BibRecordService,
+        private store: ServerStoreService,
         private auth: AuthService) {
         super(modal); // required for subclassing
-        this.billingTypes = [];
     }
 
-    ngOnInit() {}
+    ngOnInit() {
+        this.store.getItem('eg.circ.lostpaid.auto_refund')
+        .then(value => this.autoRefundsActive = value);
+    }
+
 
     /**
      * Fetch the item/record, then open the dialog.
@@ -82,16 +98,10 @@ export class MarkDamagedDialogComponent
 
     // Fetch-cache billing types
     getBillingTypes(): Promise<any> {
-        if (this.billingTypes.length > 1) {
-            return Promise.resolve();
-        }
-        return this.pcrud.search('cbt',
-            {owner: this.org.fullPath(this.auth.user().ws_ou(), true)},
-            {}, {atomic: true}
-        ).toPromise().then(bts => {
-            this.billingTypes = bts
-                .sort((a, b) => a.name() < b.name() ? -1 : 1)
-                .map(bt => ({id: bt.id(), label: bt.name()}));
+        return this.billing.getUserBillingTypes().then(types => {
+            this.billingTypes =
+                types.map(bt => ({id: bt.id(), label: bt.name()}));
+            this.newBtype = this.billingTypes[0].id;
         });
     }
 
@@ -114,6 +124,7 @@ export class MarkDamagedDialogComponent
         this.newCharge = null;
         this.newNote = null;
         this.amountChangeRequested = false;
+        this.pauseArgs = {};
     }
 
     bTypeChange(entry: ComboboxEntry) {
@@ -123,10 +134,20 @@ export class MarkDamagedDialogComponent
     markDamaged(args: any) {
         this.chargeResponse = null;
 
-        if (args && args.apply_fines === 'apply') {
+        if (!args) { args = {}; }
+
+        if (args.apply_fines === 'apply') {
             args.override_amount = this.newCharge;
             args.override_btype = this.newBtype;
             args.override_note = this.newNote;
+        }
+
+        if (this.pauseArgs) {
+            Object.assign(args, this.pauseArgs);
+        }
+
+        if (this.handleCheckin) {
+            args.handle_checkin = true;
         }
 
         this.net.request(
@@ -144,10 +165,27 @@ export class MarkDamagedDialogComponent
 
                 const evt = this.evt.parse(result);
 
+                if (evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING') {
+                    if (this.autoRefundsActive) {
+                        this.pauseRefundDialog.refundableXact = evt.payload.mrx;
+                        this.pauseRefundDialog.open().subscribe(resp => {
+                            this.pauseArgs = resp;
+                            this.markDamaged(args);
+                        });
+                    } else {
+                        this.pauseArgs = {no_pause_refund: true};
+                        this.markDamaged(args);
+                    }
+                    return;
+                }
+
                 if (evt.textcode === 'DAMAGE_CHARGE') {
                     // More info needed from staff on how to hangle charges.
                     this.chargeResponse = evt.payload;
                     this.newCharge = this.chargeResponse.charge;
+                } else {
+                    console.error(evt);
+                    alert(evt);
                 }
             },
             err => {

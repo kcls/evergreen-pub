@@ -10,6 +10,16 @@ import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {StringComponent} from '@eg/share/string/string.component';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 
+/*
+ * Hiding:
+ * Untargeted expiration
+ * Hold Shelf expiration
+ * Patron via OPAC
+ * Patron via SIP
+ * Hold Group Event rollback
+ */
+const HOLD_CANCEL_CAUSE_HIDE = [1, 2, 6, 7, 8];
+
 /**
  * Dialog for canceling hold requests.
  */
@@ -53,9 +63,11 @@ export class HoldCancelDialogComponent
 
         this.numSucceeded = 0;
         this.numFailed = 0;
+        this.cancelReason = 3; // Patron Request
 
         if (this.cancelReasons.length === 0) {
-            this.pcrud.retrieveAll('ahrcc', {}, {atomic: true}).toPromise()
+            this.pcrud.search('ahrcc', {id: {'not in': HOLD_CANCEL_CAUSE_HIDE}},
+                {order_by: {ahrcc: 'id'}}, {atomic: true}).toPromise()
             .then(reasons => {
                 this.cancelReasons =
                     reasons.map(r => ({id: r.id(), label: r.label()}));

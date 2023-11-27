@@ -1014,6 +1014,11 @@ sub retrieve_purchase_order_impl {
     }
     if ($options->{"flesh_provider"}) {
         push @{$flesh->{"flesh_fields"}->{"acqpo"}}, "provider";
+
+        if ($options->{"flesh_provider_addresses"}) {
+            $flesh->{flesh}++;
+            $flesh->{flesh_fields}->{acqpro} = ['addresses'];
+        }
     }
     if ($options->{"flesh_owner"}) {
         push @{$flesh->{"flesh_fields"}->{"acqpo"}}, "owner";
@@ -1038,7 +1043,14 @@ sub retrieve_purchase_order_impl {
     if($$options{flesh_lineitems}) {
 
         my $flesh_fields = { jub => ['attributes'] };
-        $flesh_fields->{jub}->[1] = 'lineitem_details' if $$options{flesh_lineitem_details};
+        if ($$options{flesh_lineitem_details}) {
+            push(@{$flesh_fields->{jub}}, 'lineitem_details');
+        }
+
+        if ($$options{flesh_lineitem_notes}) {
+            push(@{$flesh_fields->{jub}}, 'lineitem_notes');
+        }
+
         $flesh_fields->{acqlid} = ['fund_debit'] if $$options{flesh_fund_debit};
 
         my $items = $e->search_acq_lineitem([
@@ -1091,6 +1103,22 @@ sub format_po {
 
     my $po = $e->retrieve_acq_purchase_order($po_id) or return $e->event;
     return $e->event unless $e->allowed('VIEW_PURCHASE_ORDER', $po->ordering_agency);
+
+    # KCLS ---
+    # Add a note to each printed lineitem.
+    $e->xact_begin;
+    my $li_ids = $e->search_acq_lineitem(
+        {purchase_order => $po_id}, {idlist => 1});
+    for my $li_id (@$li_ids) {
+        my $note = Fieldmapper::acq::lineitem_note->new;
+        $note->lineitem($li_id);
+        $note->creator($e->requestor->id);
+        $note->editor($e->requestor->id);
+        $note->value('printed: ' . $e->requestor->usrname);
+        $e->create_acq_lineitem_note($note) or return $e->die_event;
+    }
+    $e->commit;
+    # ---
 
     my $hook = "format.po.$format";
     return $U->fire_object_event(undef, $hook, $po, $po->ordering_agency);

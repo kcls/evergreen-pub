@@ -16,6 +16,47 @@
       [% l("Confirmation required to charge this patron [_1] for the damage.", "{{billArgs.charge | currency}}") %]</span>
     </div>
   </div>
+
+  <div class="pad-vert row" ng-if="showRefundActions">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="alert alert-warning">
+          The affected circulation has payment(s) which are 
+          eligible for refund.  
+        </div>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-12">
+        <textarea placeholder="Add Refund Notes..."
+          ng-model="refundNotes" class="form-control">
+        </textarea>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-3 form-validated">
+        <input type="text" placeholder="Initials..."
+          required ng-model="staffInitials" class="form-control"/>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-12">
+        <button class="btn btn-outline-primary label-with-material-icon"
+          [disabled]="!staffInitials" (click)="addRefundParams(true)">
+          <span class="pl-1">Pause Refund and Continue</span>
+        </button>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-12">
+        <button class="btn btn-outline-success label-with-material-icon"
+          ng-disabled="!staffInitials" ng-click="addRefundParams(false)">
+          <span class="pl-1">Continue Without Pausing Refund.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="pad-vert row" ng-if="showBill">
     <div class="col-md-3">
       <label>[% l("Fee") %]

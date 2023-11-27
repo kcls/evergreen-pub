@@ -1701,9 +1701,11 @@ sub string_browse {
     my $next = join('/', $base,$format,$axis,$site,$string,$page + 1,$page_size,$thesauruses);
 
     unless ($string and $axis and grep { $axis eq $_ } keys %browse_types) {
-        warn "something's wrong...";
-        warn " >>> format: $format -> axis: $axis -> site: $site -> string: $string -> page: $page -> page_size: $page_size ";
-        return undef;
+        unless ($axis eq "authority.id") {
+            warn "something's wrong...";
+            warn " >>> format: $format -> axis: $axis -> site: $site -> string: $string -> page: $page -> page_size: $page_size ";
+            return undef;
+        }
     }
 
     $string = decode_utf8($string);
@@ -1738,7 +1740,9 @@ sub string_browse {
     }
 
     (my $norm_format = $format) =~ s/(-full|-uris)$//o;
-
+    if($axis eq 'authority.id') {
+        $axis = 'authority.title';
+    };
     my ($header,$content) = $browse_types{$axis}{$norm_format}->($tree,$prev,$next,$format,$unapi,$base,$site);
     print $header.$content;
     return Apache2::Const::OK;
@@ -1826,7 +1830,6 @@ sub string_startwith {
     }
 
     (my $norm_format = $format) =~ s/(-full|-uris)$//o;
-
     my ($header,$content) = $browse_types{$axis}{$norm_format}->($tree,$prev,$next,$format,$unapi,$base,$site);
     print $header.$content;
     return Apache2::Const::OK;
@@ -1989,7 +1992,10 @@ sub sru_search {
 
         # Ensure the search string overrides the default site
         if ($shortname and $search_string !~ m#site:#) {
-            $search_string = "($search_string) site:$shortname";
+            # KCLS Elastic disable site searching.  The format would
+            # need to change to work with Elastic.  Likely don't need
+            # it.  We'll see.
+            #$search_string = "($search_string) site:$shortname";
         }
 
         my $offset = $req->startRecord;
@@ -2006,9 +2012,32 @@ sub sru_search {
             $shortname = $search_org->[0]->shortname;
         }
 
-         my $recs = $search->request(
-            'open-ils.search.biblio.multiclass.query' => {offset => $offset, limit => $limit} => $search_string => 1
-        )->gather(1);
+
+#        my $recs = $search->request(
+#            'open-ils.search.biblio.multiclass.query' => {offset => $offset, limit => $limit} => $search_string => 1
+#        )->gather(1);
+
+        # Route SRU queries to Elasticsearch
+        my $recs = $search->request(
+            'open-ils.search.elastic.bib_search', {
+            size => $limit,
+            from => $offset,
+            sort => [
+                {_score => 'desc'},
+                {id => 'desc'}
+            ],
+            query => {
+                bool => {
+                    must => {
+                        query_string => {
+                            query => $search_string,
+                            default_operator => 'AND',
+                            default_field => 'keyword.text*'
+                        }
+                    }
+                }
+            }
+        })->gather(1);
 
         my $cstore = OpenSRF::AppSession->create('open-ils.cstore');
         foreach my $rec (@{$recs->{ids}}) {

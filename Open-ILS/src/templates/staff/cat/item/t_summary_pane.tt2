@@ -46,8 +46,9 @@
   </div>
 
   <div class="flex-row">
-	<div class="flex-cell">[% l('Acquisition Cost') %]</div>
-    <div class="flex-cell well">{{copy.cost()}}</div>
+    <!-- KCLS JBAS-2012 hide acq cost -->
+    <div class="flex-cell">[% l('Acquisition Cost') %]</div>
+    <div class="flex-cell well"></div>
 
     <div class="flex-cell">[% l('Shelving Location') %]</div>
     <div
@@ -66,8 +67,10 @@
 
   <div class="flex-row">
     <div class="flex-cell">[% l('ISBN') %]</div>
-    <div class="flex-cell well">
-      {{copy.call_number().record().simple_record().isbn() || copy.dummy_isbn()}}
+    <div class="flex-cell well" style="overflow:hidden; white-space:nowrap">
+      <span title="{{copy.call_number().record().simple_record().isbn()}}">
+        {{copy.call_number().record().simple_record().isbn() || copy.dummy_isbn()}}
+      </span>
     </div>
 
     <div class="flex-cell">[% l('Loan Duration') %]</div>
@@ -215,18 +218,23 @@
   </div>
 
   <div class="flex-row">
+    <!-- KCLS JBAS-2129 -->
+    <div class="flex-cell">[% l('Alert Message') %]</div>
+    <div class="well" style="flex:7">{{copy.alert_message()}}</div>
+
+    <!--
     <div class="flex-cell">[% l('Item Alerts') %]</div>
     <div class="flex-cell" id="item-status-alert-msg">
       <button class="btn btn-default" ng-click="addCopyAlerts(copy.id())" >[% l('Add') %]</button>
       <button class="btn btn-default" ng-disabled="!copy_alert_count" ng-click="manageCopyAlerts(copy.id())" >[% l('Manage') %]</button>
     </div>
-    <!-- hack to adjust positioning -->
     <div class="flex-cell"></div>
     <div class="flex-cell"></div>
     <div class="flex-cell"></div>
     <div class="flex-cell"></div>
     <div class="flex-cell"></div>
     <div class="flex-cell"></div>
+    -->
   </div>
 
 </div>

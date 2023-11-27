@@ -36,14 +36,35 @@ interface OrgDisplay {
 
 @Component({
   selector: 'eg-org-select',
-  templateUrl: './org-select.component.html'
+  templateUrl: './org-select.component.html',
+  styles: [`
+    .icons {margin-left:-18px}
+    .material-icons {font-size: 16px;font-weight:bold}
+  `],
 })
 export class OrgSelectComponent implements OnInit {
     static domId = 0;
 
     showCombinedNames = false; // Managed via user/workstation setting
 
-    selected: OrgDisplay;
+    _selected: OrgDisplay;
+    set selected(s: OrgDisplay) {
+        if (s !== this._selected) {
+            this._selected = s;
+
+            // orgChanged() does not fire when the value is cleared,
+            // so emit the onChange here for cleared values only.
+            if (!s) { // may be '' or null
+                this._selected = null;
+                this.onChange.emit(null);
+            }
+        }
+    }
+
+    get selected(): OrgDisplay {
+        return this._selected;
+    }
+
     click$ = new Subject<string>();
     valueFromSetting: number = null;
     sortedOrgs: IdlObject[] = [];
@@ -59,6 +80,8 @@ export class OrgSelectComponent implements OnInit {
     // ID to display in the DOM for this selector
     @Input() domId = 'eg-org-select-' + OrgSelectComponent.domId++;
 
+    @Input() name = '';
+
     // Org unit field displayed in the selector
     @Input() displayField = 'shortname';
 
@@ -69,6 +92,8 @@ export class OrgSelectComponent implements OnInit {
     @Input() applyDefault = false;
 
     @Input() readOnly = false;
+
+    @Input() required = false;
 
     // List of org unit IDs to exclude from the selector
     hidden: number[] = [];
@@ -125,6 +150,9 @@ export class OrgSelectComponent implements OnInit {
     // in the selector.
     @Input() orgClassCallback: (orgId: number) => string;
 
+    // Make the input a wee bit less paddy
+    @Input() smallFormControl = false;
+
     // Emitted when the org unit value is changed via the selector.
     // Does not fire on initialOrg
     @Output() onChange = new EventEmitter<IdlObject>();
@@ -136,6 +164,9 @@ export class OrgSelectComponent implements OnInit {
     // underground shuffling and landed on a value.
     @Output() componentLoaded: EventEmitter<void> = new EventEmitter<void>();
 
+    // Emitted when (keyup.enter) is fired on the input.
+    @Output() keyUpEnter: EventEmitter<void> = new EventEmitter<void>();
+
     // convenience method to get an IdlObject representing the current
     // selected org unit. One way of invoking this is via a template
     // reference variable.
@@ -144,6 +175,10 @@ export class OrgSelectComponent implements OnInit {
             return null;
         }
         return this.org.get(this.selected.id);
+    }
+
+    selectedOrgId(): number {
+        return this.selected ? this.selected.id : null;
     }
 
     constructor(
@@ -280,19 +315,24 @@ export class OrgSelectComponent implements OnInit {
     }
 
     // Fired by the typeahead to inform us of a change.
-    // TODO: this does not fire when the value is cleared :( -- implement
-    // change detection on this.selected to look specifically for NULL.
     orgChanged(selEvent: NgbTypeaheadSelectItemEvent) {
         // console.debug('org unit change occurred ' + selEvent.item);
         this.onChange.emit(this.org.get(selEvent.item.id));
+        this.saveCurrentSetting(selEvent.item.id);
+    }
 
-        if (this.persistKey && this.valueFromSetting !== selEvent.item.id) {
-            // persistKey is active.  Update the persisted value when changed.
+    saveCurrentSetting(orgId?: number): Promise<any> {
+        if (!this.persistKey) { return Promise.resolve(null); }
 
-            const key = `eg.orgselect.${this.persistKey}`;
-            this.valueFromSetting = selEvent.item.id;
-            this.serverStore.setItem(key, this.valueFromSetting);
-        }
+        if (!orgId) { this.selectedOrgId(); }
+
+        if (this.valueFromSetting === orgId) { return Promise.resolve(null); }
+
+        // persistKey is active.  Update the persisted value when changed.
+
+        const key = `eg.orgselect.${this.persistKey}`;
+        this.valueFromSetting = orgId;
+        return this.serverStore.setItem(key, orgId);
     }
 
     // Remove the tree-padding spaces when matching.
@@ -314,6 +354,15 @@ export class OrgSelectComponent implements OnInit {
             }
         });
     }
+
+    // Free-text values are not allowed.
+    handleBlur() {
+        if (typeof this.selected === 'string') {
+            this.selected = null;
+        }
+    }
+
+
 
     filter = (text$: Observable<string>): Observable<OrgDisplay[]> => {
 

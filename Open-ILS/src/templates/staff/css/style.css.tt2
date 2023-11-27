@@ -127,7 +127,11 @@ table.list tr.selected td { /* deprecated? */
 
 .pad-horiz {padding : 0px 10px 0px 10px; }
 .pad-vert {padding : 20px 0px 10px 0px;}
+.pad-vert-min {padding : 5px 0px 5px 0px;}
+.pad-vert-min-2 {padding : 2px 0px 2px 0px;}
 .pad-left {padding-left: 10px;}
+.pad-left-more {padding-left: 20px;}
+.pad-left-min {padding-left: 5px;}
 .pad-right {padding-right: 10px;}
 .pad-right-min {padding-right: 5px;}
 .pad-all-min {padding : 5px; }

@@ -16,11 +16,11 @@ treechildren::-moz-tree-cell(circulating) {
 }
 
 treechildren::-moz-tree-cell(longoverdue) {
-    background-color: orange;
+    background-color: limegreen;
 }
 
 treechildren::-moz-tree-cell(lost) {
-    background-color: maroon;
+    background-color: orange;
 }
 
 treechildren::-moz-tree-cell-text(circulating) {
@@ -41,12 +41,12 @@ treechildren::-moz-tree-cell-text(longoverdue) {
 }
 
 #lost_hint {
-    background-color: maroon;
-    color: white;
+    background-color: orange;
+    color: black;
 }
 
 #longoverdue_hint {
-    background-color: orange;
+    background-color: limegreen;
     color: black;
 }
 

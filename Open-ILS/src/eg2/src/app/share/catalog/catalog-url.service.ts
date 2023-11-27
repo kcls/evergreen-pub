@@ -49,12 +49,14 @@ export class CatalogUrlService {
             params.marcTag = [];
             params.marcSubfield = [];
             params.marcValue = [];
+            params.matchOp = [];
 
             ms.values.forEach((val, idx) => {
                 if (val !== '') {
                     params.marcTag.push(ms.tags[idx]);
                     params.marcSubfield.push(ms.subfields[idx]);
                     params.marcValue.push(ms.values[idx]);
+                    params.matchOp.push(ms.matchOp[idx]);
                 }
             });
         }
@@ -69,6 +71,9 @@ export class CatalogUrlService {
             params.browseClass = context.browseSearch.fieldClass;
             if (context.browseSearch.pivot) {
                 params.browsePivot = context.browseSearch.pivot;
+            }
+            if (context.browseSearch.format) {
+                params.browseFormat = context.browseSearch.format;
             }
         }
 
@@ -90,12 +95,14 @@ export class CatalogUrlService {
             });
 
             ts.query.forEach((val, idx) => {
-                if (val !== '') {
+                // if (val !== '') {
+                    // KCLS JBAS-2605 retain fields with empty
+                    // query values.
                     params.query.push(ts.query[idx]);
                     params.fieldClass.push(ts.fieldClass[idx]);
                     params.joinOp.push(ts.joinOp[idx]);
                     params.matchOp.push(ts.matchOp[idx]);
-                }
+                // }
             });
 
             // CCVM filters are encoded as comma-separated lists
@@ -185,10 +192,12 @@ export class CatalogUrlService {
             context.marcSearch.tags = params.getAll('marcTag');
             context.marcSearch.subfields = params.getAll('marcSubfield');
             context.marcSearch.values = params.getAll('marcValue');
+            context.marcSearch.matchOp = params.getAll('matchOp');
         }
 
         if (params.has('identQuery')) {
-            context.identSearch.value = params.get('identQuery');
+            const value = (params.get('identQuery') || '').trim();
+            context.identSearch.value = value;
             context.identSearch.queryType = params.get('identQueryType');
         }
 
@@ -197,6 +206,9 @@ export class CatalogUrlService {
             context.browseSearch.fieldClass = params.get('browseClass');
             if (params.has('browsePivot')) {
                 context.browseSearch.pivot = +params.get('browsePivot');
+            }
+            if (params.has('browseFormat')) {
+                context.browseSearch.format = params.get('browseFormat');
             }
         }
 
@@ -229,11 +241,27 @@ export class CatalogUrlService {
                 }
             });
 
-            // Arrays
-            ['query', 'fieldClass', 'joinOp', 'matchOp'].forEach(field => {
-                const arr = params.getAll(field);
+            // Extract these first so we know what kind of searches
+            // we're dealing with.
+            if (params.has('fieldClass')) {
+                ts.fieldClass = params.getAll('fieldClass');
+            }
+
+            // KCLS avoid trimming whitespace for call number searches.
+            if (params.has('query')) {
+                ts.query = [];
+                params.getAll('query').forEach((value, idx) => {
+                    if (ts.fieldClass && ts.fieldClass[idx] !== 'identifier|bibcn') {
+                        value = (value || '').trim();
+                    }
+                    ts.query.push(value);
+                });
+            }
+
+            // Other arrays
+            ['joinOp', 'matchOp'].forEach(field => {
                 if (params.has(field)) {
-                    ts[field] = params.getAll(field);
+                    ts[field] = params.getAll(field).map(v => (v || '').trim());
                 }
             });
 

@@ -1,5 +1,6 @@
 import {NgModule} from '@angular/core';
 import {StaffCommonModule} from '@eg/staff/common.module';
+import {BillingModule} from '@eg/staff/share/billing/billing.module';
 import {HoldingsService} from './holdings.service';
 import {MarkDamagedDialogComponent} from './mark-damaged-dialog.component';
 import {MarkMissingDialogComponent} from './mark-missing-dialog.component';
@@ -13,6 +14,9 @@ import {ConjoinedItemsDialogComponent} from './conjoined-items-dialog.component'
 import {TransferItemsComponent} from './transfer-items.component';
 import {TransferHoldingsComponent} from './transfer-holdings.component';
 import {BatchItemAttrComponent} from './batch-item-attr.component';
+import {PauseRefundDialogComponent} from './pause-refund-dialog.component';
+import {CopyAlertManagerDialogComponent} from './copy-alert-manager.component';
+import {MarkItemsDialogComponent} from './mark-items-dialog.component';
 
 @NgModule({
     declarations: [
@@ -27,10 +31,14 @@ import {BatchItemAttrComponent} from './batch-item-attr.component';
       ConjoinedItemsDialogComponent,
       TransferItemsComponent,
       TransferHoldingsComponent,
-      BatchItemAttrComponent
+      BatchItemAttrComponent,
+      PauseRefundDialogComponent,
+      MarkItemsDialogComponent,
+      CopyAlertManagerDialogComponent
     ],
     imports: [
-        StaffCommonModule
+        StaffCommonModule,
+        BillingModule
     ],
     exports: [
       MarkDamagedDialogComponent,
@@ -44,7 +52,10 @@ import {BatchItemAttrComponent} from './batch-item-attr.component';
       ConjoinedItemsDialogComponent,
       TransferItemsComponent,
       TransferHoldingsComponent,
-      BatchItemAttrComponent
+      BatchItemAttrComponent,
+      PauseRefundDialogComponent,
+      MarkItemsDialogComponent,
+      CopyAlertManagerDialogComponent
     ],
     providers: [
         HoldingsService

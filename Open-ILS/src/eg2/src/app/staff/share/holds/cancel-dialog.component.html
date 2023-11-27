@@ -13,7 +13,7 @@
         <span aria-hidden="true">&times;</span>
       </button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body form-validated">
       <div class="row d-flex justify-content-center">
           <h5>Cancel {{holdIds.length}} Holds?</h5>
       </div>
@@ -23,7 +23,8 @@
         </div>
         <div class="col-lg-8">
           <eg-combobox domId='cancel-reasons' [entries]="cancelReasons"
-            [startId]="5" (onChange)="cancelReason = $event ? $event.id : null">
+            [required]="true"
+            [selectedId]="cancelReason" (onChange)="cancelReason = $event ? $event.id : null">
           </eg-combobox>
         </div>
       </div>

@@ -1464,6 +1464,13 @@ sub new_hold_copy_targeter {
                 $hold, $hold_copy_map
             );
 
+            # KCLS: List of mapped copies that are considered active
+            # enough to keep the hold alive (below) even if we have 
+            # reached the maximum target loops.  Currently limited to 
+            # checked out copies.  Capture them here before the 
+            # definition of $all_copies changes below.
+            my @active_copies = grep { $_->status == 1 } @$all_copies;
+
             $all_copies = [ grep { ''.$_->circ_lib ne $pu_lib && ( $_->status == 0 || $_->status == 7 ) } @good_copies ];
 
             my $min_prox = [ sort {$a<=>$b} keys %$prox_list ]->[0];
@@ -1533,7 +1540,16 @@ sub new_hold_copy_targeter {
     
                     $current_loop++ if (!@keepers);
     
-                    if ($self->{max_loops}{$pu_lib} && $self->{max_loops}{$pu_lib} >= $current_loop) {
+                    # KCLS: avoid canceling a hold that has reached max
+                    # loops if any mapped copies are currently checked out.
+                    # The assumption is that a checked out copy will likely
+                    # be returned and usable at some point (unlike available
+                    # copies that are never pulled because they are really
+                    # missing, etc.).
+                    if (@active_copies or (
+                        $self->{max_loops}{$pu_lib} && 
+                        $self->{max_loops}{$pu_lib} >= $current_loop)) {
+
                         # We haven't exceeded max_loops yet
                         my @keeper_copies;
                         for my $cp ( @$all_copies ) {
@@ -2216,10 +2232,11 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
              WHEN cp.status = 6 THEN 3
              WHEN EXTRACT(EPOCH FROM COALESCE(NULLIF(BTRIM(hold_wait_time.value,'"'),''),'0 seconds')::INTERVAL) = 0 THEN 4
              WHEN h.shelf_time + COALESCE(NULLIF(BTRIM(hold_wait_time.value,'"'),''),'0 seconds')::INTERVAL > NOW() THEN 5
-             ELSE 4
+             WHEN h.shelf_time + COALESCE(NULLIF(BTRIM(hold_wait_time.value,'"'),''),'0 seconds')::INTERVAL < NOW() THEN 4
+             ELSE -1 
         END AS hold_status,
 
-        (h.shelf_expire_time < 'today'::timestamptz OR h.cancel_time IS NOT NULL OR (h.current_shelf_lib IS NOT NULL AND h.current_shelf_lib <> h.pickup_lib)) AS clear_me,
+        can_be_cleared_subq.clear_me,
 
         (h.usr <> h.requestor) AS is_staff_hold,
 
@@ -2260,7 +2277,12 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         u.expire_date AS usr_expire_date, u.claims_never_checked_out_count AS usr_claims_never_checked_out_count,
         u.last_update_time AS usr_last_update_time,
 
-        CASE WHEN NULLIF(u.alias,'') IS NOT NULL THEN
+        COALESCE(
+            NULLIF(u.alias, ''),
+            u.family_name || ', ' || u.first_given_name
+        ) AS usr_shelf_name,
+
+        CASE WHEN u.alias IS NOT NULL THEN
             u.alias
         ELSE
             u.first_given_name
@@ -2311,6 +2333,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         ruc.id AS rucard_id, ruc.barcode AS rucard_barcode, ruc.usr AS rucard_usr, ruc.active AS rucard_active,
 
         cp.id AS cp_id, cp.circ_lib AS cp_circ_lib, cp.creator AS cp_creator, cp.call_number AS cp_call_number,
+        cp_circ_lib_aou.shortname AS cp_circ_lib_shortname,
         cp.editor AS cp_editor, cp.create_date AS cp_create_date, cp.edit_date AS cp_edit_date,
         cp.copy_number AS cp_copy_number, cp.status AS cp_status, cp.location AS cp_location,
         cp.loan_duration AS cp_loan_duration, cp.fine_level AS cp_fine_level, cp.age_protect AS cp_age_protect,
@@ -2321,6 +2344,9 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         cp.deleted AS cp_deleted, cp.floating AS cp_floating, cp.dummy_isbn AS cp_dummy_isbn,
         cp.status_changed_time AS cp_status_change_time, cp.active_date AS cp_active_date,
         cp.mint_condition AS cp_mint_condition, cp.cost AS cp_cost,
+
+        ri.id AS ri_id, ri.barcode AS ri_barcode,
+        ti.id AS ti_id, ti.barcode AS ti_barcode,
 
         cs.id AS cs_id, cs.name AS cs_name, cs.holdable AS cs_holdable, cs.opac_visible AS cs_opac_visible,
         cs.copy_active AS cs_copy_active, cs.restrict_copy_delete AS cs_restrict_copy_delete,
@@ -2339,22 +2365,22 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         TRIM(acnp.label || ' ' || cn.label || ' ' || acns.label) AS cn_full_label,
 
         r.bib_record AS record_id,
+        mife.value AS bib_call_number,
 
         t.value AS title,
         a.value AS author,
         s.value AS series_title,
 
-        acpl.id AS acpl_id, acpl.name AS acpl_name, acpl.owning_lib AS acpl_owning_lib, acpl.holdable AS acpl_holdable,
+        acpl.id AS acpl_id, acpl.owning_lib AS acpl_owning_lib, acpl.holdable AS acpl_holdable,
         acpl.hold_verify AS acpl_hold_verify, acpl.opac_visible AS acpl_opac_visible, acpl.circulate AS acpl_circulate,
         acpl.label_prefix AS acpl_label_prefix, acpl.label_suffix AS acpl_label_suffix,
         acpl.checkin_alert AS acpl_checkin_alert, acpl.deleted AS acpl_deleted, acpl.url AS acpl_url,
 
+        COALESCE(acpl_i18n.string, acpl.name) AS acpl_name,
+
         COALESCE(acplo.position, acpl_ordered.fallback_position) AS copy_location_order_position,
 
-        ROW_NUMBER() OVER (
-            PARTITION BY r.bib_record
-            ORDER BY h.cut_in_line DESC NULLS LAST, h.request_time ASC
-        ) AS relative_queue_position,
+        action.hold_request_queue_pos(h.id) AS relative_queue_position,
 
         EXTRACT(EPOCH FROM COALESCE(
             NULLIF(BTRIM(default_estimated_wait_interval.value,'"'),''),
@@ -2369,6 +2395,8 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         COALESCE(hold_wait.potenials,0) AS potentials,
         COALESCE(hold_wait.other_holds,0) AS other_holds,
         COALESCE(hold_wait.total_wait_time,0) AS total_wait_time,
+
+        hold_bib_count.total_holds_for_bib AS total_holds_for_bib,
 
         n.count AS notification_count,
         n.max AS last_notification_time
@@ -2385,12 +2413,18 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         JOIN t_field ON TRUE
         JOIN a_field ON TRUE
         JOIN s_field ON TRUE
+        LEFT JOIN config.metabib_field cmf ON (cmf.field_class = 'identifier' AND cmf.name = 'bibcn')
+        LEFT JOIN metabib.identifier_field_entry mife ON (mife.source = r.bib_record AND mife.field = cmf.id)
         LEFT JOIN action.hold_request_cancel_cause cc ON (h.cancel_cause = cc.id)
         LEFT JOIN biblio.monograph_part p ON (h.hold_type = 'P' AND p.id = h.target)
         LEFT JOIN serial.issuance siss ON (h.hold_type = 'I' AND siss.id = h.target)
         LEFT JOIN asset.copy cp ON (h.current_copy = cp.id OR (h.hold_type IN ('C','F','R') AND cp.id = h.target))
+        LEFT JOIN asset.copy ri ON (h.hold_type IN ('C','F','R') AND ri.id = h.target)
+        LEFT JOIN asset.copy ti ON (h.current_copy = ti.id)
         LEFT JOIN config.copy_status cs ON (cp.status = cs.id)
         LEFT JOIN asset.copy_location acpl ON (cp.location = acpl.id)
+        LEFT JOIN config.i18n_core acpl_i18n ON (acpl_i18n.fq_field = 'acpl.name' AND acpl_i18n.identity_value::INTEGER = acpl.id)
+        LEFT JOIN actor.org_unit cp_circ_lib_aou ON (cp_circ_lib_aou.id = cp.circ_lib)
         LEFT JOIN asset.copy_location_order acplo ON (cp.location = acplo.location AND cp.circ_lib = acplo.org)
         LEFT JOIN (
             SELECT *, (ROW_NUMBER() OVER (ORDER BY name) + 1000000) AS fallback_position
@@ -2407,7 +2441,16 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
         LEFT JOIN LATERAL (SELECT FIRST(value) AS value FROM metabib.display_entry WHERE source = r.bib_record AND field = s_field.field) s ON TRUE
         LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.holds.default_estimated_wait_interval',u.home_ou) AS default_estimated_wait_interval ON TRUE
         LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.holds.min_estimated_wait_interval',u.home_ou) AS min_estimated_wait_interval ON TRUE
-        LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.hold_shelf_status_delay',h.pickup_lib) AS hold_wait_time ON TRUE,
+        LEFT JOIN LATERAL actor.org_unit_ancestor_setting('circ.hold_shelf_status_delay',h.pickup_lib) AS hold_wait_time ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*) AS total_holds_for_bib
+            FROM reporter.hold_request_record rhrr
+            JOIN action.hold_request ahr ON rhrr.id = ahr.id
+            WHERE rhrr.bib_record = r.bib_record
+                AND ahr.cancel_time IS NULL 
+                AND ahr.fulfillment_time IS NULL
+        ) AS hold_bib_count ON TRUE,
+
         LATERAL (
             SELECT  COUNT(*) AS potenials,
                     COUNT(DISTINCT hold) AS other_holds,
@@ -2423,7 +2466,16 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
                     JOIN asset.copy cp ON (cp.id = m.target_copy)
                     LEFT JOIN config.circ_modifier cm ON (cp.circ_modifier = cm.code)
               WHERE m.hold = h.id
-        ) AS hold_wait
+        ) AS hold_wait,
+        LATERAL (
+            SELECT 
+                h.shelf_expire_time < 'today'::timestamptz OR 
+                h.cancel_time IS NOT NULL OR 
+                (
+                    h.current_shelf_lib IS NOT NULL AND 
+                    h.current_shelf_lib <> h.pickup_lib
+                ) AS clear_me
+        ) AS can_be_cleared_subq
   WHERE $initial_condition
     SQL
 
@@ -2484,7 +2536,7 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
 
     my @list = $sth->fetchall_hash;
     $client->respond(int(scalar(@list))); # send the row count first, for progress tracking
-    $client->respond( $_ ) for (@list);
+    $client->respond($_) for @list;
 
     $client->respond_complete;
 }
@@ -2496,6 +2548,33 @@ __PACKAGE__->register_method(
     method          => 'wide_hold_data',
 );
 
+sub patron_message_list {
+
+	# Grab self, client
+	my $self = shift;
+	my $client = shift;
+
+	$logger->debug("PATRONPROBLEM");
+
+	# Build SQL statement
+	my $select = <<"	SQL";
+		SELECT message, weight FROM config.patron_message;
+	SQL
+
+	# Load and execute statement
+	my $sth = action::survey->db_Main->prepare_cached($select);
+
+	$sth->execute();
+
+	return $sth->fetchall_arrayref;
+}
+
+__PACKAGE__->register_method(
+	api_name        => 'open-ils.storage.direct.action.patron_message_list',
+	method          => 'patron_message_list',
+	api_level       => 1,
+	stream          => 1,
+);
 
 1;
 

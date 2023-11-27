@@ -43,6 +43,8 @@ function($scope , $routeParams , $location , $window , $timeout , egCore , $uibM
             var munged_url = egCore.env.basePath + 
                 url.replace(/^.*?\/eg\/vandelay\/vandelay/, "cat/catalog/vandelay");
             $timeout(function() { $window.open(munged_url, '_blank') });
+        } else {
+            $timeout(function() { $window.open(url) });
         }
     }
 
@@ -53,13 +55,15 @@ function($scope , $routeParams , $location , $window , $timeout , egCore , $uibM
             'open-ils.actor.anon_cache.set_value',
             null, 'edit-these-copies', {
                 copies: params.existing_copies.map(function(acp) { return acp.id(); }),
+                record_id: params.record_id,
                 raw: [],
                 hide_vols : false,
                 hide_copies : false
             }
         ).then(function(key) {
             if (key) {
-                var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                var url = '/eg2/staff/cat/volcopy/holdings/session/' + key;
+                //var url = egCore.env.basePath + 'cat/volcopy/' + key;
                 $timeout(function() { $window.open(url, '_blank') });
             } else {
                 alert('Could not create anonymous cache key!');

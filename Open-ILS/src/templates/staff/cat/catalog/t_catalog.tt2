@@ -72,6 +72,14 @@
                 </a>
             </li>
             <li role="menuitem">
+                <a ng-click="markLineitemTransfer()" href="">
+                    [% l('Lineitem Transfer') %]
+                    <span class="target-record-aside" ng-if="current_li_transfer_target">
+                      [% l('(Currently [_1])', '{{current_li_transfer_target}}') %]
+                    </span>
+                </a>
+            </li>
+            <li role="menuitem">
                 <a ng-click="clearRecordMarks()" href="">[% l('Reset Record Marks') %]</a>
             </li>
         </ul>
@@ -95,6 +103,11 @@
                    <a ng-click="view_place_orders()" href="">
                         [% l('View/Place Orders') %]
                    </a>
+            </li>
+             <li role="menuitem">
+                    <a ng-click="view_update_items()" href="">
+                        [% l('Update Items') %]
+                    </a>
             </li>
         </ul>
         </div>
@@ -123,7 +136,8 @@
         [% l('View Holds') %]
     </a>
   </li>
-  <li ng-class="{disabled : !record_id, active : record_tab == 'monoparts'}">
+  <li ng-show="false" 
+    ng-class="{disabled : !record_id, active : record_tab == 'monoparts'}">
     <a ng-click="record_id && set_record_tab('monoparts')" >
         [% l('Monograph Parts') %]
     </a>
@@ -133,7 +147,8 @@
         [% l('Holdings View') %]
     </a>
   </li>
-  <li ng-class="{disabled : !record_id, active : record_tab == 'conjoined'}">
+  <li ng-show="false" 
+    ng-class="{disabled : !record_id, active : record_tab == 'conjoined'}">
     <a ng-click="record_id && set_record_tab('conjoined')" >
         [% l('Conjoined Items') %]
     </a>

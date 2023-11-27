@@ -75,7 +75,8 @@ sub do_checkout {
 
     my ($resp, $method);
 
-    my $override = 0;
+    my $override_all = OpenILS::SIP->get_option_value('checkout_override_all') || '';
+    my $override = $override_all eq 'true';
 
     if ($is_renew) {
         $method = 'open-ils.circ.renew';

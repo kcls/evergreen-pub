@@ -48,8 +48,8 @@
               </ng-container>
               <ng-container *ngIf="!hasMrConstituentRecords(summary)">
                 <a routerLink="/staff/catalog/record/{{summary.id}}"
-                  [queryParams]="currentParams()">
-                  <eg-bib-display-field [summary]="summary" field="title"
+                  target="_blank" [queryParams]="currentParams()">
+                  <eg-bib-display-field [summary]="summary" field="title" 
                     [usePlaceholder]="true"></eg-bib-display-field>
                 </a>
               </ng-container>
@@ -66,25 +66,8 @@
           </div>
           <div class="row pt-2">
             <div class="col-lg-12">
-              <ng-container *ngIf="summary.attributes.icon_format && summary.attributes.icon_format[0]">
-                <ng-container *ngFor="let icon of summary.attributes.icon_format">
-                <span class="pr-1">
-                  <img class="pr-1"
-                    src="/images/format_icons/icon_format/{{icon}}.png" alt=""/>
-                  <span>{{iconFormatLabel(icon)}}</span>
-                </span>
-                </ng-container>
-              </ng-container>
-            </div>
-          </div>
-          <div class="row pt-2">
-            <div class="col-lg-12">
-              <ng-container *ngIf="summary.firstCallNumber">
-                <div class="pb-1" i18n>Call Number:
-                  {{summary.firstCallNumber.call_number_prefix_label}}
-                  {{summary.firstCallNumber.call_number_label}}
-                  {{summary.firstCallNumber.call_number_suffix_label}}
-                </div>
+              <ng-container *ngIf="summary.display.bibcn">
+                <div class="pb-1" i18n>Call number: {{summary.display.bibcn}}</div>
               </ng-container>
               <ng-container *ngIf="summary.display.physical_description">
                 <!-- [].concat() to avoid modifying the summary arrays -->
@@ -145,29 +128,48 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-2">
-        <div class="row" [ngClass]="{'pt-2':copyIndex > 0}"
-          *ngFor="let copyCount of getHoldingsSummaries(); let copyIdx = index">
-          <div class="float-left text-left w-50">
-            <span class="pr-1">
-            {{copyCount.available}} / {{copyCount.count}} items
+      <div class="col-lg-3 p-0 pl-1 m-0 d-flex">
+        <div class="flex-1">
+          <table>
+            <!-- i know, tables boo!, but this lets us fit quite a bit
+                of data into a small area without a lot of wasted space -->
+            <tbody>
+              <tr>
+                <td i18n>TCN: </td>
+                <td class="pl-1">{{summary.record.tcn_value()}}</td>
+              </tr>
+              <tr>
+                <td i18n>Holds: </td>
+                <td class="pl-1">{{summary.holdCount}}</td>
+              </tr>
+              <ng-container *ngFor="let copyCount of summary.holdingsSummary; let copyIdx = index">
+                <tr>
+                  <td>{{orgName(copyCount.org_unit)}}: </td>
+                  <td class="pl-1" i18n>{{copyCount.count}} total items</td>
+                </tr>
+                <tr *ngIf="copyCount.org_unit == 1">
+                  <td>{{orgName(copyCount.org_unit)}}: </td>
+                  <td class="pl-1" i18n
+                    [ngClass]="{'alert-danger rounded': !copyCount.hopeful && copyCount.count > 0}">
+                    {{copyCount.hopeful || 0}} viable items</td>
+                </tr>
+                <tr>
+                  <td>{{orgName(copyCount.org_unit)}}: </td>
+                  <td class="pl-1" i18n>{{copyCount.available}} available items</td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <ng-container *ngIf="summary.attributes.mattype && summary.attributes.mattype[0]">
+            <ng-container *ngFor="let icon of summary.attributes.mattype">
+            <span>
+              <img title="{{iconFormatLabel(icon)}}" 
+                src="/images/format_icons/mattype/{{icon}}.png"/>
             </span>
-          </div>
-          <div class="float-left w-50">
-            @ {{orgName(copyCount.org_unit)}}
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-1">
-        <div class="row">
-          <div class="w-100">
-            TCN: {{summary.record.tcn_value()}}
-          </div>
-        </div>
-        <div class="row">
-          <div class="w-100">
-            Holds: {{summary.holdCount}}
-          </div>
+            </ng-container>
+          </ng-container>
         </div>
       </div>
       <div class="col-lg-2">
@@ -176,8 +178,8 @@
             <div class="float-right small-text-1">
               Created {{summary.record.create_date() | date:'shortDate'}} by
               <!-- creator if fleshed after the initial data set is loaded -->
-              <a *ngIf="summary.record.creator().usrname" target="_self"
-                href="/eg/staff/circ/patron/{{summary.record.creator().id()}}/checkout">
+              <a *ngIf="summary.record.creator().usrname"
+                routerLink="/staff/circ/patron/{{summary.record.creator().id()}}/checkout">
                   {{summary.record.creator().usrname()}}
               </a>
               <!-- add a spacer pending data to reduce page shuffle -->
@@ -189,11 +191,24 @@
           <div class="col-lg-12">
             <div class="float-right small-text-1" i18n>
               Edited {{summary.record.edit_date() | date:'shortDate'}} by
-              <a *ngIf="summary.record.editor().usrname" target="_self"
-                href="/eg/staff/circ/patron/{{summary.record.editor().id()}}/checkout">
+              <a *ngIf="summary.record.editor().usrname"
+                routerLink="/staff/circ/patron/{{summary.record.editor().id()}}/checkout">
                   {{summary.record.editor().usrname()}}
               </a>
               <span *ngIf="!summary.record.editor().usrname"> ... </span>
+            </div>
+          </div>
+        </div>
+        <div class="row pt-2">
+          <div class="col-lg-12">
+            <div class="float-right small-text-1" i18n>
+              Cataloging Date:
+                <ng-container *ngIf="summary.record.cataloging_date()">
+                  {{summary.record.cataloging_date() | date:'shortDate'}}
+                </ng-container>
+                <ng-container *ngIf="!summary.record.cataloging_date()">
+                  &lt;unset&gt;
+                </ng-container>
             </div>
           </div>
         </div>

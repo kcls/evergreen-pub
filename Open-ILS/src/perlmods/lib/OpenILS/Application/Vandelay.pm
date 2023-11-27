@@ -1005,6 +1005,7 @@ sub import_record_list_impl {
     my $bib_source = $$args{bib_source};
     my $import_no_match = $$args{import_no_match};
     my $strip_grps = $$args{strip_field_groups}; # bib-only
+    my $set_cat_date = $$args{set_cat_date}; # bib-only; no_match imports only
 
     my $overlay_func = 'vandelay.overlay_bib_record';
     my $auto_overlay_func = 'vandelay.auto_overlay_bib_record';
@@ -1281,7 +1282,13 @@ sub import_record_list_impl {
                     if ($type eq 'bib') {
 
                         $record = OpenILS::Application::Cat::BibCommon->biblio_record_xml_import(
-                            $e, $rec->marc, $bib_sources{$rec->bib_source}, undef, 1);
+                            $e, $rec->marc, 
+                            $bib_sources{$rec->bib_source},
+                            undef,      # auto-tcn
+                            1,          # override
+                            undef,      # strip groups
+                            $set_cat_date
+                        );
 
                     } else { # authority record
 
@@ -2549,6 +2556,27 @@ sub bib_queue_to_bucket {
         add_count => scalar(@$bib_ids), # items added to the bucket
         item_count => $count->{count} # total items in buckets
     };
+}
+
+__PACKAGE__->register_method(
+    api_name    => 'open-ils.vandelay.retrieve_matched_records',
+    method      => 'matched_record',
+);
+
+sub matched_record {
+    my ($self, $conn, $auth, $queued_bib_record, $type) = @_;
+    my $e = new_editor(authtoken=>$auth);
+         return $e->die_event unless $e->checkauth;
+
+    my @rec_id_list = $e->json_query({
+         from => [ "vandelay.get_matched_records", $queued_bib_record, $type]
+     });
+
+    for my $rec (@rec_id_list) {
+         $conn->respond($rec);
+     }
+
+    return undef;
 }
 
 1;

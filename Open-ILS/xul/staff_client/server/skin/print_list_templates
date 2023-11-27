@@ -1,0 +1,204 @@
+{
+    "item_status": {
+        "type": "items",
+        "header": "The following items have been examined:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nBarcode: %barcode%<br/>\nCall #: %call_number% <br/>\nDue: %due_date_EN%<br/>\n<br/>\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "item_status_detailed": {
+        "type": "items",
+        "header": "The following items have been examined:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nAuthor: %author%<br>\nBarcode: %barcode%<br/>\nPrice: %price%<br/>\nISBN: %isbn%<br>\nDate Created: %acp_create_date%<br>\nDate Active: %acp_copy_active_date%<br>\nStatus Changed: %status_changed_time%<br>\nCopy ID: %acp_id%<br>\nTCN: %tcn%<br>\nFloating: %floating%<br>\nCirc Library: %circ_lib%<br>\nOwning Library: %owning_lib%<br>\nCopy Location: %location%<br>\nLoan Duration: %loan_duration%<br>\nFine Level: %fine_level%<br>\nReference: %ref%<br>\nOPAC Visible: %opac_visible%<br>\nHoldable: %holdable%<br>\nCirculate: %circulate%<br>\nCirc Modifier: %circ_modifier%<br>\nCall #: %call_number% <br/>\nRenewal Type: %renewal_composite_kludge(details.circ)%<br>\nTotal Circs: %acp_total_circ_count%<br>\nTotal Circs-Current Year: %behind_desk%<br>\nTotal Circs-Previous Year: %total_circ_count_prev_year%<br>\nRenewal Workstation: %prev_renewal_workstation%<br>\nRemaining Renewals: %renewal_remaining%<br>\nStatus: %acp_status%<br>\nCheckout Date: %xact_start%<br>\nCheckout Workstation: %checkout_workstation%<br>\nDuration Rule: %ccmm_duration_rule%<br>\nRecurring Fine Rule: %recurring_fine_rule%<br>\nMax Fine Rule: %max_fine_rule%<br>\nCheckin Time: %checkin_time%<br>\nCheckin Scan Time: %checkin_scan_time%<br>\nCheckin Workstation: %checkin_workstation%<br>\nDue: %due_date_EN%<br/>\n<br/>\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "transit_list": {
+        "type": "transits",
+        "header": "Transits:<hr/><ol>",
+        "line_item": "<li>From: %transit_source% To: %transit_dest_lib%<br/>\nWhen: %transit_source_send_time%<br />\nBarcode: %transit_item_barcode% Title: %transit_item_title%<br/>\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "default"
+    },
+    "items_out": {
+        "type": "items",
+        "header": "Welcome to %LIBRARY%!<br/>\n%PATRON_FIRSTNAME% has the following items:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nBarcode: %barcode% <br/>\nCall #: %call_number% <br/>\nDue: %due_date_EN%<br/>\n<br/>\n\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "renew": {
+        "type": "items",
+        "header": "Welcome to %LIBRARY%!<br/>\nThe following items have been renewed:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nBarcode: %barcode% <br/>\nDue: %due_date_EN%<br/>\n<br/>\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "checkout": {
+        "type": "items",
+        "header": "Please consider donating to support<br/>your library!<br/>www.kclsfoundation.org/donation<br/><br/>Welcome to %LIBRARY%!<br/>%LIBRARY_PHONE%<br/>\n%PATRON_FIRSTNAME% checked out the following<br/>items:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nBarcode: %barcode%<br/>\nCall #: %call_number% <br/>\n Due: %due_date_EN%<br/>\n<br/>\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>Materials may be returned to any KCLS library.\n\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "offline_checkout": {
+        "type": "offline_checkout",
+        "header": "Patron %patron_barcode%<br/>\nYou checked out the following items:<hr/><ol>",
+        "line_item": "<li>Barcode: %barcode%<br/>\nDue: %due_date%\n",
+        "footer": "</ol><hr />%TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "offline"
+    },
+    "checkin": {
+        "type": "items",
+        "header": " You have checked in the following items:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nBarcode: %barcode%  \n<br/>\n\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "bill_payment": {
+        "type": "payment",
+        "header": "Welcome to %LIBRARY%, %PATRON_FIRSTNAME%!<br/>A receipt of your  transaction:<hr/> <table width=\"32%\"> <tr> <td>Original Balance:</td> <td align=\"right\">$%original_balance%</td> </tr> <tr>  </tr> <tr> <td>Payment Received:</td> <td align=\"right\">$%payment_received%</td> </tr> <tr> <td>Payment Applied:</td> <td align=\"right\">$%payment_applied%</td> </tr> <tr>  </tr> <tr> </tr> <tr> <td>New Balance:</td> <td align=\"right\">$%new_balance%</td> </tr> </table>  <p> Specific bills: <blockquote>",
+        "line_item": "Invoice: %bill_id%  <br/>Status: %last_billing_type%<br/>Title: %title%<br/>Barcode: %barcode% <br/>Received: $%payment%<br /><br/>",
+        "footer": "</blockquote> </p> <hr />%SHORTNAME% %TODAY_TRIM%<br/> <br/> ",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "bill_payment_basic":
+    {
+        "type": "payment",
+        "header": "Welcome to %LIBRARY%, %PATRON_FIRSTNAME%!<br/>A receipt of your  transaction:<hr/> <p><blockquote>",
+        "line_item": "Invoice: %mp_id%  <br/>Title: %payments_blob_title%<br/>Status: %payments_blob_last_billing_type%<br/>Received: %mp_amount%<br />Payment Type: %mp_payment_type%<br />Timestamp: %mp_payment_ts%<br /><br/>",
+        "footer": "</blockquote> </p> <hr />%SHORTNAME% %TODAY_TRIM%<br/> <br/> ",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "bills_historical": {
+        "type": "bills",
+        "header": "Welcome to %LIBRARY%!<br/>You had the following bills:<hr/>\n<script>var rectest = 0</script>\n",
+        "line_item": "<dt><b>Bill # &nbsp; %mbts_id%</b></dt> <dd> <table>\n<script> if (\"%xact_start% != \"\") {document.write('<tr valign=\"top\"><td>Date:</td><td>%xact_start%</td></tr>');}</script>\n\n<script> if (\"%title%\".length > 2) {document.write('<tr valign=\"top\"><td>Title:</td><td>%title%</td></tr>');}</script>\n\n<script> if (\"%barcode%\".length > 2) {document.write('<tr valign=\"top\"><td>Barcode:</td><td>%barcode%</td></tr>');}</script>\n\n\n<tr valign=\"top\"><td>Type:</td><td>%last_billing_type%</td></tr>\n\n<tr valign=\"top\"><td>Billed/Paid </td><td>$%total_owed%&nbsp;/&nbsp;%total_paid%</td></tr>\n\n<script>rectest2 =\"%balance_owed%\" *1; rectest+=rectest2;</script>\n\n<tr valign=\"top\"><td><b>Balance:</b></td><td><b>$%balance_owed%</b></td></tr> </table><br/>\n\n\n",
+        "footer": "<script>document.write(\"<b>Total Owed: $\");\ndocument.write(rectest.toFixed(2));\ndocument.write(\"</b>\")\n</script>\n\n\n<hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "items_due": {
+        "type": "items",
+        "header": "Welcome to %LIBRARY%!<br/>\n%PATRON_FIRSTNAME% has the following items due for payment:<hr/><ol>",
+        "line_item": "<li>%title%<br/>\nBarcode: %barcode% <br/>\nCall #: %call_number% <br/>\nDue: %due_date_EN% <br/>\nStatus: %last_billing_type%</br>\nBilled/Paid: $%total_owed%&nbsp;/&nbsp;%total_paid%<br/>\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "bills_current": {
+        "type": "bills",
+        "header": "Welcome to %LIBRARY%!<br/>You have the following bills:<hr/>\n<script>var rectest = 0</script>\n\n",
+        "line_item": "<dt><b>Bill #%mbts_id%</b></dt> <dd> <table>\n<script> if (\"%xact_start% != \"\") {document.write('<tr valign=\"top\"><td>Date:</td><td>%xact_start%</td></tr>');}</script>\n\n<script> if (\"%title%\".length > 2) {document.write('<tr valign=\"top\"><td>Title:</td><td>%title%</td></tr>');}</script>\n\n<script> if (\"%barcode%\".length > 2) {document.write('<tr valign=\"top\"><td>Barcode:</td><td>%barcode%</td></tr>');}</script>\n\n\n<tr valign=\"top\"><td>Type:</td><td>%last_billing_type%</td></tr>\n\n<tr valign=\"top\"><td>Billed/Paid </td><td>$%total_owed%&nbsp;/&nbsp;%total_paid%</td></tr>\n\n<script>rectest2 =\"%balance_owed%\" *1; rectest+=rectest2;</script>\n\n<tr valign=\"top\"><td><b>Balance:</b></td><td><b>$%balance_owed%</b></td></tr> </table><br/>\n",
+        "footer": "<script>document.write(\"<b>Total Owed: $\");\ndocument.write(rectest.toFixed(2));\ndocument.write(\"</b>\")\n</script>\n\n\n<hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "offline_checkin": {
+        "type": "offline_checkin",
+        "header": "You checked in the following items:<hr/><ol>",
+        "line_item": "<li>Barcode: %barcode%\n",
+        "footer": "</ol><hr />%TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "offline"
+    },
+    "offline_renew": {
+        "type": "offline_renew",
+        "header": "You renewed the following items:<hr/><ol>",
+        "line_item": "<li>Barcode: %barcode%\n",
+        "footer": "</ol><hr />%TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "offline"
+    },
+    "offline_inhouse_use": {
+        "type": "offline_inhouse_use",
+        "header": "You marked the following in-house items used:<hr/><ol>",
+        "line_item": "<li>Barcode: %barcode%\nUses: %count%",
+        "footer": "</ol><hr />%TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "in_house_use": {
+        "type": "items",
+        "header": "You marked the following in-house items used:<hr/><ol>",
+        "line_item": "<li>Barcode: %barcode%\r\nUses: %uses%\r\n<br />%alert_message%",
+        "footer": "</ol><hr />%TODAY_TRIM%<br/>\r\n<br/>\r\n"
+    },
+    "holds": {
+        "type": "holds",
+        "header": "Welcome to %LIBRARY%!<br/>\nYou have the following titles on hold:<hr/><ol>",
+        "line_item": "<li>%title%\n",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\nYou were helped by %STAFF_FIRSTNAME%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "holds_on_bib": {
+        "type": "holds",
+        "inherit": "holds"
+    },
+    "holds_for_patron": {
+        "type": "holds",
+        "inherit": "holds"
+    },
+    "holds_shelf": {
+        "type": "holds",
+        "inherit": null,
+        "header": "%SHORTNAME% %TODAY_TRIM%<br/>\n<hr/>\n<style type=\"text/css\">\n    body { font-size: 14pt; }\n    td {\n        padding-right: 1em;\n        padding-bottom: 1em;\n        border-bottom: 1px #999 dashed;\n    }\n    th {\n        text-align: left; font-weight: bold;\n        border-bottom: 1px #000 solid;\n        border-right: 1px #000 solid;\n        padding: 0.5em;\n    }\n</style>\n<table>\n<tr>\n<th>Patron</th>\n<th>Action</th>\n<th>Type</th>\n<th>Title</th>\n<th>Author</th>\n<th>Shelving Location</th>\n<th>Call Number</th>\n<th>Barcode</th>\n</tr>",
+        "line_item": "<tr>\n<td>%patron_display_name%</td>\n<td>%post_clear_shelf_action%</td>\n<td>%hold_type%</td>\n<td>%title%</td>\n<td>%author%</td>\n<td>%current_copy_location%</td>\n<td>%callnumber%</td>\n<td>%current_copy%</td>\n</tr>",
+        "footer": "</table>\n",
+        "context": "default"
+    },
+    "holds_pull_list": {
+        "type": "holds",
+        "inherit": "holds"
+    },
+    "hold_slip": {
+        "type": "holds",
+        "header": "<font face=\"Trebuchet MS\">\n<font size = \"6\">\n&#8962;\n\n<font size = \"3\">\n<script>\nif ( \"%route_to%\" == \"PRIVATE HOLD SHELF\") {document.write(\"&#10033; &#10033;\");}\n</script>\n%LIBRARY%\n<font size = \"1\">\n<br/>\n<font size = \"2\">\n<script> var x = params.data.user_stat_cat_entries; for (var i = 0; i < x.length; i++) { if ((x[i].stat_cat.id == 7)  &&  (x[i].stat_cat_entry != \"None\")) document.write(x[i].stat_cat.name + ' : ' + x[i].stat_cat_entry + '<br/>'); } </script>\n<div style=\"-moz-transform: rotate(90deg); height: 300px; width: 250px;\">\n<font size = \"7\">%PATRON_HOLD_LASTNAME_ABBR%\n<br/>\n\n<font size = \"5\">%PATRON_ALIAS_OR_FIRSTNAME_ABBR%\n\n<font size = \"1\">\n<br/>\n<font size = \"5\">\n&nbsp;%TODAY_MMM%<br/>\n<font size = \"2\">\n&nbsp; &nbsp;Barcode:<font size = \"4\"> %item_barcode%\n<font size = \"2\">\n</br>\n</br>\n&nbsp; &nbsp;Patron:%PATRON_ID%<br/>\n<br/>\n\n<font size = \"5\">\n<script>\nvar tmpbc = \"%item_barcode%\".slice(-4); document.write(tmpbc);\n</script>\n<font size = \"2\">\n\n</div>\n</div>\n\n",
+        "line_item": "<div style=\"-moz-transform: rotate(90deg); height: 200px; width: 300px;\">\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n\n%formatted_note% <br/>\n</div>\n",
+        "footer": "<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n\n<br/>\nSlip Date: %TODAY_TRIM%<br/>\nPrinted by %STAFF_FIRSTNAME%<br/>\n<br/>Please consider donating to support<br/>your library!<br/>www.kclsfoundation.org/donation",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "transit_slip": {
+        "type": "transits",
+        "header": "This item needs to be routed to <b>%route_to%</b>:<br/>\r\n%route_to_org_fullname%<br/>\r\n%street1%<br/>\r\n%street2%<br/>\r\n%city_state_zip%<br/>\r\n<br/>\r\n",
+        "line_item": "Barcode: %item_barcode%<br/>\r\nTitle: %item_title%<br/>\r\nAuthor: %item_author%<br>\r\n<br/>\r\n",
+        "footer": "Slip Date: %TODAY_TRIM%<br/>\r\nPrinted by %STAFF_FIRSTNAME% at %SHORTNAME%<br/>\r\n<br/>\r\n"
+    },
+    "hold_transit_slip": {
+        "type": "transits",
+        "header": "<font face=\"Trebuchet MS\">\n<font size = \"6\"> \n&#8666;\n<font size = \"3\">\n<script>\nif ( \"%destination_shelf%\" == \"PRIVATE HOLD SHELF\") {document.write(\"&#10033; &#10033;\");}\n</script>\n<font size = \"1\">\nRoute to :  <font size = \"3\"><b>%route_to_org_fullname%</b><br/>\n<font size = \"2\">\n <script> var x = params.data.user_stat_cat_entries; for (var i = 0; i < x.length; i++) { if ((x[i].stat_cat.id == 7)  &&  (x[i].stat_cat_entry != \"None\")) document.write(x[i].stat_cat.name + ' : ' + x[i].stat_cat_entry + '<br/>'); } </script> \n <div style=\"-moz-transform: rotate(90deg); height: 300px; width: 250px;\">\n<font size = \"7\">%PATRON_HOLD_LASTNAME_ABBR%\n<br/>\n\n<font size = \"5\">%PATRON_ALIAS_OR_FIRSTNAME_ABBR%\n\n<font size = \"1\">\n<br/>\n<font size = \"5\">\n&nbsp;%TODAY_MMM%<br/>\n<font size = \"2\">\n&nbsp; &nbsp;Barcode:<font size = \"4\"> %item_barcode%\n<font size = \"2\">\n</br>\n</br>\n&nbsp;&nbsp; Patron:%PATRON_ID%<br/>\n<br/>\n\n<font size = \"5\">\n<script>\nvar tmpbc = \"%item_barcode%\".slice(-4); document.write(tmpbc);\n</script>\n<font size = \"2\">\n<br/>\n</div>",
+        "line_item": "<div style=\"-moz-transform: rotate(90deg); height: 200px; width: 300px;\">\n<br/><br/><br/><br/><br/><br/><br/><br/>%formatted_note% <br/></div>\n",
+        "footer": "<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n\n<br/>\nSlip Date: %TODAY_TRIM%<br/>\nPrinted by %STAFF_FIRSTNAME%<br/>\n<br/>Please consider donating to support<br/>your library!<br/>www.kclsfoundation.org/donation",
+        "inherit": null,
+        "context": "receipt"
+    },
+    "holdings_maintenance": {
+        "type": "items",
+        "header": "Title: %title%<br/>\nAuthor: %author%<br/>\nISBN: %isbn% Edition: %edition% PubDate: %pubdate%<br/>\nTCN: %tcn_value% Record ID: %mvr_doc_id%<br/>\nCreator: %creator% Create Date: %create_date%<br/>\nEditor: %editor% Edit Date: %edit_date%<hr/>\n",
+        "line_item": "%prefix% %tree_location% %suffix% %parts% %acp_status%<br/>\n",
+        "footer": "<hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "default"
+    },
+    "bills_main_view": {
+        "type": "bills",
+        "header": "Welcome to %LIBRARY%!<br/>You have the following bills:<hr/><ol>",
+        "line_item": "<dt><b>Bill #%id%</b> %title%</dt> <dd> <table width=\"100%\"> <tr valign=\"top\"><td>Date:</td><td>%xact_start%</td></tr> <tr valign=\"top\"><td>Type:</td><td>%xact_type%</td></tr> <tr valign=\"top\"><td>Last Billing:</td><td>%last_billing_type%<br/>%last_billing_note%</td></tr> <tr valign=\"top\"><td>Total Billed:</td><td>$%total_owed%</td></tr> <tr valign=\"top\"><td>Last Payment:</td><td>%last_payment_type%<br/>%last_payment_note%</td></tr> <tr valign=\"top\"><td>Total Paid:</td><td>$%total_paid%</td></tr> <tr valign=\"top\"><td><b>Balance:</b></td><td><b>$%balance_owed%</b></td></tr> </table><br/>",
+        "footer": "</ol><hr />%SHORTNAME% %TODAY_TRIM%<br/>\n<br/>\n",
+        "inherit": null,
+        "context": "receipt"
+    }
+}
+

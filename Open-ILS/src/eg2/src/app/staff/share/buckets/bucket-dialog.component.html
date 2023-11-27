@@ -1,3 +1,6 @@
+<eg-string #successString i18n-text text="Successfully added to bucket">
+</eg-string>
+
 <ng-template #dialogContent>
   <div class="modal-header">
     <h4 class="modal-title">
@@ -87,6 +90,19 @@
       </li>
     </ul>
     <div [ngbNavOutlet]="bucketDialogTabs"></div>
+    <hr class="mt-3 mb-3"/>
+    <div class="row">
+      <div class="col-lg-12 d-flex">
+        <div class="flex-1"></div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" 
+            id="open-bucket-checkbox" [(ngModel)]="openBucket">
+          <label class="form-check-label" for="open-bucket-checkbox" i18n>
+            Open Bucket in New Tab
+          </label>
+        </div>
+      </div>
+    </div>
   </div>
 </ng-template>
 <eg-confirm-dialog #confirmAddToShared

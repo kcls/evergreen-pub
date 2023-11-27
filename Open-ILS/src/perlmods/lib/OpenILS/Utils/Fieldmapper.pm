@@ -413,6 +413,16 @@ sub real_fields {
     return @f;
 }
 
+sub all_fields {
+	my $self = shift;
+	my $class_name = $self->class_name;
+	my $fields = $$fieldmap{$class_name}{fields};
+
+	my @f = sort {$$fields{$a}{position} <=> $$fields{$b}{position}} keys %$fields;
+
+	return @f;
+}
+
 sub has_field {
     my $self = shift;
     my $field = shift;

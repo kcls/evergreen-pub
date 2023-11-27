@@ -2,6 +2,9 @@
 <eg-progress-dialog #progressDlg
   dialogTitle="Deleting Queue..." i18n-dialogTitle></eg-progress-dialog>
 
+<eg-progress-dialog #progressSelect
+  dialogTitle="Selecting all records..." i18n-dialogTitle></eg-progress-dialog>
+
 <ng-container *ngIf="queueSummary && queueSummary.queue">
 
   <eg-confirm-dialog
@@ -126,11 +129,23 @@ definitions.  Hide a number of stock record attributes by default
 because there are a lot of them.
 -->
 
+<ng-template #selectTemplate let-row="row">
+  <ng-container *ngIf="rowIsSelected(row.id)">
+    <span i18n-title title="Row is Selected"
+      class="material-icons">check_circle</span>
+  </ng-container>
+</ng-template>
+
 <eg-grid #queueGrid [dataSource]="queueSource"
   persistKey="cat.vandelay.queue.{{queueType}}"
   (onRowActivate)="openRecord($event)"
   [pageOffset]="queuePageOffset()" [cellTextGenerator]="cellTextGenerator"
+  [disableSelect]="true"
+  (onRowClick)="rowClicked($event)"
   hideFields="language,pagination,price,rec_identifier,eg_tcn_source,eg_identifier,item_barcode,zsource">
+
+  <eg-grid-toolbar-checkbox i18n-label label="Select All"
+    (onChange)="toggleSelectRows($event)"></eg-grid-toolbar-checkbox>
 
   <eg-grid-toolbar-checkbox i18n-label label="Records With Matches"
     (onChange)="limitToMatches($event)"></eg-grid-toolbar-checkbox>
@@ -140,6 +155,9 @@ because there are a lot of them.
 
   <eg-grid-toolbar-checkbox i18n-label label="Records with Import Errors"
     (onChange)="limitToImportErrors($event)"></eg-grid-toolbar-checkbox>
+
+  <eg-grid-column name="selected" i18n-label label="Select"
+    [cellTemplate]="selectTemplate"></eg-grid-column>
 
   <eg-grid-column name="id" [index]="true" [hidden]="true"></eg-grid-column>
   <eg-grid-column i18n-label label="Matches" name="+matches" 

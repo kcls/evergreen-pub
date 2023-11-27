@@ -46,8 +46,8 @@ function($uibModal , $q , egCore , egConfirmDialog , egAlertDialog) {
                     include_current_copy : true,
                     include_usr          : true,
                     include_cancel_cause : true,
-                    include_sms_carrier  : true,
-                    include_requestor    : true
+                    include_requestor    : true,
+                    include_copy_status  : true
                 }
 
             ).then(
@@ -557,6 +557,11 @@ function($uibModal , $q , egCore , egConfirmDialog , egAlertDialog) {
                 egCore.pcrud.retrieve('acns',hold_data.volume.suffix())
                 .then(function(s) {hold_data.volume.suffix = s.label(); hold_data.volume.suffix_sortkey = s.label_sortkey()});
             }
+
+        } else if (hold_data.copy) {
+            // Set the current_copy to match the copy returned by the API
+            // for copy-level holds that have no current_copy.
+            hold.current_copy(hold_data.copy);
         }
     }
 
@@ -619,10 +624,8 @@ function($window , $location , $timeout , egCore , egHolds , egCirc) {
         var focus = items.length == 1;
         angular.forEach(items, function(item) {
             if (item.copy) {
-                var url = egCore.env.basePath +
-                          '/cat/item/' +
-                          item.copy.id() +
-                          '/circ_list';
+                var url = '/eg2/staff/cat/item/' +
+                          item.copy.id() + '/circ-history';
                 $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
             }
         });
@@ -634,10 +637,9 @@ function($window , $location , $timeout , egCore , egHolds , egCirc) {
         var focus = items.length == 1;
         angular.forEach(items, function(item) {
             if (item.hold.cp_id) {
-                var url = egCore.env.basePath +
-                          '/cat/item/' +
+                var url = '/eg2/staffcat/item/' +
                           item.hold.cp_id +
-                          '/circ_list';
+                          '/circ-history';
                 $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
             }
         });
@@ -646,8 +648,7 @@ function($window , $location , $timeout , egCore , egHolds , egCirc) {
     service.show_patrons = function(items) {
         var focus = items.length == 1;
         angular.forEach(items, function(item) {
-            var url = egCore.env.basePath +
-                      'circ/patron/' +
+            var url = '/eg2/staff/circ/patron/' + 
                       item.hold.usr().id() +
                       '/holds';
             $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
@@ -657,8 +658,7 @@ function($window , $location , $timeout , egCore , egHolds , egCirc) {
     service.show_patrons_wide = function(items) {
         var focus = items.length == 1;
         angular.forEach(items, function(item) {
-            var url = egCore.env.basePath +
-                      'circ/patron/' +
+            var url = '/eg2/staff/circ/patron/' + 
                       item.hold.usr_id +
                       '/holds';
             $timeout(function() { var x = $window.open(url, '_blank'); if (focus) x.focus() });
@@ -798,6 +798,25 @@ function($window , $location , $timeout , egCore , egHolds , egCirc) {
     service.retarget_wide = function(items) {
         var hold_ids = items.map(function(item) { return item.hold.id });
         egHolds.retarget(hold_ids).then(service.refresh);
+    }
+
+    // Works for wide and non-wide grids
+    service.show_item_details = function(rows) {
+        var copies = [];
+        rows.forEach(function(row) {
+            if (row.copy) {
+                copies.push(row.copy.id());
+            } else if (row.hold.cp_id) {
+                copies.push(row.hold.cp_id);
+            }
+        });
+
+        if (copies.length) {
+            $timeout(function() { 
+                var url = '/eg2/staff/cat/item/list/' + copies.join(',');
+                $window.open(url, '_blank');
+            });
+        }
     }
 
     return service;

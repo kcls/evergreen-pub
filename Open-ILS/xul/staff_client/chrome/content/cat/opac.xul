@@ -48,10 +48,11 @@
                 <menuitem label="&staff.cat.opac.marc_view.label;" accesskey="&staff.cat.opac.marc_view.accesskey;" id="marc_view" oncommand="record_action(set_marc_view);"/>
                 <menuitem label="&staff.cat.opac.marc_edit.label;" accesskey="&staff.cat.opac.marc_edit.accesskey;" id="marc_edit" oncommand="record_action(set_marc_edit);"/>
                 <menuitem label="&staff.cat.opac.copy_browse.label;" accesskey="&staff.cat.opac.copy_browse.accesskey;" id="copy_browse" oncommand="record_action(set_copy_browser);"/>
-                <menuitem label="&staff.cat.opac.manage_multi_home_items.label;" accesskey="&staff.cat.opac.manage_multi_home_items.accesskey;" id="manage_multi_home_items" oncommand="record_action(manage_multi_home_items);"/>
+                <menuitem hidden="true" label="&staff.cat.opac.manage_multi_home_items.label;" accesskey="&staff.cat.opac.manage_multi_home_items.accesskey;" id="manage_multi_home_items" oncommand="record_action(manage_multi_home_items);"/>
                 <menuitem label="&staff.cat.opac.manage_parts.label;" accesskey="&staff.cat.opac.manage_parts.accesskey;" id="manage_parts" oncommand="record_action(manage_parts);"/>
                 <menuitem label="&staff.cat.opac.view_holds.label;" accesskey="&staff.cat.opac.view_holds.accesskey;" id="view_holds" oncommand="record_action(set_hold_browser);"/>
                 <menuitem label="&staff.cat.opac.view_orders.label;" accesskey="&staff.cat.opac.view_orders.accesskey;" id="view_orders" oncommand="open_acq_orders();"/>
+                <menuitem label="&staff.cat.opac.update_items.label;" accesskey="&staff.cat.opac.update_items.accesskey;" id="update_items" oncommand="update_items();"/>
                 <menuseparator/>
                 <menuitem label="&staff.cat.opac.add_bucket.label;" accesskey="&staff.cat.opac.add_bucket.accesskey;" id="add_bucket" oncommand="add_to_bucket();"/>
                 <menuitem label="&staff.cat.opac.mark_for_overlay.label;" accesskey="&staff.cat.opac.mark_for_overlay.accesskey;" id="mark_for_overlay" oncommand="mark_for_overlay();"/>
@@ -61,7 +62,8 @@
                 <menuitem label="&staff.cat.copy_browser.holdings_maintenance.cmd_add_volumes.label;" accesskey="&staff.cat.copy_browser.holdings_maintenance.cmd_add_volumes.accesskey;" id="add_volumes" oncommand="add_volumes();"/>
                 <menuitem label="&staff.cat.opac.mark_for_hold_transfer.label;" accesskey="&staff.cat.opac.mark_for_hold_transfer.accesskey;" id="mark_for_hold_transfer" oncommand="mark_for_hold_transfer();"/>
                 <menuitem label="&staff.cat.opac.transfer_title_holds.label;" accesskey="&staff.cat.opac.transfer_title_holds.accesskey;" id="transfer_title_holds" oncommand="transfer_title_holds();"/>
-                <menuitem label="&staff.cat.opac.mark_for_multi_home.label;" accesskey="&staff.cat.opac.mark_for_multi_home.accesskey;" id="mark_for_multi_home" oncommand="mark_for_multi_home();"/>
+                <menuitem hidden="true" label="&staff.cat.opac.mark_for_multi_home.label;" accesskey="&staff.cat.opac.mark_for_multi_home.accesskey;" id="mark_for_multi_home" oncommand="mark_for_multi_home();"/>
+                <menuitem label="&staff.cat.opac.mark_for_li_transfer.label;" accesskey="&staff.cat.opac.mark_for_li_transfer.accesskey;" id="mark_for_li_transfer" oncommand="mark_for_li_transfer();"/>
                 <menuseparator/>
                 <menuitem label="&staff.cat.opac.bib_in_new_tab.label;" id="bib_in_new_tab" oncommand="bib_in_new_tab();"/>
                 <menuitem label="&staff.cat.opac.remove_me.label;" id="remove_me" oncommand="remove_me();"/>

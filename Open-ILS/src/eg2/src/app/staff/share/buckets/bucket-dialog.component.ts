@@ -1,4 +1,5 @@
 import {Component, OnInit, Input, ViewChild, Renderer2} from '@angular/core';
+import {Location} from '@angular/common';
 import {throwError} from 'rxjs';
 import {switchMap} from 'rxjs/operators';
 import {NetService} from '@eg/core/net.service';
@@ -10,6 +11,7 @@ import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
+import {StringComponent} from '@eg/share/string/string.component';
 
 /**
  * Dialog for adding bib records to new and existing record buckets.
@@ -28,6 +30,7 @@ export class BucketDialogComponent extends DialogComponent implements OnInit {
     newBucketName: string;
     newBucketDesc: string;
     buckets: any[];
+    openBucket = false;
 
     @Input() bucketClass: 'biblio' | 'user' | 'callnumber' | 'copy';
     @Input() bucketType: string; // e.g. staff_client
@@ -42,10 +45,12 @@ export class BucketDialogComponent extends DialogComponent implements OnInit {
     bucketFmClass: 'ccb' | 'ccnb' | 'cbreb' | 'cub';
     targetField: string;
 
-    @ViewChild('confirmAddToShared', {static: true}) confirmAddToShared: ConfirmDialogComponent;
+    @ViewChild('confirmAddToShared') confirmAddToShared: ConfirmDialogComponent;
+    @ViewChild('successString') successString: StringComponent;
 
     constructor(
         private modal: NgbModal, // required for passing to parent
+        private ngLocation: Location,
         private renderer: Renderer2,
         private toast: ToastService,
         private idl: IdlService,
@@ -196,7 +201,8 @@ export class BucketDialogComponent extends DialogComponent implements OnInit {
             if (evt) {
                 this.toast.danger(evt.toString());
             } else {
-                this.close();
+                this.toast.success(this.successString.text);
+                this.postAdd(bucketId);
             }
         });
     }
@@ -214,9 +220,16 @@ export class BucketDialogComponent extends DialogComponent implements OnInit {
             if (evt) {
                 this.toast.danger(evt.toString());
             } else {
-                this.close();
+                this.postAdd(bucketId);
             }
         });
+    }
+
+    postAdd(bucketId: number) {
+        this.close();
+        if (this.openBucket) {
+            window.open('/eg/staff/cat/bucket/record/view/' + bucketId);
+        }
     }
 }
 

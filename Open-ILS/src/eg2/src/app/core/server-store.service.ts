@@ -56,6 +56,37 @@ export class ServerStoreService {
         });
     }
 
+    // Apply multiple values at once
+    setItemBatch(settings: {[name: string]: any}): Promise<any> {
+
+        if (!this.auth.token()) {
+            return Promise.reject('Auth required to apply settings');
+        }
+
+        return this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.settings.apply.user_or_ws',
+            this.auth.token(), settings)
+
+        .toPromise().then(appliedCount => {
+
+            const keys = Object.keys(settings);
+
+            if (Number(appliedCount) <= keys.length) {
+
+                console.error(
+                    'Some user/workstation settings failed to apply.  keys  = ', keys);
+
+                return Promise.reject(
+                    'Some user/workstation settings failed to apply'
+                );
+            }
+
+            return this.addSettingsToDb(settings);
+        });
+    }
+
+
     // Returns a single setting value
     getItem(key: string): Promise<any> {
         return this.getItemBatch([key]).then(

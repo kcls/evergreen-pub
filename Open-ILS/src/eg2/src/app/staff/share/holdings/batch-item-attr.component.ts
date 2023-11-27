@@ -53,6 +53,9 @@ export class BatchItemAttrComponent {
     // Warn the user when a required field has an empty value
     @Input() valueRequired = false;
 
+    // Show / hide the Clear button
+    @Input() hideClearOption = false;
+
     // If true, a value of '' is considered unset for display and
     // valueRequired purposes.
     @Input() emptyStringIsUnset = true;
@@ -98,7 +101,8 @@ export class BatchItemAttrComponent {
     }
 
     bulky(): boolean {
-        return Object.keys(this.labelCounts).length > this.defaultDisplayCount;
+        return this.labelCounts &&
+            Object.keys(this.labelCounts).length > this.defaultDisplayCount;
     }
 
     multiValue(): boolean {

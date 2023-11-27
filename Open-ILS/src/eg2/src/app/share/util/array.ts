@@ -35,5 +35,16 @@ export class ArrayUtil {
 
         return true;
     }
+
+    static unique(arr: any[]): any[] {
+        const trimmed: any[] = [];
+        arr.forEach(item => {
+            if (!trimmed.includes(item)) {
+                trimmed.push(item);
+            }
+        });
+
+        return trimmed;
+    }
 }
 

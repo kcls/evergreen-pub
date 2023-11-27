@@ -1,16 +1,17 @@
 
+<eg-string #transferTargetMarked i18n-text text="Transfer Target Marked"></eg-string>
+
 <!-- org unit selector -->
 
-<div class="row mt-3">
+<div class="row mt-2">
   <div class="col-lg-4">
     <div class="input-group">
       <div class="input-group-prepend">
-        <div class="input-group-text" i18n>Holdings Maintenance</div>
+        <div class="input-group-text form-control-sm" i18n>Holdings Maintenance</div>
       </div>
-      <eg-org-select [initialOrg]="contextOrg"
-        persistKey="catalog.holdings"
-        (onChange)="contextOrgChanged($event)"
-        [orgClassCallback]="orgClassCallback">
+      <eg-org-select [initialOrg]="contextOrg" [smallFormControl]="true"
+        (componentLoaded)="contextOrgChanged(null)"
+        persistKey="catalog.holdings" (onChange)="contextOrgChanged($event)">
       </eg-org-select>
     </div>
   </div>
@@ -46,7 +47,37 @@
   </ng-container>
 </ng-template>
 
-<eg-mark-damaged-dialog #markDamagedDialog></eg-mark-damaged-dialog>
+<ng-template #mintConditionTemplate let-row="row">
+  <ng-container *ngIf="row.copy">
+    <span *ngIf="row.copy.mint_condition() == 't'" i18n>Standard</span>
+    <span *ngIf="row.copy.mint_condition() == 'f'" i18n>No Supplemental</span>
+  </ng-container>
+</ng-template>
+
+<ng-template #loanDurationTemplate let-row="row">
+  <ng-container *ngIf="row.copy">
+    <span *ngIf="row.copy.loan_duration() == 1">Short</span>
+    <span *ngIf="row.copy.loan_duration() == 2">Normal</span>
+    <span *ngIf="row.copy.loan_duration() == 3">Long</span>
+  </ng-container>
+</ng-template>
+
+
+<ng-template #circModTemplate let-row="row" let-userContext="userContext">
+  <ng-container *ngIf="row.copy && row.copy.circ_modifier()" i18n>
+    {{row.copy.circ_modifier().code()}} : {{row.copy.circ_modifier().name()}}
+  </ng-container>
+</ng-template>
+
+<ng-template #barcodeTemplate let-row="row" let-userContext="userContext">
+  <ng-container *ngIf="row.copy">
+    <a title="Item Status ID {{row.copy.id()}}" i18n-title 
+      routerLink="/staff/cat/item/{{row.copy.id()}}">{{row.copy.barcode()}}</a>
+  </ng-container>
+</ng-template>
+
+
+<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
 <eg-mark-missing-dialog #markMissingDialog></eg-mark-missing-dialog>
 <eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
 <eg-copy-tags-dialog #copyTagsDialog></eg-copy-tags-dialog>
@@ -64,11 +95,12 @@
   dialogBody="Please select a suitable transfer target"></eg-alert-dialog>
 
 <!-- holdings grid -->
-<div class='eg-copies w-100 mt-3'>
-  <eg-grid #holdingsGrid [dataSource]="gridDataSource"
+<div class='eg-copies w-100 mt-1'>
+  <eg-grid #holdingsGrid [dataSource]="gridDataSource" [tightDisplay]="true"
+    [stickyHeader]="true"
     (onRowActivate)="onRowActivate($event)" [disablePaging]="true"
     [rowClassCallback]="rowClassCallback" [cellTextGenerator]="cellTextGenerator"
-    [sortable]="false" persistKey="cat.holdings">
+    [disableTooltips]="true" [sortable]="false" persistKey="cat.holdings">
 
     <!-- checkboxes / filters -->
 
@@ -97,13 +129,16 @@
       i18n-label label="Request Items" (onClick)="requestItems($event)">
     </eg-grid-toolbar-action>
 
+    <!-- KCLS
     <eg-grid-toolbar-action
       i18n-label label="Link as Conjoined to Marked Bib Record"
       (onClick)="openConjoinedDialog($event)">
     </eg-grid-toolbar-action>
+    -->
 
     <!-- row actions : Add -->
 
+    <!-- KCLS
     <eg-grid-toolbar-action
       i18n-group group="Add" i18n-label label="Add Call Numbers"
       (onClick)="openHoldingAdd($event, true, false)">
@@ -113,16 +148,19 @@
       i18n-group group="Add" i18n-label label="Add Items"
       (onClick)="openHoldingAdd($event, false, true)">
     </eg-grid-toolbar-action>
+    -->
 
     <eg-grid-toolbar-action
-      i18n-group group="Add" i18n-label label="Add Call Numbers and Items"
+      i18n-group group="Add" i18n-label label="Add Call Numbers / Items"
       (onClick)="openHoldingAdd($event, true, true)">
     </eg-grid-toolbar-action>
 
+    <!-- KCLS
     <eg-grid-toolbar-action
       i18n-group group="Add" i18n-label label="Add/Manage Item Alerts"
       (onClick)="openItemAlerts($event)">
     </eg-grid-toolbar-action>
+    -->
 
     <eg-grid-toolbar-action
       i18n-group group="Add" i18n-label label="Add/Manage Item Tags"
@@ -130,7 +168,7 @@
     </eg-grid-toolbar-action>
 
     <eg-grid-toolbar-action
-      i18n-group group="Add" i18n-label label="Add/Manage Item Notes"
+      i18n-group group="Add" i18n-label label="Manage Item Notes"
       (onClick)="openItemNotes($event)">
     </eg-grid-toolbar-action>
 
@@ -141,6 +179,7 @@
 
     <!-- row actions: Booking -->
 
+    <!-- KCLS hide booking
     <eg-grid-toolbar-action
       i18n-group group="Booking" i18n-label label="Book Item Now"
       (onClick)="bookItems($event)">
@@ -155,9 +194,11 @@
       i18n-group group="Booking" i18n-label label="Manage Reservations"
       (onClick)="manageReservations($event)">
     </eg-grid-toolbar-action>
+    -->
     
     <!-- row actions: Edit -->
 
+    <!--
     <eg-grid-toolbar-action
       i18n-group group="Edit" i18n-label label="Edit Call Numbers"
       (onClick)="openHoldingEdit($event, false, true)">
@@ -167,12 +208,21 @@
       i18n-group group="Edit" i18n-label label="Edit Call Numbers And Items"
       (onClick)="openHoldingEdit($event, false, false)">
     </eg-grid-toolbar-action>
+    -->
 
+    <!-- note label change too -->
     <eg-grid-toolbar-action
-      i18n-group group="Edit" i18n-label label="Edit Items"
+      i18n-group group="Edit" i18n-label label="Edit Call Numbers / Items"
       (onClick)="openHoldingEdit($event, true, false)">
     </eg-grid-toolbar-action>
     
+    <!-- KCLS
+    <eg-grid-toolbar-action
+      i18n-group group="Edit" i18n-label label="Edit Item Alerts"
+      (onClick)="openItemAlerts($event, 'manage')">
+    </eg-grid-toolbar-action>
+    -->
+
     <eg-grid-toolbar-action
       i18n-group group="Edit" i18n-label label="Replace Barcodes"
       (onClick)="openReplaceBarcodeDialog($event)">
@@ -263,7 +313,7 @@
     <eg-grid-column path="callNum._label" name="call_number.label" 
       label="Call Number" i18n-label>
     </eg-grid-column>
-    <eg-grid-column path="copy.barcode" name="barcode" label="Barcode" i18n-label>
+    <eg-grid-column [cellTemplate]="barcodeTemplate" name="barcode" label="Barcode" i18n-label>
     </eg-grid-column>
     <eg-grid-column i18n-label label="Circ Library" path="copy.circ_lib" 
       name="circ_lib.name" datatype="org_unit"></eg-grid-column>
@@ -275,10 +325,14 @@
       path="copy.location.name" name="location.name">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Circulation Modifier" 
-      path="copy.circ_modifier" name="circ_modifier">
+      [cellTemplate]="circModTemplate" name="circ_modifier">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Item Number" path="copy.copy_number" 
       name="copy_number" [hidden]="true">
+    </eg-grid-column>
+
+    <eg-grid-column i18n-label label="Alert Message" path="copy.alert_message" 
+      name="alert_message" [hidden]="true">
     </eg-grid-column>
 
     <eg-grid-column i18n-label label="Status" 
@@ -308,19 +362,21 @@
     <eg-grid-column i18n-label label="Active Date" 
       path="copy.active_date" datatype="timestamp">
     </eg-grid-column>
+    <eg-grid-column i18n-label label="Create Date" 
+      path="copy.create_date" datatype="timestamp">
+    </eg-grid-column>
     <eg-grid-column i18n-label label="Total Circ Count"
       path="copy.total_circ_count.circ_count">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Last Circ Date"
       path="copy.last_circ.last_circ" datatype="timestamp">
-      </eg-grid-column>
-    <eg-grid-column i18n-label label="Create Date" 
-      path="copy.create_date" datatype="timestamp">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Age Hold Protection" 
       path="copy.age_protect.name" name="age_protect.name"></eg-grid-column>
     <eg-grid-column i18n-label label="Item Price" 
       path="copy.price" name="price" [hidden]="true"></eg-grid-column>
+    <eg-grid-column i18n-label label="OPAC Visible" datatype="bool"
+      path="copy.opac_visible" name="opac_visible" [hidden]="true"></eg-grid-column>
 
     <eg-grid-column i18n-label label="Circulate" path="copy.circulate" 
       name="circulate" datatype="bool" [hidden]="true"></eg-grid-column>
@@ -328,8 +384,13 @@
       name="deposit" datatype="bool" [hidden]="true"></eg-grid-column>
     <eg-grid-column i18n-label label="Deposit Amount" path="copy.deposit_amount" 
       name="deposit_amount" datatype="money" [hidden]="true"></eg-grid-column>
-    <eg-grid-column i18n-label label="Holdable?" name="holdable" 
+    <eg-grid-column i18n-label label="Can be Held?" name="holdablability" 
       [cellTemplate]="holdableTemplate" [cellContext]="gridTemplateContext">
+    </eg-grid-column>
+    <eg-grid-column i18n-label label="Holdable?" name="holdable" 
+      path="copy.holdable" datatype="bool"></eg-grid-column>
+    <eg-grid-column i18n-label label="Quality" name="mint_condition" 
+      [cellTemplate]="mintConditionTemplate">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Reference?" path="copy.ref" 
       name="ref" datatype="bool" [hidden]="true"></eg-grid-column>
@@ -344,6 +405,13 @@
     <eg-grid-column i18n-label label="OPAC Visible?" path="copy.opac_visible" 
       name="opac_visible" datatype="bool" [hidden]="true">
     </eg-grid-column>
+
+    <eg-grid-column i18n-label label="Floating" path="copy.floating.name" [hidden]="true">
+    </eg-grid-column>
+    <eg-grid-column i18n-label label="Loan Duration" name="loan_duration" 
+      path="copy.loan_duration" [cellTemplate]="loanDurationTemplate" [hidden]="true">
+    </eg-grid-column>
+
   </eg-grid>
 </div>
 
