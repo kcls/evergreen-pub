@@ -1,5 +1,5 @@
 <div dojoType="dijit.Dialog" jsId='oilsSelfckLogoutDialog' style='display:none;'>
-  <p>[% l('Your login session will soon timeout due to inactivity.') %]</p>
+  <p>[% l('Your checkout session will soon time out due to inactivity.') %]</p>
   <table><tr>
     <td>
       <button jsId='oilsSelfckLogout' 

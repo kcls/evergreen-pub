@@ -26,6 +26,9 @@ use OpenILS::Application::AppUtils;
 use OpenILS::Application::Acq::EDI;
 use OpenSRF::Utils::Logger q/$logger/;
 
+# Force passive FTP so we don't have to keep setting it manually.
+$ENV{FTP_PASSIVE} = 1;
+
 INIT {
     $debug = 1;
 }

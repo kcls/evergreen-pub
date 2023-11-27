@@ -380,3 +380,13 @@ function canSubmitPayment(evt){
 
     submit.setAttribute("disabled","");
 }
+
+// Dirty hack to keep the Sort Results order selector persistent in 
+// multiple searches in same tab (see 
+// openils/var/templates_kcls/opac/parts/advanced.tt2)
+function setPersistentSort() {
+	if (document.location.toString().indexOf('advanced') > -1) {
+	    window.name = (document.getElementById("opac.result.sort")).selectedIndex;
+	}
+}
+

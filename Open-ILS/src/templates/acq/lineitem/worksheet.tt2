@@ -10,6 +10,8 @@
 </script>
 <h1>[% l('Lineitem Worksheet') %]</h1>
 <div dojoType='dijit.form.Button' scrollOnFocus='false' onClick='location.href = returnRef'>[% l('&#x2196; Return') %]</div>
+
+<div dojoType='dijit.form.Button' scrollOnFocus='false' onClick= "window.print();">[% l('Print Page') %]</div>
 <br/><br/>
 <div id="acq-worksheet-contents"></div>
 <div class='hidden'>

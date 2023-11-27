@@ -1,0 +1,14 @@
+<input 
+  type="date"
+  class="form-control eg-date-select-native"
+  [id]="domId" 
+  [name]="fieldName"
+  [min]="min"
+  [max]="max"
+  [required]="required"
+  [disabled]="disabled"
+  [ngClass]="{'ng-invalid': invalid()}"
+  (blur)="handleBlur()"
+  (change)="inputChange($event)"
+/>
+

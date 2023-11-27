@@ -222,9 +222,13 @@ sub make_hoo_spanset {
 
     my $today = shift || DateTime->now;
 
-    my $tz = OpenSRF::AppSession->create('open-ils.actor')->request(
-        'open-ils.actor.ou_setting.ancestor_default' => $hoo->id.'' => 'org_unit.timezone'
-    )->gather(1) || DateTime::TimeZone->new( name => 'local' )->name;
+#    KCLS: commenting this out because it's never used.
+#    If it's used in the future, call the $U version of the org
+#    setttings retrieval which is much faster.
+#
+#    my $tz = OpenSRF::AppSession->create('open-ils.actor')->request(
+#        'open-ils.actor.ou_setting.ancestor_default' => $hoo->id.'' => 'org_unit.timezone'
+#    )->gather(1) || DateTime::TimeZone->new( name => 'local' )->name;
 
     my $current_dow = $today->day_of_week_0;
 
@@ -701,7 +705,7 @@ sub patron_search {
     # group 1 = address
     # group 2 = phone, ident
     # group 3 = barcode
-    # group 4 = dob
+    # group 4 = dob/egid
     # group 5 = profile
 
     # Treatment of name fields depends on whether the org has 
@@ -755,7 +759,7 @@ sub patron_search {
     $usr = join ' AND ', @usr_where_parts;
 
     while (($key, $value) = each (%$search)) {
-        if($$search{$key}{group} eq '4') {
+        if($$search{$key}{group} eq '4' && $key =~ /dob/) {
             my $tval = $key;
             $tval =~ s/dob_//g;
             my $right = "RIGHT('0'|| ";
@@ -766,7 +770,7 @@ sub patron_search {
     }
     # Trim the last " AND "
     $dob = substr($dob,0,-4);
-    @dobv = map { _clean_regex_chars($$search{$_}{value}) } grep { ''.$$search{$_}{group} eq '4' } keys %$search;
+    @dobv = map { _clean_regex_chars($$search{$_}{value}) } grep { ''.$$search{$_}{group} eq '4'  && $_ =~ /dob/} keys %$search;
     $usr .= ' AND ' if ( $usr && $dob );
     $usr .= $dob if $dob; # $dob not in-line above in case $usr doesn't have any search vals (only searched for dob)
     push(@usrv, @dobv) if @dobv;
@@ -782,6 +786,7 @@ sub patron_search {
     my $iv = _clean_regex_chars($$search{ident}{value});
     my $nv = _clean_regex_chars($$search{name}{value});
     my $cv = _clean_regex_chars($$search{card}{value});
+    my $egv = _clean_regex_chars($$search{egid}{value});
 
     my $card = '';
     if ($cv) {
@@ -789,11 +794,25 @@ sub patron_search {
         unshift(@usrv, $cv);
     }
 
-    my $phone = '';
-    my @ps;
+    # for Evergreen usr id search
+    my $egid = '';
+    $_ = $egv;
+    if (m/\D/) {
+        $egid = ' AND FALSE';
+    } elsif ($egv) {
+        $egid = ' AND users.id = ' . $egv;
+    }
+
+    my $phone_cte = '';
+    my $phone_join = '';
     my @phonev;
+
     if ($pv) {
-        for my $p ( qw/day_phone evening_phone other_phone/ ) {
+        $phone_join = 'JOIN has_phone_number hpn ON hpn.id = users.id';
+
+        my @ps;
+
+        for my $p (qw/day_phone evening_phone other_phone/) {
             if ($pv =~ /^\d+$/) {
                 push @ps, "evergreen.lowercase(REGEXP_REPLACE($p, '[^0-9]', '', 'g')) ~ ?";
             } else {
@@ -801,7 +820,28 @@ sub patron_search {
             }
             push @phonev, "^$pv";
         }
-        $phone = '(' . join(' OR ', @ps) . ')';
+
+        my $main_where = join(' OR ', @ps);
+
+        my $main_query = "SELECT id FROM actor.usr WHERE $main_where";
+
+        my $normalize = ($pv =~ /^\d+$/) ?
+            "evergreen.lowercase(REGEXP_REPLACE(value, '[^0-9]', '', 'g')) ~ ?" :
+            "evergreen.lowercase(value) ~ ?";
+
+        my $setting_query = <<"        SQL";
+            SELECT usr AS id
+            FROM actor.usr_setting
+            WHERE 
+                name IN ('opac.default_phone', 'opac.default_sms_notify')
+                AND $normalize
+        SQL
+
+        # Prefix the search value with '"?' since user setting phone
+        # values may be stored as JSON numbers or (more likely) strings.
+        push(@phonev, "^\"?$pv");
+
+        $phone_cte = "WITH has_phone_number AS ($main_query UNION $setting_query)"
     }
 
     my $ident = '';
@@ -840,7 +880,7 @@ sub patron_search {
         $profile = '(profile IN (SELECT id FROM permission.grp_descendants(?)))';
         push @profv, $prof;
     }
-    my $usr_where = join ' AND ', grep { $_ } ($usr,$phone,$ident,$name,$profile);
+    my $usr_where = join ' AND ', grep { $_ } ($usr,$ident,$name,$profile);
     my $addr_where = $addr;
 
 
@@ -869,7 +909,7 @@ sub patron_search {
         $select = "$a_select";
     }
 
-    return undef if (!$select && !$card);
+    return undef if (!$select && !$card && !$phone_cte);
 
     my $order_by = join ', ', map { 'evergreen.lowercase(CAST(users.'. (split / /,$_)[0] . ' AS text)) ' . (split / /,$_)[1] } @$sort;
     my $distinct_list = join ', ', map { 'evergreen.lowercase(CAST(users.'. (split / /,$_)[0] . ' AS text))' } @$sort;
@@ -908,24 +948,65 @@ sub patron_search {
         SQL
     }
 
+    # --------------------------------------------------------------------
+    # Handle some special case sort requests
+    # These override all other sorts and only one column is supported.
+    my $sort_join = '';
+    my ($sort_field, $sort_dir) = split(' ', $$sort[0]);
+
+    if ($sort_field eq 'profile.name') {
+        $distinct_list = $group_list = 'COALESCE(cic.string, pgt.name), users.id';
+
+        # Grab the translated text since we have mix
+        $sort_join = <<'        SQL';
+            JOIN permission.grp_tree pgt ON (pgt.id = users.profile)
+            LEFT JOIN config.i18n_core cic ON (
+                cic.fq_field = 'pgt.name' AND 
+                cic.identity_value = pgt.id::TEXT AND 
+                cic.translation = 'en-US'
+            )
+        SQL
+        $order_by = "evergreen.lowercase(COALESCE(cic.string, pgt.name)) $sort_dir, 2";
+
+    } elsif ($sort_field eq 'mailing_address.street1') {
+        $distinct_list = $group_list = 'maddr.street1, users.id';
+        $sort_join = 'LEFT JOIN actor.usr_address maddr ON (maddr.id = users.mailing_address)';
+        $order_by = "evergreen.lowercase(maddr.street1) $sort_dir, 2";
+
+    } elsif ($sort_field eq 'mailing_address.city') {
+        $distinct_list = $group_list = 'maddr.city, users.id';
+        $sort_join = 'LEFT JOIN actor.usr_address maddr ON (maddr.id = users.mailing_address)';
+        $order_by = "evergreen.lowercase(maddr.city) $sort_dir, 2";
+
+    } elsif ($sort_field eq 'id') {
+        $distinct_list = $group_list = 'users.id, users.id'; # wants 2 cols.
+        $order_by = "users.id $sort_dir";
+    }
+
+    # --------------------------------------------------------------------
+
     $select = "JOIN ($select) AS search ON (search.id = users.id)" if ($select);
     $select = <<"    SQL";
+        $phone_cte
         SELECT  $distinct_list
           FROM  $u_table AS users $card
             JOIN $descendants d ON (d.id = users.home_ou)
+            $phone_join
             $select
             $clone_select
             $penalty_join
+            $sort_join
           WHERE users.deleted = FALSE
             $inactive
             $opt_in_where
+            $egid
           GROUP BY $group_list
           ORDER BY $order_by
           LIMIT $limit
           OFFSET $offset
     SQL
 
-    return actor::user->db_Main->selectcol_arrayref($select, {Columns=>[scalar(@$sort)]}, map {lc($_)} (@usrv,@phonev,@identv,@namev,@profv,@addrv));
+    return actor::user->db_Main->selectcol_arrayref($select, {Columns=>[scalar(@$sort)]}, map {lc($_)} (@phonev,@usrv,@identv,@namev,@profv,@addrv));
 }
 __PACKAGE__->register_method(
     api_name    => 'open-ils.storage.actor.user.crazy_search',

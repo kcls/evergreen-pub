@@ -15,6 +15,8 @@
     label="[% l('Show Last Few Circulations') %]"></eg-grid-action>
   <eg-grid-action handler="grid_actions.show_holds_for_title_wide"
     label="[% l('Show Holds for Title') %]"></eg-grid-action>
+  <eg-grid-action handler="grid_actions.show_item_details"
+    label="[% l('Show Item Details') %]"></eg-grid-action>
   <eg-grid-action divider="true"></eg-grid-action>
   <eg-grid-action handler="grid_actions.set_copy_quality_wide"
     label="[% l('Set Desired Item Quality') %]"></eg-grid-action>

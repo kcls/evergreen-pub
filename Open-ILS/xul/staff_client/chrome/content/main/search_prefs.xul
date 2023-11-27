@@ -27,6 +27,7 @@
         var search_lib_box;
         var pref_lib_box;
         var adv_pane_box;
+        var browse_sort_default_box;
         var prefSvc;
         var data;
         var saved_message;
@@ -38,6 +39,7 @@
             search_lib_box = document.getElementById('search_lib');
             pref_lib_box = document.getElementById('pref_lib');
             adv_pane_box = document.getElementById('adv_pane');
+            browse_sort_default_box = document.getElementById('browse_sort_default');
             // NOTE: If this ever deals with custom trees, this is where you likely want to mess with things.
             add_aou(data.tree.aou, '');
             prefSvc = Components.classes["@mozilla.org/preferences-service;1"].getService(Components.interfaces.nsIPrefBranch).QueryInterface(Components.interfaces.nsIPrefBranch2);
@@ -58,6 +60,11 @@
             } else {
                 adv_pane_box.selectedIndex = 0;
             }
+            if (data.browse_sort_default) {
+                browse_sort_default_box.value = data.browse_sort_default;
+            } else {
+                browse_sort_default_box.selectedIndex = 0;
+            }
         }
         function add_aou(aou, depth) {
             if (aou.children().length > 0) {
@@ -76,24 +83,30 @@
             prefSvc.setIntPref('open-ils.' + data.server_unadorned + '.search_lib', search_lib_box.value);
             prefSvc.setIntPref('open-ils.' + data.server_unadorned + '.pref_lib', pref_lib_box.value);
             prefSvc.setCharPref('open-ils.' + data.server_unadorned + '.adv_pane', adv_pane_box.value);
+            prefSvc.setCharPref('open-ils.' + data.server_unadorned + '.browse_sort_default', browse_sort_default_box.value);
             data.search_lib = search_lib_box.value;
             data.pref_lib = pref_lib_box.value;
             data.adv_pane = adv_pane_box.value;
+            data.browse_sort_default = browse_sort_default_box.value;
             data.stash('search_lib');
             data.stash('pref_lib');
             data.stash('adv_pane');
+            data.stash('browse_sort_default');
             alert(saved_message);
         }
         function clear_prefs() {
             prefSvc.clearUserPref('open-ils.' + data.server_unadorned + '.search_lib');
             prefSvc.clearUserPref('open-ils.' + data.server_unadorned + '.pref_lib');
             prefSvc.clearUserPref('open-ils.' + data.server_unadorned + '.adv_pane');
+            prefSvc.clearUserPref('open-ils.' + data.server_unadorned + '.browse_sort_default');
             data.search_lib = null;
             data.pref_lib = null;
             data.adv_pane = null;
+            data.browse_sort_default = null;
             data.stash('search_lib');
             data.stash('pref_lib');
             data.stash('adv_pane');
+            data.stash('browse_sort_default');
             alert(cleared_message);
         }
     ]]>
@@ -125,8 +138,23 @@
             <menulist id="adv_pane">
                 <menupopup>
                     <menuitem label="&staff.search_prefs.adv_pane.advanced;" value="advanced" />
+                    <menuitem label="&staff.search_prefs.adv_pane.browse;" value="browse" />
                     <menuitem label="&staff.search_prefs.adv_pane.numeric;" value="numeric" />
                     <menuitem label="&staff.search_prefs.adv_pane.expert;" value="expert" />
+                </menupopup>
+            </menulist>
+        </groupbox>
+        <groupbox>
+            <caption label="&staff.search_prefs.browse_sort_default.caption;"/>
+            <description>&staff.search_prefs.browse_sort_default.description;</description>
+            <menulist id="browse_sort_default">
+                <menupopup>
+					<menuitem label="&staff.search_prefs.browse_sort_default.pubdate.descending;" value="pubdate.descending" />
+					<menuitem label="&staff.search_prefs.browse_sort_default.pubdate;" value="pubdate" />
+                    <menuitem label="&staff.search_prefs.browse_sort_default.titlesort;" value="titlesort" />
+                    <menuitem label="&staff.search_prefs.browse_sort_default.titlesort.descending;" value="titlesort.descending" />
+                    <menuitem label="&staff.search_prefs.browse_sort_default.authorsort;" value="authorsort" />
+					<menuitem label="&staff.search_prefs.browse_sort_default.authorsort.descending;" value="authorsort.descending" />				
                 </menupopup>
             </menulist>
         </groupbox>

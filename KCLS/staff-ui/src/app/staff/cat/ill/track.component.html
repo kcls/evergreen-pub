@@ -1,0 +1,69 @@
+<eg-staff-banner bannerText="Create ILL Item" i18n-bannerText></eg-staff-banner>
+
+<div class="form-validated">
+  <div class="row mt-2">
+    <div class="col-lg-2" i18n><label for="title-input">Title</label></div>
+    <div class="col-lg-4">
+      <input type="text" id="title-input" class="form-control" required [(ngModel)]="title"/>
+    </div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-2" i18n><label for="title-input">Call Number</label></div>
+    <div class="col-lg-4">
+      <input type="text" id="callnumber-input" class="form-control" 
+        required [(ngModel)]="callnumber"/>
+    </div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-2" i18n><label for="template-select">Copy Template</label></div>
+    <div class="col-lg-4">
+      <eg-combobox #copyTemplateCbox domId="template-select" 
+        [entries]="copyTemplateNames">                
+      </eg-combobox>               
+    </div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-2" i18n><label for="title-input">Patron Barcode</label></div>
+    <div class="col-lg-4">
+      <input type="text" id="patron-barcode-input" 
+        (keyup.enter)="canCreate() && create()"
+        (ngModelChange)="patronBarcodeChange()"
+        (change)="patronBarcodeChange($event)"
+        (paste)="patronBarcodePasted($event)"
+        class="form-control" required [(ngModel)]="patronBarcode"/>
+    </div>
+    <div class="col-lg-4" *ngIf="noPatron">
+      <div class="alert alert-danger m-0 p-1" i18n>
+        No patron found with barcode {{patronBarcode}}
+      </div>
+    </div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-2" i18n><label for="title-input">Lender Address</label></div>
+    <div class="col-lg-4">
+      <textarea class="form-control" [(ngModel)]="lenderAddress" rows="3">
+      </textarea>
+    </div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-2" i18n>
+      <label for="item-barcode-input">KCLS Item Barcode</label>
+    </div>
+    <div class="col-lg-4">
+      <input type="text" id="item-barcode-input" 
+        class="form-control" required [(ngModel)]="itemBarcode"/>
+    </div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-2">
+      <button class="btn btn-success" (click)="create()" 
+        [disabled]="!canCreate()" i18n>Create Item</button>
+    </div>
+  </div>
+  <div class="row mt-2" *ngIf="creating">
+    <div class="col-lg-6">
+      <eg-progress-inline></eg-progress-inline>
+    </div>
+  </div>
+</div>
+

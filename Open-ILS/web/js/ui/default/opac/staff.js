@@ -289,7 +289,7 @@ window.onload = function() {
 function rdetail_next_prev_actions(index, count, prev, next, start, end, results) {
     /*  we mostly get the relative URL from the template:  recid?query_args...
         replace the recid and args on location.href to get the new URL  */
-    function fullurl(url) {
+        function fullurl(url) {
         if (url.match(/eg\/opac\/results/)) {
             return location.href.replace(/\/eg\/opac\/.+$/, url);
         } else {

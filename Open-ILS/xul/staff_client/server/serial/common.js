@@ -60,3 +60,8 @@ function num_sort(a, b) {
     [a, b] = [Number(a), Number(b)];
     return a > b ? 1 : (a < b ? -1 : 0);
 }
+
+function no_sort(a,b) {
+    return 0;
+}
+

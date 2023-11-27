@@ -283,6 +283,12 @@ sub get_li_ftx {
         }
     }
 
+    if (@trimmed_notes && $self->{compiled}->{edi_attrs}->{COLLAPSE_VENDOR_NOTES}) {
+        # Collapse all vendor notes down to a single note, trimmed
+        # at the max-length of an EDI FTX value.
+        @trimmed_notes = (substr(join(' ', @trimmed_notes), 0, 512));
+    }
+
     return \@trimmed_notes;
 }
 
@@ -527,7 +533,7 @@ sub build_lineitem_segments {
 
     for my $note (@{$li_hash->{notes}}) {
         if ($note) {
-            $edi .= "FTX+LIN+1+$note'\n"
+            $edi .= "FTX+LIN+1++$note'\n"
         } else {
             $edi .= "FTX+LIN+1'\n"
         }

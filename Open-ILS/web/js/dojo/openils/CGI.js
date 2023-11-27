@@ -75,6 +75,7 @@ if(!dojo._hasResource["openils.CGI"]) {
             }
 
             if (key.length) {
+                key = decodeURIComponent(key);
                 if( ! this.data[key] ) this.data[key] = [];
                 this.data[key].push(decodeURIComponent(value));
                 this._keys.push(key);

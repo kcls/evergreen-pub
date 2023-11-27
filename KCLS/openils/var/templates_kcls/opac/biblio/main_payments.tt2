@@ -1,0 +1,76 @@
+[%  
+    WRAPPER "opac/biblio/base.tt2";
+    PROCESS "opac/parts/header.tt2";
+    limit = ctx.payment_history_limit;
+    offset = ctx.payment_history_offset;
+%]
+[% INCLUDE "opac/biblio/topnav.tt2" %]
+<div id='fines_payments_wrapper'>
+	<div id='acct_fines_tabs'>
+
+		<a href='[% ctx.opac_root %]/biblio/main_fines'><img src='[% ctx.media_prefix %]/images/acct_fines_off.jpg'/></a>
+		<a href='[% ctx.opac_root %]/biblio/main_payments'><img src='[% ctx.media_prefix %]/images/acct_payments_on.jpg'/></a>
+
+	</div>
+</div>
+
+<div style="background:#fff">
+    <div class="header_middle">
+        <span class="float-left">[% l('Payments History') %]</span>
+        <span class='float-left' style='padding-left: 10px;'>
+            <a href='[% ctx.opac_root %]/biblio/main_payments?limit=[% limit %]&amp;offset=[% offset - limit %]'
+                [% IF offset == 0 %] class='invisible' [% END %]><span class="nav_arrow_fix">&#9668;</span>[% l('Previous') %]</a>
+            [%# TODO: get total to prevent paging off then end of the list.. %]
+            <a href='[% ctx.opac_root %]/biblio/main_payments?limit=[% limit %]&amp;offset=[% offset + limit %]'
+               [% IF ctx.payments.size < limit %] class='invisible' [% END %] >[% l('Next') %]<span class="nav_arrow_fix">&#9658;</span></a>
+        </span>
+    </div>
+    <div class="clear-both"></div>
+
+    [% IF ctx.payments.size %]
+    <table class='myopac_payments_table data_grid' width='100%'>
+        <thead><tr>
+            <th>[% l('Payment Date') %]</th>
+            <th>[% l('Payment For') %]</th>
+            <th>[% l('Amount') %]</th>
+            <th>[% l('Receipt') %]</th> 
+        </tr></thead>
+        <tbody>
+            [% FOR payment IN ctx.payments %]
+                [% IF payment.mp.amount > 0 %]
+                    <tr>
+                        <td>[% date.format(ctx.parse_datetime(payment.mp.payment_ts), DATE_FORMAT) %]</td>
+                        <td>[%
+                            btype = payment.last_billing_type | html;
+                            ptitle = payment.title | html;
+                            (payment.xact_type == 'grocery') ? btype : ptitle
+                        %]</td>
+                        <td>[% money(payment.mp.amount) %]</td>
+                        <td>
+                            [% IF payment.mp.payment_type == 'credit_card_payment' 
+                                  OR payment.refundable_payment %]
+                            <form action="[% ctx.opac_root %]/biblio/receipt_print" method="POST">
+                                <input type="hidden" name="payment" value="[% payment.mp.id %]" />
+                                <input type="submit" value="[% l('Print') %]" />
+                            </form>
+                            <form action="[% ctx.opac_root %]/biblio/receipt_email" method="POST">
+                                <input type="hidden" name="payment" value="[% payment.mp.id %]" />
+                                <input type="submit" value="[% l('Email') %]" />
+                            </form>
+                            [% END %]
+                        </td>
+                    </tr>
+                [% END %]
+            [% END %]
+        </tbody>
+    </table>
+    [% ELSE %]
+    <div>[% l('You have no historical payments to display.') %]</div>
+    [% END %]
+</div>
+<div id="footer">
+    <div class="float-left"</div>
+    <a href="http://www.kcls.org/ask/" style=" font-size: 14px; color: white; font-family: Arial, Helvetica, sans-serif; font-weight: 600;" >[% l('Ask KCLS') %]</a>
+    <div class="common-no-pad"></div>
+    </div>
+[% END %]

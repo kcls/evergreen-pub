@@ -30,7 +30,8 @@
                     <option mask='*' value='' disabled='disabled'>[% l('----PO----') %]</option>
                     <option mask='pl|gs|vp|fs' value='create_order'>[% l('Create Purchase Order') %]</option>
                     <option mask='pl|gs|vp|fs' value='add_to_order'>[% l('Add to Purchase Order') %]</option>
-                    <option mask='po|ao' value='print_po'>[% l('Print Purchase Order') %]</option>
+                    <option mask='po|ao' value='print_po_eg2' id='po-print-browser'>[% l('Print Purchase Order') %]</option>
+                    <option mask='po|ao' value='print_po' id='po-print-xul'>[% l('Print Purchase Order') %]</option>
                     <option mask='po|ao' value='po_history'>[% l('View PO History') %]</option>
                     <option mask='po' value='create_assets'>[% l('Load Bibs and Items') %]</option>
                     <option mask='ao|gs|vp' value='cancel_lineitems'>[% l('Cancel Selected Line Items') %]</option>
@@ -87,6 +88,19 @@
                 <th>
                     <label for="acq-bu-distribution_formula">[% l("Distribution Formula") %]</label>
                 </th>
+                <th></th>
+                <th>
+                    <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                </th>
+                <th>
+                    <label for="acq-batch-create-note-text" class='batch-note'>[% l('Note') %]&nbsp;&nbsp;</label>
+                </th>
+                <th>
+                    <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                </th>
+                <th>
+                    <label for="acq-batch-lit-alert-alert-text" class='batch-alert'>[% l('Choose alert code ') %]&nbsp;&nbsp;</label>
+                </th>
             </tr>
             <tr>
                 <td>
@@ -108,7 +122,31 @@
                     <span id="acq-bu-circ_modifier"></span> OR
                 </td>
                 <td>
-                    <span id="acq-bu-distribution_formula"></span>
+                     <span id="acq-bu-distribution_formula"></span>
+                </td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+               <td>
+                    <div id='batch-note-div' class='batch-note' ">
+                        <div id = "acg-batch-create-note-text" jsId="acqBatchCreateNoteText" dojoType="dijit.form.Textarea" style="height: 10px; width:15em;" name="note"></div><br>
+                        <label for="acq-batch-create-note-vendor-public">[% l('Note is vendor-public') %]</label>
+                        <div dojoType="dijit.form.CheckBox" jsId="acqBatchCreateNoteVendorPublic" name="vendor_public" id="acq-batch-create-note-vendor-public"></div>
+                    </div>
+                </td>
+                <td>
+                    <span>&nbsp;</span>
+                </td>
+                <td>
+                    <div id='batch-alert-div' class='batch-alert'">
+                       <input id="acq-batch-lit-alert-alert-text" jsId="acqBatchLitAlertAlertText" dojoType="dijit.form.FilteringSelect" labelAttr="code" searchAttr="code" required="true" />
+                       <br>
+                       <label for="acq-batch-lit-alert-value">[% l('Alert Additional comments') %]</label>    <br>
+                       <div jsId="acqBatchLitAlertNoteValue" id="acq-batch-lit-alert-value" dojoType="dijit.form.Textarea" style="height: 10px; width:15em;" name="value"></div>
+                    <div>
+                </td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>
                     <span dojoType="dijit.form.Button" jsId="acqBatchUpdateApply">[% l("Apply to Selected") %]</span>
                 </td>
             </tr>
@@ -120,6 +158,14 @@
                     <td><span><a id='acq-lit-select-toggle' href='javascript:void(0);'>&#x2713</a></span></td>
                     <td>
                         [% l('Line Items') %]
+                        <!-- KCLS no longer uses
+                        <span style='padding-left: 10px;'>
+                            <a href='javascript:;' 
+                                id='acq-lit-apply-idents'>
+                                [% l('Apply ISBN Picker to All Items') %]
+                            </a>
+                        </span>
+                        -->
                     </td>
                     <td style='white-space:nowrap;'>
                         <a id='acq-inline-copies-toggle' 
@@ -171,6 +217,7 @@
                                                 </select>
                                             </td>
                                             <td name='order_ident_value'></td>
+                                            <td name="order_ident_picked">[% l('Picked:  ') %]</td>
                                         </tr></table>
                                     </td>
                                 </tr>
@@ -205,10 +252,13 @@
                     <td>
                         <select name='actions'>
                             <option name='action_none' value='action_none'>[% l('-- Actions --') %]</option>
+                            <option name='action_mark_recv' value='action_mark_recv' disabled='disabled'>Mark Received</option>
+                            <option name='action_mark_unrecv' value='action_mark_unrecv' disabled='disabled'>Un-Receive</option>
                             <option name='action_update_barcodes' value='action_update_barcodes'>[% l('Update Barcodes') %]</option>
                             <option name='action_holdings_maint' value='action_holdings_maint'>[% l('Holdings Maint.') %]</option>
                             <option name='action_manage_claims' value='action_manage_claims'>[% l('Claims') %]</option>
                             <option name='action_view_history' value='action_view_history'>[% l('View History') %]</option>
+                            <option name='action_transfer_to_bib' value='action_transfer_to_bib'>[% l('Transfer To Bib Record') %]</option>
                         </select>
                     </td>
                     <td>

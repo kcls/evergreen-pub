@@ -37,6 +37,7 @@ angular.module('egCheckinApp', ['ngRoute', 'ui.bootstrap',
        ['$scope','$q','$window','$location', '$timeout','egCore','checkinSvc','egGridDataProvider','egCirc', 'egItem',
 function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , egGridDataProvider , egCirc, itemSvc)  {
 
+    $scope.itemNotFound = false;
     $scope.focusMe = true;
     $scope.checkins = checkinSvc.checkins;
     var today = new Date(new Date().setHours(0,0,0,0));
@@ -215,6 +216,7 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
         var compiled = compile_checkin_args(args);
         args.copy_barcode = ''; // reset UI for next scan
         $scope.focusMe = true;
+        $scope.itemNotFound = false;
         delete $scope.alert;
         delete $scope.billable_amount;
         delete $scope.billable_barcode;
@@ -235,7 +237,13 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
         checkinSvc.checkins.unshift(row_item);
         egCirc.checkin(params, options).then(
         function(final_resp) {
-            
+
+            if (final_resp && final_resp.evt && !Array.isArray(final_resp.evt)
+                && final_resp.evt.textcode === 'ASSET_COPY_NOT_FOUND') {
+                $scope.itemNotFound = true;
+                return;
+            }
+
             row_item.evt = final_resp.evt;
             angular.forEach(final_resp.data, function(val, key) {
                 row_item[key] = val;
@@ -324,9 +332,8 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
 
             if (circ) {
                 // jump to the patron UI (separate app)
-                $window.location.href = $location
-                    .path('/circ/patron/' + circ.usr() + '/checkout')
-                    .absUrl();
+                $window.location.href = 
+                    '/eg2/staff/circ/patron/' + circ.usr() + '/checkout';
                 return;
             }
 
@@ -426,8 +433,9 @@ function($scope , $q , $window , $location , $timeout , egCore , checkinSvc , eg
         var itemObjs = [];
         angular.forEach(items, function(i){
             var h = egCore.idl.toHash(i);
+            console.debug('VOL ID', h.acn.id);
             itemObjs.push({
-                'call_number.record.id': h.record.doc_id,
+                'call_number.record.id': h.acn.id == -1 ? -1 : h.record.doc_id,
                 'id' : h.acp.id
             });
         });

@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>[% l('Log In Databases | King County Library System') %]</title>
+    [% INCLUDE 'opac/parts/googalytics_new.tt2' tracking_id = 'UA-3018520-29' %]
+
+    <script src="[% ctx.media_prefix %]/js/ui/default/common/build/js/jquery.min.js"></script>
+    <script src="[% ctx.media_prefix %]/js/ui/default/opac/handlebars-v4.7.7.js"></script>
+
+    <!-- NOTE: BootstrapCSS v4 does not play nicely with BC headers -->
+    <link rel="stylesheet" href="/js/ui/default/staff/build/css/bootstrap.min.css" />
+
+    <!-- local CSS -->
+    <style>
+      /* BC screen reader links are not correctly hidden via their API.
+         Add some additional CSS to hide them */
+      .screen_reader_nav {
+        position: absolute;
+        top: -1000px;
+        left: -1000px;
+        z-index: 0;
+      }
+
+      @media (min-width: 1200px) {
+        #ezproxy-container-wrapper {
+          width: 1360px;
+        }
+      }
+
+      #ezproxy-container {
+        margin-bottom: 20px;
+        color: #585d5e;
+        font-family: 'Open Sans', sans-serif;
+        letter-spacing: .5pt;
+        font-size: 15px;
+        /*width: 900px; 
+        margin-left: auto;
+        margin-right: auto;
+        */
+      }
+      .margin-top {
+        margin-top: 20px;
+      }
+
+      input[type="text"], input[type="password"] {
+        width: 200px;
+      }
+
+      .blue-stuff {
+        color: #003f6b;
+      }
+
+    </style>
+
+    <!-- BC CSS -->
+    [% ctx.bc_css %]
+    <!-- BC END CSS -->
+
+  </head>
+  <body>
+
+    [% INCLUDE 'opac/parts/goog_tag_manager_noscript.tt2' %]
+
+    <!-- BC SCREEN READER NAVIGATION -->
+    [% ctx.bc_screen_reader_navigation %]
+    <!-- BC END SCREEN READER NAVIGATION -->
+
+    <!-- BC HEADER -->
+    [% ctx.bc_header %]
+    <!-- BC END HEADER -->
+
+    <div id='ezproxy-container-wrapper' class="container margin-top">
+      <div id='ezproxy-container'>
+
+        <h1 class="blue-stuff">
+          Log In
+          <small>
+            <a class="badge label-primary" style="background: #003f6b"
+              href="https://help.bibliocommons.com/000getting/005logging-in">
+              i
+            </a>
+          </small>
+        </h1>
+
+				<div class="row">
+
+          <div class="col-xs-12 col-sm-12 col-md-4">
+						<form autocomplete="off" method='POST'>
+							[% IF ctx.login_failed %]
+								<div class="alert alert-danger" role="alert">Login failed.  Please try again.</div>
+							[% END %]
+							<div class="form-group">
+								<label for="barcode-input">Barcode or Student Account Login:</label>
+								<input type="text" class="form-control" 
+									name="barcode" id="barcode-input" required/>
+							</div>
+							<div class="form-group">
+								<label for="password-input">Password or PIN</label>
+								<input type="password" class="form-control" 
+									name="password" id="password-input" required/>
+
+                <small style="margin-top: 10px; text-decoration:underline">
+							    <a href="https://kcls.bibliocommons.com/user/forgot">
+								    Forgot your Password or PIN?
+							    </a>
+                </small>
+							</div>
+							<button type="submit" class="btn btn-primary" style="background: rgb(0,63,107)">Log In</button>
+              <a href="https://kcls.org/library-cards/">Get a Library Card</a>
+							<input type="hidden" name="url" value="[% ctx.url | html %]"/>
+							<input type="hidden" name="qurl" value="[% ctx.qurl | html %]"/>
+						</form>
+            <br/>
+          </div>
+          <div class="col-xs-12 col-sm-12 col-md-4">
+            <b>Are you trying to log in with a Student Account?</b>
+            <br/>
+            <ul>
+              <li>You will not be able to register a catalog account</li>
+              <li>
+                <a href="https://kcls.org/students/">
+                  <u>Visit our Student Accounts webpage to use databases, ebooks, and more</u>
+                </a>
+              </li>
+            </ul>
+            <b>Need to register?</b>
+            <br/>
+            <ul>
+              <li>Enter your Library card barcode and PIN</li>
+              <li>Log In to create your username</li>
+            </ul>
+            <b>Trouble logging in?</b>
+            <br>
+            <ul>
+              <li>
+                <a href="https://help.bibliocommons.com/000getting/005logging-in/">
+                  <u>Find answers to common questions</u>
+                </a>
+              </li>
+            </ul> 
+          </div>
+          <div class="col-xs-12 col-sm-12 col-md-4">
+          </div>
+        </div> <!-- row -->
+      </div> <!-- ezproxy-container -->
+    </div> <!-- ezproxy-container-wrapper --> 
+
+    <!-- BC FOOTER -->
+    [% ctx.bc_footer %]
+    <!-- BC END FOOTER -->
+
+    <!-- BC requires jquery, loaded from quipu (above) in this form -->
+    <!-- BC JS -->
+    [% ctx.bc_js %]
+    <!-- BC END JS -->
+
+  </body>
+</html>
+

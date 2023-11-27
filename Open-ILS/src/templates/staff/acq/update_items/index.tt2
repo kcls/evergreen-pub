@@ -1,0 +1,37 @@
+[%
+  WRAPPER "staff/base.tt2";
+  ctx.page_title = l("Update Items"); 
+  ctx.page_app = "egUpdateItems";
+%]
+
+[% BLOCK APP_JS %]
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/grid.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/ui.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/file.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/services/eframe.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/acq/update_items/app.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/cat/services/record.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/circ.js"></script>
+<script src="[% ctx.media_prefix %]/js/ui/default/staff/circ/services/item.js"></script>
+<script>
+angular.module('egCoreMod').run(['egStrings', function(s) {
+    s.UPDATE_ITEMS_HOTKEY_SAVE = "[% l('Save Changes') %]";
+    s.UPDATE_ITEMS_HOTKEY_SAVE_EXIT = "[% l('Save & Exit') %]";
+    s.UPDATE_ITEMS_NO_CHANGES = "[% l('There are no changes to save.') %]";
+    s.UPDATE_ITEMS_WARNING_NO_NOTES = "[% l('No notes to display.') %]";
+    s.UPDATE_ITEMS_WARNING_NO_SELECTED_PO = "[% l('Select a Lineitem to display data.') %]";
+    s.UPDATE_ITEMS_WARNING_NO_AVAILABLE_PO = "[% l('No Lineitems to display.') %]";
+    s.UPDATE_ITEMS_WARNING_INVALID_CHECKDIGIT = "[% l('is not a valid barcode.') %]";
+    s.UPDATE_ITEMS_WARNING_FAILED_TO_DISPLAY_LINEITEM = "[% l('We were unable to display this lineitem due to an unknown error. Refresh to try again.') %]";
+    s.UPDATE_ITEMS_REFRESH_REQUEST_TITLE = "[% l('Data may have changed') %]";
+    s.UPDATE_ITEMS_REFRESH_REQUEST = "[% l('Data for the copies in the selected Lineitem may have been modified via the Edit Item Attributes button. Continuing without refreshing may override these changes.') %]";
+    s.UPDATE_ITEMS_REFRESH = "[% l('Refresh Page') %]";
+    s.UPDATE_ITEMS_NOREFRESH = "[% l('Continue Without Refreshing') %]";
+    s.UPDATE_ITEMS_NONE = "[% l('<NONE>') %]";
+}]);
+</script>
+[% END %]
+
+<div ng-view></div>
+
+[% END %]

@@ -1,0 +1,100 @@
+[%  PROCESS "opac/parts/header.tt2";
+
+    WRAPPER "opac/parts/base.tt2";
+    INCLUDE "opac/parts/topnav.tt2";
+
+    IF is_advanced || is_special;
+        ctx.page_title = l("Search Results");
+    ELSE;
+        ctx.page_title = l("Search Results: ") _ CGI.param('query') | html;
+    END;
+
+    page = ctx.search_page;
+    page = page.match('^\d+$') ? page : 0; # verify page is a sane value
+
+    page_count = ctx.page_size == 0 ? 1 : POSIX.ceil(ctx.hit_count / ctx.page_size);
+%]
+    <form action="[% ctx.opac_root %]/results" method="GET" onsubmit='clearRecIds()'>
+    <input type="hidden" name="defaultsort" value=[% CGI.param("defaultsort") || CGI.param("sort") %] />
+    <div id="search-wrapper">
+        [% INCLUDE "opac/parts/searchbar.tt2" took_care_of_form=1 %]
+    </div>
+    <div class="almost-content-wrapper">
+        <div id="results_header_bar">
+            <div id="results_header_inner">
+
+                <div class="results_header_btns">
+                    <a href="[% ctx.opac_root %]/home"><img alt="[% l('Another Search') %]"
+                        title="[% l('Another Search') %]"
+                        src="[% ctx.media_prefix %]/images/another_search.png"
+                        onmouseover="this.src='[% ctx.media_prefix %]/images/another_search_hover.png';"
+                        onmouseout="this.src='[% ctx.media_prefix %]/images/another_search.png';" /></a>
+                </div>
+                <div class="results_header_btns">
+                    <a href="[% ctx.opac_root %]/advanced?pane=advanced"><img alt="[% l('Advanced Search') %]"
+                        title="[% l('Advanced Search') %]"
+                        src="[% ctx.media_prefix %]/images/adv_search.png"
+                        onmouseover="this.src='[% ctx.media_prefix %]/images/adv_search_hover.png';"
+                        onmouseout="this.src='[% ctx.media_prefix %]/images/adv_search.png';" /></a>
+                </div>
+
+                [% IF ctx.mylist.size %]
+                <div class="results_header_btns cached_list_div">
+                    [%- IF ctx.user; %]
+                    <a href="[% mkurl(ctx.opac_root _ '/myopac/lists') %]">[% l('View My List') %]</a>
+                    [%- ELSE %]
+                    <a href="[% mkurl(ctx.opac_root _ '/mylist') %]">[% l('View My List') %]</a>
+                    [%- END %]
+                </div>
+                [% END %]
+                <div class="results_header_div"></div>
+
+                    <label class="results_header_lbl">[% l('Sort by') %]</label> 
+                    [% INCLUDE "opac/parts/filtersort.tt2" value=CGI.param('sort') submit_on_change=1 %]
+                    <div class="results_header_div"></div>
+
+                    <div class='results_header_sel' id='simple-detail-view-links'>
+                        [% IF CGI.param('detail_record_view') %]
+                        <a href="[% mkurl(ctx.opac_root _ '/results', {detail_record_view => ''}) %]">[% l('Simple View') %]</a>
+                        [% ELSE %]
+                        <a href="[% mkurl(ctx.opac_root _ '/results', {detail_record_view => 1}) %]">[% l('Detailed View') %]</a>
+                        [% END %]
+                    </div>
+                    <div class="results_header_div"></div>
+
+                    <input type="checkbox" id="limit_to_available" name="modifier" value="available"
+                        onchange="limit_to_avail_onchange(this, true)"
+                        [% CGI.param('modifier').grep('available').size ? ' checked="checked"' : '' %] />
+                    <label class="results_header_lbl">[% l('Limit to available items') %]</label>
+
+                    <div class="results_header_div"></div>
+                    <div class='results_header_sel'>
+                      <a href="[% mkurl(ctx.opac_root _ '/export') %]">
+                        [% l('Export All as MARC') %]</a>
+                    </div>
+                <div class="clear-both"></div>
+            </div>
+        </div>
+    </div>
+    </form>
+    <br class="clear-both" />
+    <div id="content-wrapper">
+        <div id="main-content">
+            <div id="results-page">
+                <!-- If user is searching by subject, author or series direct to table_grouped.tt2.
+                     Otherwise direct to table.tt2 -->
+                    [% IF ctx.display_groupings %]
+                        [% path = "opac/parts/result/" _
+                            ( ctx.records.size ? "table_grouped.tt2" : "lowhits.tt2" );
+                        INCLUDE $path %]
+                    [% ELSE %]
+                        [% path = "opac/parts/result/" _
+                            ( ctx.records.size ? "table.tt2" : "lowhits.tt2" );
+                        INCLUDE $path %]
+                    [% END %]
+            </div>
+            <div class="common-full-pad"></div>    
+        </div>
+        <br class="clear-both" />
+    </div>
+[% END %]

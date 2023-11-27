@@ -1,0 +1,126 @@
+<eg-hold-cancel-dialog #cancelDialog></eg-hold-cancel-dialog>
+
+<div class="row pt-3">
+  <div class="col-lg-6">
+    <div *ngIf="!hold" class="alert alert-info" i18n>
+      Item is not captured for a hold
+    </div>
+    <div *ngIf="hold" class="well-table">
+      <div class="d-flex">
+        <h3 i18n>Captured Hold Info</h3>
+        <div class="flex-1"></div>
+        <button class="btn btn-outline-danger" (click)="showCancelDialog()" i18n>
+          Cancel Hold
+        </button>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Patron</div>
+        <div class="well-value">
+          <a i18n
+            routerLink="/staff/circ/patron/{{hold.usr().id()}}">
+            {{hold.usr().family_name()}}, 
+            {{hold.usr().first_given_name()}}, 
+            {{hold.usr().second_given_name()}} :
+            {{hold.usr().card().barcode()}}
+          </a>
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Requestor</div>
+        <div class="well-value">
+          <a i18n
+            routerLink="/staff/circ/patron/{{hold.requestor().id()}}">
+            {{hold.requestor().family_name()}}, 
+            {{hold.requestor().first_given_name()}}, 
+            {{hold.requestor().second_given_name()}} :
+            {{hold.requestor().card().barcode()}}
+          </a>
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Pickup Lib</div>
+        <div class="well-value">{{hold.pickup_lib().shortname()}}</div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Current Shelf Lib</div>
+        <div class="well-value">
+          <ng-container *ngIf="hold.current_shelf_lib()">
+            {{hold.current_shelf_lib().shortname()}}
+          </ng-container>
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Request Date</div>
+        <div class="well-value">
+          {{hold.request_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Capture Date</div>
+        <div class="well-value">
+          {{hold.capture_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Shelf Time</div>
+        <div class="well-value">
+          {{hold.shelf_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Shelf Expire Time</div>
+        <div class="well-value">
+          {{hold.shelf_expire_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Hold Expire Time</div>
+        <div class="well-value">
+          {{hold.expire_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Behind Desk</div>
+        <div class="well-value">
+          <eg-bool [value]="hold.behind_desk() === 't'"></eg-bool>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div *ngIf="!transit" class="alert alert-info" i18n>
+      Item has not transited
+    </div>
+    <div *ngIf="transit" class="well-table">
+      <h3 i18n>Most Recent Transit</h3>
+
+      <div class="well-row">
+        <div class="well-label" i18n>Transit Source</div>
+        <div class="well-value">{{transit.source().shortname()}}</div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Transit Destination</div>
+        <div class="well-value">{{transit.dest().shortname()}}</div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Transit Send Time</div>
+        <div class="well-value">
+          {{transit.source_send_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Transit Receive Time</div>
+        <div class="well-value">
+          {{transit.dest_recv_time() | egDateTime}}
+        </div>
+      </div>
+      <div class="well-row">
+        <div class="well-label" i18n>Transit Cancel Time</div>
+        <div class="well-value">
+          {{transit.cancel_time() | egDateTime}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

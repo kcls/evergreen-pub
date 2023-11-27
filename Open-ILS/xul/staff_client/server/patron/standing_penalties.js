@@ -30,10 +30,13 @@ function penalty_init() {
         init_archived_list();
         window.standing_penalties_event_listeners = new EventListenerList();
         document.getElementById('date1').year = document.getElementById('date1').year - 1;
+        window.standing_penalties_event_listeners.add(document.getElementById('cmd_view_message'), 'command', handle_view_message, false);
         window.standing_penalties_event_listeners.add(document.getElementById('cmd_apply_penalty'), 'command', handle_apply_penalty, false);
         window.standing_penalties_event_listeners.add(document.getElementById('cmd_remove_penalty'), 'command', handle_remove_penalty, false);
         window.standing_penalties_event_listeners.add(document.getElementById('cmd_edit_penalty'), 'command', handle_edit_penalty, false);
         window.standing_penalties_event_listeners.add(document.getElementById('cmd_archive_penalty'), 'command', handle_archive_penalty, false);
+        window.standing_penalties_event_listeners.add(document.getElementById('cmd_save_columns'), 'command', handle_column_save, false);
+        window.standing_penalties_event_listeners.add(document.getElementById('cmd_save_archived_columns'), 'command', handle_archive_column_save, false);
         window.standing_penalties_event_listeners.add(document.getElementById('cmd_retrieve_archived_penalties'), 'command', handle_retrieve_archived_penalties, false);
         populate_list();
         default_focus();
@@ -106,10 +109,12 @@ function generate_handle_selection(which_list) {
         var ids = util.functional.map_list( sel, function(o) { return JSON2js( o.getAttribute('retrieve_id') ); } );
         if (which_list == list) { // top list
             if (ids.length > 0) {
+                document.getElementById('cmd_view_message').setAttribute('disabled','false');
                 document.getElementById('cmd_remove_penalty').setAttribute('disabled','false');
                 document.getElementById('cmd_edit_penalty').setAttribute('disabled','false');
                 document.getElementById('cmd_archive_penalty').setAttribute('disabled','false');
             } else {
+                document.getElementById('cmd_view_message').setAttribute('disabled','true');
                 document.getElementById('cmd_remove_penalty').setAttribute('disabled','true');
                 document.getElementById('cmd_edit_penalty').setAttribute('disabled','true');
                 document.getElementById('cmd_archive_penalty').setAttribute('disabled','true');
@@ -123,6 +128,10 @@ function populate_list() {
 
         rows = {};
         list.clear();
+        xulG.patron.standing_penalties().sort(function(a, b) {
+            return util.date.db_date2Date(a.set_date()).getTime() -
+                   util.date.db_date2Date(b.set_date()).getTime()
+        });
         for (var i = 0; i < xulG.patron.standing_penalties().length; i++) {
             var row_params = {
                 'row' : {
@@ -138,6 +147,34 @@ function populate_list() {
 
     } catch(E) {
         var err_prefix = 'standing_penalties.js -> populate_list() : ';
+        if (error) error.standard_unexpected_error_alert(err_prefix,E); else alert(err_prefix + E);
+    }
+}
+
+function handle_view_message(ev) {
+    try {
+        JSAN.use('util.window');
+        var win = new util.window();
+
+        var sel = list.retrieve_selection();
+        var ids = util.functional.map_list( sel, function(o) { return JSON2js( o.getAttribute('retrieve_id') ); } );
+        if (ids.length > 0) {
+            for (var i = 0; i < ids.length; i++) {
+                var penalty = util.functional.find_list( xulG.patron.standing_penalties(), function(o) { return o.id() == ids[i]; } );
+                var my_xulG = win.open(
+                    urls.XUL_VIEW_STANDING_PENALTY,
+                    'new_standing_penalty',
+                    'chrome,resizable,modal',
+                    { 
+                        'id' : typeof penalty.standing_penalty() == 'object' ? penalty.standing_penalty().id() : penalty.standing_penalty(), 
+                        'note' : penalty.note() 
+                    }
+                );
+            } 
+        }
+
+    } catch(E) {
+        var err_prefix = 'standing_penalties.js -> handle_view_penalty() : ';
         if (error) error.standard_unexpected_error_alert(err_prefix,E); else alert(err_prefix + E);
     }
 }
@@ -409,6 +446,7 @@ function handle_archive_penalty(ev) {
 }
 
 function handle_retrieve_archived_penalties() {
+    archived_ausp = [];
     try {
         document.getElementById('archived_progress').hidden = false;
         archived_list.clear(); archived_rows = {};
@@ -432,6 +470,7 @@ function handle_retrieve_archived_penalties() {
             {
                 async : true,
                 streaming : true,
+//              order_by : {'ausp':'set date DESC'},
                 onerror : function(r) {
                     try {
                         var res = openils.Util.readResponse(r,true);
@@ -442,20 +481,26 @@ function handle_retrieve_archived_penalties() {
                 },
                 oncomplete : function() {
                     document.getElementById('archived_progress').hidden = true;
-                },
-                onresponse : function(r) {
-                    try {
-                        var my_ausp = openils.Util.readResponse(r);
+                    archived_ausp.sort(function (a, b) {
+                        return a.set_date() > b.set_date();
+                    });
+                    for (var i = 0; i < archived_ausp.length; i++) {
                         var row_params = {
                             'row' : {
                                 'my' : {
-                                    'ausp' : my_ausp,
-                                    'csp' : my_ausp.standing_penalty(),
+                                    'ausp' : archived_ausp[i],
+                                    'csp' : archived_ausp[i].standing_penalty(),
                                     'au' : xulG.patron,
                                 }
                             }
                         };
-                        archived_rows[ my_ausp.id() ] = archived_list.append( row_params );
+                        archived_rows[ archived_ausp[i].id() ] = archived_list.append( row_params );
+                    };
+                },
+                onresponse : function(r) {
+                    try {
+                        var my_ausp = openils.Util.readResponse(r);
+                        archived_ausp.push(my_ausp);
                     } catch(E) {
                         error.standard_unexpected_error_alert(patronStrings.getString('staff.patron.standing_penalty.retrieve_error'),E);
                     }
@@ -466,4 +511,12 @@ function handle_retrieve_archived_penalties() {
         var err_prefix = 'standing_penalties.js -> handle_retrieve_archived_penalties() : ';
         if (error) error.standard_unexpected_error_alert(err_prefix,E); else alert(err_prefix + E);
     }
+}
+
+function handle_column_save() {
+    list.save_columns();
+}
+
+function handle_archive_column_save() {
+    archived_list.save_columns();
 }

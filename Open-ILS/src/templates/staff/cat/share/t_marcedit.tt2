@@ -39,21 +39,57 @@
           <button class="btn btn-default" ng-show="record_type == 'bre' && !flatOnly" ng-click="validateHeadings()">[% l('Validate') %]</button>
         </span>
         <span class="btn-group">
-          <button class="btn btn-primary" ng-click="saveRecord()">{{ saveLabel || "[% l('Save') %]"}}</button>
-        </span>
-        <span class="btn-group">
-          <button ng-hide="brandNewRecord || embedded || Record().deleted() == 't'" class="btn btn-default" ng-click="deleteRecord()">[% l('Delete') %]</button>
-          <button ng-hide="brandNewRecord || Record().deleted() != 't'" class="btn btn-default" ng-click="undeleteRecord()">[% l('Undelete') %]</button>
+          <button class="btn btn-primary" ng-disabled="saving" 
+            ng-click="saveRecord()">{{ saveLabel || "[% l('Save') %]"}}</button>
         </span>
         <span class="btn-group">
           <button ng-show="!flatEditor.isEnabled" class="btn btn-default" ng-click="showHelp = !showHelp">[% l('Help') %]</button>
         </span>
       </div>
     </div>
+    <div class="flex-cell"> </div>
+    <div class="pad-horiz">
+      <span class="btn-group">
+        <button ng-hide="brandNewRecord || embedded || Record().deleted() == 't'" 
+          class="btn btn-warning" ng-click="deleteRecord()">[% l('Delete') %]</button>
+        <button ng-hide="brandNewRecord || Record().deleted() != 't'" 
+          class="btn btn-default" ng-click="undeleteRecord()">[% l('Undelete') %]</button>
+      </span>
+    </div>
+  </div>
+  
+  <div class="pad-vert pad-right row flex-row flex-end marctypesource" ng-if="bre">
+      <div class="form-group pad-horiz">
+        <div class="input-group">
+            <span class="input-group-addon">
+              [% l('Cataloging Date:') %]
+            </span>
+            <eg-date-input ng-model="cataloging_date"></eg-date-input>
+        </div>
+      </div>
+      <div class="form-group pad-horiz">
+          <span class="btn-group">
+            <button class="btn btn-default" ng-click="updateDate(cataloging_date)"
+              ng-disabled="checkDate(cataloging_date)">
+              [% l('Update Date') %]</button>
+            <button class="btn btn-default" ng-click="cataloging_date = null; updateDate(null)"
+              ng-disabled="!checkDate(cataloging_date)">
+              [% l('Clear Date') %]</button>
+          </span>
+      </div>
   </div>
 
   <div ng-show="flatEditor.isEnabled">
-    <textarea class="marcflateditor" cols="120" rows="40" ng-model="flat_text_marc" ng-blur="saveFlatTextMARC()"></textarea>
+    <div ng-if="saving">
+      <div class="row pad-vert">
+        <div class="col-lg-offset-4 col-lg-4">
+          <progress max="1" style="width:100%"></progress>
+        </div>
+      </div>
+    </div>
+    <textarea ng-hide="saving" class="marcflateditor" cols="120" rows="40" 
+      spellcheck="false" ng-model="flat_text_marc" ng-blur="saveFlatTextMARC()">
+    </textarea>
   </div>
   <div ng-show="!flatEditor.isEnabled">
     <div class="row pad-vert marcffcontainer">
@@ -61,7 +97,7 @@
         <div class="row col-md-12">
             <eg-marc-edit-fixed-field fixed-field="Type" fixed-field-label="[% l('Type') | html %]" record="record"></eg-marc-edit-fixed-field>
             <eg-marc-edit-fixed-field fixed-field="ELvl" fixed-field-label="[% l('ELvl') | html %]" record="record"></eg-marc-edit-fixed-field>
-            <eg-marc-edit-fixed-field fixed-field="Source" fixed-field-label="[% l('Source') | html %]" record="record"></eg-marc-edit-fixed-field>
+            <eg-marc-edit-fixed-field fixed-field="Srce" fixed-field-label="[% l('Srce') | html %]" record="record"></eg-marc-edit-fixed-field>
             <eg-marc-edit-fixed-field fixed-field="Audn" fixed-field-label="[% l('Audn') | html %]" record="record"></eg-marc-edit-fixed-field>
             <eg-marc-edit-fixed-field fixed-field="Ctrl" fixed-field-label="[% l('Ctrl') | html %]" record="record"></eg-marc-edit-fixed-field>
             <eg-marc-edit-fixed-field fixed-field="Lang" fixed-field-label="[% l('Lang') | html %]" record="record"></eg-marc-edit-fixed-field>

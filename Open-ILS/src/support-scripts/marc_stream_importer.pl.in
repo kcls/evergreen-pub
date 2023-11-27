@@ -59,7 +59,6 @@ my $auth_merge_profile_obj;
 my $help        = 0;
 my $osrf_config = '@sysconfdir@/opensrf_core.xml';
 my $username    = '';
-my $password    = '';
 my $workstation = '';
 my $tempdir     = '';
 my $spoolfile   = '';
@@ -97,7 +96,6 @@ GetOptions(
     'osrf-config=s'         => \$osrf_config,
     'verbose'               => \$verbose,
     'username=s'            => \$username,
-    'password=s'            => \$password,
     'workstation=s'         => \$workstation,
     'tempdir=s'             => \$tempdir,
     'spoolfile=s'           => \$spoolfile,
@@ -145,9 +143,6 @@ sub usage {
 
     --username
         Evergreen user account which performs the import actions.
-
-    --password
-        Evergreen user account password
 
     --workstation
         Evergreen workstation
@@ -238,8 +233,8 @@ if ($deprecated_queue) {
 }
 
 
-die "--username, --password, AND --workstation required.  --help for more info.\n" 
-    unless $username and $password and $workstation;
+die "--username --AND --workstation required.  --help for more info.\n" 
+    unless $username and $workstation;
 die "--bib-queue OR --auth-queue required.  --help for more info.\n" 
     unless $bib_queue or $auth_queue;
 
@@ -518,7 +513,7 @@ sub process_file {
 # the authtoken will timeout after the configured inactivity period.
 # When that happens, get a new one.
 sub new_auth_token {
-    oils_login($username, $password, 'staff', $workstation)
+    oils_login_internal($username, 'staff', $workstation)
         or die "Unable to login to Evergreen as user $username";
 }
 

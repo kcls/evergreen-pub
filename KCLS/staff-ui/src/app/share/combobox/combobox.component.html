@@ -1,0 +1,48 @@
+
+<ng-template #defaultDisplayTemplate let-r="result">
+  <span id="{{domId}}-{{r.id}}">{{r.label}}</span>
+</ng-template>
+
+<ng-template #acqfTemplate egIdlClass="acqf" let-r="result">
+  <span id="{{domId}}-{{r.id}}">{{r.fm.code()}} ({{r.fm.year()}}) ({{getOrgShortname(r.fm.org())}})</span>
+</ng-template>
+<ng-template #acplTemplate egIdlClass="acpl" let-r="result">
+  <span id="{{domId}}-{{r.id}}">
+    {{r.fm.name()}} ({{getOrgShortname(r.fm.owning_lib())}})
+  </span>
+</ng-template>
+
+<ng-container *ngIf="readOnly && selected">
+  <ng-container *ngTemplateOutlet="getResultTemplate();context:{result: selected}">
+  </ng-container>
+</ng-container>
+
+<ng-container *ngIf="!readOnly">
+  <div class="d-flex">
+    <input type="text" 
+      class="form-control"
+      [id]="domId"
+      [ngClass]="{
+        'text-dark font-italic font-weight-bold': selected && selected.freetext,
+        'form-control-sm': smallFormControl
+      }"
+      [placeholder]="placeholder"
+      [name]="name"
+      [disabled]="isDisabled"
+      [required]="isRequired"
+      [(ngModel)]="selected" 
+      [ngbTypeahead]="filter"
+      [resultTemplate]="getResultTemplate()"
+      [inputFormatter]="formatDisplayString"
+      (click)="onClick($event)"
+      (blur)="onBlur()"
+      (keyup.enter)="keyUpEnter.emit()"
+      container="body"
+      (selectItem)="selectorChanged($event)"
+      #instance="ngbTypeahead"/>
+    <div *ngIf="!hasNoValues()" class="d-flex flex-column icons" (click)="openMe($event)">
+      <span class="material-icons">keyboard_arrow_up</span>
+      <span class="material-icons">keyboard_arrow_down</span>
+    </div>
+  </div>
+</ng-container>

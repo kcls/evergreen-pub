@@ -141,7 +141,11 @@ angular.module('egCoreMod')
                     $scope.setColorMode();
                     
                 }
+
+                $scope.host = $window.location.hostname;
+
                 $scope.init();
+
                 egCore.startup.go().then(
                     function() {
                         if (egCore.auth.user()) {

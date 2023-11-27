@@ -431,7 +431,7 @@ patron.items.prototype = {
                 if (params.due_date) p.due_date = params.due_date;
                 var r = circ.util.renew_via_barcode( p );
                 try {
-                    if ( (typeof r[0].ilsevent != 'undefined' && r[0].ilsevent == 0) ) {
+                    if ( (typeof r[0].ilsevent != 'undefined' && r[0].ilsevent == 0 && r[0].payload.circ) ) {
                         l.setAttribute('value', $("patronStrings").getFormattedString('staff.patron.items.items_renew.renewed',[bc]));
                         obj.list_circ_map[ circ_id ].row.my.circ = r[0].payload.circ;
                         obj.list_circ_map[ circ_id ].row.my.acp = r[0].payload.copy;
@@ -576,19 +576,20 @@ patron.items.prototype = {
                     'disallow_future_dates' : true,
                     'disallow_past_dates' : false,
                     'disallow_today' : false,
-                    'time_readonly' : false
+                    'time_readonly' : false,
+                    'claims_returned_ops' : true
                 }
             );
 
-
             if (my_xulG.complete) {
+                var radio1On = my_xulG.radio1;
                 var barcodes = util.functional.map_list(retrieve_ids,function(o){return o.barcode;});
                 var do_not_move_these = {};
                 var force_reload = {};
                 for (var i = 0; i < barcodes.length; i++) {
                     var robj = obj.network.simple_request(
                         'MARK_ITEM_CLAIM_RETURNED', 
-                        [ ses(), { barcode: barcodes[i], backdate: my_xulG.timestamp } ],
+                        [ ses(), { barcode: barcodes[i], backdate: my_xulG.timestamp,  use_due_date: radio1On} ],
                         null,
                         {
                             'title' : $("patronStrings").getString('staff.patron.items.set_claim_returned_failure'),

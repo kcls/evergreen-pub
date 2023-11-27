@@ -3,7 +3,7 @@
     <button class="btn btn-default btn-sm" ng-click="page = 0">
          [% l('Start') %]
     </button>
-    <button class="btn btn-default btn-sm" ng-class="{disabled : !page}" ng-click="page = page - 1">
+    <button class="btn btn-default btn-sm" ng-click="page = page - 1">
          [% l('Previous') %]
     </button>
     <button class="btn btn-default btn-sm" ng-click="page = page + 1">
@@ -53,7 +53,7 @@
     <button class="btn btn-default btn-sm" ng-click="page = 0">
          [% l('Start') %]
     </button>
-    <button class="btn btn-default btn-sm" ng-class="{disabled : !page}" ng-click="page = page - 1">
+    <button class="btn btn-default btn-sm" ng-click="page = page - 1">
          [% l('Previous') %]
     </button>
     <button class="btn btn-default btn-sm" ng-click="page = page + 1">

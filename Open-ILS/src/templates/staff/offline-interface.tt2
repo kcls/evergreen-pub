@@ -20,7 +20,7 @@
       <div class="input-group-addon">
         <eg-org-selector sticky-setting="eg.org.offline_location" selected="org"></eg-org-selector>
       </div>
-      <div class="input-group-addon">
+      <div ng-if="false" class="input-group-addon">
         <button
           class="btn btn-primary"
           ng-disabled="all_xact.length == 0 || active_tab == 'register'"
@@ -53,7 +53,37 @@
   </div>
 </div>
 
-<div class="row col-md-offset-3 col-md-6 pad-vert">
+<div class="row" style="border: 1px solid #888; border-radius: 5px; margin-top:15px;margin-bottom:5px">
+  <div class="col-lg-12">
+
+    <h5>A new app is now being made available to all staff that replaces 
+        many of the Offline Circulation functions that were available in 
+        the Evergreen Browser Client.
+    </h5>
+
+    <p>
+      Please be sure to visit the the 
+      <a target="_blank"
+        href="https://kclsorg.sharepoint.com/sites/Evergreen/SitePages/Home.aspx">
+        Evergreen Sharepoint site
+      </a>
+      for more information. Guides have been added to help you get started 
+      using the new Offline Standalone App. 
+      <a target="_blank"
+        href="https://kclsorg.sharepoint.com/sites/Evergreen/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FEvergreen%2FShared%20Documents%2FBrowser%2FOffline%20Checkout%20%2D%20Standalone%2Epdf&parent=%2Fsites%2FEvergreen%2FShared%20Documents%2FBrowser&p=true&ga=1">
+      Offline Checkout – Standalone
+      </a>, covers using the app, 
+      <a target="_blank"
+        href="https://kclsorg.sharepoint.com/sites/Evergreen/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FEvergreen%2FShared%20Documents%2FBrowser%2FProcessing%20Offline%20Checkouts%20%2D%20Standalone%2Epdf&parent=%2Fsites%2FEvergreen%2FShared%20Documents%2FBrowser&p=true&ga=1">
+      Processing Offline Checkouts – Standalone
+      </a>, explains the new process to upload and enter offline data once 
+      internet access is restored. You may want to save a copy of this 
+      documentation to the workstation when you install the new app.
+    </p>
+  </div>
+</div>
+
+<div ng-if="false" class="row col-md-offset-3 col-md-6 pad-vert">
   <div ng-show="logged_in && active_tab != 'session'" class="alert alert-danger">
     <h2>[% l('Warning') %]</h2>
     [% l('You are about to enter offline mode. If you proceed, you will be logged out.') %]
@@ -245,7 +275,8 @@
           </uib-tabset>
         </div>
       </uib-tab>
-      <uib-tab index="'checkout'" heading="[% l('Checkout') %]">
+
+      <uib-tab ng-if="false" index="'checkout'" heading="[% l('Checkout') %]">
 
         <div class="row">
 
@@ -261,11 +292,14 @@
               </div>
               <div class="col-md-3">
                 <select class="form-control" ng-model="shared.due_date_offset" ng-change="resetDueDate()">
-                  <option value="">[% l('No Offset') %]</option>
-                  <option value="3">[% l('Today + 3 days') %]</option>
+                  <option value="">[% l('Or choose one of these') %]</option>
+                  <option value="0">[% l('Today') %]</option>
                   <option value="7">[% l('Today + 7 days') %]</option>
                   <option value="14">[% l('Today + 14 days') %]</option>
-                  <option value="30">[% l('Today + 30 days') %]</option>
+                  <option value="21">[% l('Today + 21 days') %]</option>
+                  <option value="28">[% l('Today + 28 days') %]</option>
+                  <option value="42">[% l('Today + 42 days') %]</option>
+                  <option value="365">[% l('Today + 1 year') %]</option>
                 </select>
               </div>
             </div>
@@ -371,7 +405,7 @@
         </div>
 
       </uib-tab>
-      <uib-tab index="'renew'" heading="[% l('Renew') %]">
+      <uib-tab ng-if="false" index="'renew'" heading="[% l('Renew') %]">
 
         <div class="row">
 
@@ -456,7 +490,7 @@
         </div>
 
       </uib-tab>
-      <uib-tab index="'in_house_use'" heading="[% l('In-house Use') %]">
+      <uib-tab ng-if="false" index="'in_house_use'" heading="[% l('In-house Use') %]">
 
         <div class="row">
 
@@ -521,7 +555,7 @@
         </div>
 
       </uib-tab>
-      <uib-tab index="'checkin'" heading="[% l('Checkin') %]">
+      <uib-tab ng-if="false" index="'checkin'" heading="[% l('Checkin') %]">
 
         <div class="row">
 
@@ -587,7 +621,7 @@
         </div>
 
       </uib-tab>
-      <uib-tab index="'register'" heading="[% l('Register Patron') %]">
+      <uib-tab ng-if="false" index="'register'" heading="[% l('Register Patron') %]">
         <div ng-controller="PatronRegCtrl">
           <div>[% INCLUDE 'staff/circ/patron/t_edit.tt2' %]</div>
         </div>

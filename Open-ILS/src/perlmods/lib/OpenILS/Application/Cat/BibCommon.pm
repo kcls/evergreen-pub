@@ -89,7 +89,7 @@ sub biblio_record_replace_marc  {
 }
 
 sub biblio_record_xml_import {
-    my($class, $e, $xml, $source, $auto_tcn, $override, $strip_grps) = @_;
+    my($class, $e, $xml, $source, $auto_tcn, $override, $strip_grps, $set_cat_date) = @_;
 
     $override = { all => 1 } if($override && !ref $override);
     $override = { all => 0 } if(!ref $override);
@@ -125,6 +125,7 @@ sub biblio_record_xml_import {
     $record->create_date('now');
     $record->edit_date('now');
     $record->marc($marc);
+    $record->cataloging_date('now') if $set_cat_date;
 
     my $inline_ingest = $e->retrieve_config_global_flag('ingest.queued.biblio.insert.marc_edit_inline');
     $inline_ingest = ($inline_ingest and $U->is_true($inline_ingest->enabled));

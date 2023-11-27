@@ -360,6 +360,8 @@ Open-ILS/web/js/ui/default/staff/build/
 Open-ILS/web/js/ui/default/staff/node_modules/
 Open-ILS/web/js/ui/default/staff/bower_components/
 Open-ILS/web/js/ui/default/common/build/
+KCLS/test-scripts/sip/pysip2-client.ini
+Open-ILS/web/js/ui/default/common/build/
 Open-ILS/web/eg2/
 Open-ILS/web/opac/deps/node_modules/
 
@@ -375,3 +377,5 @@ eg_restart_go
 eg_rebuild_angular_screenoutput
 eg_rebuild_angular
 watch.LOCK
+Open-ILS/web/patron-ui/
+KCLS/admin-scripts/ansible/playbook.retry

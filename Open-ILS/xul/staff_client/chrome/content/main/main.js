@@ -391,9 +391,15 @@ function main_init() {
             } catch(E) {
                 G.data.adv_pane = null;
             }
+            try {
+                G.data.browse_sort_default = G.pref.getCharPref('open-ils.' + url + '.browse_sort_default');
+            } catch(E) {
+                G.data.browse_sort_default = null;
+            }
             G.data.stash('search_lib');
             G.data.stash('pref_lib');
             G.data.stash('adv_pane');
+            G.data.stash('browse_sort_default');        
 
             if (! url.match( '^(http|https)://' ) ) { url = 'http://' + url; }
 
@@ -818,6 +824,44 @@ function auto_login(loginInfo) {
         setTimeout(function() { G.auth.login(); }, 1000);
     }
     return should_test_server;
+}
+    
+function tileWindows(urlList, isVertical, winCount, winIndex, aContinue) {
+    if(aContinue == true && tempWindow.closed == false) {
+        //check if window finished openning
+        if(tempWindow.g == undefined || tempWindow.g.menu == undefined) {
+            setTimeout(
+                function() {
+                    tileWindows(urlList, isVertical, winCount, winIndex, true);
+                }, 500);
+            return null;
+        }
+        tempWindow = null;
+    }
+    var scrWidth = window.screen.width;
+    var scrHeight = window.screen.height;
+    var placement = '';
+    if (urlList.length > 0) {
+        var url = urlList.shift();
+        //stack windows vertically or horizontally
+        if (isVertical) {
+            var winWidth = scrWidth / winCount;
+            placement = 'screenX=' + winWidth * (winIndex) + ',width=' + winWidth+ ',height=' + scrHeight;
+        } else {
+            var winHeight = scrHeight / winCount;
+            placement = 'screenY=' + winHeight * (winIndex) + ',width=' + scrWidth+ ',height=' + winHeight
+        }
+        tempWindow = xulG.window.open(urls.XUL_MENU_FRAME
+            + '?server=' + window.escape(G.data.server) + '&firstURL=' + window.escape(url),
+            '_blank','chrome,resizable,sizemode="normal",' + placement);
+        tempWindow.xulG = xulG;
+        winIndex++;
+        setTimeout(
+            function() {
+                tileWindows(urlList, isVertical, winCount, winIndex, true);
+            }, 500);
+
+    }
 }
 
 dump('exiting main/main.js\n');

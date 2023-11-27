@@ -1,4 +1,4 @@
-dump('entering OpenILS/data.js\n');
+console.log('entering OpenILS/data.js\n');
 
 if (typeof OpenILS == 'undefined') OpenILS = {};
 OpenILS.data = function () {
@@ -214,7 +214,7 @@ OpenILS.data.prototype = {
         try {
             var data_cache = Components.classes["@open-ils.org/openils_data_cache;1"].getService();
             for (var i in data_cache.wrappedJSObject.data) {
-                dump('_debug_stash ' + i + '\n');
+                console.log('_debug_stash ' + i + '\n');
             }
         } catch(E) {
             this.error.sdump('D_ERROR','Error in OpenILS.data._debug_stash(): ' + js2JSON(E) );
@@ -515,8 +515,38 @@ OpenILS.data.prototype = {
         }
         file.close();
 
-        obj.print_list_defaults();
-        obj.data_progress('Default print templates set. ');
+        JSAN.use('util.file'); var file = new util.file('yesterdays_search_template');
+        if (file._file.exists()) {
+            try {
+                var x = file.get_content();
+                if (x && x != "null") {
+                    obj.current_search_template = JSON.parse(x);
+                    obj.stash('current_search_template');
+                    obj.data_progress('Saved current search template retrieved from file. ');
+                }
+            } catch(E) {
+                alert(E);
+            }
+        }
+        file.close();
+
+        JSAN.use('util.file'); var file = new util.file('search_templates');
+        if (file._file.exists()) {
+            try {
+                var x = file.get_content();
+                if (x) {
+                    obj.search_templates = JSON.parse(x);
+                    obj.stash('search_templates');
+                    obj.data_progress('Saved search templates retrieved from file. ');
+                }
+            } catch(E) {
+                alert(E);
+            }
+        }
+        file.close();
+
+
+        obj.print_list_defaults(); obj.data_progress('Default print templates set. ');
         obj.load_saved_print_templates();
         obj.fetch_print_strategy();
         JSAN.use('util.print'); (new util.print()).GetPrintSettings();
@@ -1131,4 +1161,4 @@ OpenILS.data.prototype = {
     }
 }
 
-dump('exiting OpenILS/data.js\n');
+console.log('exiting OpenILS/data.js\n');

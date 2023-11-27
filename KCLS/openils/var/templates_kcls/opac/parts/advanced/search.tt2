@@ -1,0 +1,186 @@
+[% 
+    PROCESS "opac/parts/misc_util.tt2";
+    PROCESS get_library;
+%]
+<form id="adv_search_form" action="[% ctx.opac_root %]/results" method="get">
+	<input type="hidden" name="defaultsort" value=[% CGI.param("defaultsort") || CGI.param("sort") %] />
+    <table id='adv_global_search' class='data_grid data_grid_center' width='100%'>
+        <tr style='border-bottom: none;'>
+            <!-- Contains the user-addable(?) rows to define search class, containment and text -->
+            <td valign='top' class='opac-auto-012'>
+                <table width='100%' id='adv_global_input_table'>
+                    <thead>
+                        <tr>
+                            <td>
+                                <div style="width:100%;" class="header_middle">
+                                    [% l("Search Input") %]
+                                </div>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody id='adv_global_tbody'>
+                        [% INCLUDE "opac/parts/advanced/global_row.tt2" %]
+                        <!-- add a new row -->
+                        <tr id='adv_global_addrow'>
+                            <td align='left' style="padding-top:7px;">
+                                <a href="javascript:;" id="myopac_new_global_row" onclick='addSearchRow();'>[% l('Add Search Row') %]</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align='top'>
+              <div style="width:100%;" class="header_middle">[% l('Search Filters') %]</div>
+              <table cellpadding='10' cellspacing='0' border='0' id='filterTable'>
+    [%
+        in_row = 0;
+        FOR adv_chunk IN search.adv_config;
+            NEXT IF adv_chunk.adv_hide;
+            IF in_row == 0;
+                in_row = 1; %]
+                <tr>
+    [%
+            END; %]
+                <td valign='top'>
+                    <strong>[% adv_chunk.adv_label %]</strong><br />
+    [%
+            IF adv_chunk.adv_special;
+                SWITCH adv_chunk.adv_special;
+                    CASE "lib_selector";
+                        PROCESS "opac/parts/org_selector.tt2";
+                            INCLUDE build_org_selector show_loc_groups=1 id='org_selector'; %]
+                                <div style="position:relative;top:7px;">
+                                    <input type='checkbox' name="modifier"
+                                        value="available"[% CGI.param('modifier').grep('available').size ? ' checked="checked"' : '' %]
+                                        id='opac.result.limit2avail' />
+                                    <label id="modifier" style="position:relative;top:-2px;"
+                                        for='opac.result.limit2avail'>
+                                        [% l("Limit to Available") %]</label>
+                                </div>
+    [%
+                    CASE "pub_year"; %]
+                                <select id='adv_global_pub_date_type' name='pubdate' onchange='
+                                    if(this.selectedIndex == 3)
+                                        unHideMe($("adv_global_pub_date_2_span"));
+                                    else
+                                        hideMe($("adv_global_pub_date_2_span"));'>
+                                        [%  FOR opt IN [
+                                                {"code" => "is", "label" => l("Is")},
+                                                {"code" => "before", "label" => l("Before")},
+                                                {"code" => "after", "label" => l("After")},
+                                                {"code" => "between", "label" => l("Between")} ] %]
+                                            <option value="[% opt.code %]"[% CGI.param('pubdate') == opt.code ? ' selected="selected"' : '' %]>[% opt.label | html %]</option>
+                                        [%  END %]
+                                </select>    
+                                <div style='margin-top:5px;'>
+                                    <input name='date1' id='adv_global_pub_date_1_input' type='text' size='4' maxlength='4' value="[% CGI.param('date1') | html %]" />
+                                    <span id='adv_global_pub_date_2_span' class='[% CGI.param("pubdate") == "between" ? "" : "hide_me" %]'>
+                                       [% l("and") %] <input name='date2' id='adv_global_pub_date_2_input' type='text' size='4' maxlength='4' value="[% CGI.param('date2') | html %]" />
+                                    </span>
+                                </div>
+    [%
+                    CASE "sort_selector";
+                        INCLUDE "opac/parts/filtersort.tt2"
+                            class='results_header_sel' id='opac.result.sort';
+                END;
+            ELSIF adv_chunk.adv_attr;
+                INCLUDE "opac/parts/coded_value_selector.tt2"
+                    attr=adv_chunk.adv_attr multiple="multiple" size="4";
+            ELSIF adv_chunk.adv_filter;
+                INCLUDE "opac/parts/filter_group_selector.tt2"
+                    filter_group=adv_chunk.adv_filter multiple="multiple" size="4";
+            END; %]
+                </td>
+    [%
+            IF adv_chunk.adv_break;
+                in_row = 0; %]
+                </tr>
+    [%
+            END;
+        END; %]
+                </table>
+            </td>
+            [% IF ctx.is_staff && search.allow_templates == 'true' %]
+                <td valign='top' style="padding-left:50px;">
+                    <div style="width:100%;" class="header_middle">[% l('Search Templates') %]</div>
+                    <br/>
+                    <strong>[% l('Select Template') %]</strong>
+                    <br/>
+                    <select id="templateList" onClick="" onChange="selectSearchTemplateOrClearAll(this.value);">
+                    </select>
+                    <br><br><br>
+                    <strong>[% l('Results View') %]</strong>
+                    <br>
+                    <select id="resultViewSel" name="detail_record_view" >
+                        <option value="0" selected="selected">Simple View</option>
+                        <option value="1">Detail View</option>
+                    </select>
+                    [% IF ctx.is_browser_staff %]
+                    <br><br>
+                    <strong>[% l('Template Name') %]</strong>
+                    <br>
+                    <input id="nameInput" type="text">
+                    <button type="button" style="padding-left:5px;" onClick="templateActionSave();">[% l('Save Template') %]</button>
+                    <br><br>
+                    <button type="button" onClick="templateActionDelete();">[% l('Delete Template') %]</button>
+                    [% END %]
+                </td>
+            [% END %]
+        </tr>
+
+        <tr class='border_4_2'>
+            <td align="left" colspan='2'>
+                <input type="hidden" name="_adv" value="1" />
+                    <span>
+                        <input type="image" src="[% ctx.media_prefix %]/images/search_btn.gif"
+                            alt="[% l('Search') %]" class='pointer' />
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <img id='search-submit-spinner' src='/opac/images/progressbar_green.gif' style='height:16px;width:16px;' class='hidden' alt=''/>
+                    </span>
+
+                    [% IF ctx.is_staff && search.allow_templates == 'true' %]
+                    <a onclick="clearAll()"
+                    [% ELSE %]
+                    <a href="[% mkurl(ctx.opac_root _ '/advanced', {$loc_name => loc_value}, 1) %]"
+                    [% END %]
+                        class="pointer opac-button">[% l('Clear Form') %]</a>
+                  </td>
+              </tr>
+    </table>
+</form>
+
+[% IF ctx.is_staff && search.allow_templates == 'true' %]
+[% IF ctx.is_browser_staff %]
+  <script type="text/javascript" 
+    src="/js/ui/kcls/conify/global/config/search_templates.browser.js"></script>
+[% ELSE %]
+  <script type="text/javascript" 
+    src="/js/ui/kcls/conify/global/config/search_templates.js"></script>
+[% END %]
+<script type="text/javascript">
+    var pubdateSel = $("adv_global_pub_date_type");
+    var orgSel = document.getElementById("org_selector");
+    var sortBySel = document.getElementById("opac.result.sort");
+    
+	/*Part of a hack to keep the Sort Results order selector persistent across multiple searches in single tab 
+		 see filtersort.tt2 and simple.js*/
+    if (window.name != "browser_browser") {
+		(document.getElementById("opac.result.sort")).selectedIndex = window.name;
+	}
+    var resultViewSel = document.getElementById("resultViewSel");
+    var modCheck = document.getElementById("opac.result.limit2avail");
+    var templateSel = document.getElementById("templateList");
+    var filterTable = document.getElementById("filterTable");
+    var searchFilters = filterTable.getElementsByTagName("select");
+    getSearchStash();
+
+    populateTemplateOptions(templateList);
+    if (template)
+    {
+        selectOptionValue(templateSel, template.name);
+        populateSearchOptions(template);
+    }
+</script>
+[% END %]

@@ -193,6 +193,7 @@ patron.display.prototype = {
                             removeCSSClass(document.documentElement,'PATRON_NET_ACCESS_1');
                             removeCSSClass(document.documentElement,'PATRON_NET_ACCESS_2');
                             removeCSSClass(document.documentElement,'PATRON_NET_ACCESS_3');
+                            removeCSSClass(document.documentElement,'PATRON_PC_ONLY');
                         }
                     ],
                     'cmd_patron_refresh' : [
@@ -335,6 +336,7 @@ patron.display.prototype = {
                             );
                         }
                     ],
+                    /* HTML version
                     'cmd_patron_info_triggered_events' : [
                         ['command'],
                         function(ev) {
@@ -345,6 +347,19 @@ patron.display.prototype = {
                                     'url': urls.EG_TRIGGER_EVENTS + "?patron_id=" + obj.patron.id(),
                                     'show_print_button': false,
                                     'show_nav_buttons': false
+                                }
+                            );
+                        }
+                    ],
+                    */
+                    'cmd_patron_info_triggered_events' : [
+                        ['command'],
+                        function(ev) {
+                            obj.right_deck.set_iframe(
+                                urls.XUL_TRIGGER_EVENTS,
+                                {},
+                                {
+                                    'patron_id' : obj.patron.id()
                                 }
                             );
                         }
@@ -1052,7 +1067,7 @@ patron.display.prototype = {
                     if (msg != obj.old_msg) {
                         //obj.error.yns_alert(msg,'Alert Message','OK',null,null,'Check here to confirm this message.');
                         document.documentElement.firstChild.focus();
-                        var data_url = window.encodeURIComponent("<img src='" + xulG.url_prefix('/xul/server/skin/media/images/stop_sign.png') + "'/>" + '<h1>'
+                        var data_url = window.encodeURIComponent("<img src='" + xulG.url_prefix('/xul/server/skin/media/images/stop_sign.png') + "'/>" + "<h1 style='margin-top:-3'>"
                             + $("patronStrings").getString('staff.patron.display.init.network_request.window_title') + '</h1><blockquote><p>' + msg + '</p>\r\n\r\n<pre>'
                             + $("patronStrings").getString('staff.patron.display.init.network_request.window_message') + '</pre></blockquote>');
                         obj.right_deck.set_iframe('data:text/html;charset=UTF-8,'+data_url,{},{});

@@ -1,0 +1,71 @@
+
+<ng-template #dialogContent>
+  <div class="modal-header bg-info">
+    <h4 class="modal-title">ADA Request</h4>
+    <button type="button" class="close"
+      i18n-aria-label aria-label="Close" (click)="close()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body form-validated">
+    <div class="row">
+      <div class="col-lg-4" i18n>Create Time:</div>
+      <div class="col-lg-8" i18n>{{request.create_time() | date:'short'}}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4" i18n>Patron Name:</div>
+      <div class="col-lg-8" i18n>
+        {{user().family_name()}},
+        {{user().first_given_name()}},
+        {{user().second_given_name()}},
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4" i18n>Patron Barcode:</div>
+      <div class="col-lg-8" i18n>{{user().card().barcode()}}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4" i18n>Patron Phone:</div>
+      <div class="col-lg-8" i18n>{{request.phone()}}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4" i18n>Patron Email:</div>
+      <div class="col-lg-8" i18n>{{request.email()}}</div>
+    </div>
+    <div class="row mt-2" *ngIf="user().juvenile() == 't'">
+      <div class="col-lg-4" i18n>Parent / Guardian:</div>
+      <div class="col-lg-8" i18n>{{request.guardian()}}</div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4" i18n>Patron Address:</div>
+      <div class="col-lg-8" i18n>
+        <div>{{request.street1()}} {{request.street2()}}</div>
+        <div>{{request.city()}}, {{request.post_code()}}</div>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-lg-4" i18n>Patron Rationale:</div>
+      <div class="col-lg-8" i18n>{{request.rationale()}}</div>
+    </div>
+
+    <hr class="mt-2 mb-2"/>
+
+    <div class="form-group">
+      <label for="staff-note-input" i18n>Staff Note:</label>
+      <textarea class="form-control" id="staff-note-input" 
+        (ngModelChange)="request.staff_note($event)" [ngModel]="request.staff_note()">
+      </textarea>
+    </div>
+
+    <hr class="mt-2 mb-2"/>
+
+    <div class="d-flex">
+      <div class="flex-1"></div>
+      <button class="btn btn-success" (click)="approveRequest()"
+        i18n>Approve Request</button>
+      <button class="btn btn-danger ml-2" (click)="rejectRequest()"
+        i18n>Reject Request</button>
+      <button class="btn btn-warning ml-2" (click)="close()" i18n>Cancel</button>
+    </div>
+  </div>
+</ng-template>

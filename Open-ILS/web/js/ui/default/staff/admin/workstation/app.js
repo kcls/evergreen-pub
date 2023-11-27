@@ -176,8 +176,14 @@ function($scope , $window , $location , egCore , egConfirmDialog) {
         $scope.disable_sound = val;
     });
 
+    /*
     egCore.hatch.getItem('eg.orgselect.show_combined_names').then(function(val) {
         $scope.orgselect_combo_names = val;
+    });
+    */
+
+    egCore.hatch.getItem('eg.orgselect.show_short_names').then(function(val) {
+        $scope.orgselect_short_names = val;
     });
 
     egCore.hatch.getItem('eg.search.search_lib').then(function(val) {
@@ -204,6 +210,16 @@ function($scope , $window , $location , egCore , egConfirmDialog) {
         }
     });
 
+    $scope.results_sort = 'pubdate';
+    egCore.hatch.getItem('eg.search.browse_sort_default').then(function(val) {
+        $scope.results_sort = val;
+    });
+    $scope.$watch('results_sort', function(newVal, oldVal) {
+        if (typeof newVal != 'undefined' && newVal != oldVal) {
+            egCore.hatch.setItem('eg.search.browse_sort_default', newVal);
+        }
+    });
+
     $scope.apply_sound = function() {
         if ($scope.disable_sound) {
             egCore.hatch.setItem('eg.audio.disable', true);
@@ -212,11 +228,11 @@ function($scope , $window , $location , egCore , egConfirmDialog) {
         }
     }
 
-    $scope.apply_orgselect_combob_names = function() {
-        if ($scope.orgselect_combo_names) {
-            egCore.hatch.setItem('eg.orgselect.show_combined_names', true);
+    $scope.apply_orgselect_short_names = function() {
+        if ($scope.orgselect_short_names) {
+            egCore.hatch.setItem('eg.orgselect.show_short_names', true);
         } else {
-            egCore.hatch.removeItem('eg.orgselect.show_combined_names');
+            egCore.hatch.removeItem('eg.orgselect.show_short_names');
         }
     }
 
@@ -234,6 +250,11 @@ function($scope , egCore) {
     $scope.setContext = function(ctx) { 
         $scope.context = ctx; 
         $scope.isTestView = false;
+
+        let conf = $scope.printConfig[ctx];
+        if (conf && conf.printer) {
+            loadPrinterOptions(conf.printer);
+        }
     }
     $scope.setContext('default');
 

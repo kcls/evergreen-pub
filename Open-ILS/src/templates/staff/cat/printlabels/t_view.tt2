@@ -13,7 +13,9 @@
         [% l('Print Item Labels') %]
     </div>
 </div>
-<div class="row">
+
+<!-- KCLS JBAS-2494 -->
+<div class="row hidden">
     <div class="col-md-3">
        <div class="input-group">
             <span class="input-group-addon">[% l('Template') %]</span>
@@ -61,7 +63,9 @@
     </div>
 </div>
 
+<!--
 <hr/>
+-->
 
 <div class="row">
     <div class="col-md-5">
@@ -258,13 +262,21 @@ label. Use pocket label left margin to identify how much space to provide betwee
             </div>
         </div>
     </div>
-    <div class="col-md-7">
+    <div class="col-md-5">
         <h3>
             [% l('Label Preview') %]
         </h3>
         <div eg-print-template-output
           content="print.template_content"
           context="preview_scope"></div>
+    </div>
+
+    <div class="col-md-2">
+      <div style="margin-top:200px">
+        <button class="btn btn-success" style="font-size: 400%;padding:20px" ng-click="print_labels()">
+          [% l('Print') %]
+        </button>
+      </div>
     </div>
     <!-- col -->
 </div>

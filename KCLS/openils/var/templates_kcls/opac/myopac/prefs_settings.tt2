@@ -1,0 +1,142 @@
+	[%  PROCESS "opac/parts/header.tt2";
+    PROCESS "opac/parts/org_selector.tt2";
+    WRAPPER "opac/parts/myopac/prefs_base.tt2";
+    myopac_page = "prefs_notify";
+    prefs_page = 'settings' %]
+
+
+    <form method='POST'>
+
+        [% IF !ctx.confirm_history_delete %]
+        <div style="float:right;width:65px;">
+            <div style="position:absolute">
+                <div style="position:relative;top:75px;">
+                    <input type="image" alt="[% l('Save') %]" src="[% ctx.media_prefix %]/images/save-btn.png"/>
+                </div>
+            </div>
+        </div>
+        [% END %]
+
+        <table class="full-width data_grid" id="acct_search_main">
+            <tbody>
+
+                [% IF ctx.confirm_history_delete %]
+                <tr><td colspan='2'>
+                  <div id='clear-history-confirm' class='renew-summary'>
+                  [% l('Disabling checkout or holds history will permanently remove all items from your history.') %]
+                  <br/>
+                  [% l('Are you sure you wish to continue?') %]
+                  </div>
+                  <a href="[% mkurl() %]">[% l('Cancel') %]</a>
+                  <input type='hidden' name='history_delete_confirmed' value='1'/>
+                  <input type="submit" value="[% l('Confirm') %]" class="opac-button"/>
+                </td></tr>
+                [% ELSIF ctx.updated_user_settings %]
+                <tr><td colspan='2'>
+                    <div class='renew-summary'>
+                        [% l('Account Successfully Updated') %]
+                    </div>
+                </td></tr>
+                [% END %]
+
+                <tr>
+                    <td width='20%'>[% l("Search hits per page") %]</td>
+                    <td>
+                        <div style="position:absolute">
+                            <div style="position:relative;top:0px;left:55px;">
+                                <a href="#"><img alt="[% l('Search Hits Help') %]" 
+                                    src="[% ctx.media_prefix %]/images/question-mark.png" /></a>
+                            </div>
+                        </div>
+                        [% setting = 'opac.hits_per_page' %]
+                        <select name='[% setting %]'>
+                            [%  FOR val IN [5, 8, 10, 15, 20, 25, 50] %]
+                                <option value='[% val | uri %]' 
+                                    [% IF ctx.user_setting_map.$setting == val %]
+                                        selected='selected'[% END %]>[% val | html %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+                </tr>
+		<!--	the following commented code is for KMAIN-153
+                <tr >
+                    <td width='20%'>[% l("preferred search location") %]</td>
+                    <td>
+                        [%- setting = 'opac.default_search_location';
+                            thang = ctx.user.home_ou.id;
+                            IF ctx.user_setting_map.$setting;
+                                thang = ctx.user_setting_map.$setting;
+                            END;
+                            INCLUDE build_org_selector name=setting value=thang;
+                        %]
+                    </td>
+                </tr>
+		-->
+                <tr>
+                    <td width='20%'>[% l("Preferred pickup location") %]</td>
+                    <td>
+                        [%- setting = 'opac.default_pickup_location';
+                            thang = ctx.user.home_ou.id;
+                            IF ctx.user_setting_map.$setting;
+                                thang = ctx.user_setting_map.$setting;
+                            END;
+                            INCLUDE build_org_selector name=setting value=thang can_have_vols_only=1;
+                        %]
+                    </td>
+                </tr>
+                <tr>
+                    <td>[% l('Keep history of checked out items?') %]</td>
+                    <td>
+                        [% setting = 'history.circ.retention_start' %]
+                        <input name='[% setting %]' type="checkbox"
+                            [% IF ctx.user_setting_map.$setting 
+                              AND !ctx.clear_circ_history %] checked='checked' [% END %]/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>[% l('Keep history of holds?') %]</td>
+                    <td>
+                        [% setting = 'history.hold.retention_start' %]
+                        <input name='[% setting %]' type="checkbox"
+                            [% IF ctx.user_setting_map.$setting
+                              AND !ctx.clear_hold_history %] checked='checked' [% END %]/>
+                    </td>
+                </tr>
+
+                <!--
+                <tr>
+                    <td>[% l("Default Font Size") %]</td>
+                    <td>
+                        <select id='prefs_def_font'>
+                            <option value='regular'>[% l("Regular Font") %]</option>
+                            <option value='large'>[% l("Large Font") %]</option>
+                        </select>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>[% l("Default Search location") %]</td>
+                    <td>
+                        <div style='margin-bottom: 5px;'>
+                            <input type='checkbox' id='myopac_pref_home_lib' />
+                            [% l("Search my home library by default.") %]
+                        </div>
+                        <select id='prefs_def_location'></select>
+                    </td>
+                </tr>
+				
+                <tr>
+                    <td>[% l("Default Search Range") %]</td>
+                    <td>
+                        <select>
+                            [%# TODO %]
+                        </select>
+                    </td>
+                </tr>
+                -->
+
+            </tbody>
+        </table>
+    </form>
+    [% INCLUDE "opac/parts/myopac/prefs_hints.tt2" %]
+[% END %]

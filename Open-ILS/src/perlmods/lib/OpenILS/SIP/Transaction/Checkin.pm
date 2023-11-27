@@ -65,8 +65,8 @@ sub load_override_events {
 
 my %org_sn_cache;
 sub do_checkin {
-    my $self = shift;
-    my ($sip_handler, $inst_id, $trans_date, $return_date, $current_loc, $item_props) = @_; # most unused
+    my ($self, $sip_handler, $inst_id, $trans_date, 
+        $return_date, $current_loc, $item_props, $cancel) = @_;
 
     unless($self->{item}) {
         $self->ok(0);
@@ -81,6 +81,7 @@ sub do_checkin {
 
     my $args = {barcode => $self->{item}->id};
     $args->{hold_as_transit} = 1 if $hold_as_transit;
+    $args->{revert_hold_fulfillment} = 1 if $cancel;
 
     if($return_date) {
         # SIP date format is YYYYMMDD.  Translate to ISO8601
@@ -101,7 +102,9 @@ sub do_checkin {
         $args->{circ_lib} = $phys_location = $org_id if defined $org_id;
     }
 
-    my $override = 0;
+    my $override_all = OpenILS::SIP->get_option_value('checkin_override_all') || '';
+    my $override = $override_all eq 'true';
+
     my ($resp, $txt, $code);
 
     while(1) {
@@ -139,6 +142,7 @@ sub do_checkin {
     $resp->{org} &&= OpenILS::SIP::shortname_from_id($resp->{org}); # Convert id to shortname
 
     $self->item->destination_loc($resp->{org}) if $resp->{org};
+
 
     if ($txt eq 'ROUTE_ITEM') {
         # Note, this alert_type will be overridden below if this is a hold transit
@@ -210,7 +214,28 @@ sub do_checkin {
 
     $self->alert(1) if defined $self->alert_type;  # alert_type could be "00", hypothetically
 
-    if ( $circ ) {
+    if ($txt eq 'LOSTPAID_CHECKIN') {
+        # The if($circ) logic below means even failed checkins can
+        # return a checkin success message.  Presumably, this is not a
+        # problem for other scenarios or we would have heard about it
+        # by now, but it's def. not OK with LOSTPAID_CHECKIN.  Adding a
+        # check specifically for this event so any quirks related to the
+        # existing logic remain unchanged.
+        syslog('LOG_INFO', "OILS: Checkin not OK (event=$txt) for " . $args->{barcode});
+
+        $self->ok(0);
+        $self->alert(1);
+        $self->alert_type('00') unless $self->alert_type;
+
+    } elsif ( $circ ) {
+
+        if ($txt ne 'SUCCESS' && $txt ne 'NO_CHANGE' && $txt ne 'ROUTE_ITEM') {
+            syslog('LOG_INFO', 
+                "OILS: Checkin succeeded with unexpected event ($txt) for " . 
+                $args->{barcode} . " at location=$phys_location"
+            );
+        }
+
         $self->{circ_user_id} = $circ->usr;
         $self->ok(1);
     } elsif ($txt eq 'NO_CHANGE' or $txt eq 'SUCCESS' or $txt eq 'ROUTE_ITEM') {

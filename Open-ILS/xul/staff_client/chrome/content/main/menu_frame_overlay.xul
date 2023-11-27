@@ -147,6 +147,11 @@
         label="&staff.main.button_bar.authority_manage;"
         tooltiptext="&staff.main.button_bar.authority_manage;" />
     <toolbarbutton
+        templateid="find_authority_by_id"
+        command="cmd_find_authority_by_id"
+        label="&staff.main.button_bar.find_authority_by_id;"
+        tooltiptext="&staff.main.button_bar.find_authority_by_id;" />
+    <toolbarbutton
         templateid="retrieve_last_record"
         command="cmd_retrieve_last_record"
         label="&staff.main.button_bar.retrieve_last_record;"

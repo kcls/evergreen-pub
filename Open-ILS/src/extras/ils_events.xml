@@ -109,11 +109,11 @@
 		<desc xml:lang="en-US">This item is too new to have a hold placed on it</desc>
 	</event>
 	<event code='1219' textcode='COPY_REMOTE_CIRC_LIB'>
-		<desc xml:lang="en-US">A copy with a remote circulating library (circ_lib) was encountered</desc>
+		<desc xml:lang="en-US">Hold is not possible on this item. For further information, please speak with a staff member.</desc>
 	</event>
 
 	<event code='1220' textcode='ITEM_NOT_HOLDABLE'>
-		<desc xml:lang="en-US">An unholdable copy was encountered</desc>
+		<desc xml:lang="en-US">Hold is not possible on this item. For further information, please speak with a staff member.</desc>
 	</event>
 
 	<event code='1221' textcode='ORG_CANNOT_HAVE_VOLS'>
@@ -757,7 +757,7 @@
 		<desc xml:lang="en-US">A hold request at a higher level than copy has been attempted, but there are no copies that belonging to the higher-level unit.</desc>
 	</event>
 	<event code='1715' textcode='HOLD_SUSPEND_AFTER_CAPTURE'>
-		<desc xml:lang="en-US">Attempt to suspend a hold after it has been captured.</desc>
+		<desc xml:lang="en-US">It is not possible to suspend this hold. The item is in transit to your pickup location</desc>
 	</event>
 	<event code='1716' textcode='MONEY_DEBIT_CARD_PAYMENT_NOT_FOUND'>
 		<desc xml:lang='en-US'>The requested money_debit_card_payment was not found</desc>
@@ -857,7 +857,7 @@
 		<desc xml:lang="en-US"> Copy is reference material </desc>
 	</event>
 	<event code='7007' textcode='COPY_NEEDED_FOR_HOLD'>
-		<desc xml:lang="en-US"> Copy is needed to fulfill a hold </desc>
+		<desc xml:lang="en-US"> You cannot renew this item, another library patron is waiting </desc>
 	</event>
 	<event code='7008' textcode='MAX_RENEWALS_REACHED'>
 		<desc xml:lang="en-US"> Circulation has no more renewals remaining </desc>
@@ -884,7 +884,7 @@
 		<desc xml:lang="en-US">This requested action would result in a negative patron balance</desc>
 	</event>
 	<event code='7016' textcode='ITEM_ON_HOLDS_SHELF'>
-		<desc xml:lang="en-US">This item is currently on the holds shelf for another patron:</desc>
+		<desc xml:lang="en-US">This item is currently on the holds shelf for another patron</desc>
 	</event>
 	<event code='7017' textcode='ROUTE_TO_COPY_LOCATION'>
 		<desc xml:lang="en-US">
@@ -1061,13 +1061,13 @@
 			for the selected transaction</desc>
 	</event>
 
-	<event code='11106' textcode='TOTAL_HOLD_COPY_RATIO_EXCEEDED'>
-		<desc xml:lang="en-US">Renewal attempt failed because the "hold / total copies" ratio exceeds the configured limit</desc>
-	</event>
+  <event code='11106' textcode='TOTAL_HOLD_COPY_RATIO_EXCEEDED'>
+      <desc xml:lang="en-US">We cannot renew this item. Other patrons have holds on this title, but you can place another copy on hold.</desc>
+  </event>
 
-	<event code='11107' textcode='AVAIL_HOLD_COPY_RATIO_EXCEEDED'>
-		<desc xml:lang="en-US">Renewal attempt failed because the "hold / available copies" ratio exceeds the configured limit</desc>
-	</event>
+  <event code='11107' textcode='AVAIL_HOLD_COPY_RATIO_EXCEEDED'>
+      <desc xml:lang="en-US">We cannot renew this item. Other patrons have holds on this title, but you can place another copy on hold.</desc>
+  </event>
 
 	<event code='11008' textcode='SERIAL_DISTRIBUTION_NOT_EMPTY'>
 		<desc xml:lang="en-US">The distribution still has dependent objects</desc>
@@ -1093,7 +1093,16 @@
 
 	<!-- ================================================================ -->
 
-	<event code='12003' textcode='TITLE_HAS_HOLDS'>
-		<desc xml:lang="en-US">This title has hold requests on it that will be canceled if they are not transferred.</desc>
-	</event>
+    <event code='12003' textcode='HOLD_REQUIRES_PICKUP_NOTIFICATION'>
+      <desc xml:lang="en-US">The requested hold pickup library requires the user be opted in to email or phone hold pickup notices and have values applied for email or day phone in their account.</desc>
+    </event>
+
+    <event code='12004' textcode='TITLE_HAS_HOLDS'>
+      <desc xml:lang="en-US">This title has hold requests on it that will be canceled if they are not transferred.</desc>
+    </event>
+
+    <event code='12005' textcode='PATRON_IN_COLLECTIONS'>
+      <desc xml:lang="en-US">Patron has been referred to a collections agency</desc>
+    </event>
+
 </ils_events>

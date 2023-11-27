@@ -1,0 +1,235 @@
+[% ctx.page_title = 'Self Checkout' %]
+[% WRAPPER base.tt2 %]
+<!-- ***************************************** main.tt2 ***************************************************** -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="[% ctx.media_prefix %]/js/ui/default/staff/build/css/bootstrap.min.css" />
+<link rel='stylesheet' type='text/css' href='[% ctx.media_prefix %]/css/skin/kcls/selfcheck.css'/>
+
+<!-- we default to high-contrast mode -->
+<link rel='stylesheet' id="style" type='text/css' title="default"
+  href='[% ctx.media_prefix %]/css/skin/kcls/selfcheck-high-contrast.css'>
+
+<script src="[% ctx.media_prefix %]/js/ui/default/common/build/js/jquery.min.js"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-3018520-39"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-3018520-39');
+</script>
+
+<script type="text/javascript">
+function switchTo(str,subpage) {
+  console.debug('switchTo() page: ' + str + ' subpage: ' + subpage);
+  selfckResetTimer(); // reset login timer
+
+  var pages = [];
+  var sidebarLinks = [];
+  pages['step0'] = document.getElementById('step0');
+  pages['step1'] = document.getElementById('step1');
+  pages['step2'] = document.getElementById('step2');
+  pages['step3'] = document.getElementById('step3');
+  pages['step3a'] = document.getElementById('step3a');
+  //pages['step3b'] = document.getElementById('step3b');
+  pages['step3c'] = document.getElementById('step3c');
+  pages['step3d'] = document.getElementById('step3d');
+  pages['step3e'] = document.getElementById('step3e');
+  pages['step3d2'] = document.getElementById('step3d2');
+  pages['step4'] = document.getElementById('step4');
+
+  sidebarLinks['sidebar_step3c'] = document.getElementById('sidebar_step3c');
+  sidebarLinks['sidebar_step3d'] = document.getElementById('sidebar_step3d');
+  sidebarLinks['sidebar_step3d'] = document.getElementById('sidebar_step3d2');
+  sidebarLinks['sidebar_step3e'] = document.getElementById('sidebar_step3e');
+
+  for(var i in pages) { if(!pages[i]) continue; pages[i].style.display="none"; }
+  for(var i in sidebarLinks) { if(!sidebarLinks[i]) continue; sidebarLinks[i].className=""; }
+
+  if(subpage) {
+    pages[subpage].style.display="block";
+    sidebarLinks['sidebar_'+subpage].className="selected";
+  }
+  pages[str].style.display="block";
+  if(str=='step3' && !subpage) pages['step3a'].style.display="block";
+
+  try {
+    // Re-focus scan box during navigation.
+    dojo.byId('selfckScanBox').focus();
+    dojo.byId('selfckScanBox').select();
+
+    // Call these again after a brief timeout to handle things like
+    // unnecessary double-clicks on navigation links, where first 
+    // click focuses, and second causes loss of focus.
+    setTimeout(function(){
+      dojo.byId('selfckScanBox').focus();
+      dojo.byId('selfckScanBox').select();
+    }, 100);
+
+
+    // NOTE: switchTo() is called in the midst of various actions, 
+    // so we can't clear the notifications here.
+    // dojo.byId('oils-selfck-status-div').innerHTML = '';
+  } catch(e) {}
+}
+</script>
+
+<div id="selfcheck-main" class="container-background">
+[% INCLUDE "circ/selfcheck/banner.tt2" %]
+<div dojoType='openils.widget.ProgressDialog' jsId='progressDialog'></div>
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <div dojoType="dijit.Dialog" jsId='oilsSelfckWsDialog' class='oils-login-dialog' style='display:none;'>
+      <form>
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="oilsSelfckWsLocSelector">[% l('Choose a Location') %]</label>
+          <div class="col-md-8">
+            <div dojoType='openils.widget.OrgUnitFilteringSelect' jsId='oilsSelfckWsLocSelector'
+                searchAttr='shortname' labelAttr='shortname' id='oilsSelfckWsLocSelector'/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="col-md-4 control-label" for="oilsSelfckWsName">[% l('Enter a workstation name') %]</label>
+          <div class="col-md-8">
+            <input dojoType='dijit.form.TextBox' jsId='oilsSelfckWsName'/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="col-md-offset-4 col-md-2">
+            <button jsId='oilsSelfckWsSubmit' dojoType='dijit.form.Button'>Submit</button>
+          </div>
+        </div>
+      </form>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<script src='[% ctx.media_prefix %]/js/ui/kcls/circ/selfcheck/selfcheck.js'></script>
+<script src="[% ctx.media_prefix %]/js/ui/kcls/circ/selfcheck/payment.js"></script>
+[% INCLUDE 'circ/selfcheck/audio_config.tt2' %]
+[% INCLUDE 'circ/selfcheck/logout_dialog.tt2' %]
+  <div id="content-wrapper" class="container container-background">
+  <div id="step0" class="checkout status_box text-center scko-container pad-vert">
+    <div class="row pad-vert">
+      <div class="col-md-12">
+        <h1 class="text-danger">Staff login required.</h1>
+      </div>
+    </div>
+  </div>
+  <div id="step1" class="checkout  scko-container hideMe">
+    [% INCLUDE 'circ/selfcheck/patron_login.tt2' %]
+  </div>
+  <div id="step3" class="checkout scko-container" style="display:none;">
+    <div class="container scko-container">
+      <div class="row">
+        <div class="col-xs-3 pad-vert">
+          <img src="[% ctx.media_prefix %]/images/selfcheck/barcodedetailbook.jpg" alt='item barcode'/>
+        </div>
+        <div class="col-xs-12 col-sm-9 col-md-6">
+          <div class="pad-vert greet"><span id="user_name"></span></div>
+          <div class="row">
+            <div class="col-xs-12 header1">
+              <label for="selfckScanBox">Scan your library item to begin check-out</label>
+              <input type="text" jsId='selfckScanBox' class="form-control" id="selfckScanBox" dojoType='dijit.form.TextBox' />
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--div class="row">
+        <div class="col-md-offset-3 col-xs-12 col-md-6">
+          <div class="row">
+            <div class="col-md-offset-5 col-xs-9 col-md-7"><label>Heading</label></div>
+          </div>
+          <div class="row">
+            <div class="col-md-5 pad-vert-btn">
+              <a href="javascript:;" class="btn btn-success scko-action-btn">Print Ready for Pick-up</a>
+            </div>
+              <div class="col-xs-3 col-md-5 pad-vert-btn">
+              <a href="javascript:;" onclick="selfCheckMgr.printList('holds')" class="btn btn-success scko-action-btn">
+                Print List</a>
+            </div>
+          </div>
+        </div>
+      </div-->
+      <div class="row scko-height">
+        <div class="col-md-offset-3 col-xs-12 col-md-6 scko-height">
+          <div id="step3a" class="scko-height">
+            [% INCLUDE 'circ/selfcheck/summary.tt2' %]
+          </div>
+
+          <div id="step3c" style="display:none;" class="scko-height">
+            [% INCLUDE 'circ/selfcheck/fines.tt2' %]
+          </div>
+
+          <div id="step3d" style="display:none;" class="scko-height">
+            [% INCLUDE 'circ/selfcheck/circ_page.tt2' %]
+          </div>
+
+          <div id="step3e" style="display:none;" class="scko-height">
+            [% INCLUDE 'circ/selfcheck/holds_page.tt2' %]
+          </div>
+        </div>
+        <div class="col-md-3 col-xs-12">
+          <div class="row">
+            <div class="col-md-12">
+          </div>
+
+          <div class="col-md-12 pad-vert-sidebar-btn">
+            <a href="javascript:;" id="back_button" 
+              onclick="switchTo('step3'); dojo.byId('oils-selfck-status-div').innerHTML = '';"
+              class="btn btn-responsive btn-primary scko-btn-sidebar">
+              <img alt='back to checkout' class="scko-btn-to-checkout" src="[% ctx.media_prefix %]/images/selfcheck/arrow.png"/>
+              <span>Back to Check-out</span></a>
+          </div>
+
+          <div class="col-md-12 pad-vert-sidebar-btn">
+            <button id='oils-selfck-nav-logout-print' alt='logout and print receipt' style=""
+              class="btn btn-responsive btn-danger scko-btn-sidebar">Finish & Print Receipt</button>
+          </div>
+          <div class="col-md-12 pad-vert-sidebar-btn">
+            <button id='oils-selfck-nav-logout-email' alt='logout and email receipt' style=""
+              class="btn btn-responsive btn-danger hidden scko-btn-sidebar">Finish & Email Receipt</button>
+          </div>
+          <div class="col-md-12 pad-vert-sidebar-btn">
+            <button id='oils-selfck-nav-logout' alt='logout without receipt' style=""
+              class="btn btn-responsive btn-danger scko-btn-sidebar">Finish No Receipt</button>
+          </div>
+            <script src="[% ctx.media_prefix %]/js/ui/kcls/circ/selfcheck/floating.js"></script>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="oils-selfck-footer-buttons">
+      [% INCLUDE "circ/selfcheck/footer.tt2" %]
+    </div>
+  </div>
+
+  <div id="step4" class="checkout scko-container text-center" style="display:none;">
+    <div class="row pad-vert">
+      <div class="col-md-12">
+        <h1>YOU ARE LOGGED OUT</h1>
+      </div>
+    </div>
+    <div class="row pad-vert">
+      <div class="col-md-12">
+        <h2>Thank you for using Self Check-out</h2>
+      </div>
+    </div>
+    <div class="row pad-vert">
+      <div class="col-md-12">
+        <button id='oils-selfck-nav-return-login' alt='Return to Login'
+          class="btn btn-responsive btn-info">Return to Login</button>
+      </div>
+    </div>
+  </div></div>
+  <div class="clearfix" />
+</div>
+<!-- ***************************************** END: main.tt2 ***************************************************** -->
+[% END %]
+

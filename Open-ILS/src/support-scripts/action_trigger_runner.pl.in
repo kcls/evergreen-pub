@@ -38,6 +38,7 @@ my $opt_hooks;
 my $opt_process_hooks = 0;
 my $opt_granularity   = undef;
 my $opt_gran_only     = undef;
+my $opt_batch_limit   = 0;
 
 (-f $opt_custom_filter) or undef($opt_custom_filter);   # discard default if no file exists
 
@@ -52,6 +53,7 @@ GetOptions(
     'debug-stdout'     => \$opt_debug_stdout,
     'custom-filters=s' => \$opt_custom_filter,
     'lock-file=s'      => \$opt_lockfile,
+    'batch-limit=i'    => \$opt_batch_limit,
     'verbose'          => \$opt_verbose,
     'help'             => \$opt_help,
 );
@@ -164,7 +166,8 @@ sub process_hooks {
         my $method = 'open-ils.trigger.passive.event.autocreate.batch';
         $method =~ s/passive/active/ if $config->{active};
         
-        my $req = $ses->request($method, $hook, $config->{context_org}, $config->{filter}, $opt_granularity);
+        my $req = $ses->request($method, $hook, $config->{context_org}, 
+            $config->{filter}, $opt_granularity, undef, $opt_batch_limit);
 
         my $debug_hook = "'$hook' and filter ".OpenSRF::Utils::JSON->perl2JSON($config->{filter});
         $logger->info("at_runner: creating events for $debug_hook");
@@ -201,7 +204,8 @@ sub run_pending {
 
     return unless $opt_run_pending;
     my $ses = OpenSRF::AppSession->create('open-ils.trigger');
-    my $req = $ses->request('open-ils.trigger.event.run_all_pending' => $opt_granularity => $opt_gran_only);
+    my $req = $ses->request('open-ils.trigger.event.run_all_pending' 
+        => $opt_granularity => $opt_gran_only => $opt_batch_limit);
 
     my $check_lockfile = 1;
     while (my $resp = $req->recv(timeout => $req_timeout)) {

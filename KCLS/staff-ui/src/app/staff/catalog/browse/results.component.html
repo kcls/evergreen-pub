@@ -1,0 +1,111 @@
+
+<!-- search results progress bar -->
+<div class="row" *ngIf="browseIsActive()">
+  <div class="col-lg-6 offset-lg-3 pt-3">
+    <div class="progress">
+      <div class="progress-bar progress-bar-striped active w-100"
+        role="progressbar" aria-valuenow="100" 
+        aria-valuemin="0" aria-valuemax="100">
+        <span class="visually-hidden" i18n>Searching..</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- no items found -->
+<div *ngIf="browseIsDone() && !browseHasResults()">
+  <div class="row pt-3">
+    <div class="col-lg-6 offset-lg-3">
+      <div class="alert alert-warning">
+        <span i18n>No Matching Items Were Found</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- header, pager, and list of records -->
+<div id="staff-catalog-browse-results-container" *ngIf="browseHasResults()">
+
+  <div class="row mb-2">
+    <div class="col-lg-3">
+      <button class="btn btn-primary" (click)="prevPage()">Back</button>
+      <button class="btn btn-primary ms-3" (click)="nextPage()">Next</button>
+    </div>
+  </div>
+
+  <ng-container *ngFor="let result of results; let index = index">
+    <div *ngIf="result.value" class="col-lg-12 card tight-card heading-row mb-2">
+      <div class="card-body _p-1">
+        <div class="row">
+          <div class="col-lg-11">
+            <span class="font-weight-bold font-italic mr-2">{{index}}.</span>
+            <ng-container *ngIf="result.sources > 0">
+              <a routerLink="/staff/catalog/search" target="_blank"
+                [queryParams]="searchByBrowseEntryParams(result)">
+                  {{result.value}}
+              </a>
+            </ng-container>
+            <ng-container *ngIf="result.sources == 0">
+              <span>{{result.value}}</span>
+            </ng-container>
+          </div>
+          <div *ngIf="result.sources > 0" class="col-lg-1">
+            ({{result.sources}})
+          </div>
+        </div>
+        <div class="row" *ngFor="let note of result.authNotes">
+          <div class="col-lg-11"  i18n>Note: {{note}}</div>
+        </div>
+
+        <ng-container *ngFor="let heading of result.compiledHeadings">
+          <div class="row">
+            <div class="col-lg-10 offset-lg-1">
+              <div *ngIf="heading.history_reference">
+                {{heading.history_reference}}
+              </div>
+              <div *ngIf="heading.complex_see_also">
+                {{heading.complex_see_also}}
+              </div>
+              <div>
+                <span class="font-italic mr-2">
+                  <ng-container *ngIf="heading.relationship_designation">
+                    {{heading.relationship_designation}}
+                  </ng-container>
+                  <ng-container *ngIf="!heading.relationship_designation" i18n>
+                    <ng-container [ngSwitch]="heading.related_type">
+                      <ng-container *ngSwitchCase="'broader'">Broader term</ng-container>
+                      <ng-container *ngSwitchCase="'narrower'">Narrower term</ng-container>
+                      <ng-container *ngSwitchCase="'other'">Related Term</ng-container>
+                      <ng-container *ngSwitchDefault>See</ng-container>
+                    </ng-container>
+                  </ng-container>
+                </span>
+                <a routerLink="/staff/catalog/browse"
+                  [queryParams]="newBrowseFromHeadingParams(heading)">
+                  {{heading.heading}}
+                </a>
+              </div>
+            </div>
+            <div class="col-lg-1">({{heading.target_count}})</div>
+          </div>
+          <div class="row" *ngFor="let note of heading.notes">
+            <div class="col-lg-10 offset-lg-1"  i18n>Note: {{note}}</div>
+          </div>
+          <div class="row" *ngFor="let note of heading.seeNotes">
+            <div class="col-lg-10 offset-lg-1"  i18n>Note: {{note}}</div>
+          </div>
+        </ng-container>
+      </div><!-- card body -->
+    </div>
+  </ng-container>
+
+  <div class="row mb-2">
+    <div class="col-lg-3">
+      <button class="btn btn-primary" (click)="prevPage()">Back</button>
+      <button class="btn btn-primary ms-3" (click)="nextPage()">Next</button>
+    </div>
+  </div>
+
+</div>
+
+

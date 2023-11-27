@@ -24,6 +24,7 @@ use Business::OnlinePayment;
 use UUID::Tiny qw/:std/;
 use Locale::Country;
 
+use OpenSRF::Utils::JSON;
 use OpenILS::Event;
 use OpenSRF::Utils::Logger qw/:logger/;
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
@@ -254,6 +255,17 @@ sub dispatch {
 
     my %content = prepare_bop_content($argshash, $patron, $cardtype);
 
+    # KCLS CUSTOM
+    # Log more details about what we are sending to the CC processor
+    my $content_clone = OpenSRF::Utils::JSON->JSON2perl(
+        OpenSRF::Utils::JSON->perl2JSON(\%content));
+    
+    # Don't log sensitive info.
+    delete $content_clone->{$_} foreach qw/cc card_number password/;
+
+    $logger->info("CC sending payment info: " . 
+        OpenSRF::Utils::JSON->perl2JSON($content_clone));
+
     return OpenILS::Event->new(
         'CREDIT_PROCESSOR_BAD_PARAMS', note => "Missing address fields")
         if keys(%content) == 0;
@@ -281,6 +293,8 @@ sub dispatch {
         $event_name = "SUCCESS";
     } else {
         $logger->info($argshash->{processor} . " payment failed");
+        $logger->info("CC error info " . 
+            OpenSRF::Utils::JSON->perl2JSON($payload));
         $event_name = "CREDIT_PROCESSOR_DECLINED_TRANSACTION";
     }
 

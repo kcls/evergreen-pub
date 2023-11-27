@@ -12,6 +12,21 @@ var liTable;
 
 
 function load() {
+    // before rendering any fund selectors, limit the funds to 
+    // attempt to retrieve to those the user can actually use.
+    new openils.User().getPermOrgList(
+        ['CREATE_PICKLIST', 'UPDATE_PICKLIST', 'MANAGE_FUND'],
+        function(orgs) { 
+            // fundSearchSelector is defined in li_table.js
+            if (typeof fundSearchFilter != 'undefined')
+              fundSearchFilter.org = orgs;
+            load2();
+        },
+        true, true // descendants, id_list
+    );
+}
+
+function load2() {
     liTable = new AcqLiTable();
     liTable.isPL = plId;
     liTable.initBatchUpdater();

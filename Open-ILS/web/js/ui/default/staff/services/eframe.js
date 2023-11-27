@@ -331,6 +331,10 @@ angular.module('egCoreMod')
                 $scope.showIframe = true;
                 $scope.reload();
             }
+
+            $scope.reloadIframe = function() {
+                $scope.iframe.contentWindow.location.reload();
+            }
         }]
     }
 })

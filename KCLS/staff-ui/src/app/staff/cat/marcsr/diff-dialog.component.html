@@ -1,0 +1,41 @@
+<ng-template #dialogContent>
+  <div class="modal-header bg-info">
+    <h4 class="modal-title" i18n>MARC Changes</h4>
+    <button type="button" class="close"
+      i18n-aria-label aria-label="Close" (click)="close()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="col-lg-6 offset-lg-3 m-3" *ngIf="!entry">
+      <eg-progress-inline></eg-progress-inline>
+    </div>
+    <ul ngbNav #marcNav="ngbNav" class="nav-tabs mt-2" [activeId]="tab">
+      <li ngbNavItem="diff" *ngIf="!postApply">
+        <a ngbNavLink i18n>Diff</a>
+        <ng-template ngbNavContent>
+          <pre *ngIf="entry.diff">{{entry.diff}}</pre>
+          <div *ngIf="!entry.diff" class="alert alert-info" i18n>
+            No changes would be applied
+          </div>
+        </ng-template>
+      </li>
+      <li ngbNavItem="before" *ngIf="!postApply">
+        <a ngbNavLink i18n>Before Changes</a>
+        <ng-template ngbNavContent><pre>{{entry.breaker_before}}</pre></ng-template>
+      </li>
+      <li ngbNavItem="after">
+        <a ngbNavLink i18n>After Changes</a>
+        <ng-template ngbNavContent>
+          <pre>{{entry.breaker_after}}</pre>
+        </ng-template>
+      </li>
+    </ul>
+    <div *ngIf="entry" class="p-3 border rounded">
+      <div [ngbNavOutlet]="marcNav"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-warning" (click)="close()" i18n>Close</button>
+  </div>
+</ng-template>

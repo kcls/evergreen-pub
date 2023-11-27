@@ -51,10 +51,15 @@
                 label="&staff.patron_display.apply_penalty_dialog.radio_btn.block.label;" accesskey="&staff.patron_display.apply_penalty_dialog.radio_btn.block.accesskey;" />
             <toolbarspring/>
             <toolbaritem>
-                <menulist id="csp_menulist" label="">
+                <menulist id="csp_menulist" label="Labels" style="width:90px;">
                     <menupopup id="csp_menupopup" value="21"/> <!-- default SILENT_NOTE -->
                 </menulist>
             </toolbaritem>
+			<toolbaritem>
+				<menulist id="csp_messagelist" label="Messages" oncommand="loadMessage(event.target.value)" style="width:180px;">
+
+				</menulist>
+			</toolbaritem>
         </toolbar>
     </toolbox>
     <textbox id="note_tb" multiline="true" />

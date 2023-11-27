@@ -1,0 +1,273 @@
+/*
+    Basic Colors for Self-checkout interface
+ */
+html, body {
+    font-weight: 800;
+    font-size: 20px;
+}
+
+a {
+    color: #003399;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+h2 {
+    font-size: 22px;
+}
+
+input::-webkit-input-placeholder {
+    color: #000000 !important;
+    opacity: 0.8;
+}
+
+input::-moz-placeholder {
+    color: #000000 !important;
+    opacity: 0.8;
+}
+
+label {
+    font-size:18px;
+}
+
+.table {
+    border-top: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    color:#ffffff;
+}
+.sidebar {
+    padding: 5px 0;
+    background-color:#FFFFFF;
+}
+
+.form-control {
+    color: #000000;
+    border: 2px solid #f2f227;
+    font-weight:800;
+}
+#user_name {
+    font-weight:800;
+}
+#header {
+    color: #00FFF5;
+}
+
+#main-content-scko h1 {
+    font-size: 22px;
+}
+
+#main-content-scko h1 {
+    font-size: 18px;
+}
+
+#main-content-scko li {
+    margin-top: 14px;
+}
+
+.navbar-text-scko {
+    font-size:27px;
+}
+
+label {
+    color: #ffffff;
+}
+
+.dijitTextBox {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color:#000000;
+    font-weight:800;
+    border: 2px solid #f2f227 !important;
+}
+.dijitButtonNode {
+    color:#ffffff;
+    background:#246100 !important;
+}
+.dijitHover .dijitButtonNode {
+    color:#246100 !important;
+    background: #ffffff !important;
+}
+
+.dijitDialogTitleBar {
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #353535), color-stop(1, #000000)) !important;
+    background:-moz-linear-gradient(top, #353535 5%, #000000 100%) !important;
+    background:-webkit-linear-gradient(top, #353535 5%, #000000 100%) !important;
+    background:-o-linear-gradient(top, #353535 5%, #000000 100%) !important;
+    background:-ms-linear-gradient(top, #353535 5%, #000000 100%) !important;
+    background:linear-gradient(to bottom, #353535 5%, #000000 100%) !important;
+    border-top:3px solid #ffffff !important;
+    border-left:3px solid #ffffff !important;
+    border-right:3px solid #ffffff !important;
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#353535', endColorstr='#000000',GradientType=0) !important;
+}
+.dijitDialogPaneContent {
+    background:#000000 !important;
+    border-bottom:3px solid #ffffff !important;
+    border-left:3px solid #ffffff !important;
+    border-right:3px solid #ffffff !important;
+    color:#ffffff !important;
+}
+.dijitButton {
+    color:#000000 !important;
+    background-color:#246100 !important;
+    border:3px solid #ffffff !important;
+}
+
+.navbar-scko {
+    background:#FF000A
+}
+
+.navbar-text-scko {
+    color:#ffffff;
+}
+
+.scko-container {
+    color: #ffffff;
+    font-size: 15px;
+    background-color: #000000;
+}
+
+.btn-success {
+    background-color:#246100;
+    color: #ffffff;
+}
+.btn-success:hover {
+    background-color:#ffffff;
+    color:#246100;
+    border:3px solid #246100 !important;
+}
+.btn-high-contrast {
+    color: #ffffff;
+    background-color: #000000;
+    border:3px solid #ffffff;
+    border-radius: 0;
+}
+
+.btn-primary {
+    color: #ffffff;
+}
+.btn-primary:hover {
+    background-color:#ffffff;
+    color:#008ec2;
+    border:3px solid #008ec2 !important;
+}
+.btn-danger {
+    background-color:#a62924;
+    color: #ffffff;
+}
+.btn-danger:hover {
+    background-color:#ffffff;
+    color:#a62924;
+    border:3px solid #a62924 !important;
+}
+
+.btn {
+    font-weight:800;
+    border:3px solid #ffffff !important;
+}
+.btn:hover {
+}
+
+.container-background {
+    background: #353535;
+}
+
+.checkout {
+    font-size:16px;
+}
+
+.checkout h1 {
+    font-size:22px;
+}
+
+.checkout h2 {
+    font-size:18px;
+}
+
+.checkout .userid {
+    font-size:18px;
+}
+
+.checkout .header1 {
+    border-bottom:1px solid #a83135;
+}
+
+.checkout .userid {
+    border:2px solid #ffffff !important;
+}
+
+.checkout .item_table td {
+    font-size:18px;
+    border:2px solid #ffffff;
+}
+
+.scko-table-striped>tbody>tr:nth-of-type(odd) {
+    background-color: #ffffff;
+    border: 2px solid #f2f227;
+    color:#000000;
+}
+.scko-table-striped>tbody>tr:nth-of-type(even) {
+    border: 2px solid #ffffff;
+}
+
+.checkout .status_box {
+    color:#ffcd00;
+    font-weight:800;
+}
+
+.checkout .oils-selfck-status-div {
+    color: #99BADD;
+    font-weight:800;
+}
+
+.checkout_failure {
+    color: #ffcd00 !important;
+    font-weight:800;
+}
+@media screen and (min-width:768px) {
+    .scko-footer-btn {
+        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #008ec2), color-stop(1, #023a4f));
+        background:-moz-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:-webkit-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:-o-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:-ms-linear-gradient(top, #008ec2 5%, #023a4f 100%);
+        background:linear-gradient(to bottom, #008ec2 5%, #023a4f 100%);
+        font-size:18px;
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#008ec2', endColorstr='#023a4f',GradientType=0);
+        background-color:#02729E;
+        color:#ffffff;
+        text-shadow:0px 1px 5px #000000;
+        border-bottom:0 !important;
+    }
+
+    .scko-footer-btn:hover {
+        background:none;
+        text-shadow:none;
+        filter:none;
+        background-color:#ffffff;
+        color:#008ec2 !important;
+        border-bottom:0 !important;
+    }
+}
+
+@media screen and (min-width:1600px) {
+    html, body { font-size: 28px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 30px; }
+    label { font-size:26px; }
+    #main-content-scko h1 { font-size: 30px; }
+    #main-content-scko h1 { font-size: 26px; }
+    #main-content-scko li { margin-top: 14px; }
+    .navbar-text-scko { font-size:35px; }
+    .scko-container { font-size: 23px; }
+    .checkout { font-size:24px; }
+    .checkout h1 { font-size:30px; }
+    .checkout h2 { font-size:26px; }
+    .checkout .userid { font-size:26px; }
+    .checkout .item_table td { font-size:26px; }
+    .scko-footer-btn { font-size:26px; }
+}
+
+

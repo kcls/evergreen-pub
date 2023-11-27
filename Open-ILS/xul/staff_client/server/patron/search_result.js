@@ -210,6 +210,13 @@ patron.search_result.prototype = {
                     obj.search_term_count++;
                 break;
 
+                case 'egid':
+                    search_hash[ i ] = {};
+                    search_hash[ i ].value = query[i];
+                    search_hash[i].group = 4;
+                    obj.search_term_count++;
+                break;
+
                 case 'phone': case 'ident': 
                 
                     search_hash[ i ] = {};

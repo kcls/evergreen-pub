@@ -858,8 +858,6 @@ sub bib_search {
         if ($opts->{"reuse_picklist"}) {
             $picklist = $e->retrieve_acq_picklist($opts->{"reuse_picklist"}) or
                 return $e->die_event;
-            return $e->die_event unless
-                $e->allowed("UPDATE_PICKLIST", $picklist->org_unit);
 
             # If we're reusing an existing picklist, we don't need to
             # create new lineitems for any bib records for which we already

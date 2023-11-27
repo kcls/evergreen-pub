@@ -95,7 +95,7 @@ sub browse {
     for my $result (@$results) {
         $result->{leading_article_warning} = $warning;
         $result->{leading_article_alternative} = $alternative;
-        flesh_browse_results([$result]);
+        flesh_browse_results([$result], $params[8]);
         $client->respond($result);
     }
 
@@ -118,6 +118,11 @@ sub prepare_browse_parameters {
         $params->{pivot},
         $params->{limit} || 10
     );
+
+    # KCLS JBAS-1929
+    if (my $mattype = $params->{mattype}) {
+        push(@params, 'mattype', $mattype);
+    }
 
     return (
         "oils_browse_" . md5_hex(OpenSRF::Utils::JSON->perl2JSON(\@params)),
@@ -164,7 +169,14 @@ sub leading_article_test {
 # changes $results and returns 1 for success, undef for failure
 # $results must be an arrayref of result rows from the DB's metabib.browse()
 sub flesh_browse_results {
-    my ($results) = @_;
+    my ($results, $mattype) = @_;
+
+
+    # KCLS JBAS-2441
+    # Any data that exists in the authorities array is stale.
+    # See more below on this topic.
+   
+    for my $row (@$results) { $row->{authorities} = undef; }
 
     for my $authority_field_name ( qw/authorities sees/ ) {
         for my $r (@$results) {
@@ -202,15 +214,43 @@ sub flesh_browse_results {
             }) or return;
 
             map_authority_headings_to_results(
-                $linked, $results, \@auth_ids, $authority_field_name);
+                $linked, $results, \@auth_ids, $authority_field_name, $mattype);
         }
+    }
+
+    # KCLS JBAS-2441
+    # As an unexpected side effect of moving bib indexing from MODS to
+    # a custom XSL, the metabib.browse_entry_def_map.authority field is
+    # never set.  This means the 'authorities' list (as opposed to 'sees')
+    # is always empty.  Dig through the sees to find the cases where an
+    # authority record's main entry matches the browse result value, 
+    # meaning it should have appeared in the 'authorities' list instead.
+    for my $row (@$results) {
+        for my $see (@{$row->{sees}}) {
+            my $matched = 0;
+            for my $group (@{$see->{headings}}) {
+                last if $matched;
+                for my $grp_arr (values %$group) {
+                    last if $matched;
+                    for my $heading (@$grp_arr) {
+                        last if $matched;
+                        if ($heading->{main_entry} && 
+                            $heading->{heading} eq $row->{value}) {
+                            push (@{$row->{authorities}}, $see);
+                            $matched = 1;
+                        }
+                    }
+                }
+            }
+        }
+        $row->{list_authorities} = [map {$_->{id}} @{$row->{authorities}}];
     }
 
     return 1;
 }
 
 sub map_authority_headings_to_results {
-    my ($linked, $results, $auth_ids, $authority_field_name) = @_;
+    my ($linked, $results, $auth_ids, $authority_field_name, $mattype) = @_;
 
     # Use the linked authority records' control sets to find and pick
     # out non-main-entry headings. Build the headings and make a
@@ -230,6 +270,21 @@ sub map_authority_headings_to_results {
         ];
     }
 
+    # KCLS JBAS-1929
+    my $abl_join = {};
+    if ($mattype) {
+        $abl_join = {
+            mraf => {
+                field => 'id',
+                fkey => 'bib',
+                filter => {
+                    attr => 'mattype',
+                    value => $mattype
+                }
+            }
+        };
+    }
+
     # Get linked-bib counts for each of those authorities, and put THAT
     # information into place in the data structure.
     my $counts = new_editor()->json_query({
@@ -240,7 +295,7 @@ sub map_authority_headings_to_results {
                 "authority"
             ]
         },
-        from => {abl => {}},
+        from => {abl => $abl_join},
         where => {
             "+abl" => {
                 authority => [
@@ -266,6 +321,55 @@ sub map_authority_headings_to_results {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    return unless $authority_field_name eq 'sees';
+
+    # KCLS JBAS-2441
+    # The user interface needs to know the relationship from the Heading
+    # to the See. As it stands, the See data we have contains just the
+    # opposite, the relationship from the See to the Heading. We need to
+    # specify what the reverse relationship is in the main entry of each
+    # See.
+    #
+    # For example, browse result heading "Spy Films" is a broader term
+    # for "Jame Bond films", but all we know at this point is that
+    # "James Bond films" is a narrower term of "Spy Films". Encode the
+    # opposite for the UI.
+    for my $row (@$results) {
+        for my $see (@{$row->{sees}}) {
+            my $main_entry;
+            my $see_for_heading;
+
+            for my $group (@{$see->{headings}}) {
+
+                for my $grp_arr (values %$group) {
+                    for my $heading (@$grp_arr) {
+                        if ($heading->{main_entry}) {
+                            $main_entry = $heading;
+                        } else {
+                            $see_for_heading = $heading if 
+                                $heading->{heading} eq $row->{value};
+                        }
+                        last if $main_entry && $see_for_heading;
+                    }
+                    last if $main_entry && $see_for_heading;
+                }
+                last if $main_entry && $see_for_heading;
+            }
+
+            if ($main_entry && $see_for_heading) {
+                my %type_map = (
+                    narrower => 'broader',
+                    broader => 'narrower',
+                    earlier => 'later',
+                    later => 'earlier'
+                );
+
+                $main_entry->{related_type} = 
+                    $type_map{$see_for_heading->{related_type}};
             }
         }
     }
@@ -305,48 +409,35 @@ sub find_authority_headings_and_notes {
 
     extract_public_general_notes($record, $row);
 
-    # extract headings from the main authority record along with their
-    # types
-    my $parsed_headings = new_editor()->json_query({
-        from => ['authority.extract_headings', $row->{marc}]
-    });
-    my %heading_type_map = ();
-    if ($parsed_headings) {
-        foreach my $h (@$parsed_headings) {
-            $heading_type_map{$h->{normalized_heading}} =
-                $h->{purpose} eq 'variant' ? 'variant' :
-                $h->{purpose} eq 'related' ? $h->{related_type} :
-                '';
-        }
-    }
-
-    # By applying grep in this way, we get acsaf objects that *have* and
-    # therefore *aren't* main entries, which is what we want.
     foreach my $acsaf (values(%$acsaf_table)) {
         my @fields = $record->field($acsaf->tag);
         my %sf_lookup = map { $_ => 1 } split("", $acsaf->display_sf_list);
         my @headings;
 
         foreach my $field (@fields) {
-            my $h = { main_entry => ( $acsaf->main_entry ? 0 : 1 ),
-                      heading => get_authority_heading($field, \%sf_lookup, $acsaf->joiner) };
 
-            my $norm = search_normalize($h->{heading});
-            if (exists $heading_type_map{$norm}) {
-                $h->{type} = $heading_type_map{$norm};
-            }
-            # XXX I was getting "target" from authority.authority_linking, but
-            # that makes no sense: that table can only tell you that one
-            # authority record as a whole points at another record.  It does
-            # not record when a specific *field* in one authority record
-            # points to another record (not that it makes much sense for
-            # one authority record to have links to multiple others, but I can't
-            # say there definitely aren't cases for that).
+            # If a field has a main_entry, it's not itself a main entry.
+            my $h = {main_entry => $acsaf->main_entry ? 0 : 1};
+
             $h->{target} = $2
                 if ($field->subfield('0') || "") =~ /(^|\))(\d+)$/;
 
-            # The target is the row id if this is a main entry...
+            # The target is the main authority ID on the current row 
+            # if this is a main entry.
             $h->{target} = $row->{id} if $h->{main_entry};
+
+            # We're not interested in See's that do not refer to a 
+            # local authority record.
+            #next unless $h->{target};
+
+            $h->{heading} = 
+                get_authority_heading($field, \%sf_lookup, $acsaf->joiner);
+
+            if ($acsaf->tag =~ /^4/) {
+                add_4xx_info($h, $field);
+            } elsif ($acsaf->tag =~ /^[57]/) {
+                add_5xx_7xx_info($h, $field, $record);
+            }
 
             push @headings, $h;
         }
@@ -355,6 +446,56 @@ sub find_authority_headings_and_notes {
     }
 
     return $row;
+}
+
+sub add_4xx_info {
+    my ($heading, $marc_field) = @_;
+
+    my $w = $marc_field->subfield('w');
+    $heading->{variant_type} = $w eq 'd' ? 'acronym' : 'other';
+}
+
+sub add_5xx_7xx_info {
+    my ($heading, $marc_field, $record) = @_;
+
+    my $w_full = $marc_field->subfield('w') || '';
+    my $w = substr($w_full, 0, 1);
+
+    my $tag = $marc_field->tag;
+
+    my $related_type = 'other';
+
+    if ($tag =~ /^7/ && $tag ne '730') {
+        $related_type = 'equivalent';
+
+    } elsif ($tag ne '530') {
+
+        my %w_map = (
+            a => 'earlier',
+            b => 'later',
+            t => 'parentOrg',
+            g => 'broader',
+            h => 'narrower'
+        );
+
+        $related_type = $w_map{$w} if $w_map{$w};
+    }
+
+    $heading->{related_type} = $related_type;
+
+    if ($w eq 'r') {
+        $heading->{relationship_designation} = 
+            $marc_field->subfield('i') || $marc_field->subfield('4');
+
+    } elsif ($w_full =~ /...c/) {
+        my $t663 = $record->field('663');
+        $heading->{complex_see_also} = $t663->subfield('a') if $t663;
+
+    } elsif ($w_full =~ /...d/) {
+        my @t665 = $record->field('665');
+        my @histories = map { $_->subfield('a') } @t665;
+        $heading->{history_reference} = join(' ', @histories);
+    }
 }
 
 

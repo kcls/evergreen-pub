@@ -1,10 +1,52 @@
 dojo.require("dojo.cookie");
 dojo.require("dojox.xml.parser");
-dojo.require("openils.BibTemplate");
 dojo.require("openils.widget.ProgressDialog");
 
 var authtoken;
 var cgi;
+
+// extract the title and author from a MARCXML string.
+function get_marc_bits(marcxml) {
+    var m100a = '';
+    var m100c = '';
+    var m245a = '';
+    var m245b = '';
+    var m245p = '';
+    var m245n = '';
+    var xmlDoc = new DOMParser().parseFromString(marcxml, 'text/xml');
+
+    dojo.forEach(
+        xmlDoc.documentElement.getElementsByTagName('datafield'), 
+        function(node) {
+            var tag = node.getAttribute('tag');
+            if (tag == '100') {
+                dojo.forEach(node.childNodes, function(sub_node) {
+                    if (sub_node.nodeType == Node.ELEMENT_NODE) {
+                        var code = sub_node.getAttribute('code');
+                        if (code == 'a') m100a = sub_node.textContent;
+                        if (code == 'c') m100c = sub_node.textContent;
+                    }
+                });
+            } else if (tag == '245') {
+                dojo.forEach(node.childNodes, function(sub_node) {
+                    if (sub_node.nodeType == Node.ELEMENT_NODE) {
+                        var code = sub_node.getAttribute('code');
+                        if (code == 'a') m245a = sub_node.textContent;
+                        if (code == 'b') m245b = sub_node.textContent;
+                        if (code == 'p') m245p = sub_node.textContent;
+                        if (code == 'n') m245n = sub_node.textContent;
+                    }
+                });
+            }
+        }
+    );
+
+    return {
+        author : m100a + ' ' + m100c,
+        title : m245a + ' ' + m245b + ' ' + m245n + ' ' + m245p
+    };
+}
+
 
 function do_pull_list() {
     progress_dialog.show(true);
@@ -42,6 +84,12 @@ function do_pull_list() {
                     hold.current_copy.parts_stringified += ' ' + part.label();
                 });
 
+                var bits = get_marc_bits(
+                    hold.current_copy.call_number.record.marc);
+
+                hold.title = bits.title;
+                hold.author = bits.author;
+
 
                 // clone the template's html
                 var tr = dojo.clone(
@@ -53,12 +101,6 @@ function do_pull_list() {
                             dojo.string.substitute(td.innerHTML, hold);
                     }
                 );
-
-                new openils.BibTemplate({
-                    root : tr,
-                    xml  : dojox.xml.parser.parse(hold.current_copy.call_number.record.marc),
-                    delay: false
-                });
 
                 dojo.place(tr, "target");
             });
@@ -126,31 +168,68 @@ function hashify_fields(fields) {
 function do_clear_holds() {
     progress_dialog.show(true);
 
-    var launcher;
     fieldmapper.standardRequest(
-        ["open-ils.circ", "open-ils.circ.hold.clear_shelf.process"], {
+        ["open-ils.circ", "open-ils.circ.hold.clear_shelf.process.fire"], {
             "async": true,
             "params": [authtoken, cgi.param("o")],
             "onresponse": function(r) {
                 if (r = openils.Util.readResponse(r)) {
-                    if (r.cache_key) { /* complete */
-                        launcher = dojo.byId("clear_holds_launcher");
-                        launcher.innerHTML = "Re-fetch for Printing"; /* XXX i18n */
-                        launcher.onclick =
-                            function() { do_clear_holds_from_cache(r.cache_key); };
-                        dojo.byId("clear_holds_set_label").innerHTML = r.cache_key;
-                    } else if (r.maximum) {
-                        progress_dialog.update(r);
-                    }
+                    launch_cache_poll(r.cache_key);
                 }
-            },
-            "oncomplete": function() {
-                progress_dialog.hide();
-                if (launcher) launcher.onclick();
-                else alert(dojo.byId("no_results").innerHTML);
             }
         }
     );
+}
+
+// Poll for the existence of cached clear-shelf data.
+// Once found, kick off the print process.
+function launch_cache_poll(cache_key) {
+
+    var poll_timeout;
+    var poll_interval = 10000; // poll every 10 seconds
+    var poll_count = 0;
+
+    function poll_cache() {
+
+        if (poll_count++ > 180) return; // poll 30 minutes max
+
+        console.log("Clear shelf polling cache with key " + cache_key);
+
+        fieldmapper.standardRequest(
+            [   "open-ils.circ",
+                "open-ils.circ.hold.clear_shelf.get_cache.test"], {
+                async: true,
+                params: [authtoken, cache_key, cgi.param("chunk_size")],
+                oncomplete: function(r) {
+                    if (openils.Util.readResponse(r) == 1) {
+                        // found cached data.
+                        // kill the progress dialog and kick off
+                        // the from-cache printer
+                        console.log("Clear shelf poll found data");
+                        progress_dialog.hide();
+
+                        // wire up the re-print link
+                        var launcher = dojo.byId("clear_holds_launcher");
+                        launcher.innerHTML = "Re-fetch for Printing"; /* XXX i18n */
+                        launcher.disabled = true;
+                        launcher.onclick =
+                            function() { do_clear_holds_from_cache(cache_key); };
+                        dojo.byId("clear_holds_set_label").innerHTML = cache_key;
+
+                        do_clear_holds_from_cache(cache_key);
+                    } else {
+                        // kick off another poll 'thread'
+                        console.log("Clear shelf poll found no data");
+                        setTimeout(poll_cache, poll_interval);
+                    }
+                }
+            }
+        );
+    }
+
+    // start the initial poll 'thread'
+    // give it a shorter wait time in case the initial calls ends quickly
+    setTimeout(poll_cache, poll_interval / 2);
 }
 
 function do_clear_holds_from_cache(cache_key) {
@@ -177,6 +256,18 @@ function do_clear_holds_from_cache(cache_key) {
                         var hold = hashify_fields(resp.hold_details);
                         hold.action = resp.action;
 
+                        var bits = get_marc_bits(
+                            hold.current_copy.call_number.record.marc);
+
+                        hold.title = bits.title;
+                        hold.author = bits.author;
+
+                        if(resp.hold_details.hold_type) {
+                            hold.hold_type = resp.hold_details.hold_type;
+                        } else {
+                            hold.hold_type = "";
+                        }
+
                         var tr = dojo.clone(template);
                         any++;
 
@@ -186,14 +277,6 @@ function do_clear_holds_from_cache(cache_key) {
                                     dojo.string.substitute(td.innerHTML, hold);
                             }
                         );
-
-                        new openils.BibTemplate({
-                            "root": tr,
-                            "xml": dojox.xml.parser.parse(
-                                hold.current_copy.call_number.record.marc
-                            ),
-                            "delay": false
-                        });
 
                         dojo.attr(tr, "sortkey", hold.usr.display_name);
                         place_by_sortkey(tr, target);
@@ -207,7 +290,7 @@ function do_clear_holds_from_cache(cache_key) {
                     function() {
                         if (any) window.print();
                         else alert(dojo.byId("no_results").innerHTML);
-                    }, 500  /* give the progress_dialog more time to go away */
+                    }, 2000  /* give the progress_dialog more time to go away */
                 );
             }
         }

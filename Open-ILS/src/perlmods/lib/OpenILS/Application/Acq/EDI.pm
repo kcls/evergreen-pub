@@ -4,6 +4,7 @@ use base qw/OpenILS::Application/;
 use strict; use warnings;
 
 use IO::Scalar;
+use File::Basename;
 
 use OpenSRF::AppSession;
 use OpenSRF::EX qw/:try/;
@@ -24,6 +25,9 @@ use OpenILS::Utils::EDIReader;
 use Data::Dumper;
 $Data::Dumper::Indent = 0;
 our $verbose = 0;
+
+my $MAX_EDI_FILE_SIZE = 10485760; #10mb
+
 
 sub new {
     my($class, %args) = @_;
@@ -57,27 +61,6 @@ my $VENDOR_KLUDGE_MAP = {
     }
 };
 
-
-__PACKAGE__->register_method(
-    method    => 'retrieve',
-    api_name  => 'open-ils.acq.edi.retrieve',
-    authoritative => 1,
-    signature => {
-        desc   => 'Fetch incoming message(s) from EDI accounts.  ' .
-                  'Optional arguments to restrict to one vendor and/or a max number of messages.  ' .
-                  'Note that messages are not parsed or processed here, just fetched and translated.',
-        params => [
-            {desc => 'Authentication token',        type => 'string'},
-            {desc => 'Vendor ID (undef for "all")', type => 'number'},
-            {desc => 'Date Inactive Since',         type => 'string'},
-            {desc => 'Max Messages Retrieved',      type => 'number'}
-        ],
-        return => {
-            desc => 'List of new message IDs (empty if none)',
-            type => 'array'
-        }
-    }
-);
 
 sub retrieve_core {
     my ($self, $set, $max, $e, $test) = @_;    # $e is a working editor
@@ -188,10 +171,60 @@ sub retrieve_core {
                 $content, $remote_file, $server, $account->id
             );
 
-            push @return, @$incoming;
+            push @return, @$incoming if $incoming;
         }
     }
     return \@return;
+}
+
+__PACKAGE__->register_method(
+    method    => 'process_edi_file',
+    api_name  => 'open-ils.acq.edi.file.process',
+    signature => {
+        desc   => 'Process a single EDI file',
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'EDI Account ID', type => 'number'},
+            {desc => 'Full path to local EDI file', type => 'string'},
+        ],
+        return => {
+            desc => 'ID of the created acq.edi_message or undef if none is created',
+            type => 'number'
+        }
+    }
+);
+
+sub process_edi_file {
+    my ($self, $client, $auth, $account_id, $local_file) = @_;
+    my $e = new_editor(authtoken => $auth);
+
+    return $e->event unless $e->checkauth;
+    return $e->event unless $e->allowed('PROCESS_EDI_FILE');
+
+    my $filesize = -s $local_file;
+    if (!$filesize || $filesize > $MAX_EDI_FILE_SIZE) {
+        return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Too big");
+    }
+
+    my $content = do {
+        local $/ = undef;
+
+        my $fh;
+        unless (open $fh, "<", $local_file) {
+            $logger->error("Cannot open EDI file $local_file: $!");
+            return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Could not open: $!");
+        }
+
+        <$fh>;
+    };
+
+    $logger->info("EDI processing file $local_file [characters=" . length($content) . "]");
+
+    my $file_name = fileparse($local_file);
+
+    my $replies = __PACKAGE__->process_retrieval($content, $file_name, undef, $account_id);
+
+    return $replies ? $replies->[0] : undef;
 }
 
 
@@ -735,6 +768,11 @@ sub process_parsed_msg {
                 $logger->info("EDI: LI $li_id -- $qty_count in transit");
                 next;
             }
+
+            if ($qty_code eq '83') {
+                $logger->info("EDI: LI $li_id -- backordered $qty_count");
+                next;
+            }
             # 84: urgent delivery
             # 118: quantity manifested
             # ...
@@ -799,7 +837,7 @@ sub process_parsed_msg {
                     if ($stat eq '200') { 
                         $reason_id = 1007; # not accepted
 
-                    } elsif ($stat eq '400') { 
+                    } elsif ($stat eq '401') { 
                         $reason_id = 1283; # back-order
                     }
 
@@ -1274,20 +1312,30 @@ sub extract_shipment_notification_entries {
             my $ident = $ident_spec->{value};
             next unless $ident;
 
-            my $li_id_hash = $e->json_query({
+            my $li_id_hash_arr = $e->json_query({
                 select => {jub => ['id']},
                 from => {
                     jub => {
                         acqlia => {
                             filter => {
-                                order_ident => 't', 
                                 attr_value => $ident
                             }
                         }
                     }
                 },
-                where => {'+jub' => {purchase_order => $po_id}}
-            })->[0];
+                where => {'+jub' => {purchase_order => $po_id}},
+                # Search all matching attrs, but use the one marked as the order
+                # identifier if we can find one.
+                order_by => [{
+                    class => 'acqlia', 
+                    field => 'order_ident', 
+                    direction => 'desc'
+                }]
+            });
+
+            # Protect against po_id's that are not numeric and cause
+            # query failure.
+            my $li_id_hash = $li_id_hash_arr ? $li_id_hash_arr->[0] : undef;
 
             if ($li_id_hash) {
                 $li_id = $li_id_hash->{id};

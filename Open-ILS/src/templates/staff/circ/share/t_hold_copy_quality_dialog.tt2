@@ -3,13 +3,13 @@
     <button type="button" class="close" 
       ng-click="cancel()" aria-hidden="true">&times;</button>
     <h4 class="modal-title">
-      [% l('Accept only "Good Quality" copies?') %]
+      [% l('Accept only "Standard" copies?') %]
     </h4>
   </div>
   <div class="modal-body">
     <div class="form-group">
       <div class="col-md-4">
-        <button class="btn btn-default" ng-click="good()">[% l('Good Condition') %]</button>
+        <button class="btn btn-default" ng-click="good()">[% l('Standard') %]</button>
       </div>
       <div class="col-md-4">
         <button class="btn btn-default" ng-click="any()">[% l('Any Condition') %]</button>

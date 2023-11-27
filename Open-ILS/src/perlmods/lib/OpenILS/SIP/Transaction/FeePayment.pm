@@ -189,20 +189,43 @@ sub do_fee_payment {
 sub pay_bills {
     my ($self, $paymentref) = @_;
     my $user = $self->patron->{user};
-    if ($self->sip_payment_type eq '02' || $self->sip_payment_type eq '01') {
+    my $ptype = $self->sip_payment_type || '';
+    my $rlogin = $self->register_login || '';
+
+    if ($rlogin) {
+        syslog('LOG_DEBUG', "Register login sent as '$rlogin'"); 
+        if ($rlogin =~ /\\.+/) { # Windows domain login
+            my @parts = split(/\\/, $rlogin);
+            $rlogin = $parts[1];
+        }
+    }
+
+    my $params = {
+        userid => $user->id,
+        note => $rlogin ? "Via SIP2: Register login '$rlogin'" : "Via SIP2",
+        payments => $paymentref,
+        payment_type => 'cash_payment',
+        secondary_auth_username => $rlogin
+    };
+
+    if ($ptype eq '02' || $ptype eq '01') {
         # '01' is "VISA"
         # '02' is "credit card"
-        my $transaction_id = $self->transaction_id ? $self->transaction_id : 'Not provided by SIP client';
-        return $U->simplereq('open-ils.circ', 'open-ils.circ.money.payment', $self->{authtoken},
-                             { payment_type => "credit_card_payment", userid => $user->id, note => "via SIP2",
-                               cc_args => { approval_code => $transaction_id, },
-                               payments => $paymentref}, $user->last_xact_id);
-    } else {
-        # record as "cash"
-        return $U->simplereq('open-ils.circ', 'open-ils.circ.money.payment', $self->{authtoken},
-                             { payment_type => "cash_payment", userid => $user->id, note => "via SIP2",
-                               payments => $paymentref}, $user->last_xact_id);
+
+        $params->{payment_type} = 'credit_card_payment';
+        $params->{cc_args} = {
+            approval_code => 
+                $self->transaction_id || 'Not provided by SIP client'
+        };
+
+    } elsif ($ptype eq '05') {
+        $params->{payment_type} = 'check_payment';
+        $params->{check_number} = 
+            $self->check_number || 'Not Provided by SIP Client';
     }
+
+    return $U->simplereq('open-ils.circ', 'open-ils.circ.money.payment', 
+        $self->{authtoken}, $params, $user->last_xact_id);
 }
 
 

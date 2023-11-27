@@ -92,6 +92,12 @@
                 accesskey="&staff.patron_search_form.card.accesskey;"/>
             <textbox id="card" group="0" context="clipboard"/>
         </row>
+        <row id="psr6d">
+            <label id="psl6d" control="egid"
+                value="&staff.patron_search_form.egid.label;"
+                accesskey="&staff.patron_search_form.egid.accesskey;"/>
+            <textbox id="egid" group="0" context="clipboard"/>
+        </row>
         <row id="psr6a">
             <label id="psl6a" value=" "/>
         </row>

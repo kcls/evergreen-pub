@@ -1,0 +1,38 @@
+<!-- Will need js edit to safely remove or hide -->
+<div id='oils-selfck-status-div' class="oils-selfck-status-div status_box"></div>
+<div id='oils-selfck-scan-text' class='hidden alert alert-warning'></div>
+
+<div class="scko-table">
+<div class="row">
+  <div class="col-xs-12">
+    <table class="table scko-table-striped">
+      <tbody id='oils-selfck-circ-tbody'>
+        <tr id='oils-selfck-circ-row'><td>
+          <table>
+            <tr>
+              <td class="scko-table-label">BARCODE:</td>
+              <td class="scko-table-content" name="barcode"></td>
+            </tr>
+            <tr>
+              <td class="scko-table-label">TITLE:</td>
+              <td class="scko-table-content" name="title"></td>
+            </tr>
+            <tr>
+              <td class="scko-table-label" nowrap="nowrap">DUE DATE:</td>
+              <td class="scko-table-content" name="due_date"></td>
+              <td class="scko-table-content">
+                <div class="hideMe">
+                  <div name='checkout' class='hidden'>Check out</div>
+                  <div name='renew' class='hidden'>Renewal</div>
+                </div>
+              </td>
+            </tr>
+            <!-- unsure why this is here, leaving for now -->
+            <tr><td></td><td></td> </tr>
+          </table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>

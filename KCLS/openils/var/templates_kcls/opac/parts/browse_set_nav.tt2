@@ -1,0 +1,14 @@
+    [% # Browse set navigation %]
+    <script type="text/javascript" src="[% ctx.media_prefix %]/js/ui/default/opac/browse_set_navigation.js"></script>
+
+    <div id="set_navigation" style="width:974px; margin:auto">
+        <span>
+            <a id="previous_set" href='' class="hidden">&lt Previous Set</a>
+        </span>
+        |
+        <span id="current_set" >Loading Navigation...</span>
+        |
+        <span>
+            <a id="next_set" href='' class="hidden">Next Set &gt</a>
+        </span>
+    </div>

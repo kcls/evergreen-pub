@@ -275,7 +275,7 @@ function new_note() {
         var xml = '<groupbox xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" flex="1">';
         xml += '<caption label="' + $("patronStrings").getString('staff.patron.hold_notes.new_note') + '"/><grid flex="1"><columns><column/><column flex="1"/></columns><rows>';
         xml += '<row><label value="' + $('patronStrings').getString('staff.patron.hold_notes.new_note.public') + '"/><checkbox id="pub" name="fancy_data" checked="false"/></row>';
-        xml += '<row><label value="' + $('patronStrings').getString('staff.patron.hold_notes.new_note.slip') + '"/><checkbox id="slip" name="fancy_data" checked="false"/></row>';
+        xml += '<row><label value="' + $('patronStrings').getString('staff.patron.hold_notes.new_note.slip') + '"/><checkbox id="slip" name="fancy_data" checked="true"/></row>';
         xml += '<row><label value="' + $("patronStrings").getString('staff.patron.hold_notes.title') + '"/><textbox id="title" name="fancy_data" context="clipboard"/></row>';
         xml += '<row><label value="' + $("patronStrings").getString('staff.patron.hold_notes.body') + '"/><textbox multiline="true" id="note" name="fancy_data" context="clipboard"/></row>';
         xml += '<row><spacer/><hbox><button label="' + $("patronStrings").getString('staff.patron.hold_notes.cancel') + '" name="fancy_cancel" ';

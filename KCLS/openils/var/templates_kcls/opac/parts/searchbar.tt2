@@ -1,0 +1,89 @@
+[% PROCESS "opac/parts/org_selector.tt2" %]
+<div id="search-box">    
+    [% UNLESS took_care_of_form -%]
+    <form action="[% ctx.opac_root %]/results" method="GET">
+    [%- END %]
+    <table cellpadding="0" cellspacing="10" border="0">
+        <tr>
+            <td colspan="3">
+                <span class="search_catalog_lbl">[% l('Search the Catalog') %]</span>
+                [% IF took_care_of_form %]
+                    <a href="[% mkurl(ctx.opac_root _ '/advanced', {pane => 'advanced'}) %]"
+                        id="home_adv_search_link"><span class="adv_search_font">[% l('Advanced Search') %]</span></a>
+                [% ELSE %]
+                    <a href="[% mkurl(ctx.opac_root _ '/advanced', {pane => 'advanced'}) %]"
+                        id="home_adv_search_link"><span class="adv_search_font">[% l('Advanced Search') %]</span></a>
+                [% END %]
+                |
+                <span class="browse_the_catalog_lbl adv_search_font">
+                    <a href="[% mkurl(ctx.opac_root _ '/advanced', {pane => 'browse'}, ['fi:has_browse_entry'])%]"><span class="adv_search_font">[% l('Browse the Catalog') %]</span></a>
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+            [% INCLUDE "opac/parts/qtype_selector.tt2" %]
+            </td>
+            <td>
+                <div id="search_box_wrapper">
+                    [%  placeholder = l("Search Keyword");
+                        value = is_advanced ? ctx.naive_query_scrub(ctx.processed_search_query) : CGI.param('query') || placeholder | html;
+                    %]
+                    <!-- Note: when common browsers support HTML5 placeholder text, we can remove the JS -->
+                    <input type="text" id="search_box" name="query" value="[% value %]" 
+                        [% IF value == placeholder %] style='color:#999' [% END %]
+                        onfocus="if (this.value=='[% placeholder %]'){this.value='';this.style.color='#000';}"
+                        onblur="if (this.value==''){this.value='[% placeholder %]';this.style.color='#999';}"
+                        x-webkit-speech />
+
+                    <!-- should be the only element in the page receiving focus.  No onload required. -->
+                    <script>document.getElementById('search_box').focus()</script>
+                </div>
+                <input name='page' type='hidden' value="0" />
+            </td>
+            <td valign="top">
+                <div class="pos-abs">
+                    <div class="opac-auto-143">
+                        <input id='search-submit-go' type="image" alt="[% l('Search') %]" src="[% ctx.media_prefix %]/images/go-btn.png"
+                            onmouseover="this.src='[% ctx.media_prefix %]/images/go-btn-hover.png';"
+                            onmouseout="this.src='[% ctx.media_prefix %]/images/go-btn.png';" 
+                            onclick='setTimeout(function(){$("search-submit-spinner").className=""; $("search-submit-go").className="hidden"}, 2000)'/>
+                        <img id='search-submit-spinner' src='/opac/images/progressbar_green.gif' style='height:16px;width:16px;' class='hidden' alt=''/>
+                        [% 
+                            # If/when we have marc tag search support in query parser, we can remove this
+                            tags = CGI.param('tag');
+                            IF tags.0; # is this a marc search?
+                                subs = CGI.param('subfield');
+                                terms = CGI.param('term');
+                                marc_search = '';
+                                FOR tag IN tags;
+                                    i = loop.index;
+                                    marc_search = marc_search _ ' ' _ tags.$i _ subs.$i _ ':' _ terms.$i;
+                                END %]
+                                <span style='padding-left: 10px; color:#999'>[% marc_search | html %]</span>
+                        [% END %]
+                    </div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                [% INCLUDE "opac/parts/coded_value_selector.tt2" attr=["mattype", "item_type"] none_ok=1 none_label=l('All Formats') %]
+            </td>
+            <td>
+                <span id='depth_selector_span'>
+                    [% PROCESS build_org_selector name='loc' value=CGI.param('loc') %]
+                </span>
+                <span id='lib_selector_span'>
+                    <a id='lib_selector_link' class='classic_link'
+                        href='#'>[% l("Choose a library to search") %]</a>
+                </span>
+            </td>
+        </tr>
+    </table>
+    [% UNLESS took_care_of_form %]</form>[% END %]
+    <div id="breadcrumb">
+        <a href="[% ctx.opac_root %]/home">[% l('Catalog Home') %]</a> &gt;
+    </div>
+    <div class="clear-both"></div>
+</div>

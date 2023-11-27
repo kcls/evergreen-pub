@@ -1,4 +1,4 @@
-dump('entering util/error.js\n');
+console.log('entering util/error.js\n');
 
 if (typeof util == 'undefined') util = {};
 util.error = function () {
@@ -10,7 +10,6 @@ util.error = function () {
                 .getService(Components.interfaces.nsIConsoleService);
         } catch(E) {
             this.consoleDump = false;
-            dump('util.error constructor: ' + E + '\n');
         }
 
         this.sdump_last_time = new Date();
@@ -46,8 +45,7 @@ util.error.prototype = {
     'arg_dump_full' : false,
 
     'debug' : function(e){
-        dump('-----------------------------------------\n' 
-            + e + '\n-----------------------------------------\n' );
+        console.log(e);
     },
 
     'obj_dump' : function(s,dobj) {
@@ -189,7 +187,7 @@ util.error.prototype = {
                 }
             }
         } catch(E) {
-            dump('Calling sdump but ' + E + '\n');
+            console.log('Calling sdump but ' + E + '\n');
         }
     },
 
@@ -345,11 +343,15 @@ util.error.prototype = {
             c    = Text for confirmation checkbox.  null for no confirm
         */
 
-        dump('yns_alert:\n\ts = ' + s + '\n\ttitle = ' + title + '\n\tb1 = ' + b1 + '\n\tb2 = ' + b2 + '\n\tb3 = ' + b3 + '\n\tc = ' + c + '\n');
+        console.log('yns_alert:\n\ts = ' + s + '\n\ttitle = ' + title + '\n\tb1 = ' + b1 + '\n\tb2 = ' + b2 + '\n\tb3 = ' + b3 + '\n\tc = ' + c + '\n');
 
-        //FIXME - is that good enough of an escape job?
-        s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
+        // Check to see if we are in pre-cat checkout so we don't strip out html code
+        var barcode_number = s.match(/\d+/);
+        var test_string = document.getElementById('circStrings').getFormattedString('staff.circ.checkout.not_cataloged.confirm', barcode_number);
+       	if(s !== test_string) {
+			//FIXME - is that good enough of an escape job?
+			s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		}
         var xml = '<vbox xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" xmlns:html="http://www.w3.org/1999/xhtml" flex="1">' 
             + '<groupbox flex="1" style="overflow: auto; border: solid thin red;"><caption label="' + (title) + '"/>';
 
@@ -392,8 +394,7 @@ util.error.prototype = {
         }
 
         } catch(E) {
-
-            dump('yns_alert failed: ' + E + '\ns = ' + s + '\ntitle = ' + title + '\nb1 = ' + b1 + '\nb2 = ' + b2 + '\nb3 = ' + b3 + '\nc = ' + c + '\nimage = ' + image + '\n');
+            console.log('yns_alert failed: ' + E + '\ns = ' + s + '\ntitle = ' + title + '\nb1 = ' + b1 + '\nb2 = ' + b2 + '\nb3 = ' + b3 + '\nc = ' + c + '\nimage = ' + image + '\n');
 
             this.yns_alert_original(s + '\n\nAlso, yns_alert failed: ' + E,title,b1,b2,b3,c);
 
@@ -418,7 +419,7 @@ util.error.prototype = {
             c    = Text for confirmation checkbox.  null for no confirm
         */
 
-        dump('yns_alert_formatted:\n\ts = ' + s + '\n\ttitle = ' + title + '\n\tb1 = ' + b1 + '\n\tb2 = ' + b2 + '\n\tb3 = ' + b3 + '\n\tc = ' + c + '\n');
+        console.log('yns_alert_formatted:\n\ts = ' + s + '\n\ttitle = ' + title + '\n\tb1 = ' + b1 + '\n\tb2 = ' + b2 + '\n\tb3 = ' + b3 + '\n\tc = ' + c + '\n');
 
         //FIXME - is that good enough of an escape job?
         s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -483,7 +484,7 @@ util.error.prototype = {
             c    = Text for confirmation checkbox.  null for no confirm
         */
 
-        dump('yns_alert_original:\n\ts = ' + s + '\n\ttitle = ' + title + '\n\tb1 = ' + b1 + '\n\tb2 = ' + b2 + '\n\tb3 = ' + b3 + '\n\tc = ' + c + '\n');
+        console.log('yns_alert_original:\n\ts = ' + s + '\n\ttitle = ' + title + '\n\tb1 = ' + b1 + '\n\tb2 = ' + b2 + '\n\tb3 = ' + b3 + '\n\tc = ' + c + '\n');
 
         if (this.sound) { this.sound.bad(); }
 
@@ -640,4 +641,4 @@ util.error.prototype = {
     } 
 }
 
-dump('exiting util/error.js\n');
+console.log('exiting util/error.js\n');

@@ -141,7 +141,7 @@
                     'command',
                     function(id){ 
                         return function() { 
-                            var r = g.error.yns_alert(
+                            var r = g.error.yns_alert_original(
                                 $("patronStrings").getFormattedString('staff.patron.info_notes.render_notes.delete_note_message',[g.notes[id].title(), util.date.formatted_date(g.notes[id].create_date(),'%{localized}')]),
                                 $("patronStrings").getString('staff.patron.info_notes.render_notes.delete_note_title'),
                                 $("commonStrings").getString('common.yes'),

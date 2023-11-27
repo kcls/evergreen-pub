@@ -1,0 +1,248 @@
+<!-- TODO
+  * editing refunded xacts / modifying notes
+   ** Apply & Cancel buttons
+  * test CC payments / refunded_via
+  * rejecting
+-->
+
+<div class="row">
+  <div class="col-md-12">
+    <span>
+      <button class="btn btn-success" ng-click="return_to_list()">
+        <span class="glyphicon glyphicon-chevron-left"></span>
+        Return To List
+      </button>
+    </span>
+    <span class='pad-left-more'>
+      <button class="btn btn-info" ng-disabled="invalid_refund_amount()" 
+        ng-click="apply_updates()">
+        <span class="glyphicon glyphicon-pencil"></span>
+        Apply Updates
+      </button>
+    </span>
+    <span class='pad-left-more'>Mark As:</span>
+    <span class='pad-left'>
+      <input type='radio' ng-model="xact_state" value="pending"/>
+      <span class="pad-left-min"
+        ng-class="{'selected-state':xact_state == 'pending'}">Pending</span>
+    </span>
+    <span class='pad-left'>
+      <input type='radio' ng-model="xact_state" 
+        ng-disabled="mrxs.action_date() && xact_state == 'rejected'" value="refunded"/>
+      <span class="pad-left-min"
+        ng-class="{'selected-state':xact_state == 'refunded'}">Refunded</span>
+    </span>
+    <span class='pad-left'>
+      <input type='radio' ng-model="xact_state" value="rejected"/>
+      <span class="pad-left-min" 
+        ng-class="{'selected-state':xact_state == 'rejected'}">Rejected</span>
+    </span>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <h3 class="detail-header">Transaction Summary</h3>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="row">
+      <div class="col-md-6">Transaction ID</div>
+      <div class="col-md-6">{{mrxs.xact().id()}}</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">Amount Paid</div>
+      <div class="col-md-6">{{mrxs.refundable_paid() | currency}}</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">B.O. Refund Amount</div>
+      <div class="col-md-6 strong-text" ng-if="mrxs.rejected() == 't'">
+        Rejected
+      </div>
+      <div class="col-md-6 strong-text" 
+        ng-if="!editing && mrxs.rejected() != 't'">
+        {{mrxs.refund_amount() | currency}}
+      </div>
+      <div class="col-md-6" ng-if="editing">
+        <input type="text" class="money-input" 
+          ng-class="{'invalid-amount':invalid_refund_amount()}"
+          select-me="select_refund_amt"
+          ng-model="mrxs.refund_amount"
+          ng-model-options="{getterSetter: true}"
+        />
+      </div>
+    </div>
+    <div class="row" ng-if="!editing">
+      <div class="col-md-6">B.O. Action Date</div>
+      <div class="col-md-6">{{mrxs.action_date() | date:'short'}}</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">Copy Barcode</div>
+      <div class="col-md-6">{{mrxs.copy_barcode()}}</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">Title</div>
+      <div class="col-md-6">{{mrxs.title()}}</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">Patron ID</div>
+      <div class="col-md-6">{{mrxs.usr()}}</div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">Patron Name</div>
+      <div class="col-md-6">
+        {{mrxs.usr_first_name()}} 
+        {{mrxs.usr_middle_name()}} 
+        {{mrxs.usr_family_name()}} 
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6">Patron Address</div>
+      <div class="col-md-6">
+        {{mrxs.usr_street1()}} {{mrxs.usr_street2()}} 
+        {{mrxs.usr_city()}}, {{mrxs.usr_state()}} {{mrxs.usr_post_code()}}
+      </div>
+    </div>
+
+  </div>
+  <div class="col-md-5">
+    <textarea class="form-control" rows="7" placeholder="Notes..."
+      ng-model="mrxs.notes" ng-model-options="{getterSetter: true}">
+    </textarea>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <h3 class="detail-header">Payments</div>
+  </div>
+</div>
+
+<div ng-repeat="mrps in mrxs.refundable_payments()">
+  <div class="row">
+    <div class="col-md-3">Receipt Code</div>
+    <div class="col-md-3">{{mrps.receipt_code()}}</div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">Amount</div>
+    <div class="col-md-3">{{mrps.amount() | currency}}</div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">Payment Date</div>
+    <div class="col-md-3">{{mrps.payment_time() | date:'short'}}</div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">Payment Type</div>
+    <div class="col-md-3">
+      <span ng-switch on="mrps.payment_type()">
+        <span ng-switch-when="cash_payment">Cash</span>
+        <span ng-switch-when="check_payment">Check</span>
+        <span ng-switch-when="credit_card_payment">Credit Card</span>
+        <span ng-switch-default>{{mrps.payment_type()}}</span>
+      </span>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">Final Payment</div>
+    <div class="col-md-3">
+      <span class="label label-success" 
+        ng-if="mrps.final_payment() == 't'">Yes</span>
+      <span ng-if="mrps.final_payment() != 't'">No</span>
+    </div>
+  </div>
+  <div class="row" ng-if="mrps.payment_type() == 'credit_card_payment'">
+    <div class="col-md-3">Refunded Via</div>
+    <div class="col-md-6">
+      <span>
+        <input type='radio' ng-model="mrps.refunded_via" 
+          ng-model-options="{getterSetter: true}" value="check"/>
+        <span class="pad-left-min">Check</span>
+      </span>
+      <span class='pad-left'>
+        <input type='radio' ng-model="mrps.refunded_via" 
+          ng-model-options="{getterSetter: true}" value="credit_card"/>
+        <span class="pad-left-min">Credit Card</span>
+      </span>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">Staff Name</div>
+    <div class="col-md-3">{{mrps.staff_name()}}</div>
+  </div>
+  <div class="row">
+    <div class="col-md-3">Staff Email</div>
+    <div class="col-md-3">{{mrps.staff_email()}}</div>
+  </div>
+  <div class="row">
+   <div class="col-md-6"><hr/></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <h3 class="detail-header">All Transaction Billings and Payments</div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-7" id="all-billings-list">
+    <h4>All Billings</h4>
+    <div class="row" style="font-weight:bold">
+      <div class="col-md-2">Date</div>
+      <div class="col-md-1">ID#</div>
+      <div class="col-md-2">Amount</div>
+      <div class="col-md-3">Type</div>
+      <div class="col-md-2">Voided</div>
+      <div class="col-md-2">Void Date</div>
+    </div>
+    <div class="full-details-container" ng-repeat="bill in mrxs.xact().billings()">
+      <div class="row">
+        <div class="col-md-2">{{bill.billing_ts() | date:'shortDate'}}</div>
+        <div class="col-md-1">{{bill.id()}}</div>
+        <div class="col-md-2">{{bill.amount() | currency}}</div>
+        <div class="col-md-3">{{bill.btype().name()}}</div>
+        <div class="col-md-2">
+          <div ng-if="bill.voided() == 't'">
+            <span class="text-danger">Yes</span> 
+          </div>
+        </div>
+        <div class="col-md-2">
+          {{bill.void_time() | date:'shortDate'}}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <h4>All Payments</h4>
+    <div class="row" style="font-weight:bold">
+      <div class="col-md-3">Date</div>
+      <div class="col-md-2">ID#</div>
+      <div class="col-md-2">Amount</div>
+      <div class="col-md-3">Type</div>
+      <div class="col-md-2">Voided</div>
+    </div>
+    <div class="full-details-container" ng-repeat="pay in mrxs.xact().payments()">
+      <div class="row">
+        <div class="col-md-3">{{pay.payment_ts() | date:'shortDate'}}</div>
+        <div class="col-md-2">{{pay.id()}}</div>
+        <div class="col-md-2">{{pay.amount() | currency}}</div>
+        <div class="col-md-3">
+          <span ng-switch on="pay.payment_type()">
+            <span ng-switch-when="cash_payment">Cash</span>
+            <span ng-switch-when="check_payment">Check</span>
+            <span ng-switch-when="credit_card_payment">Credit Card</span>
+            <span ng-switch-default>{{pay.payment_type()}}</span>
+          </span>
+        </div>
+        <div class="col-md-2">
+          <div ng-if="pay.voided() == 't'">
+            <span class="text-danger">Yes</span> 
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

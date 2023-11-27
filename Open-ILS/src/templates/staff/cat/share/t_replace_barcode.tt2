@@ -42,7 +42,7 @@
     <div class="alert alert-success" ng-if="updateOK">
       <span>[% l('Item Updated') %]</span>
       <span class="horiz-pad" ng-if="copyId">
-        <a href="./cat/item/{{copyId}}/summary" target="_self">
+        <a href="/eg2/staff/cat/item/{{copyId}}/summary">
           [% l('View Item Details') %]
         </a>
     </div>

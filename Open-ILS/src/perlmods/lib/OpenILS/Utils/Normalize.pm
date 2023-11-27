@@ -7,6 +7,8 @@ use UNIVERSAL;
 use MARC::Record;
 use MARC::File::XML ( BinaryEncoding => 'UTF-8' );
 use OpenILS::Application::AppUtils;
+use Business::ISBN;
+use Business::ISSN;
 
 use Exporter 'import';
 our @EXPORT_OK = qw( clean_marc naco_normalize search_normalize );
@@ -123,6 +125,58 @@ sub clean_marc {
     $xml = OpenILS::Application::AppUtils->entityize($xml);
     $xml =~ s/[\x00-\x1f]//go;
     return $xml;
+}
+
+# Returns 2 arrays of ISBNs.  The first list are validated Business::ISBN
+# objects: 
+#
+# $isbn->as_isbn10->isbn # compact
+# $isbn->as_isbn13->as_string # with hyphens
+#
+# The second list are raw string values whose only limiting factor is
+# they be at least 10 characters long and contain numbers.
+sub clean_isbns {
+    my $value = shift;
+    my @isbns;
+    my @strings;
+
+    return (\@isbns, \@strings) unless $value;
+
+    # Chop up the collected raw values into parts and let
+    # Business::* tell us which parts looks like ISBNs.
+    for my $token (split(/ /, $value)) {
+        if (length($token) > 9) {
+            my $isbn = Business::ISBN->new($token);
+            if ($isbn && $isbn->is_valid) {
+                push(@isbns, $isbn);
+            } elsif ($token =~ /\d+/) {
+                push(@strings, $token);
+            }
+        }
+    }
+
+    return (\@isbns, \@strings);
+}
+
+sub clean_issns {
+    my $value = shift;
+    return () unless $value;
+    my @issns;
+
+    # Chop up the collected raw values into parts and let
+    # Business::* tell us which parts looks valid.
+    for my $token (split(/ /, $value)) {
+        my $issn = Business::ISSN->new($token);
+        push(@issns, $issn) if $issn && $issn->is_valid;
+    }
+
+    return @issns;
+}
+
+sub clean_ctrlno {
+    my $value = shift;
+    return () unless $value;
+    return ($value =~ /([^\d]*)(\d+)/);
 }
 
 1;

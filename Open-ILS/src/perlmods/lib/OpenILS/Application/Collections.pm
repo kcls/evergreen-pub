@@ -882,10 +882,18 @@ sub user_balance_summary {
 
         $balance = $balance ? $balance->{balance_owed} : '0';
 
+        my $lost_owed = $e->json_query(
+            {from => ['actor.usr_lost_amount_owed', $user_id]})->[0];
+
+        $lost_owed = $lost_owed ? $lost_owed->{'actor.usr_lost_amount_owed'} : '0';
+
         my $xacts_node = $user_doc->createElement('Transactions');
         my $balance_node = $user_doc->createElement('BalanceOwed');
+        my $lost_node = $user_doc->createElement('LostBalanceOwed');
         $balance_node->appendChild($user_doc->createTextNode($balance));
+        $lost_node->appendChild($user_doc->createTextNode($lost_owed));
         $xacts_node->appendChild($balance_node);
+        $xacts_node->appendChild($lost_node);
         $root->appendChild($xacts_node);
 
         if ($$args{include_xacts}) {
@@ -945,7 +953,11 @@ sub setup_batch_file {
     my $file_prefix = "${prefix}_" . DateTime->now->strftime('%F') . "_$location";
     $file_prefix .= "_$start_date" if $start_date;
     $file_prefix .= "_$end_date" if $end_date;
-    $file_prefix .= "_$user_id" if $user_id;
+    if (ref $user_id eq 'ARRAY') {
+        $file_prefix .= "_multiple_users";
+    } elsif ($user_id) {
+        $file_prefix .= "_user_$user_id";
+    }
 
     my $FILE;
     my $file_name = File::Spec->catfile($dir_name, "$file_prefix.tmp");

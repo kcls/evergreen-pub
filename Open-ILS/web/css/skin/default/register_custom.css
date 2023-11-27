@@ -1,0 +1,21 @@
+tr[fmfield=email] .dijitTextBox { width:24em; }
+tr[fmfield=ident_value2] .dijitTextBox { width:24em; }
+tr[fmfield=street1] .dijitTextBox { width:24em; }
+/* Make the FIelds Bigger */
+tr[id^=stat-cat-row] td { }
+
+/*
+    Set All Three to the Width you Want
+*/
+tr[id^=stat-cat-row] td[name=widget] {
+    width:400px;
+}
+tr[id^=stat-cat-row] td[name=widget] .dijitComboBox,
+tr[id^=stat-cat-row] td[name=widget] .dijitSpinner,
+tr[id^=stat-cat-row] td[name=widget] .dijitTextBox {
+    width:400px;
+}
+
+tr[id^=stat-cat-row] td[name=widget] input {
+    width:400px;
+}

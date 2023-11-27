@@ -1,0 +1,243 @@
+<eg-staff-banner bannerText="MARC Batch Edit : {{recordCount}} Record(s)"
+  i18n-bannerText></eg-staff-banner>
+
+<eg-marc-diff-dialog #diffDialog></eg-marc-diff-dialog>
+
+<eg-confirm-dialog #confirmApply
+  i18n-dialogTitle i18n-dialogBody
+  dialogTitle="Confirm Batch Update"
+  dialogBody="Apply changes to {{recordCount}} records?  This cannot be undone.">
+</eg-confirm-dialog>
+
+<div class="col-lg-12 common-form striped-odd form-validated">
+
+  <div class="row mt-2 pt-2 pb-2 border">
+
+    <div class="col-lg-4 pr-2 pl-2 d-flex border-right">
+      <div class="flex-1 pl-2 pr-0" i18n>Bucket</div>
+      <div class="flex-2">
+        <eg-combobox [selectedId]="bucketId" [required]="true" domId="bucket-select"
+          [entries]="buckets" (onChange)="bucketChanged($event)">
+        </eg-combobox>
+      </div>
+    </div>
+
+    <div class="col-lg-4 pr-2 pl-2 d-flex border-right">
+      <div class="flex-1 pl-2 pr-0" i18n>Search Regex: </div>
+      <div class="flex-2">
+        <input type="text" class="form-control" id="task-search" 
+          placeholder="^=650 0 \$aElephants"
+          [required]="true" [(ngModel)]="search"/>
+      </div>
+    </div>
+
+    <div class="col-lg-4 pr-2 pl-2 d-flex">
+      <div class="flex-1 pl-2 pr-0" i18n>Replace Regex: </div>
+      <div class="flex-2">
+        <input type="text" class="form-control" 
+          placeholder="=650 0 \$aOliphaunts" [(ngModel)]="replace"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2 pt-2 pb-2 border">
+    <div class="col-lg-12 d-flex">
+      <div>
+        <button (click)="showExamples = true" *ngIf="!showExamples"
+          class="btn btn-outline-primary label-with-material-icon ml-2">
+          <span i18n>Show Examples</span>
+          <span class="material-icons">school</span>
+        </button>
+        <button (click)="showExamples = false" *ngIf="showExamples"
+          class="btn btn-outline-primary label-with-material-icon ml-2">
+          <span i18n>Hide Examples</span>
+          <span class="material-icons">school</span>
+        </button>
+      </div>
+      <div>
+        <button (click)="startOver()" [disabled]="processing"
+          class="btn btn-outline-dark label-with-material-icon ml-2">
+          <span i18n>Reset Form</span>
+          <span class="material-icons">sync</span>
+        </button>
+      </div>
+      <div class="flex-1"></div>
+      <div>
+        <button
+          class="btn btn-outline-dark label-with-material-icon ml-2"
+          [disabled]="disableSave()" (click)="applyChanges()">
+          <span i18n>Apply Rule To Bib Records</span>
+          <span class="material-icons">file_download</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-2 p-2" *ngIf="processing">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2">
+        <eg-progress-inline [max]="progressMax" [value]="progressValue">
+        </eg-progress-inline>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2">
+        <div class="font-italic m-2 alert alert-primary" i18n>
+          Closing or refreshing this browser tab while processing will
+          result in an incomplete batch update.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2 p-2" *ngIf="processing || postProcessed">
+    <div class="col-lg-6 offset-lg-3">
+      <div class="card tight-card m-1">
+        <div class="card-header" i18n>Processing Complete</div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex">
+              <div class="flex-1" i18n>Record Count:</div>
+              <div class="flex-1">{{progressMax}}</div>
+            </li>
+            <li class="list-group-item d-flex">
+              <div class="flex-1" i18n>Processed Count:</div>
+              <div class="flex-1">{{progressValue}}</div>
+            </li>
+            <li class="list-group-item d-flex">
+              <div class="flex-1" i18n>Number of records modified:</div>
+              <div class="flex-1">{{numModified}}</div>
+            </li>
+            <li class="list-group-item d-flex" *ngIf="postProcessed">
+              <div class="flex-1"></div>
+              <div>
+                <button (click)="showList()" class="btn btn-outline-primary" i18n>
+                  Show Record List
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-container *ngIf="!processing && !postProcessed">
+
+  <hr class="mb-2"/>
+
+  <ng-template #tcnTemplate let-row="row">
+    <a target="_blank" 
+      routerLink="/staff/catalog/record/{{row['target_biblio_record_entry.id']}}">
+      {{row['target_biblio_record_entry.tcn_value']}}
+    </a>
+  </ng-template>
+
+  <ng-template #titleTemplate let-row="row">
+    <a target="_blank" 
+      routerLink="/staff/catalog/record/{{row['target_biblio_record_entry.id']}}">
+      {{row['target_biblio_record_entry.simple_record.title']}}
+    </a>
+  </ng-template>
+
+  <div *ngIf="showExamples" class="m-4 border rounded p-2">
+    <h4 i18n>Documentation and Examples</h4>
+    <ul>
+      <li i18n>
+        Regular expressions are applied to the Flat MARC (MARC Breaker) text 
+        variant of each record.  
+      </li>
+      <li i18n>
+        In flat text form, each MARC tag is followed by 1 space,
+        including the "LDR" pseudo-tag.  No other spacing is added to
+        the text.
+      </li>
+      <li i18n>
+        Each MARC tag represents a single line of matchable text.  Use the 
+        "^" character to indicate the start of a line and "$" to indicate 
+        the end of a line.
+      </li>
+      <li i18n>Replacement values are applied to all matches, not just the first.</li>
+      <li i18n>
+        Subfields are indicated with the dollar sign "$".  Since the
+        dollar sign is a special character in regular expressions, literal
+        dollar signs, e.g. those preceding subfield codes, should be escaped
+        with a back slash "\".
+      </li>
+    </ul>
+    <h5 i18n>Examples</h5>
+    <ul>
+      <li>
+        <div i18n>Replace the first indicator value of "1" with "2" for 
+          records containing the specified 100a value.</div>
+        <pre class="mb-0" i18n>Search:  ^=100 1 \$aMayhew, James,</pre>
+        <pre i18n>Replace: =100 2 \$aMayhew, James,</pre>
+      </li>
+      <li>
+        <div i18n>
+          Replace all occurrences of "Jane [some last name]" 
+          with "[some last name], Jane".
+        </div>
+        <pre class="mb-0" i18n>Search:  Jane (\w*)</pre>
+        <pre i18n>Replace: $1, Jane</pre>
+      </li>
+      <li>
+        <div i18n>
+          Set leader position 24 to value "6" for any records that contain
+          alternate values.
+        </div>
+        <pre class="mb-0" i18n>Search:  =LDR(.{{'{'}}24{{'}'}})[^6]</pre>
+        <pre i18n>Replace: =LDR$16</pre>
+      </li>
+    </ul>
+  </div>
+
+  <div *ngIf="!postApply" class="font-italic m-2" i18n>
+    Double-click a grid row to see how each record would be affected by the
+    search/replace actions specified above.
+  </div>
+
+  <div *ngIf="postApply" class="font-italic m-2" i18n>
+    Double-click a grid row to see the current MARC content for each record.
+  </div>
+
+  <eg-grid #grid idlClass="cbrebi" [dataSource]="gridDataSource" pageSize="25"
+    persistKey="staff.cat.marsr" [rowFlairIsEnabled]="true" [rowFlairCallback]="rowFlair"
+    (onRowActivate)="showDiffDialog($event)" [showDeclaredFieldsOnly]="true">
+
+    <eg-grid-column path="id" [hidden]="true" [required]="true">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.id" [required]="true"
+      i18n-label label="Record ID" [hidden]="true">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.tcn_value" flex="1"
+      [cellTemplate]="tcnTemplate" i18n-label label="TCN">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.simple_record.title" 
+      flex="4" [cellTemplate]="titleTemplate" i18n-label label="Title">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.simple_record.author"
+      i18n-label label="Author">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.edit_date"
+      i18n-label label="Edit Date" datatype="timestamp">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.editor.usrname"
+      i18n-label label="Editor">
+    </eg-grid-column>
+
+    <eg-grid-column path="target_biblio_record_entry.simple_record.isbn"
+      flex="3" i18n-label label="ISBN">
+    </eg-grid-column>
+
+  </eg-grid>
+
+</ng-container>
+

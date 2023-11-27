@@ -67,6 +67,7 @@ function new_penalty_init() {
         window.new_standing_penalty_event_listeners.add(document.getElementById('cancel_btn'), 
             'command', function() { window.close(); }, false
         );
+
         window.new_standing_penalty_event_listeners.add(document.getElementById('apply_btn'), 
             'command', 
             function() {
@@ -95,6 +96,7 @@ function new_penalty_init() {
         if (error) error.standard_unexpected_error_alert(err_prefix,E); else alert(err_prefix + E);
     }
 
+	build_message_menu();
 }
 
 function new_penalty_cleanup() {
@@ -128,3 +130,66 @@ function build_penalty_menu() {
     }
 }
 
+function loadMessage(text){
+
+	var messageBox = document.getElementById("note_tb");
+	messageBox.value = text;
+}
+
+function build_message_menu(){
+
+   // Load the dropdown
+	var messageString = fieldmapper.standardRequest(
+		[ 'open-ils.actor', 'open-ils.actor.patron_message_list' ],
+		{   async: false,
+			timeout: 10
+		}
+	);
+
+	var messageList = messageString.split(/&SPLIT&/);
+
+	// Array of arrays
+	var weightArray = [];
+
+	// Message, weight pairs
+	for (var i = 0; i < messageList.length; i+=2){
+
+		if (i < messageList.length -1){
+
+			var message = messageList[i];
+			var weight = messageList[i + 1];
+
+			// In case I didn't end up with a real weight for some reason
+			if (!isInteger(weight)){
+
+				weight = 1000;
+			}
+
+			// Ensure weight array is long enough, and there is already an array at index messageList[i + 2]
+			if ( !(weightArray[weight] instanceof Array) ){
+
+				weightArray[weight] = [];
+			}
+
+			weightArray[ weight ].push( message );
+		}
+	}
+
+	// Order by weight, then alphabetically
+	for(var i in weightArray){
+
+		weightArray[i].sort();
+
+		for (var n in weightArray[i]){
+
+			var message = weightArray[i][n];
+
+			var dropdown = document.getElementById("csp_messagelist");
+			dropdown.appendItem( message, message, "" );
+		}
+	}
+}
+
+function isInteger(possibleInteger) {
+    return !isNaN(parseFloat(possibleInteger)) && isFinite(possibleInteger);
+}

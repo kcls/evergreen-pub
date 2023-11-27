@@ -91,8 +91,9 @@ util.date.formatted_date = function (orig_date,format) {
     if (_date == null) {
         return '';
     }
-
+    var mEN_names = new Array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
     var mm = _date.getMonth() + 1; mm = mm.toString(); if (mm.length == 1) mm = '0' +mm;
+	var mmEN = _date.getMonth();
     var dd = _date.getDate().toString(); if (dd.length == 1) dd = '0' +dd;
     var yyyy = _date.getFullYear().toString();
     var yy = yyyy.substr(2);
@@ -103,6 +104,8 @@ util.date.formatted_date = function (orig_date,format) {
 
     var s = format;
     if (s == '') { s = '%F %H:%M'; }
+    //Just for cataloging date, show only the Date in mm-dd-yyyy
+    if (s == 'mmddyyyy') { s = mm + '-' + dd + '-' + yyyy; return s; }
     if (typeof window.dojo != 'undefined') {
         JSAN.use('OpenILS.data'); var data = new OpenILS.data(); data.stash_retrieve();
         dojo.require('dojo.date.locale');
@@ -121,6 +124,7 @@ util.date.formatted_date = function (orig_date,format) {
         s = s.replace( /%\{localized_date\}/g, dojo.date.locale.format( _date, dojo_format2 ) );
         s = s.replace( /%\{iso8601\}/g, dojo.date.stamp.toISOString( _date ) );
     }
+    s = s.replace( /%MMM/g, mEN_names[mmEN]);
     s = s.replace( /%m/g, mm );
     s = s.replace( /%d/g, dd );
     s = s.replace( /%Y/g, yyyy );

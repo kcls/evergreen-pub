@@ -77,10 +77,15 @@
         <div class="col-md-12">
           <div class="checkbox">
             <label>
-              <input type="checkbox" ng-model="orgselect_combo_names"
-                  ng-change="apply_orgselect_combob_names()">
-                [% l('Include Full Library Names in Library Selector?') %]
+              <input type="checkbox" ng-model="orgselect_short_names"
+                  ng-change="apply_orgselect_short_names()">
+                [% l('Display Library Name abbreviations only in Library Selector') %]
             </label>
+            <br/>
+            <br/>
+            <p>
+              [% l('Note: For settings changes to take full effect, it is recommended that you log out and sign back in to Evergreen.') %]
+            </p>
           </div>
         </div>
       </div>
@@ -126,6 +131,24 @@
             <option value="advanced">[% l('Advanced (default)') %]</option>
             <option value="numeric" >[% l('Numeric') %]</option>
             <option value="expert"  >[% l('MARC Expert') %]</option>
+            <option value="browse"  >[% l('Browse') %]</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row new-entry">
+        <div class="col-md-8">
+          <label for="results_sort_selector">[% l('Browse Results Default Sort') %]</label>
+          <p>[% l('You can set the default of how items are sorted in the Browse field.') %]</p>
+        </div>
+        <div class="col-md-4">
+          <select id="results_sort_selector" ng-model="results_sort">
+            <option value="pubdate.descending">[% l('Date: Newest to Oldest') %]</option>
+            <option value="pubdate">[% l('Date: Oldest to Newest') %]</option>
+            <option value="titlesort">[% l('Title: A to Z') %]</option>
+            <option value="titlesort.descending">[% l('Title: Z to A') %]</option>
+            <option value="authorsort">[% l('Author: A to Z') %]</option>
+            <option value="authorsort.descending">[% l('Author: Z to A') %]</option>
           </select>
         </div>
       </div>

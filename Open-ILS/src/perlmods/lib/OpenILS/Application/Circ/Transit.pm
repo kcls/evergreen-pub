@@ -255,6 +255,7 @@ sub __abort_transit {
             $transit->copy_status == OILS_COPY_STATUS_IN_TRANSIT  ||
             $transit->copy_status == OILS_COPY_STATUS_CATALOGING  ||
             $transit->copy_status == OILS_COPY_STATUS_ON_RESV_SHELF  ||
+            $transit->copy_status == OILS_COPY_STATUS_ASN_RECEIVED ||
             $transit->copy_status == OILS_COPY_STATUS_RESHELVING) {
             # set copy to Canceled Transit
             $copy->status( OILS_COPY_STATUS_CANCELED_TRANSIT);

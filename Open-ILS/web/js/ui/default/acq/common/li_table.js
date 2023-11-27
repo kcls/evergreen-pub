@@ -1,4 +1,5 @@
 dojo.require('dojo.date.locale');
+dojo.require('dojox.validate.check');
 dojo.require('dojo.date.stamp');
 dojo.require('dijit.form.Button');
 dojo.require('dijit.form.TextBox');
@@ -17,6 +18,21 @@ dojo.require('openils.PermaCrud');
 dojo.require("openils.widget.PCrudAutocompleteBox");
 dojo.require('dijit.form.ComboBox');
 dojo.require('openils.CGI');
+
+// KCLS: used for tracking selected lineitems that are
+// not visibible in the current page of lineitems.
+// Stores a JSON hash of lineitem ID's
+var checkBoxStorage;
+if (openils.XUL.localStorage) {
+    checkBoxStorage = openils.XUL.localStorage();
+} else {
+    // use browser localStorage outside of the XUL interface.
+    checkBoxStorage = localStorage;
+}
+
+// JBAS-1850 reset selected lineitems store on each page.
+// Note this does not affect paging within a selection list.
+checkBoxStorage.removeItem('eg.acq.piclist.selected');
 
 if (!localeStrings) {   /* we can do this because javascript doesn't have block scope */
     dojo.requireLocalization('openils.acq', 'acq');
@@ -98,6 +114,7 @@ function AcqLiTable() {
     this.vlAgent = new VLAgent();
     this.batchProgress = {};
 
+    // KCLS TODO: remove this feature / no longer used.
     if (dojo.byId('acq-lit-apply-idents')) {
         dojo.byId('acq-lit-apply-idents').onclick = function() {
             self.applyOrderIdentValues();
@@ -123,6 +140,15 @@ function AcqLiTable() {
         self.applySelectedLiAction(this.options[this.selectedIndex].value);
         this.selectedIndex = 0;
     };
+
+
+    if (openils.XUL.isXUL()) {
+        dojo.byId("acq-lit-li-actions-selector")
+            .removeChild(dojo.byId('po-print-browser'));
+    } else {
+        dojo.byId("acq-lit-li-actions-selector")
+            .removeChild(dojo.byId('po-print-xul'));
+    }
 
     acqLitCreatePoCancel.onClick = function() {
         acqLitPoCreateDialog.hide();
@@ -185,7 +211,7 @@ function AcqLiTable() {
                 "searchFormat": (field == 'fund') ? fundSearchFormat : null,
                 "searchFilter": (field == 'fund') ? fundSearchFilter : null,
                 "searchOptions": (field == 'fund') ? fundSort : null,
-                "orgLimitPerms": (field == 'location') ? ['CREATE_PICKLIST', 'CREATE_PURCHASE_ORDER'] : [perms],
+                "orgLimitPerms": [perms],
                 "dijitArgs": {
                     "required": false,
                     "labelType": (field == "fund") ? "html" : null
@@ -206,6 +232,9 @@ function AcqLiTable() {
         if (!hidden) openils.Util.show("acq-batch-update", "table");
 
         if (!dojo.isArray(disabled_fields)) disabled_fields = [];
+
+        // Widgets already created.  No need to rebuild.
+        if (this.batchUpdateWidgets) return;
 
         /* Note that this will directly contain dijits, not the AutoWidget
          * wrapper object. */
@@ -303,6 +332,53 @@ function AcqLiTable() {
                 alert(localeStrings.NO_LI_TO_UPDATE);
                 return;
             }
+            //Get all li elements on the page
+            var liItems = self.getSelected(true, null, false);
+
+            //Add batch of notes to all list elements
+            dojo.forEach(liItems, function(li) {
+                if(li_id_list.indexOf(JSON.stringify(li.id())) == -1){return;}
+                var value = acqBatchCreateNoteText.attr('value');
+                if(!value) return;
+                var note = new fieldmapper.acqlin();
+                note.isnew(true);
+                note.vendor_public(
+                    Boolean(acqBatchCreateNoteVendorPublic.attr('checked'))
+                );
+                note.value(value);
+                note.lineitem(li.id());
+                self.updateLiNotes(li, note, true);
+            });
+            acqBatchCreateNoteVendorPublic.attr("checked", false);
+            acqBatchCreateNoteText.attr("value", "");
+            var alertCodeCheck = true;
+            //Add alerts to all list elements
+            dojo.forEach(liItems, function(li) {
+                if(li_id_list.indexOf(JSON.stringify(li.id())) == -1){return;}
+                if (!acqBatchLitAlertAlertText.item) {
+                    if(acqBatchLitAlertNoteValue.attr("value") && alertCodeCheck) {
+                        alertCodeCheck = false;
+                        alert(localeStrings.ALERT_UNSELECTED);
+                    }
+                    return;
+                } 
+                var alert_text = new fieldmapper.acqliat().fromStoreItem(
+                    acqBatchLitAlertAlertText.item
+                );
+
+                var value = acqBatchLitAlertNoteValue.attr("value") || "";
+
+                var note = new fieldmapper.acqlin();
+                note.isnew(true);
+                note.lineitem(li.id());
+                note.value(value);
+                note.alert_text(alert_text);
+
+                self.updateLiNotes(li, note, true);
+            });
+            acqBatchLitAlertNoteValue.attr("value", "");
+            acqBatchLitAlertAlertText.attr("value", "");
+
 
             progressDialog.show(true);
             progressDialog.attr("title", localeStrings.LI_BATCH_UPDATE);
@@ -339,11 +415,15 @@ function AcqLiTable() {
                     }
                 }
             );
+            location.reload(true);
         };
     };
 
     this.batchUpdateChanges = function() {
         var o = {};
+        
+        // This will iterate over the batch apply properties, and will create 
+        // an array containing values of the form (batchProp:batchValue). 
 
         dojo.forEach(
             openils.Util.objectProperties(this.batchUpdateWidgets),
@@ -377,7 +457,6 @@ function AcqLiTable() {
     this.reset = function(keep_selectors) {
         while(self.tbody.childNodes[0])
             self.tbody.removeChild(self.tbody.childNodes[0]);
-        self.liCache = {};
         self.noteAcks = {};
         self.relCache = {};
 
@@ -470,6 +549,7 @@ function AcqLiTable() {
                 openils.Util.show('acq-lit-table-div');
                 this.focusLi();
                 this.refreshInlineCopies();
+                this._setBatchAlertStore();
                 break;
             case 'info':
                 openils.Util.show('acq-lit-info-div');
@@ -497,11 +577,23 @@ function AcqLiTable() {
     }
 
     this.toggleSelect = function() {
-        if(self.toggleState) 
-            dojo.forEach(self.selectors, function(i){i.checked = false});
-        else 
-            dojo.forEach(self.selectors, function(i){i.checked = true});
         self.toggleState = !self.toggleState;
+        var fromStore = self.storedLiSelection();
+
+        dojo.forEach(self.selectors, function(i) {
+
+            i.checked = self.toggleState;
+            var id = i.parentNode.parentNode.getAttribute('li');
+
+            if (self.toggleState) {
+                fromStore[id] = true;
+            } else {
+                delete fromStore[id];
+            }
+        });
+
+        checkBoxStorage.setItem(
+            'eg.acq.piclist.selected', js2JSON(fromStore));
     };
 
 
@@ -578,6 +670,9 @@ function AcqLiTable() {
                     indices[i.parentNode.parentNode.getAttribute('li')] = true;
             }
         );
+
+        var fromStore = self.storedLiSelection();
+        indices = dojo.mixin(indices, fromStore);
 
         var result = openils.Util.objectProperties(indices);
 
@@ -665,6 +760,55 @@ function AcqLiTable() {
         );
     }
 
+    this.transferLiToBib = function(li_id) {
+        var self = this;
+        var target;
+
+        if (openils.XUL.isXUL()) {
+            if (window.IAMBROWSER) {
+                target = openils.XUL.localStorage().getItem(
+                    'eg.cat.marked_lineitem_transfer_record');
+                if (target) target = JSON2js(target);
+            } else {
+                target = openils.XUL.getStash().marked_record_for_li_transfer;
+            }
+        }
+
+        if (!target) {
+            alert(localeStrings.LI_TRANSFER_NO_TARGET);
+            return;
+        }
+
+        // Data stored by the browser client are JSON-encoded.
+        target = JSON2js(target);
+
+        self.pcrud.retrieve('rmsr', target, {   
+            async : true, 
+            oncomplete : function(r) {
+                var rec = openils.Util.readResponse(r);
+
+                if (!confirm(dojo.string.substitute(
+                        localeStrings.LI_TRANSFER_CONFIRM, 
+                        [li_id, target, rec.title()]))) return;
+
+                console.debug('Transfering lineitem ' + 
+                    li_id + ' to bib ' + target);
+
+                fieldmapper.standardRequest(
+                    ['open-ils.acq', 
+                        'open-ils.acq.lineitem.transfer_to_bib'],
+                    {   params : [self.authtoken, li_id, target],
+                        oncomplete : function(r) {
+                            var li = openils.Util.readResponse(r);
+                            // no events fired, reload the page.
+                            location.href = location.href;
+                        }
+                    }
+                );
+            }
+        });
+    }
+
     // fetch an updated copy of the lineitem 
     // and add it back to the lineitem table
     this.refreshLineitem = function(li, focus) {
@@ -684,11 +828,27 @@ function AcqLiTable() {
         );
     }
 
+    this.replaceAmps = function(li) {
+        for(var i = 0; i < li.attributes().length; i++) {
+            var str = li.attributes()[i].attr_value();
+            var res = str.replace(/&amp;/, "&");
+            li.attributes()[i].attr_value(res);
+        }
+        return li;
+    }
+
+    this.storedLiSelection = function() {
+        return JSON2js(checkBoxStorage.getItem(
+            'eg.acq.piclist.selected') || "{}");
+    }
+
+    
     /**
      * Inserts a single lineitem into the growing table of lineitems
      * @param {Object} li The lineitem object to insert
      */
     this.addLineitem = function(li, skip_final_placement, nextSibling) {
+        li = self.replaceAmps(li);
         this.liCache[li.id()] = li;
 
         // insert the row right away so that final order isn't
@@ -705,7 +865,26 @@ function AcqLiTable() {
             }
         }
 
-        self.selectors.push(dojo.query('[name=selectbox]', row)[0]);
+        var liSelector = dojo.query('[name=selectbox]', row)[0];
+        self.selectors.push(liSelector);
+
+        // when selecting a lineitem, add it to the stored list
+        // of selected lineitems
+        liSelector.onclick = function() {
+            var fromStore = self.storedLiSelection();
+            if (this.checked) {
+                fromStore[li.id()] = true;
+            } else {
+                delete fromStore[li.id()];
+            }
+            checkBoxStorage.setItem(
+                'eg.acq.piclist.selected', js2JSON(fromStore));
+        };
+
+        // if a lineitem is in the set of selected lineitems,
+        // set the selector input to checked on page load.
+        var fromStore = self.storedLiSelection();
+        if (fromStore[li.id()]) liSelector.checked = true;
 
         // sort the lineitem notes on edit_time
         if(!li.lineitem_notes()) li.lineitem_notes([]);
@@ -783,9 +962,23 @@ function AcqLiTable() {
             );
         }
 
-        nodeByName("worksheet_link", row).href =
-            oilsBasePath + "/acq/lineitem/worksheet/" + li.id() + 
-            '?source=' + encodeURIComponent(location.pathname + location.search)
+
+        var wsNode = nodeByName("worksheet_link", row);
+
+        if (window.IAMBROWSER) {
+            // Jump to Ang worksheet printer page
+            // Note using window.open() instead of modifying the href so 
+            // JS will have permission to call window.close() in the
+            // resulting tab/window.
+            wsNode.onclick = function() {
+                window.open('/eg2/staff/acq/lineitem/' + li.id() + '/worksheet');
+            }
+
+        } else {
+            wsNode.href =
+                oilsBasePath + "/acq/lineitem/worksheet/" + li.id() + 
+                '?source=' + encodeURIComponent(location.pathname + location.search)
+        }
 
         if (!window.IAMBROWSER) {
             nodeByName("show_requests_link", row).href =
@@ -1141,8 +1334,16 @@ function AcqLiTable() {
 
                 if (orderIdent && orderIdent.attr_name() == name) {
                     cbox.attr('value', orderIdent.attr_value());
+
+                    // KCLS CUSTOM
+                    var link = nodeByName('order_ident_picked', row);
+                    link.innerHTML += orderIdent.attr_value();
                 } else  {
                     cbox.attr('value', values[name][0].attr_value());
+
+                    // KCLS CUSTOM
+                    var link = nodeByName('order_ident_picked', row);
+                    link.innerHTML += "None";
                 }
             }
 
@@ -1151,7 +1352,8 @@ function AcqLiTable() {
 
             sel._cbox = cbox;
             cbox._lineitem = li;
-            dojo.connect(cbox, 'onChange', updateOrderIdent);
+            // KCLS CUSTOM onChange => onBlur
+            dojo.connect(cbox, 'onBlur', updateOrderIdent);
         }
 
         changeComboBox(typeSel); // force the initial draw
@@ -1214,6 +1416,30 @@ function AcqLiTable() {
         */
     };
 
+    /* Re-fetches lineitem notes and updates 
+     * note count for selected lineitems */
+    this.refreshLiNotes = function(li_ids) {
+        var self = this;
+        if (!li_ids) li_ids = Object.keys(this.liCache);
+        dojo.forEach(li_ids, function(li_id) {
+            fieldmapper.standardRequest(
+                ['open-ils.acq', 
+                    'open-ils.acq.lineitem.retrieve.authoritative'],
+                {   async: true,
+                    params: [self.authtoken, li_id, 
+                        {clear_marc : true, flesh_notes : true}],
+                    oncomplete: function(r) {
+                        var li = openils.Util.readResponse(r);
+                        // update the notes array on cached 
+                        // lineitem for consistency.
+                        self.liCache[li_id].lineitem_notes(li.lineitem_notes());
+                        self.updateLiNotesCount(li);
+                    }
+                }
+            );
+        });
+    }
+
     this.updateLiNotesCount = function(li, row) {
         if (!row) row = this._findLiRow(li);
 
@@ -1248,10 +1474,31 @@ function AcqLiTable() {
                 case 'action_view_history':
                     location.href = oilsBasePath + '/acq/lineitem/history/' + li.id();
                     break;
+
+                // KCLS CUSTOM / LP#1619703
+                case 'action_transfer_to_bib':
+                    self.transferLiToBib(li.id());
+                    nodeByName("action_none", row).selected = true;
+                    break;
+
+                // KCLS CUSTOM
+                case 'action_mark_recv':
+                    if (self.checkLiAlerts(li.id()))
+                        self.issueReceive(li);
+                    break;
+                case 'action_mark_unrecv':
+                    if (confirm(localeStrings.UNRECEIVE_LI))
+                        self.issueReceive(li, /* rollback */ true);
+                    break;
             }
         };
+
         var actUpdateBarcodes = nodeByName("action_update_barcodes", row);
         var actHoldingsMaint = nodeByName("action_holdings_maint", row);
+
+        // KCLS CUSTOM
+        var actReceive = nodeByName("action_mark_recv", row);
+        var actUnRecv = nodeByName("action_mark_unrecv", row);
 
         /* handle row coloring for based on LI state */
         openils.Util.removeCSSClass(row, /^oils-acq-li-state-/);
@@ -1323,9 +1570,35 @@ function AcqLiTable() {
             } else {
                 console.log('li cancel_reason is un-fleshed.  Please fix');
             }
-        } 
+
+        } else if (li.state() == 'on-order') { 
+            // KCLS CUSTOM -- activate LI receive action
+            actReceive.disabled = false;
+
+        } else if (li.state() == 'received') { 
+            // KCLS CUSTOM -- activate LI un-receive action
+            actUnRecv.disabled = false;
+        }
 
         openils.Util.show(state_cell);
+    };
+
+    this._setBatchAlertStore = function() {
+        acqBatchLitAlertAlertText.store = new dojo.data.ItemFileReadStore(
+            {
+                "data": acqliat.toStoreData(
+                    this.pcrud.search(
+                        "acqliat", {
+                            "owning_lib": aou.orgNodeTrail(
+                                aou.findOrgUnit(openils.User.user.ws_ou())
+                            ).map(function(o) { return o.id(); })
+                        }
+                    )
+                )
+            }
+        );
+        acqBatchLitAlertAlertText.setValue(); /* make the store "live" */
+        acqBatchLitAlertAlertText._store_ready = true;
     };
 
 
@@ -1352,6 +1625,12 @@ function AcqLiTable() {
      */
     this.drawLiNotes = function(li) {
         var self = this;
+
+        // get the LI from the cache, since it may have been 
+        // modified since this closure was first created.
+        // See refreshLiNotes();
+        li = self.liCache[li.id()];
+
         this.focusLineitem = li.id();
 
         if (!acqLitAlertAlertText._store_ready)
@@ -1458,7 +1737,8 @@ function AcqLiTable() {
     /**
      * Updates any new/changed/deleted notes on the server
      */
-    this.updateLiNotes = function(li, newNote) {
+    this.updateLiNotes = function(li, newNote, isBatch) {
+        isBatch = isBatch || false;
 
         var notes;
         if(newNote) {
@@ -1477,7 +1757,7 @@ function AcqLiTable() {
 
         fieldmapper.standardRequest(
             ['open-ils.acq', 'open-ils.acq.lineitem_note.cud.batch'],
-            {   async : true,
+            {   async : !isBatch,
                 params : [this.authtoken, notes],
                 onresponse : function(r) {
                     var resp = openils.Util.readResponse(r);
@@ -1648,6 +1928,12 @@ function AcqLiTable() {
         var containerRow = dojo.byId('acq-inline-copies-row-' + liId);
         var liRow = dojo.query('[li=' + liId + ']')[0];
 
+        // KCLS JBAS-673 / Alternate fix for LP#1208613
+        // liCache contains lineitems from multiple pages.  If liRow
+        // is null, it's from a different page.  Avoid any attempts to
+        // draw its copy details (since they won't be visible).
+        if (!liRow) return;
+
         if (!containerRow) {
 
             // build the inline copies container row and add it to 
@@ -1771,7 +2057,7 @@ function AcqLiTable() {
     };
 
     this._drawInfo = function(li) {
-
+        li = self.replaceAmps(li);
         acqLitEditOrderMarc.onClick = function() { self.editOrderMarc(li); }
 
         if(li.eg_bib_id()) {
@@ -2327,6 +2613,40 @@ function AcqLiTable() {
         }
     };
 
+    /*
+     * Focus the first owning library selector in the list of copies.
+     * Timeout is needed to prevent focus shifting before the onKeyUp 
+     * handler fires.  Otherwise, onKeyUp is called on the lib selector 
+     * instead of acqLitAddCopyCount, causing focus to jump to the second 
+     * selector.
+     *
+     * Takes a boolean to determine whether it'll use the original Evergreen
+     * behavior.  True will bring it to the Distribution Formula selector,
+     * while False will retain the original behavior of setting focus to the
+     * first copy's owning library selector.
+     * 
+     */
+    this.focusCopyLibSelector = function(toDistribFormula) {
+        setTimeout(function() {
+            var row;
+            var selector;
+            if(toDistribFormula) {
+                row = dojo.query('div', 'acq-lit-distrib-formula-tbody')[0];
+                if (row) selector = dojo.query('input', row)[0];
+            } else {
+                row = dojo.query('tr', self.copyTbody)[0];
+
+                // The first filteringtreeselect is our owning lib selector
+                // They are sequential, but don't necessarily start with _1, 
+                // since rows can be arbitrarily removed.
+                if (row) selector = dojo.query(
+                    '[id^="openils_widget_FilteringTreeSelect_"]', row)[0];  
+            }
+            if (!row) return;
+            if (selector) selector.focus();
+        }, 100);
+    }
+
     this._drawCopies = function(li) {
         var self = this;
 
@@ -2341,13 +2661,17 @@ function AcqLiTable() {
             // delete rows if necessary
             var diff = self.copyCount() - count;
             if(diff > 0) {
-                var rows = dojo.query('tr', self.copyTbody).reverse().slice(0, diff);
+                var rows = dojo.query('tr', self.copyTbody).slice(0, diff);
                 if(confirm(dojo.string.substitute(localeStrings.DELETE_LI_COPIES_CONFIRM, [diff]))) {
                     dojo.forEach(rows, function(row) {self.deleteCopy(row); });
                 } else {
                     acqLitCopyCountInput.attr('value', self.copyCount()+'');
                 }
             }
+
+            // KCLS -- after adding or removing copies, focus the library
+            // selector of the first copy in the list.
+            self.focusCopyLibSelector(true);
         }
 
 
@@ -2360,6 +2684,13 @@ function AcqLiTable() {
         } else {
             self.addCopy(li);
         }
+
+        // KCLS: select the Item Count value for easier modification.
+        setTimeout(function() {
+            var node = acqLitCopyCountInput
+                .domNode.getElementsByTagName('input')[0];
+            if (node) node.select();
+        }, 500);
     };
 
     this.copyCount = function() {
@@ -2444,7 +2775,7 @@ function AcqLiTable() {
                     parentNode : dojo.query('[name='+field+']', row)[0],
                     orgLimitPerms : ['CREATE_PICKLIST', 'CREATE_PURCHASE_ORDER'],
                     readOnly : readOnly,
-                    orgDefaultsToWs : true
+                    //orgDefaultsToWs : true // KCLS wants empty lib selector
                 });
 
                 widget.build(
@@ -2471,6 +2802,24 @@ function AcqLiTable() {
                                 }
                             }
                         );
+
+                        // KCLS ---
+                        if (field == 'owning_lib') {
+
+                            // User pressing Enter on the ownling library 
+                            // selector causes focus to jump to the next 
+                            // owning library selector in the list of copies.
+                            dojo.connect(w, 'onKeyUp', function(key) {
+                                if (key.keyCode != 13) return // 13 = Enter
+                                var nodeId = w.id.replace(/.*(\d+)$/,'$1');
+
+                                // ID's for like dijits increment by 1.
+                                var nextId = w.id.replace(
+                                    /(.*)\d+$/, '$1' + (Number(nodeId) + 1));
+                                if (dijit.byId(nextId)) 
+                                    dijit.byId(nextId).focus();
+                            });
+                        }
                     }
                 );
             }
@@ -2730,6 +3079,7 @@ function AcqLiTable() {
         if(copy.isnew())
             delete this.copyCache[copy.id()];
         this.copyTbody.removeChild(row);
+        this.focusCopyLibSelector(true);
     }
 
     this._virtDfaCountsAsList = function() {
@@ -2786,6 +3136,14 @@ function AcqLiTable() {
             if (!this.confirmBreachedCopyFunds(copies))
                 return;
 
+            if (this._savingCopiesInFlight) {
+                // Save in progress.  Get outta here.
+                return;
+            }
+
+            this._savingCopiesInFlight = true;
+            acqLitSaveCopies.attr('disabled', true);
+
             if (typeof(this._copy_count_cb) == "function")
                 this._copy_count_cb(liId, total);
 
@@ -2801,7 +3159,9 @@ function AcqLiTable() {
                     oncomplete: function() {
                         self.drawCopies(liId, true /* force_fetch */);
                         openils.Util.hide("acq-lit-update-copies-progress");
-                        refreshPOSummaryAmounts();
+                        self._savingCopiesInFlight = false;
+                        acqLitSaveCopies.attr('disabled', false);
+                        if (self.isPO) refreshPOSummaryAmounts();
                     }
                 }
             );
@@ -2884,6 +3244,10 @@ function AcqLiTable() {
             case 'order_ready':
                 acqLitChangeLiStateDialog.attr('state', action.replace('_', '-'));
                 acqLitChangeLiStateDialog.show();
+                break;
+
+            case 'print_po_eg2':
+                this.printPOEg2();
                 break;
 
             case 'print_po':
@@ -3005,7 +3369,10 @@ function AcqLiTable() {
     this.createAssets = function(onAssetsCreated, noVl) {
         this.show('acq-lit-progress-numbers');
         var self = this;
-        var vlArgs = (noVl) ? {} : {vandelay : this.vlAgent.values()};
+        // KCLS CUSTOM: {vandelay : {noVl : true}} -- stock just uses {}
+        // Could be related to future changes in Vandelay.pm
+        var vlArgs = (noVl) ? 
+            {vandelay : {noVl : true}} : {vandelay : this.vlAgent.values()};
         this.batchProgress = {};
         progressDialog.show(false);
         progressDialog.attr("title", localeStrings.LI_CREATING_ASSETS);
@@ -3095,6 +3462,9 @@ function AcqLiTable() {
                             }
                         }
                     }
+                }, 
+                "oncomplete" : function() {
+                    self.refreshLiNotes(id_list);
                 }
             }
         );
@@ -3162,8 +3532,14 @@ function AcqLiTable() {
         openils.Util.hide("acq-lit-export-attr-holder");
     };
 
+    this.printPOEg2 = function() {
+        if(!this.isPO) return;
+        window.open('/eg2/staff/acq/po/' + this.isPO + '/printer');
+    }
+
     this.printPO = function() {
         if(!this.isPO) return;
+        var self = this;
         progressDialog.show(true);
         fieldmapper.standardRequest(
             ['open-ils.acq', 'open-ils.acq.purchase_order.format'],
@@ -3175,6 +3551,7 @@ function AcqLiTable() {
                     if(evt && evt.template_output()) {
                         openils.Util.printHtmlString(evt.template_output().data());
                     }
+                    self.refreshLiNotes();
                 }
             }
         );
@@ -3241,6 +3618,10 @@ function AcqLiTable() {
                     var resp = openils.Util.readResponse(r);
                     self._updateProgressNumbers(resp, true);
                 },
+                oncomplete : function() {
+                    self.refreshLiNotes(
+                        li_list.map(function(li) { return li.id(); }))
+                }
             }
         );
     };
@@ -3265,6 +3646,10 @@ function AcqLiTable() {
                         );
                         progressDialog.hide();
                     }
+                },
+                oncomplete : function() {
+                    if (part == 'lineitem' && !rollback)
+                        self.refreshLiNotes([obj.id()]);
                 }
             }
         );
@@ -3765,7 +4150,10 @@ function AcqLiTable() {
                                     copyList.push(copy);
                                 }
                                 if (xulG) {
-                                    xulG.volume_item_creator( { 'existing_copies' : copyList } );
+                                    xulG.volume_item_creator({
+                                        'existing_copies' : copyList,
+                                        record_id: li.eg_bib_id()
+                                    });
                                 }
                             } catch(E) {
                                 alert('error in oncomplete: ' + E);

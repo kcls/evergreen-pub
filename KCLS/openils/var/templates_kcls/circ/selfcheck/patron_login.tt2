@@ -1,0 +1,76 @@
+<div class="container scko-container">
+<style>
+  .login-input::-webkit-input-placeholder { 
+    font-size: 15px;
+    font-weight: normal;
+  }
+  .login-input::-moz-placeholder { 
+    font-size: 15px;
+    font-weight: normal;
+  }
+</style>
+
+<div class="row pad-vert scko-login-form">
+  <div class="col-md-4">
+    <img src="[% ctx.media_prefix %]/images/selfcheck/libcard_barcode.jpg" alt='library card barcode' class="scko-image" />
+  </div>
+  <div class="col-md-8">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="form-group">
+          <div id='oils-selfck-status-div2' class='status_box'></div>
+          <div style='margin-top:3px'>Enter your library card number here</div>
+          <input type="text" id='patron-login-username' 
+            class="form-control login-input" placeholder="Example: 0052908415"/>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-10">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <div style='margin-top:3px'>Enter your PIN here</div>
+              <input type="password" id='patron-login-password' 
+                class="form-control login-input" 
+                placeholder="Example: 0926"/>
+            </div>
+          </div>
+          <div class="col-xs-6 col-md-2">
+            <div class="form-group">
+              <div>&nbsp;</div> <!-- consistent vertical alignment -->
+              <button class="btn btn-responsive btn-success" onfocus="checkLogin();
+              selfCheckMgr.loginPatron(dojo.byId('patron-login-username')
+              .value,dojo.byId('patron-login-password').value);">
+                GO &gt;&gt;&gt;
+              </button>
+            </div>
+          </div>
+          <div class="col-xs-6 col-md-2">
+            <div class="form-group">
+              <div>&nbsp;</div> <!-- consistent vertical alignment -->
+              <!-- patron is not logged in, but cancel calls logout both
+                to clear the form (particularly of passwords) and to allow
+                for the necessary page redirects (e.g. return-to url). -->
+              <button class="btn btn-responsive btn-warning" onclick="selfCheckMgr.logoutPatron();">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-offset-3 col-xs-6 pad-vert">
+            <button id="scko-contrast-toggle-button" 
+              class="btn btn-responsive btn-default btn-high-contrast"
+              onclick="swapStyleSheet(
+                '[% ctx.media_prefix %]/css/skin/kcls/selfcheck-default.css',
+                '[% ctx.media_prefix %]/css/skin/kcls/selfcheck-high-contrast.css');">
+              <span id="scko-contrast-toggle">Turn off High Contrast Mode</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>

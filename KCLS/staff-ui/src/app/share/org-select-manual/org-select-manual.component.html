@@ -1,0 +1,19 @@
+<!-- 
+  Avoid adding [required] because it supersedes our ng-valid handling.
+  Specifically, a text input is valid to NG if it contains text, but
+  in this case, the text is valid only if it refers to an org unit.
+-->
+<ng-container *ngIf="disabled">{{value}}</ng-container>
+<ng-container *ngIf="!disabled">
+  <input 
+    type="text" 
+    class="form-control" 
+    [attr.id]="domId"
+    [disabled]="disabled"
+    [placeholder]="placeholder"
+    [ngClass]="{'valid-input': isValid() && value, 'invalid-input': !isValid()}"
+    [(ngModel)]="value" 
+    (keyup.enter)="keyUpEnter.emit()"
+    (change)="changed($event)"
+  />
+</ng-container>

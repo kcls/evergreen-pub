@@ -1,0 +1,31 @@
+[%-
+    # This page is loaded from advanced.tt2
+    
+    blimit = CGI.param('blimit') || ctx.opac_hits_per_page || 11;
+    sort = CGI.param("defaultsort") || CGI.param("sort") ||  "pubdate.descending";
+%]
+
+[% # browse search form %]
+<form method="get" action="[% ctx.opac_root %]/browse_results" onsubmit="$('browse-submit-spinner').className = ''; return true">
+    <div class="header_middle">[% l("Browse Search") %]</div>
+    <input type="hidden" name="blimit" value="[% blimit %]" />
+    <input type="hidden" name="sort" value="[% sort %]" />
+    [% control_qtype = INCLUDE "opac/parts/qtype_selector.tt2"
+        id="browse-search-class" browse_only=1 plural=1 %]
+    [% control_bterm = BLOCK %]<input type="text" name="bterm" id="browse-term"
+        value="[% CGI.param('bterm') | html %]" />[% END %]
+    [% PROCESS "opac/parts/org_selector.tt2"; %]
+    [% control_locg = INCLUDE build_org_selector id='browse-context'
+        show_loc_groups=1
+        arialabel=l('Select holding library') %]
+    [% control_mattype = INCLUDE "opac/parts/coded_value_selector.tt2" 
+      attr=["mattype", "item_type"] none_ok=1 none_label=l('All Formats') 
+      id="browse-search-format" browse_only=1 plural=1 %]
+    [% l('Browse for [_1] that begin with [_2] at [_3] in [_4]', 
+      control_qtype, control_bterm, control_locg, control_mattype) %]
+
+    <input id='search-submit-go' type="submit" value="[% l('Browse') %]" alt="[% l('Browse') %]" class="opac-button"/>
+    <img id="browse-submit-spinner" src="[% ctx.media_prefix %]/opac/images/progressbar_green.gif" class="hidden" style="width: 16px; height: 16px;" alt="" />
+    [% # Sets the browse search term field as the default on browse search page load. %]
+    <script>document.getElementById('browse-term').focus()</script>
+</form>

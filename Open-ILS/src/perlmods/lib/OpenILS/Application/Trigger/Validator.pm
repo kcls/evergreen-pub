@@ -221,4 +221,50 @@ sub CircIsAutoRenewable {
     return 1;
 }
 
+# eCard notifications are sent the day after an ecard registration.
+# Be sure the account was not verified or purged by staff in the meantime.
+sub PatronIsPendingEcard {
+    my ($self, $env) = @_;
+    my $user = $env->{target};
+    my $profile = $env->{params}->{profile} || 951;
+    return $user->deleted eq 'f' && $user->profile == $profile;
+}
+
+# params->profiles is a comma-separated list of permission.grp_tree IDs
+sub PatronProfileInList {
+    my ($self, $env) = @_;
+    my $user = $env->{target}->usr;
+    my @profiles = split(',', $env->{params}->{profiles});
+    
+    if (!@profiles) {
+        $logger->error("No profiles provided for PatronProfileInList check");
+        return 0;
+    }
+
+    for my $p (@profiles) {
+        return 1 if $p == $user->profile;
+    }
+
+    return 0;
+}
+
+# params->profiles is a comma-separated list of permission.grp_tree IDs
+sub PatronProfileNotInList {
+    my ($self, $env) = @_;
+    my $user = $env->{target}->usr;
+    my @profiles = split(',', $env->{params}->{profiles});
+    
+    if (!@profiles) {
+        $logger->error("No profiles provided for PatronProfileNotInList check");
+        return 0;
+    }
+
+    for my $p (@profiles) {
+        return 0 if $p == $user->profile;
+    }
+
+    return 1;
+}
+
+
 1;

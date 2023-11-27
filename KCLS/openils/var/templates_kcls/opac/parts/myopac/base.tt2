@@ -1,0 +1,26 @@
+[%  WRAPPER "opac/parts/base.tt2" %]
+
+
+[% myopac_pages = [
+        {url => "main", name => "Account Summary"},
+        {url => "circs", name => "Items Checked Out"},
+        {url => "holds", name => "Holds"},
+        {url => "prefs", name => "Account Preferences"},
+        {url => "lists", name => "My Lists"}
+    ];
+    skin_root = "../"
+%]
+    [% INCLUDE "opac/parts/topnav.tt2" %]
+
+    <div id="search-wrapper">
+        [% INCLUDE "opac/parts/printnav.tt2" %]
+        [% INCLUDE "opac/parts/searchbar.tt2" %]
+    </div>
+    <div id="content-wrapper">
+
+      <h2 style="margin-left:50px; padding-top:50px; margin-top:50px;">
+        This is the old account page.  Please see <a href="https://kcls.org">kcls.org</a>
+      </h2>
+
+    </div>
+[% END %]

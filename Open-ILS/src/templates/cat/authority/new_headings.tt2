@@ -1,0 +1,330 @@
+[% ctx.page_title = l('New Headings Report') %]
+[% WRAPPER base.tt2 %]
+
+<script type="text/javascript"
+  src='[% ctx.media_prefix %]/js/ui/default/cat/authority/new_headings.js'> </script>
+
+<style type="text/css">
+
+  .date-input { width: 7em; }
+
+  #headings-table th {
+    font-weight: bold;
+    font-size: 120%;
+    border-bottom: 2px solid grey;
+  }
+
+  .extended-field-label { 
+    white-space : nowrap; 
+    font-weight: bold;
+  }
+
+  .heading-row:nth-child(even) { 
+    /*background-color: #9ee7fa;*/
+    background-color: rgba(158,231,250, 0.3);
+  }
+
+  .new-heading { font-weight:bold; }
+  .extended-heading-value { 
+    color: red; font-weight: bold; 
+  }
+
+  .dialog-div { width: 700px; }
+  .dialog-div td { padding: 5px; }
+  #headings-row-loading td { padding: 10px; background-color: #AAA }
+
+  #navigation-div-container {
+    font-size: 120%;
+    position:fixed;
+    top: 0px;
+    height: 30px;
+    background-color: white;
+  }
+
+  #mattype-select-container {
+    font-size: 120%;
+    position:fixed;
+    top: 0px;
+    right: 50px;
+    text-align:right;
+    padding: 4px 8px 4px 8px;
+    background-color: white;
+    border-radius: 0px 0px 8px 8px;
+    border: 2px solid #9ee7fa;
+    border-top: none;
+    border-right-radius: 0px;
+  }
+
+
+  #navigation-div {
+    background-color: #9ee7fa;
+    border-bottom: solid grey 1px;
+    height: 25px;
+  }
+
+  #navigation-div span { padding-left: 10px; padding-right: 10px }
+
+  #below-nav-div {margin-top: 35px}
+
+  .type-heading-row td {
+    font-size: 125%;
+    font-weight: bold;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    text-align: center;
+    background-color: #8c65d3;
+    color: snow;
+  }
+
+  #loading-indicator, #zero-hits {
+    width: 100%;
+    margin-top: 50px;
+    font-size: 120%;
+    text-align: center;
+  }
+
+  .headings-entry-table {
+    border-bottom: 2px dashed #333;
+  }
+
+  .headings-entry-table td {
+    padding: 3px;
+  }
+
+  #mattype-select-container option {
+    padding: 2px;
+  }
+
+</style>
+
+<div id='navigation-div-container'>
+  <div id='navigation-div'>
+    <div style='float:left'>
+      <span>Start Date: <input type='text' jsId='startDate'
+        class='date-input' dojoType='dijit.form.DateTextBox'/></span>
+      <span>End Date: <input type='text' jsId='endDate'
+        class='date-input' dojoType='dijit.form.DateTextBox'/></span>
+      <span><button id='apply-dates-btn'>Apply</button></span>
+    </div>
+    <div style='padding-left: 20px; padding-right: 20px; float:left'>|</div>
+    <div style='float:left'>
+      <span><button id='prev-page-btn'>Previous Page</button></span>
+      <span>Page: <b id='page-number'></b></span>
+      <span><button id='next-page-btn'>Next Page</button></span>
+    </div>
+    <div style='clear:both'></div>
+  </div>
+  <div id='navigation-div-pad'></div>
+</div>
+
+<div id='mattype-select-container'>
+  <div style='padding-bottom: 7px'>
+    <b>Exclude These Formats</b>
+  </div>
+  <div id='mattype-filter-template'>
+    <span name='mattype-name'></span> 
+    <input name='mattype-checkbox' type='checkbox'/>
+  </div>
+</div>
+
+<div id='below-nav-div'>
+
+  <div id='loading-indicator' class="hidden">
+    Loading page <span id='ind-page'></span>...
+    <img src='/opac/images/progressbar_green.gif'/>
+  </div>
+
+  <div id='zero-hits' class="hidden">
+    No new headings were found for the date range specified
+  </div>
+
+  <table id='headings-table'>
+    <tbody id='headings-tbody'>
+
+      <tr id='author-header-row' class='type-heading-row hidden'>
+        <td colspan='20'>
+          New Author Headings <!--(<span id='author-count'></span>)-->
+        </td>
+      </tr>
+      <tr id='subject-header-row' class='type-heading-row hidden'>
+        <td colspan='20'>
+          New Subject Headings <!--(<span id='subject-count'></span>)-->
+        </td>
+      </tr>
+      <tr id='series-header-row' class='type-heading-row hidden'>
+        <td colspan='20'>
+          New Series Headings <!--(<span id='series-count'></span>)-->
+        </td>
+      </tr>
+
+      <tr id='headings-row-template' class='heading-row'>
+        <td>
+          <table class='headings-entry-table'>
+            <tr>
+              <td>Previous:</td>
+              <td>
+                <span name='prev_entry_value-auth-bib-tag'></span>
+                <span name='prev_entry_value'></span>
+                <span name='prev-auth-tag-wrapper' class='hidden'>
+                  (From <span name='prev_auth_tag'></span>)
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>New:</td>
+              <td>
+                <a href='javascript:;' name='heading-dialog-link'>
+                  <span name='entry_value' class='new-heading'></span>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td>Next:</td>
+              <td>
+                <span name='next_entry_value-auth-bib-tag'></span>
+                <span name='next_entry_value'></span>
+                <span name='next-auth-tag-wrapper' class='hidden'> 
+                  (From <span name='next_auth_tag'></span>)
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>From TCN:</td>
+              <td>
+                <span name='bib_record'></span>
+                <span> </span>
+                <span>Indexed As:</span>
+                <span><span name='field_label'></span></span>
+              </td>
+            </tr>
+            <tr>  
+              <td>Edited By:</td>
+              <td><span name='bib_editor_usrname'></span>
+                <span> </span>
+                <span>Heading Date:</span>
+                <span><span name='heading_date'></span></span>
+              </td>
+            </tr>
+            <tr>
+              <td>From 1XX:</td>
+              <td><span name='bib_marc_1xx'></span></td>
+            </tr>
+            <tr>
+              <td>From 245:</td>
+              <td><span name='bib_marc_245'></span></td>
+            </tr>
+            <tr>
+              <td>Format:</td>
+              <td><span name='mattype_label'></span></td>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class='hidden'>
+    <div dojoType='dijit.Dialog' jsId='detail_dialog' class='dialog-div'>
+      <table id='extended-info-table'>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Previous Heading</td>
+          <td><span name='extended-prev_entry_value' class='extended-heading-value'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Previous Indexed As</td>
+          <td><span name='extended-prev_field_label'></span></td>
+          <td class='extended-field-label'>Previous TCN</td>
+          <td><span name='extended-prev_bib_record'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Previous Authority Tag</td>
+          <td><span name='extended-prev_auth_tag'></span></td>
+          <td class='extended-field-label'>Previous Browse Entry ID</td>
+          <td><span name='extended-prev_entry'></span></td>
+        </tr>
+
+        <tr><td colspan='4'><hr/></td></tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>New Heading</td>
+          <td><span name='extended-entry_value' class='extended-heading-value'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Heading Date</td>
+          <td><span name='extended-heading_date'></span></td>
+          <td class='extended-field-label'>Indexed As</td>
+          <td><span name='extended-field_label'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>From TCN</td>
+          <td><span name='extended-bib_record'></span></td>
+          <td class='extended-field-label'>Browse Entry ID</td>
+          <td><span name='extended-entry'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Heading Create Date</td>
+          <td><span name='extended-entry_create_date'></span></td>
+          <td class='extended-field-label'>Bib Record Edit Date</td>
+          <td><span name='extended-bib_edit_date'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Bib Record Cataloging Date</td>
+          <td><span name='extended-bib_cataloging_date'></span></td>
+          <td class='extended-field-label'>Bib Record Create Date</td>
+          <td><span name='extended-bib_create_date'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Bib Record Editor Username</td>
+          <td><span name='extended-bib_editor_usrname'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>From 1XX</td>
+          <td colspan='3'><span name='extended-bib_marc_1xx'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>From 245</td>
+          <td colspan='3'><span name='extended-bib_marc_245'></span></td>
+        </tr>
+
+        <tr><td colspan='4'><hr/></td></tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Next Heading</td>
+          <td><span name='extended-next_entry_value' class='extended-heading-value'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Next Indexed As</td>
+          <td><span name='extended-next_field_label'></span></td>
+          <td class='extended-field-label'>Next TCN</td>
+          <td><span name='extended-next_bib_record'></span></td>
+        </tr>
+
+        <tr class='heading-field-row'>
+          <td class='extended-field-label'>Next Authority Tag</td>
+          <td><span name='extended-next_auth_tag'></span></td>
+          <td class='extended-field-label'>Next Browse Entry ID</td>
+          <td><span name='extended-next_entry'></span></td>
+        </tr>
+
+        <tr>
+          <td colspan='2'>
+            <div dojoType='dijit.form.Button' type='submit'
+              jsId='detail_dialog_closer'>[% l('Close') %]</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div><!-- below-nav-div -->
+
+[% END %]

@@ -87,6 +87,14 @@ function init2() {
 
     dojo.byId('acq-invoice-summary-toggle-on').onclick = function() {
         openils.Util.show(dojo.byId('acq-invoice-summary'));
+
+        // Set the focus to the Vendor Invoice ID field.  Might be a bit brittle since the
+        // element ID is generated dynamically by a dojo widget.  It should be ok since it
+        // sets the focus to the first element which seems to be the logical place.
+        // This sets the focus when the invoice brief is displayed by the toggle button.
+        // It is also set a few line down for the initial page load.
+        var node = document.getElementById('dijit_form_ValidationTextBox_0');
+        if (node) node.focus();
         openils.Util.hide(dojo.byId('acq-invoice-summary-small'));
     }
 
@@ -120,6 +128,14 @@ function init2() {
         parentNode : dojo.byId('acq-invoice-extra-copies-fund')
     });
     extraCopiesFund.build();
+
+    // Set the initial focus field.  See comment above for additional notes
+    // On the initial page load, the textbox is generated asynchronously.
+    // Wrap it in a timeout and be sure the DOM node exists before focusing.
+    setTimeout(function() {
+        var node = document.getElementById('dijit_form_ValidationTextBox_0');
+        if (node) node.focus();
+    }, 1000);
 }
 
 function renderInvoice() {
@@ -1252,6 +1268,8 @@ function drawInvoicePane(parentNode, inv, args) {
         }
     }
 
+    dojo.mixin(override, {erp_export_date : {readOnly: true}});
+
     dojo.mixin(override, {
         provider : { 
             dijitArgs : { 
@@ -1294,6 +1312,12 @@ function drawInvoicePane(parentNode, inv, args) {
     // Display the close date/by data for closed invoices.
     var readOnly = inv && inv.close_date();
     var suppress = readOnly ? ['id'] : ['id', 'close_date', 'closed_by'];
+    
+    // Only hide the ERP export date when the invoice is still open
+    // and no value is present.  A re-opened invoice can have an export
+    // date and we want that to be visible.
+    if (!readOnly && (!inv || !inv.erp_export_date())) 
+        suppress.push('erp_export_date');
 
     pane = new openils.widget.EditPane({
         fmObject : inv,

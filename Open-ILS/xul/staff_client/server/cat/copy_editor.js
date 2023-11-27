@@ -97,26 +97,29 @@ function my_init() {
         /* Quick fix, this was defined inline in the global scope but now needs g.error and g.copies from my_init */
         /* Quick fix, messagecatalog only usable during/after onload */
 
+        // To populate g.data with current data
+        g.data.stash_retrieve();
+
         init_panes0();
-        init_panes();
+        init_panes(g.data.list.au[0].ws_ou());
 
         /******************************************************************************************************/
         /* Is the interface an editor or a viewer, single or multi copy, existing copies or new copies? */
 
-        if (xul_param('edit') == '1') { 
+        if (xul_param('edit') == '1') {
 
             g.edit = false;
 
-            if (g.copies.length > 0) { // When loaded in the unified interface, there may be no copies yet (from the volum/item creator) 
+            if (g.copies.length > 0) { // When loaded in the unified interface, there may be no copies yet (from the volum/item creator)
 
                 // Editor desired, but let's check permissions
 
                 try {
                     var check = g.network.simple_request(
                         'PERM_MULTI_ORG_CHECK',
-                        [ 
-                            ses(), 
-                            g.data.list.au[0].id(), 
+                        [
+                            ses(),
+                            g.data.list.au[0].id(),
                             util.functional.map_list(
                                 g.copies,
                                 function (o) {
@@ -151,8 +154,8 @@ function my_init() {
             }
 
             if (g.edit) {
-                $('caption').setAttribute('label', $('catStrings').getString('staff.cat.copy_editor.caption')); 
-                $('save').setAttribute('hidden','false'); 
+                $('caption').setAttribute('label', $('catStrings').getString('staff.cat.copy_editor.caption'));
+                $('save').setAttribute('hidden','false');
             } else {
                 $('top_nav').setAttribute('hidden','true');
             }
@@ -163,12 +166,12 @@ function my_init() {
             $('top_nav').setAttribute('hidden','true');
         }
 
-        g.panes_and_field_names.left_pane = 
+        g.panes_and_field_names.left_pane =
             [
                 [
                     $('catStrings').getString('staff.cat.copy_editor.status'),
-                    { 
-                        render: 'typeof fm.status() == "object" ? fm.status().name() : g.data.hash.ccs[ fm.status() ].name()', 
+                    {
+                        render: 'typeof fm.status() == "object" ? fm.status().name() : g.data.hash.ccs[ fm.status() ].name()',
                         input: g.safe_to_edit_copy_status() ? 'c = function(v){ g.apply("status",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( util.functional.map_list( g.data.list.ccs, function(obj) { return [ obj.name(), obj.id(), typeof my_constants.magical_statuses[obj.id()] != "undefined" ? true : false ]; } ).sort() ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);' : undefined,
                         //input: 'c = function(v){ g.apply("status",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( util.functional.map_list( util.functional.filter_list( g.data.list.ccs, function(obj) { return typeof my_constants.magical_statuses[obj.id()] == "undefined"; } ), function(obj) { return [ obj.name(), obj.id() ]; } ).sort() ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
                     }
@@ -181,7 +184,7 @@ function my_init() {
 
         var bdb = document.getElementById('brief_display_box'); while(bdb.firstChild) bdb.removeChild(bdb.lastChild);
         if (g.docid) {
-            var brief_display = document.createElement('iframe'); bdb.appendChild(brief_display); 
+            var brief_display = document.createElement('iframe'); bdb.appendChild(brief_display);
             brief_display.setAttribute( 'src', urls.XUL_BIB_BRIEF + '?docid=' + g.docid); // this is a modal window, so can't push in xulG
             brief_display.setAttribute( 'flex','1' );
         }
@@ -604,9 +607,9 @@ g.apply_stat_cat = function(sc_id,entry_id) {
                 }
             );
             if (entry_id > -1) {
-                temp.push( 
-                    util.functional.find_id_object_in_list( 
-                        g.data.hash.asc[sc_id].entries(), 
+                temp.push(
+                    util.functional.find_id_object_in_list(
+                        g.data.hash.asc[sc_id].entries(),
                         entry_id
                     )
                 );
@@ -653,6 +656,7 @@ g.apply_owning_lib = function(ou_id) {
                 g.error.standard_unexpected_error_alert($('catStrings').getFormattedString('staff.cat.copy_editor.apply_owning_lib.call_number.error', [copy.barcode()]), acn_blob);
                 continue;
             }
+            copy.circ_lib(ou_id);
             copy.call_number(acn_blob.acn_id);
             copy.ischanged('1');
         } catch(E) {
@@ -724,7 +728,7 @@ g.populate_alert_message_input = function(tb) {
     try {
         var seen = {}; var s = '';
         for (var i = 0; i < g.copies.length; i++) {
-            var msg = g.copies[i].alert_message(); 
+            var msg = g.copies[i].alert_message();
             if (msg) {
                 if (typeof seen[msg] == 'undefined') {
                     s += msg + '\n';
@@ -741,132 +745,65 @@ g.populate_alert_message_input = function(tb) {
 /***************************************************************************************************************/
 /* This returns a list of acpl's appropriate for the copies being edited (and caches them in the global stash) */
 
-g.get_acpl_list_for_lib = function(lib_id,but_only_these) {
-    g.data.stash_retrieve();
+g.get_acpl_list_for_lib = function(lib_id) {
+
     var label = 'acpl_list_for_lib_'+lib_id;
+
     if (typeof g.data[label] == 'undefined') {
+
         var robj = g.network.simple_request('FM_ACPL_RETRIEVE', [ lib_id ]); // This returns acpl's for all ancestors and descendants as well as the lib
+
         if (typeof robj.ilsevent != 'undefined') throw(robj);
+
         var temp_list = [];
+
         for (var j = 0; j < robj.length; j++) {
+
             var my_acpl = robj[j];
+
             if (typeof g.data.hash.acpl[ my_acpl.id() ] == 'undefined') {
+
                 g.data.hash.acpl[ my_acpl.id() ] = my_acpl;
                 g.data.list.acpl.push( my_acpl );
             }
-            var only_this_lib = my_acpl.owning_lib(); if (!only_this_lib) continue;
-            if (typeof only_this_lib == 'object') only_this_lib = only_this_lib.id();
-            if (but_only_these.indexOf( String( only_this_lib ) ) != -1) { // This filters out some of the libraries (usually the descendants)
-                temp_list.push( my_acpl );
-            }
+
+            temp_list.push( my_acpl );
         }
-        g.data[label] = temp_list; g.data.stash(label,'hash','list');
+
+        g.data[label] = temp_list;
+        g.data.stash(label,'hash','list');
     }
+
     return g.data[label];
 }
 
 /******************************************************************************************************/
 /* This returns a list of acpl's appropriate for the copies being edited */
 
-g.get_acpl_list = function() {
+g.get_acpl_list = function(lib_id) {
+
     try {
 
-        JSAN.use('util.functional');
+        var acpl_list = g.get_acpl_list_for_lib(lib_id);
 
-        var my_acpls = {};
+        var returnList = acpl_list.sort(
 
-        /**************************************/
-        /* get owning libs from call numbers */
-
-        var owning_libs = {}; 
-        for (var i = 0; i < g.copies.length; i++) {
-            var callnumber = g.copies[i].call_number();
-            if (!callnumber) continue;
-            var cn_id = typeof callnumber == 'object' ? callnumber.id() : callnumber;
-            if (cn_id > 0) {
-                if (! g.map_acn[ cn_id ]) {
-                    var req = g.network.simple_request('FM_ACN_RETRIEVE.authoritative',[ cn_id ]);
-                    if (typeof req.ilsevent == 'undefined') {
-                        g.map_acn[ cn_id ] = req;
-                    } else {
-                        continue;
-                    }
-                }
-                var consider_lib = g.map_acn[ cn_id ].owning_lib();
-                if (!consider_lib) continue;
-                owning_libs[ typeof consider_lib == 'object' ? consider_lib.id() : consider_lib ] = true;
-            }
-        }
-        if (g.callnumbers) {
-            for (var i in g.callnumbers) {
-                var consider_lib = g.callnumbers[i].owning_lib;
-                if (!consider_lib) continue;
-                owning_libs[ typeof consider_lib == 'object' ? consider_lib.id() : consider_lib ] = true;
-            }
-        }
-
-        /***************************************************************************************************/
-        /* now find the first ancestor they all have in common, get the acpl's for it and higher ancestors */
-
-        JSAN.use('util.fm_utils');
-        var libs = []; for (var i in owning_libs) libs.push(i);
-        if (libs.length > 0) {
-            var ancestor = util.fm_utils.find_common_aou_ancestor( libs );
-            if (typeof ancestor == 'object' && ancestor != null) ancestor = ancestor.id();
-
-            if (ancestor) {
-                var ancestors = util.fm_utils.find_common_aou_ancestors( libs );
-                var acpl_list = g.get_acpl_list_for_lib(ancestor, ancestors);
-                if (acpl_list) for (var i = 0; i < acpl_list.length; i++) {
-                    if (acpl_list[i] != null) {
-                        my_acpls[ typeof acpl_list[i] == 'object' ? acpl_list[i].id() : acpl_list[i] ] = true;
-                    }
-                }
-            }
-        }
-        
-        /*****************/
-        /* get circ libs */
-
-        var circ_libs = {};
-
-        for (var i = 0; i < g.copies.length; i++) {
-            var consider_lib = g.copies[i].circ_lib();
-            if (!consider_lib) continue;
-            circ_libs[ typeof consider_lib == 'object' ? consider_lib.id() : consider_lib ] = true;
-        }
-
-        /***************************************************************************************************/
-        /* now find the first ancestor they all have in common, get the acpl's for it and higher ancestors */
-
-        libs = []; for (var i in circ_libs) libs.push(i);
-        if (libs.length > 0) {
-            var ancestor = util.fm_utils.find_common_aou_ancestor( libs );
-            if (typeof ancestor == 'object' && ancestor != null) ancestor = ancestor.id();
-
-            if (ancestor) {
-                var ancestors = util.fm_utils.find_common_aou_ancestors( libs );
-                var acpl_list = g.get_acpl_list_for_lib(ancestor, ancestors);
-                if (acpl_list) for (var i = 0; i < acpl_list.length; i++) {
-                    if (acpl_list[i] != null) {
-                        my_acpls[ typeof acpl_list[i] == 'object' ? acpl_list[i].id() : acpl_list[i] ] = true;
-                    }
-                }
-            }
-        }
-
-        var acpl_list = []; for (var i in my_acpls) acpl_list.push( g.data.hash.acpl[ i ] );
-        return acpl_list.sort(
             function(a,b) {
+
                 var label_a = g.data.hash.aou[ a.owning_lib() ].shortname() + ' : ' + a.name();
                 var label_b = g.data.hash.aou[ b.owning_lib() ].shortname() + ' : ' + b.name();
+
                 if (label_a < label_b) return -1;
                 if (label_a > label_b) return 1;
+
                 return 0;
             }
         );
-    
+
+        return returnList;
+
     } catch(E) {
+
         g.error.standard_unexpected_error_alert('get_acpl_list',E);
         return [];
     }
@@ -957,7 +894,7 @@ g.editable_stat_cat_names = [];
 /******************************************************************************************************/
 /* These get show in the left panel */
 
-function init_panes() {
+function init_panes(lib_for_location_list) {
 g.panes_and_field_names = {
 
     'left_pane' :
@@ -974,28 +911,28 @@ g.panes_and_field_names = {
                 + 'x = document.createElement("textbox");',
             attr: { 'class': 'disabled' },
         }
-    ], 
+    ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.creation_date.label'),
-        { 
+        {
             render: 'util.date.formatted_date( fm.create_date(), "%F");',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.active_date.label'),
-        { 
+        {
             render: 'util.date.formatted_date( fm.active_date(), "%F");',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.creator.label'),
-        { 
+        {
             render: 'fm.creator();',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.last_edit_date.label'),
-        { 
+        {
             render: 'util.date.formatted_date( fm.edit_date(), "%F");',
         }
     ],
@@ -1012,19 +949,19 @@ g.panes_and_field_names = {
 [
     [
         $('catStrings').getString('staff.cat.copy_editor.field.location.label'),
-        { 
-            render: 'typeof fm.location() == "object" ? fm.location().name() : g.data.lookup("acpl",fm.location()).name()', 
-            input: 'c = function(v){ g.apply("location",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( util.functional.map_list( g.get_acpl_list(), function(obj) { return [ ' + (g.cl_first ? 'obj.name() + " : " + g.data.hash.aou[ obj.owning_lib() ].shortname()' : 'g.data.hash.aou[ obj.owning_lib() ].shortname() + " : " + obj.name()') + ', obj.id() ]; }).sort()); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
+        {
+            render: 'typeof fm.location() == "object" ? fm.location().name() : g.data.lookup("acpl",fm.location()).name()',
+            input: 'c = function(v){ g.apply("location",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( util.functional.map_list( g.get_acpl_list(' + lib_for_location_list + '), function(obj) { return [ ' + (g.cl_first ? 'obj.name() + " : " + g.data.hash.aou[ obj.owning_lib() ].shortname()' : 'obj.name()') + ', obj.id() ]; }).sort()); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
 
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.circulation_library.label'),
-        {     
+        {
             render: 'typeof fm.circ_lib() == "object" ? fm.circ_lib().shortname() : g.data.hash.aou[ fm.circ_lib() ].shortname()',
             //input: 'c = function(v){ g.apply("circ_lib",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( util.functional.map_list( util.functional.filter_list(g.data.list.my_aou, function(obj) { return g.data.hash.aout[ obj.ou_type() ].can_have_vols(); }), function(obj) { return [ obj.shortname(), obj.id() ]; }).sort() ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
             input: 'c = function(v){ g.apply("circ_lib",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( util.functional.map_list( g.data.list.aou, function(obj) { var sname = obj.shortname(); for (i = sname.length; i < 20; i++) sname += " "; return [ obj.name() ? sname + " " + obj.name() : obj.shortname(), obj.id(), ( ! get_bool( g.data.hash.aout[ obj.ou_type() ].can_have_vols() ) ), ( g.data.hash.aout[ obj.ou_type() ].depth() * 2), ]; }), g.data.list.au[0].ws_ou()); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
-        } 
+        }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.owning_library.label'),
@@ -1035,7 +972,7 @@ g.panes_and_field_names = {
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.copy_number.label'),
-        { 
+        {
             render: 'fm.copy_number() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : fm.copy_number()',
             input: 'c = function(v){ g.apply("copy_number",v); if (typeof post_c == "function") post_c(v); }; x = document.createElement("textbox"); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
@@ -1048,14 +985,14 @@ g.panes_and_field_names = {
 [
     [
         $('catStrings').getString('staff.cat.copy_editor.field.circulate.label'),
-        {     
+        {
             render: 'fm.circulate() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.circulate() ) ? $("catStrings").getString("staff.cat.copy_editor.field.circulate.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.circulate.no_or_false") )',
             input: 'c = function(v){ g.apply("circulate",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.circulate.yes_or_true"), get_db_true() ], [ $("catStrings").getString("staff.cat.copy_editor.field.circulate.no_or_false"), get_db_false() ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.holdable.label'),
-        { 
+        {
             render: 'fm.holdable() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.holdable() ) ? $("catStrings").getString("staff.cat.copy_editor.field.holdable.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.holdable.no_or_false") )',
             input: 'c = function(v){ g.apply("holdable",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.holdable.yes_or_true"), get_db_true() ], [ $("catStrings").getString("staff.cat.copy_editor.field.holdable.no_or_false"), get_db_false() ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
@@ -1063,7 +1000,7 @@ g.panes_and_field_names = {
     [
         $('catStrings').getString('staff.cat.copy_editor.field.age_based_hold_protection.label'),
         {
-            render: 'fm.age_protect() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( typeof fm.age_protect() == "object" ? fm.age_protect().name() : g.data.hash.crahp[ fm.age_protect() ].name() )', 
+            render: 'fm.age_protect() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( typeof fm.age_protect() == "object" ? fm.age_protect().name() : g.data.hash.crahp[ fm.age_protect() ].name() )',
             input: 'c = function(v){ g.apply("age_protect",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.remove_age_based_hold_protection"), "<HACK:KLUDGE:NULL>" ] ].concat( util.functional.map_list( g.data.list.crahp, function(obj) { return [ obj.name(), obj.id() ]; }).sort() ) ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
 
@@ -1077,7 +1014,7 @@ g.panes_and_field_names = {
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.loan_duration.label'),
-        { 
+        {
             render: 'switch(Number(fm.loan_duration())){ case 1: $("catStrings").getString("staff.cat.copy_editor.field.loan_duration.short"); break; case 2: $("catStrings").getString("staff.cat.copy_editor.field.loan_duration.normal"); break; case 3: $("catStrings").getString("staff.cat.copy_editor.field.loan_duration.extended"); break; }',
             input: 'c = function(v){ g.apply("loan_duration",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.loan_duration.short"), "1" ], [ $("catStrings").getString("staff.cat.copy_editor.field.loan_duration.normal"), "2" ], [ $("catStrings").getString("staff.cat.copy_editor.field.loan_duration.extended"), "3" ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
 
@@ -1093,14 +1030,14 @@ g.panes_and_field_names = {
 
      [
         $('catStrings').getString('staff.cat.copy_editor.field.circulate_as_type.label'),
-        {     
+        {
             render: 'fm.circ_as_type() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : g.data.hash.citm[ fm.circ_as_type() ].value',
             input: 'c = function(v){ g.apply("circ_as_type",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.remove_circulate_as_type"), "<HACK:KLUDGE:NULL>" ] ].concat( util.functional.map_list( g.data.list.citm, function(n){return [ n.code + " - " + n.value, n.code];} ).sort() ) ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
-        } 
+        }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.circulation_modifier.label'),
-        {    
+        {
             render: 'fm.circ_modifier() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : $("commonStrings").getFormattedString("staff.circ_modifier.display",[fm.circ_modifier(),g.data.hash.ccm[fm.circ_modifier()].name(),g.data.hash.ccm[fm.circ_modifier()].description()])',
             input: 'c = function(v){ g.apply("circ_modifier",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null"), "<HACK:KLUDGE:NULL>" ] ].concat( util.functional.map_list( g.data.list.ccm, function(obj) { return [ $("commonStrings").getFormattedString("staff.circ_modifier.display",[obj.code(),obj.name(),obj.description()]), obj.code() ]; } ).sort() ) ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
@@ -1118,37 +1055,37 @@ g.panes_and_field_names = {
 
     [
         $('catStrings').getString('staff.cat.copy_editor.field.deposit.label'),
-        { 
+        {
             render: 'fm.deposit() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.deposit() ) ? $("catStrings").getString("staff.cat.copy_editor.field.deposit.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.deposit.no_or_false") )',
             input: 'c = function(v){ g.apply("deposit",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.deposit.yes_or_true"), get_db_true() ], [ $("catStrings").getString("staff.cat.copy_editor.field.deposit.no_or_false"), get_db_false() ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.deposit_amount.label'),
-        { 
+        {
             render: 'if (fm.deposit_amount() == null) { $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null"); } else { util.money.sanitize( fm.deposit_amount() ); }',
             input: 'c = function(v){ g.apply("deposit_amount",v); if (typeof post_c == "function") post_c(v); }; x = document.createElement("textbox"); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.price.label'),
-        { 
-            render: 'if (fm.price() == null) { $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null"); } else { util.money.sanitize( fm.price() ); }', 
+        {
+            render: 'if (fm.price() == null) { $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null"); } else { util.money.sanitize( fm.price() ); }',
             input: 'c = function(v){ g.apply("price",v); if (typeof post_c == "function") post_c(v); }; x = document.createElement("textbox"); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ],
 
     [
         $('catStrings').getString('staff.cat.copy_editor.field.opac_visible.label'),
-        { 
-            render: 'fm.opac_visible() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.opac_visible() ) ? $("catStrings").getString("staff.cat.copy_editor.field.opac_visible.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.opac_visible.no_or_false") )', 
+        {
+            render: 'fm.opac_visible() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.opac_visible() ) ? $("catStrings").getString("staff.cat.copy_editor.field.opac_visible.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.opac_visible.no_or_false") )',
             input: 'c = function(v){ g.apply("opac_visible",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.opac_visible.yes_or_true"), get_db_true() ], [ $("catStrings").getString("staff.cat.copy_editor.field.opac_visible.no_or_false"), get_db_false() ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.reference.label'),
-        { 
-            render: 'fm.ref() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.ref() ) ? $("catStrings").getString("staff.cat.copy_editor.field.reference.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.reference.no_or_false") )', 
+        {
+            render: 'fm.ref() == null ? $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null") : ( get_bool( fm.ref() ) ? $("catStrings").getString("staff.cat.copy_editor.field.reference.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.reference.no_or_false") )',
             input: 'c = function(v){ g.apply("ref",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.reference.yes_or_true"), get_db_true() ], [ $("catStrings").getString("staff.cat.copy_editor.field.reference.no_or_false"), get_db_false() ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ],
@@ -1161,14 +1098,14 @@ g.panes_and_field_names = {
     ],
     [
         $('catStrings').getString('staff.cat.copy_editor.field.mint_condition.label'),
-        { 
-            render: 'get_bool( fm.mint_condition() ) ? $("catStrings").getString("staff.cat.copy_editor.field.mint_condition.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.mint_condition.no_or_false")', 
+        {
+            render: 'get_bool( fm.mint_condition() ) ? $("catStrings").getString("staff.cat.copy_editor.field.mint_condition.yes_or_true") : $("catStrings").getString("staff.cat.copy_editor.field.mint_condition.no_or_false")',
             input: 'c = function(v){ g.apply("mint_condition",v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.field.mint_condition.yes_or_true"), get_db_true() ], [ $("catStrings").getString("staff.cat.copy_editor.field.mint_condition.no_or_false"), get_db_false() ] ] ); x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c), false);',
         }
     ]
 ],
 
-'right_pane4' : 
+'right_pane4' :
 [
 ]
 
@@ -1214,10 +1151,10 @@ g.summarize = function( copies ) {
             /**********************************************************************************************/
             /* Try to retrieve the value for this field for this copy */
 
-            try { 
-                value = eval( cmd ); 
-            } catch(E) { 
-                g.error.sdump('D_ERROR','Attempted ' + cmd + '\n' +  E + '\n'); 
+            try {
+                value = eval( cmd );
+            } catch(E) {
+                g.error.sdump('D_ERROR','Attempted ' + cmd + '\n' +  E + '\n');
             }
             if (typeof value == 'object' && value != null) {
                 alert('FIXME: field_name = <' + field_name + '>  value = <' + js2JSON(value) + '>\n');
@@ -1281,7 +1218,7 @@ g.render = function() {
     /* Prepare the panes */
 
     var groupbox; var caption; var vbox; var grid; var rows;
-    
+
     /******************************************************************************************************/
     /* Loop through the field names */
 
@@ -1308,7 +1245,7 @@ g.render = function() {
                 grid.setAttribute('flex','1');
                 rows = grid.lastChild;
                 var row;
-                
+
                 /**************************************************************************************/
                 /* Loop through each value for the field */
 
@@ -1349,17 +1286,17 @@ g.render = function() {
             }
         }
     }
-    
-    
+
+
     /******************************************************************************************************/
     /* Synchronize stat cat visibility with library filter menu, and default template selection */
-    JSAN.use('util.file'); 
+    JSAN.use('util.file');
     var file = new util.file('copy_editor_prefs.'+g.data.server_unadorned);
     g.copy_editor_prefs = util.widgets.load_attributes(file);
     for (var i in g.copy_editor_prefs) {
         if (i.match(/filter_/) && g.copy_editor_prefs[i].checked == '') {
-            try { 
-                g.toggle_stat_cat_display( document.getElementById(i) ); 
+            try {
+                g.toggle_stat_cat_display( document.getElementById(i) );
             } catch(E) { alert(E); }
         }
     }
@@ -1461,7 +1398,7 @@ g.render_input = function(node,blob) {
                                     g.summarize( g.copies );
                                     g.render();
                                     g.check_for_unmet_required_fields();
-                                    document.getElementById(caption.id).focus(); 
+                                    document.getElementById(caption.id).focus();
                                 }, 0
                             );
                         }, false
@@ -1605,9 +1542,9 @@ g.add_stat_cat = function(sc) {
         var temp_array = [
             label_name,
             {
-                render: 'var l = util.functional.find_list( fm.stat_cat_entries(), function(e){ return e.stat_cat() == ' 
+                render: 'var l = util.functional.find_list( fm.stat_cat_entries(), function(e){ return e.stat_cat() == '
                     + sc.id() + '; } ); l ? l.value() : $("catStrings").getString("staff.cat.copy_editor.field.unset_or_null");',
-                input: 'c = function(v){ g.apply_stat_cat(' + sc.id() + ',v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.remove_stat_cat_entry"), -1 ] ].concat( util.functional.map_list( g.data.hash.asc[' + sc.id() 
+                input: 'c = function(v){ g.apply_stat_cat(' + sc.id() + ',v); if (typeof post_c == "function") post_c(v); }; x = util.widgets.make_menulist( [ [ $("catStrings").getString("staff.cat.copy_editor.remove_stat_cat_entry"), -1 ] ].concat( util.functional.map_list( g.data.hash.asc[' + sc.id()
                     + '].entries(), function(obj){ return [ obj.value(), obj.id() ]; } ) ).sort() ); '
                     + 'x.addEventListener("apply",function(f){ return function(ev) { f(ev.target.value); } }(c),false);',
                 attr: {
@@ -1663,7 +1600,7 @@ g.populate_stat_cats = function() {
             however, if batch editing, we only want to show the ones they have in common.  So let's compile the libs  */
 
         function add_common_ancestors(sc_libs) {
-            JSAN.use('util.fm_utils'); 
+            JSAN.use('util.fm_utils');
             var libs = []; for (var i in sc_libs) libs.push(i);
             var ancestor = util.fm_utils.find_common_aou_ancestor( libs );
             if (typeof ancestor == 'object' && ancestor != null) ancestor = ancestor.id();

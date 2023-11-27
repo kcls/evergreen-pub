@@ -1,0 +1,101 @@
+<eg-staff-banner i18n-bannerText bannerText="Work Log"></eg-staff-banner>
+
+<eg-worklog-strings-components></eg-worklog-strings-components>
+
+<ng-template #barcodeTemplate let-r="row">
+  <a target="_blank" href="/eg/staff/circ/patron/{{r.usr().id()}}/edit">
+    {{r.usr().card().barcode()}}
+  </a>
+</ng-template>
+
+<ng-template #userTemplate let-row="row">
+  <a *ngIf="row.user && row.patron_id"
+    routerLink="/staff/circ/patron/{{row.patron_id}}">{{row.user}}</a>
+</ng-template>
+
+<ng-template #itemTemplate let-row="row">
+  <a *ngIf="row.item && row.item_id"
+    routerLink="/staff/cat/item/{{row.item_id}}/summary">{{row.item}}</a>
+</ng-template>
+
+
+<eg-grid #grid [dataSource]="actionDataSource" 
+	[sortable]="true" [useLocalSort]="true" [cellTextGenerator]="cellTextGenerator"
+  toolbarLabel="Most Recently Logged Staff Actions" i18n-toolbarLabel
+  persistKey="circ.worklog.actions" (onRowActivate)="showPatron($event)">
+
+  <eg-grid-toolbar-action i18n-label label="Retrieve Patron"
+    (onClick)="showPatron($event[0])"></eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Retrieve Item"
+    (onClick)="showItem($event[0])"></eg-grid-toolbar-action>
+
+  <eg-grid-column path='index' i18n-label label="Index" [index]="true" 
+    [hidden]="true"></eg-grid-column> 
+
+  <eg-grid-column path='action' i18n-label label="Code" [hidden]="true">
+  </eg-grid-column> 
+
+  <eg-grid-column path='msg' i18n-label label="Message"></eg-grid-column>        
+
+  <eg-grid-column path='amount' i18n-label label="Amount" [hidden]="true">
+  </eg-grid-column>
+
+  <eg-grid-column path='user' i18n-label label="Patron"
+    [cellTemplate]="userTemplate"></eg-grid-column>        
+
+  <eg-grid-column path='item' i18n-label label="Item"
+    [cellTemplate]="itemTemplate"></eg-grid-column>          
+
+  <eg-grid-column path='when' i18n-label label="When" datatype="timestamp" 
+    [datePlusTime]="true"></eg-grid-column>
+
+  <eg-grid-column path='actor' i18n-label label="Staff" [hidden]="true">
+  </eg-grid-column> 
+
+
+</eg-grid>
+
+<hr class="mt-2 mb-2"/>
+
+<eg-grid #grid [dataSource]="patronDataSource" 
+	[sortable]="true" [useLocalSort]="true" [cellTextGenerator]="cellTextGenerator"
+  toolbarLabel="Most Recently  Affected Patrons" i18n-toolbarLabel
+  persistKey="circ.worklog.patrons" (onRowActivate)="showPatron($event)">
+
+  <eg-grid-toolbar-action i18n-label label="Retrieve Patron"
+    (onClick)="showPatron($event[0])"></eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Retrieve Item"
+    (onClick)="showItem($event[0])"></eg-grid-toolbar-action>
+
+  <eg-grid-column path='index' i18n-label label="Index" [index]="true" 
+    [hidden]="true"></eg-grid-column> 
+
+  <eg-grid-column path='action' i18n-label label="Code" [hidden]="true">
+  </eg-grid-column> 
+
+  <eg-grid-column path='msg' i18n-label label="Message"></eg-grid-column>        
+
+  <eg-grid-column path='amount' i18n-label label="Amount" [hidden]="true">
+  </eg-grid-column>
+
+  <eg-grid-column path='user' i18n-label label="Patron"
+    [cellTemplate]="userTemplate"></eg-grid-column>        
+
+  <eg-grid-column path='item' i18n-label label="Item"
+    [cellTemplate]="itemTemplate"></eg-grid-column>          
+
+  <eg-grid-column path='when' i18n-label label="When" datatype="timestamp" 
+    [datePlusTime]="true"></eg-grid-column>
+
+  <eg-grid-column path='actor' i18n-label label="Staff" [hidden]="true">
+  </eg-grid-column> 
+
+  <!--
+  <eg-grid-column name="barcode" [cellTemplate]="barcodeTemplate">
+  </eg-grid-column>
+  -->
+
+</eg-grid>
+

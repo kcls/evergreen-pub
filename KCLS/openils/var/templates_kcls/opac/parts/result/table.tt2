@@ -1,0 +1,325 @@
+[%  PROCESS "opac/parts/misc_util.tt2";
+
+    ctx.result_start = 1 + ctx.page_size * page;
+    ctx.result_stop = ctx.page_size * (page + 1);
+    IF ctx.result_stop > ctx.hit_count; ctx.result_stop = ctx.hit_count; END;
+
+    result_count = ctx.result_start;
+%]
+
+[% IF ctx.is_staff %] 
+<script type="text/javascript">
+    /*
+     * Catalyst IT Services
+     * New tab function, which opens a fresh tab with item detail view. Called when user clicks on a result.
+     */
+    function new_tab( element ) {
+        var tabName = element.getAttribute( 'tabname' );
+        [% IF ctx.is_staff %]
+            [% IF ctx.is_browser_staff %]
+              return true; // Use the <a> as-is
+            [% ELSE %]
+            var origHref = element.getAttribute('href');
+            var url = "oils://remote" + origHref;
+            var content_params = {
+                'override_tab_lock': true,
+                'no_xulG': false,
+                'opac_url': xulG.url_prefix(url)
+            };
+            element.setAttribute('href', url);
+            var success = xulG.new_tab(
+                xulG.url_prefix('chrome://open_ils_staff_client/content/cat/opac.xul'),
+                {},
+                content_params
+            );
+            if (success) {
+                // This prevents the current page from getting replaced
+                // with the new-tab content.
+                element.removeAttribute("href");
+            }
+
+            // Now that we have modified the link href, return it to 
+            // its former glory, but only after the <a> click event
+            // has had time to complete.
+            setTimeout(function() 
+                {element.setAttribute('href', origHref)}, 200);
+
+            [% END %]
+        [% END %]
+    }     
+</script>
+[% END %]
+
+<div style="height: 10px;"></div>
+
+[% PROCESS "opac/parts/result/paginate.tt2" browse=isBrowse seeAlso=isSeeAlso%] 
+[% ctx.results_count_header = PROCESS results_count_header;
+    ctx.results_count_header %]
+
+<div id="result_table_div">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td valign="top" width="1" style="padding-right:20px;">
+                <!--
+                <div style="width:174px;">
+                    [%# INCLUDE 'opac/parts/result/facets.tt2' %]
+                </div>
+                -->
+            </td>
+            <td class='opac-auto-015' width="1"></td>
+            <td valign="top">
+                <table id="res_table" cellpadding="0" cellspacing="0"
+                    border="0" width="100%" style="margin-top:10px;">
+                    <tbody id="result_table">
+                    [%  FOR rec IN ctx.records;
+                            attrs = {marc_xml => rec.marc_xml};
+                            PROCESS get_marc_attrs args=attrs %]
+                        <tr>
+                            <td class='result_table_row' align='left' width='100%'>
+                                <table cellpadding="0" cellspacing="0" class='result_table_subtable'>
+                                    <tbody class='result_table_subtbody'>
+                                        <tr name='counts_row'>
+                                            <td width="58" valign="top"
+                                                style="font-weight:bold;padding-left:10px;"
+                                                name="results_row_count">[%
+                                                    result_count; result_count = result_count + 1
+                                                %].</td>
+                                            <td class='result_table_pic_header' align='center'
+                                                width="78" nowrap="nowrap" valign="top">
+                                                [% IF attrs.jacket_url %]
+                                                <a href="[% mkurl(ctx.opac_root _ '/record/' _ rec.id) %]"><img 
+                                                  alt="[% l('Image of item') %]"
+                                                  name='item_jacket' class='result_table_pic' 
+                                                  width="55" src="[% attrs.jacket_url %]"
+                                                /></a>
+                                                <br/>
+                                                [% END %]
+                                            </td>
+                                            <td class='result_table_title_cell' name='result_table_title_cell' valign="top">
+                                                <div class="bold">
+                                                [% IF ctx.is_staff %] 
+                                                <a name='record_[% rec.id %]' style="cursor:pointer;" 
+                                                    title="[% attrs.title_extended | uri %]" 
+                                                    [% IF ctx.is_browser_staff %]
+                                                      target="_blank"
+                                                      href="[% mkurl('/eg/staff/cat/catalog/record/' _ rec.id) | replace(';','&') %]"
+                                                    [% ELSE %]
+                                                      href = "[% mkurl(ctx.opac_root _ '/record/' _ rec.id) %]"
+                                                    [% END %]
+                                                    tabname = "[% rec.id %]" 
+                                                    recId = "[% rec.id %]" 
+                                                    onclick = "new_tab( this )" 
+                                                    class="search_link">
+                                                        [% attrs.title_extended | html %]
+                                                </a>
+                                                [% END %]
+                                                [% IF !ctx.is_staff %]
+                                                <a name='record_[% rec.id %]' title="[% attrs.title_extended | uri %]" name='item_title'
+                                                    href="[% mkurl(ctx.opac_root _ '/record/' _ rec.id) %]"
+                                                    class='search_link'>[% attrs.title_extended | html %]</a>
+                                                [% END %]
+                                                </div>
+                                                <div style="font-size:11px;">
+                                                    <div>
+                                                        <em><a title="[% l("Perform an Author Search") %]"
+                                                                name='item_author'
+                                                                href="[%- 
+                                                                    authorquery = attrs.author | replace('[,\.:;]', '');
+                                                                    mkurl(ctx.opac_root _ '/results', {qtype => 'author', query => authorquery}, ['page','query_look_up','grouping_name','groupings_query','groupings_result_start','groupings_page'])
+                                                                    -%]">[% attrs.author | html %]</a></em>
+                                                        &nbsp;&nbsp;
+                                                    </div>
+                                                    <table cellpadding="0" cellspacing="0" border="0"
+                                                        class="results_info_table">
+                                                        <tr name='bib_cn_list' class='result_table_title_cell'>
+                                                            <td valign='top'>
+                                                                <strong>[% l('Call number:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.marc_cn | html %]</td>
+                                                        </tr>
+                                                        [% IF !CGI.param('detail_record_view') %]
+                                                        <!-- This field is visible when viewing the results in 'simple' mode -->
+                                                        <tr name="results_pub_date_tr" class="[% attrs.pubdate ? '' : 'hide_me' %]">
+                                                            <td valign="top">
+                                                                <strong>[% l('Publication Date:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.pubdate | html %]</td>
+                                                        </tr>
+                                                        <tr name="results_tcn_tr" class="[% attrs.tcn ? '' : 'hide_me' %]">
+                                                            <td valign="top">
+                                                                <strong>[% l('TCN:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.tcn | html %]</td>
+                                                        </tr>
+                                                        [% ELSIF CGI.param('detail_record_view') %]
+                                                        <!-- These fields are visible when viewing the results page in 'detailed' mode -->
+                                                        <tr name="results_pub_tr" class="[% attrs.publisher ? '' : 'hide_me' %]">
+                                                            <td valign="top">
+                                                                <strong>[% l('Publisher:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.publisher | html %]</td>
+                                                        </tr>
+                                                        <tr name="results_pub_date_tr" class="[% attrs.pubdate ? '' : 'hide_me' %]">
+                                                            <td nowrap="nowrap" valign="top">
+                                                                <strong>[% l('Publication Date:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.pubdate | html %]</td>
+                                                        </tr>
+                                                        <tr name="results_tcn_tr" class="[% attrs.tcn ? '' : 'hide_me' %]">
+                                                            <td valign="top">
+                                                                <strong>[% l('TCN:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.tcn | html %]</td>
+                                                        </tr>
+                                                        <tr name="results_isbn_tr" class="[% attrs.isbns.0 ? '' : 'hide_me' %]">
+                                                            <td valign="top">
+                                                                <strong>[% l('ISBN:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.isbns.0 | html %]</td>
+                                                        </tr>
+                                                        <tr name="results_edition_tr" class="[% attrs.edition ? '' : 'hide_me' %]">
+                                                            <td valign="top">
+                                                                <strong>[% l('Edition:') %]</strong>
+                                                            </td>
+                                                            <td>[% attrs.edition | html %]</td>
+                                                        </tr>
+                                                        <tr name="results_phys_desc_tr" class="[% attrs.phys_desc ? '' : 'hide_me' %]">
+                                                            <td nowrap="nowrap" valign="top">
+                                                                <strong>[% l('Phys. Desc.:') %]</strong>
+                                                            </td>
+                                                            <td>
+                                                                [% args.phys_desc | html %]
+                                                            </td>
+                                                        </tr>
+                                                        [% END %]
+
+                                                    </table>
+                                                    <div>
+                                                        [% l('[quant,_1,hold,holds] on first copy returned of [quant,_2,copy,copies]',
+                                                                rec.hold_count, attrs.copy_counts.count) %]
+                                                        <br/>
+                                                        [% l('[quant,_1,copy,copies] available', attrs.copy_counts.available) %]
+                                                    </div>
+                                                    [% IF rec.user_circulated %]
+                                                    <div class="result_item_circulated">
+                                                        <img src="[% ctx.media_prefix %]/images/green_check.png" alt="[% l('Checked Out Before') %]"/>
+                                                        <span style="position:relative;top:-3px;left:3px;">[%  l('I have checked this item out before') %]</span></a>
+                                                    </div>
+                                                    [% END %]
+                                                </div>
+                                                <div class="hide_me">
+                                                    <span name='result_table_extra_span' class='hide_me'>
+                                                        <span name='result_table_pub_box'
+                                                            style='padding-left: 10px;'>
+                                                            <span name='result_table_edition_span'
+                                                                style='padding-left: 10px;'></span> |
+                                                            <span name='result_table_pub_span'> </span> |
+                                                            <span name='result_table_phys_span'> </span>
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                            <td name='result_table_format_cell' class='result_table_format_cell' width="1">
+
+                                                [% IF attrs.format_icon %]
+                                                <img title="[% attrs.format_label | html %]" alt="[% attrs.format_label | html %]" src="[% attrs.format_icon %]" />
+                                                [% END %]
+
+                                                <!-- unAPI link -->
+                                                <abbr class="unapi-id" title='tag:[% ctx.hostname %],[% date.format(date.now, '%Y') %]:biblio-record_entry/[% rec.id %]'></abbr>
+
+                                                <!-- Empty span used for creating Google Book Search-->
+                                                <span name="googleBooksLink" class="hide_me">
+                                                    <a style='padding-left: 8px;'
+                                                        class='classic_link hide_me'
+                                                        name="googleBooks-link">[% l("Browse in Google Books Search") %]</a>
+                                                </span>
+
+                                            </td>
+                                            <td nowrap='nowrap' width="1" align="right">
+                                                <div style="width:250px;text-align:left;">
+                                                    <div style="float:right;">
+                                                        <div class="results_aux_utils opac-auto-010"><a
+                                                            href="[% mkurl(ctx.opac_root _ '/place_hold', 
+                                                                {hold_target => rec.id, hold_type => 'T', hold_source_page => mkurl()}) %]" 
+                                                                    name="place_hold_link" class="no-dec"><img
+                                                                src="[% ctx.media_prefix %]/images/green_check.png"
+                                                                alt="[% l('Place hold') %]"/><span style="position:relative;top:-3px;left:3px;">[% l('Place Hold') %]</span></a>
+                                                        </div>
+                                                        <div class="results_aux_utils opac-auto-011">
+                                                            [%  operation = ctx.mylist.grep(rec.id).size ? "delete" : "add";
+                                                                label = (operation == "add") ? l("Add to") : l("Remove from"); %]
+                                                            <form action="[% ctx.opac_root %]/mylist/[% operation %]" method="POST">
+                                                                <input type="hidden" name="record" value="[% rec.id %]" />
+                                                                <input type="hidden" name="anchor" value="record_[% rec.id %]" />
+                                                            <div style="position:absolute;">
+                                                                <div style="position:relative;top:5px; left: 25px;">
+                                                                    <input type="submit" title="[% '[_1] my list' | l(label) %]" 
+                                                                        value="[% '[_1] my list' | l(label) %]" class="subtle-button" />
+                                                                </div>
+                                                            </div>
+                                                                <input type="image"
+                                                                alt="[% '[_1] my list' | l(label) %]"
+                                                                src="[% ctx.media_prefix %]/images/clipboard.png" />
+                                                            </form>
+                                                        </div>
+<!-- Link to reviews and more.  Opens a new tab.  
+      moving left for ease of editing -->
+[%
+  isbn_ident = attrs.isbn_clean;
+  upc_ident = attrs.upc;
+  ident = isbn_ident || upc_ident;
+%]
+[% IF ident %]
+  <div class="results_aux_utils opac-auto-011">
+  [% IF ENV.OILS_SYNDETICS_USER %]
+    <a title="[% l('Reviews and More') %]" target='_blank' 
+      href="[% ENV.OILS_SYNDETICS_BASE_URL %]?isbn=[%-
+        isbn_ident %]/index.html&upc=[% upc_ident %]&issn=&client=[%-
+        ENV.OILS_SYNDETICS_USER %]&type=rw12">
+      <img src='[% ctx.media_prefix %]/images/starz.png'/> 
+      <span style='position:relative;top:-5px;'>[% l('Reviews &amp; More') %]</span>
+    </a>
+  [% ELSIF ENV.OILS_CONTENT_CAFE_USER %]
+    <a title="[% l('Reviews and More') %]" target='_blank' 
+      href="[% ctx.proto %]://contentcafe2.btol.com/ContentCafeClient/ContentCafe.aspx?UserID=[%- 
+      ENV.OILS_CONTENT_CAFE_USER %]&amp;Password=[%-
+      ENV.OILS_CONTENT_CAFE_PASS %]&amp;ItemKey=[% ident | uri %]&Options=Y">
+      <img src='[% ctx.media_prefix %]/images/starz.png'/> 
+      <span style='position:relative;top:-5px;'>[% l('Reviews &amp; More') %]</span>
+    </a>
+  [% END %]
+  </div>
+[% END %]
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td/>
+                                            <td align='center'> <!-- Chilifresh reviews link --> 
+                                                <span class="chili_review" id="isbn_[% attrs.isbn_clean | html %]"> </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td/>
+                                            <td colspan='5'> <!-- Chilifresh reviews panel -->
+                                                <div id="chili_review_[% attrs.isbn_clean | html %]" style="display: none;" align="center" width="100%"></div>
+                                            </td>
+                                        </tr>
+                                        <tr><td colspan="5"><div style="height:0px;border-top:1px solid #b7b7b7;border-bottom:1px solid #d4d4d4;margin:15px 0px;"></div></td></tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    [% END %]
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+<div>
+    [% ctx.results_count_header %]
+</div>

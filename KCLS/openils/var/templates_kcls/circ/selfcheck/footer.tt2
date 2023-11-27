@@ -1,0 +1,40 @@
+<footer class="scko-footer"> 
+  <div class="row">
+    <div class="col-xs-12 col-sm-3">
+      <span id="sidebar_step3d">
+        <a href="javascript:;" class="btn btn-primary scko-footer-btn"
+          id='oils-selfck-items-out-renew-details-link'>Renew Items</a>
+      </span>
+    </div>
+    <div class="col-xs-12 col-sm-3">
+      <span id="sidebar_step3d2">
+        <a href="javascript:;" class="btn btn-primary scko-footer-btn"
+          id='oils-selfck-items-out-details-link'>
+          <div style="display:inline-block;">
+            Your Check-outs<br/>
+            Now: <span id='oils-selfck-circ-session-total'></span><br/>
+            All: <span id='oils-selfck-circ-account-total'></span>
+          </div>
+        </a>
+      </span>
+    </div>
+    <div class="col-xs-12 col-sm-3">
+      <span id="sidebar_step3e">
+        <a href="javascript:;" class="btn btn-primary scko-footer-btn"
+          id='oils-selfck-hold-details-link'>
+          <div style="display:inline-block;">
+            Your Holds<br/>
+            <span id="oils-selfck-holds-total">0 Holds</span><br/>
+            <span id="oils-selfck-holds-ready">0</span> Ready for Pick-up
+          </div>
+        </a>
+      </span>
+    </div>
+    <div class="col-xs-12 col-sm-3">
+      <span id="sidebar_step3c">
+        <a href="javascript:;" class="btn btn-primary scko-footer-btn"
+          id='oils-selfck-view-fines-link'>Fines</a>
+      </span>
+    </div>
+  </div>
+</footer>

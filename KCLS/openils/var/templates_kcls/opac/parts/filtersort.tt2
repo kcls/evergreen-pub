@@ -1,0 +1,19 @@
+	<!-- Onchange below is part of a hack to keep the Sort Results order selector persistent across multiple searches in single tab 
+		 see templates_kcls/opac/parts/search.tt2 and simple.js-->
+<select class="results_header_sel" id='opac.result.sort' name="sort" 
+    [% IF submit_on_change %]onchange="setPersistentSort();this.form.submit()"
+    [% ELSE %]onchange="setPersistentSort()"[% END %]>
+    <option value=''>[% l("Sort by Relevance") %]</option>
+    <optgroup label='[% l("Sort by Title") %]'>
+        <option value='titlesort'[% value == 'titlesort' ? ' selected="selected"' : '' %]>[% l("Title: A to Z") %]</option>
+        <option value='titlesort.descending'[% value == 'titlesort.descending' ? ' selected="selected"' : '' %]>[% l("Title: Z to A") %]</option>
+    </optgroup>
+    <optgroup label='[% l("Sort by Author") %]'>
+        <option value='authorsort'[% value == 'authorsort' ? ' selected="selected"' : '' %]>[% l("Author: A to Z") %]</option>
+        <option value='authorsort.descending'[% value == 'authorsort.descending' ? ' selected="selected"' : '' %]>[% l("Author: Z to A") %]</option>
+    </optgroup>
+    <optgroup label='[% l("Sort by Publication Date") %]'>
+        <option value='pubdate.descending'[% value == 'pubdate.descending' ? ' selected="selected"' : '' %]>[% l("Date: Newest to Oldest") %]</option>
+        <option value='pubdate'[% value == 'pubdate' ? ' selected="selected"' : '' %]>[% l("Date: Oldest to Newest") %]</option>
+    </optgroup>
+</select>

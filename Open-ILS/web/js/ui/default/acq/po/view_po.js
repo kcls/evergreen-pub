@@ -189,6 +189,7 @@ function cancellationUpdater(r) {
                 }
             }
         }
+        liTable.refreshLiNotes();
     }
 }
 
@@ -520,6 +521,25 @@ function init2() {
             }
         }
     );
+
+    // Watch for LI note updates from other tabs, namely the PO
+    // print worksheet tab.
+    if (typeof BroadcastChannel !== 'undefined') {
+        var channel = new BroadcastChannel('eg.acq.lineitem.notes.update');
+        var self = this;
+        channel.onmessage = function(e) {
+            if (e.data && e.data.lineitems && e.data.lineitems.length) {
+                for (var id in self.liTable.liCache) {
+                    if (e.data.lineitems.includes(Number(id))) {
+                        console.debug(
+                            "LI notes were modified in another tab, refreshing");
+                        self.liTable.refreshLiNotes();
+                        return;
+                    }
+                }
+            }
+        };
+    }
 }
 
 function checkCouldBlanketFinalize() {
@@ -652,7 +672,7 @@ function finalizePo() {
     );
 }
 
-function activatePo(noAssets) {
+function activatePo(argument) {
     activatePoButton.attr("disabled", true);
     activatePoNoAssetsButton.attr("disabled", true);
 
@@ -670,9 +690,12 @@ function activatePo(noAssets) {
         }
     }
 
-    if (noAssets) {
+    if (argument == 'noAssets') {
         // no need for AssetCreator when assets are not desired
         activatePoStage2(true);
+    } else if (argument == 'noVandelay'){
+        //skip Asset Creator screen & Vandelay check
+        liTable.createAssets(activatePoStage2, true);
     } else {
         liTable.showAssetCreator(activatePoStage2);
     }

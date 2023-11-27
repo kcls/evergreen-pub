@@ -20,10 +20,6 @@
           <label for="merge_profile_selector">[% l('Choose merge profile') %]</label>
           <eg-fm-value-selector id="merge_profile_selector" ng-model="merge_profile" idl-class="vmp" ou-setting="cat.default_merge_profile" filter="{'preserve_spec':{'=':null}}" sticky-setting="eg.cat.record_bucket.default_merge_profile"></eg-fm-value-selector>
         </div>
-        <div class="col-xs-2">
-          <button class="btn btn-default" ng-click="showHoldings=!showHoldings">
-              [% l('Toggle Holdings Display') %]</button>
-        </div>
         <div class="col-xs-3">
           <div ng-if="!lead_id" class="alert alert-info">
             [% l('Please select a lead record') %]
@@ -42,7 +38,7 @@
         </div>
       </div>
 
-      <div class="flex-row" style="overflow:scroll">
+      <div class="flex-row" _style="overflow:scroll">
         <div ng-if="lead_id" 
           ng-class="{'record-merge-container': !editing_inplace, 'record-edit-container': editing_inplace}">
           <tabset>
@@ -53,14 +49,25 @@
                 ng-click="edit_lead()">[% l('Edit using full editor') %]</button>
               <button class="btn btn-default btn-sm" ng-show="editing_inplace"
                 ng-click="cancel_edit_lead_inplace()">[% l('Cancel Edit') %]</button>
-              <eg-marc-edit-record dirty-flag="dirty_flag" marc-xml="lead.marc_xml"
-                 in-place-mode="true" record-type="bre" embedded="true" 
-                 ng-show="editing_inplace" on-save="post_edit_inplace">
-              </eg-marc-edit-record>
-              <eg-record-breaker record-id="lead_id" marc-xml="lead.marc_xml" 
-                ng-show="!editing_inplace"></eg-record-breaker>
-              <eg-volume-list ng-if="showHoldings" record-id="lead_id" 
-                edit-copies="true" edit-volumes="true"></eg-volume-list>
+              <span class="label label-info pad-all-min">
+                [% l('Lead Record [_1]', '{{lead_id}}') %]
+              </span>
+              <input type='radio' ng-model="showHoldings[lead_id]" value="record"/>
+              <span style="padding-right:5px">Record View</span>
+              <input type='radio' ng-model="showHoldings[lead_id]" value="holdings"/>
+              <span style="padding-right:5px">Holdings View</span>
+              <div ng-if="showHoldings[lead_id]=='record'">
+                <eg-marc-edit-record dirty-flag="dirty_flag" marc-xml="lead.marc_xml"
+                  in-place-mode="true" record-type="bre" embedded="true" 
+                  ng-show="editing_inplace" on-save="post_edit_inplace">
+                </eg-marc-edit-record>
+                <eg-record-breaker record-id="lead_id" marc-xml="lead.marc_xml" 
+                  ng-show="!editing_inplace"></eg-record-breaker>
+              </div>
+              <div ng-if="showHoldings[lead_id]=='holdings'">
+                <eg-volume-list record-id="lead_id" 
+                  edit-copies="true" edit-volumes="true"></eg-volume-list>
+              </div>
             </tab>
           </tabset>
         </div>
@@ -69,9 +76,17 @@
             ng-click="use_as_lead(rec)">[% l('Use as lead record') %]</button>
           <button class="btn btn-default btn-sm" 
             ng-click="drop(rec)">[% l('Remove from consideration') %]</button>
-          <eg-record-breaker record-id="rec.id"></eg-record-breaker>
-          <eg-volume-list ng-if="showHoldings" record-id="rec.id" 
-            edit-copies="true" edit-volumes="true"></eg-volume-list>
+          <input type='radio' ng-model="showHoldings[rec.id]" value="record"/>
+          <span style="padding-right:5px">Record View</span>
+          <input type='radio' ng-model="showHoldings[rec.id]" value="holdings"/>
+          <span style="padding-right:5px">Holdings View</span>
+          <div ng-if="showHoldings[rec.id]=='record'">
+            <eg-record-breaker record-id="rec.id"></eg-record-breaker>
+          </div>
+          <div ng-if="showHoldings[rec.id]=='holdings'">
+            <eg-volume-list record-id="rec.id" 
+              edit-copies="true" edit-volumes="true"></eg-volume-list>
+          </div>
         </div>
       </div>
   </div>

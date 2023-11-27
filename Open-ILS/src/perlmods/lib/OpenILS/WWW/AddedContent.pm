@@ -248,13 +248,14 @@ sub get_rec_keys {
                     '-and' => [
                         {tag => '024'},
                         {subfield => 'a'},
-                        {ind1 => 1}
+                        {ind1 => [1, 3, 8]}
                     ]
                 }
             ]
         },
         order_by => [
-                { class => 'mfr', field => 'id' }
+                { class => 'mfr', field => 'tag' },
+                { class => 'mfr', field => 'ind1' }
             ]
     });
 }

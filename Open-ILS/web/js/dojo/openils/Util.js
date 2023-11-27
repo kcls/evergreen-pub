@@ -478,16 +478,22 @@ if(!dojo._hasResource["openils.Util"]) {
         window.focus(); 
 
         win.document.body.innerHTML = html;
-        win.print();
 
-        setTimeout(
-            function() { 
-                win.close();
-                if(callback)
-                    callback();
+        setTimeout( // give the DOM time to render
+            function() {
+                win.print();
+
+                setTimeout(
+                    function() { 
+                        win.close();
+                        if(callback)
+                            callback();
+                    },
+                    // 1k == 1 second pause, max 10 seconds
+                    Math.min(html.length, 10000)
+                );
             },
-            // 1k == 1 second pause, max 10 seconds
-            Math.min(html.length, 10000)
+            500
         );
     };
 
@@ -504,6 +510,40 @@ if(!dojo._hasResource["openils.Util"]) {
             return true;
         }
     };
+
+    openils.Util.getNodeByName = function(name, contextNode) {
+        return dojo.query('[name=' + name + ']', contextNode)[0];
+    };
+
+    // Returns the provided date as YYYY-MM-DD for the local time zone.
+    // If no date is provided, the current date is used.
+    openils.Util.getYMD= function(d) {
+        if (d) {
+            // avoid clobbering (below) the date object passed by the caller.
+            d = new Date(d.getTime());
+        } else {
+            d = new Date();
+        }
+
+        // toISOString returns a UTC date.  Mangle our 'now' date to
+        // force its UTC verion to match that of the local version
+        // once the timezone is stripped away.
+        // E.g. if the local time zone is -0500, subract 5 hours
+        // from the date before translating to an ISO string.
+        // Note: tz offset is positive for locales behind UTC.
+        d.setTime(d.getTime() - (d.getTimezoneOffset() * 60 * 1000));
+
+        return d.toISOString().replace(/T.*/, '');
+    }
+
+    // Creates a date in the local time zone from the provided YYYY-MM-DD.
+    // Parsing a bare YYYY-MM-DD value creates a UTC date, causing the
+    // resulting date to be off by a day in the local time zone.
+    openils.Util.fromYMD = function(ymd) {
+        if (!ymd) return null;
+        var parts = ymd.split('-');
+        return new Date(parts[0], Number(parts[1]) - 1, Number(parts[2]));
+    }
 
 }
 

@@ -372,6 +372,8 @@ sub update_copy {
     $class->fix_copy_price($copy);
     $class->check_hold_retarget($editor, $copy, $orig_copy, $retarget_holds);
 
+    $copy->clear_alert_message if $copy->alert_message =~ /^\s*$/;
+
     return $editor->event unless $editor->update_asset_copy($copy);
     return $class->remove_empty_objects($editor, $override, $orig_vol, $force_delete_empty_bib);
 }
@@ -553,7 +555,19 @@ sub delete_copy {
     $override = { all => 1 } if($override && !ref $override);
     $override = { all => 0 } if(!ref $override);
 
+    # KCLS JBAS-3162
+    # Hard-Stop on deleting a checked out item.
+    # This is accompanied by a UI-side check for friendlier display.
+    if ($class->copy_is_checked_out($editor, $copy->id)) {
+        return OpenILS::Event->new(
+            'COPY_DELETE_CHECKED_OUT', 
+            payload => $copy,
+            desc => 'Copy ' . $copy->barcode . ' is currently checked out'
+        );
+    }
+
     my $stat = $U->copy_status($copy->status);
+
     if ($U->is_true($stat->restrict_copy_delete)) {
         if ($override->{all} || grep { $_ eq 'COPY_DELETE_WARNING' } @{$override->{events}}) {
             return $editor->event unless $editor->allowed('COPY_DELETE_WARNING.override', $class->copy_perm_org($vol, $copy))
@@ -865,7 +879,7 @@ sub delete_volume {
 
 sub copy_perm_org {
     my($class, $vol, $copy) = @_;
-    my $org = $vol->owning_lib;
+    my $org = ref $vol->owning_lib ? $vol->owning_lib->id : $vol->owning_lib;
     if( $vol->id == OILS_PRECAT_CALL_NUMBER ) {
         $org = ref($copy->circ_lib) ? $copy->circ_lib->id : $copy->circ_lib;
     }
@@ -976,7 +990,8 @@ sub set_item_lost_or_lod {
     # ---------------------------------------------------------------------
     # zero out overdue fines on this circ if configured
     if( $void_overdue ) {
-        my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {force_zero => 1, note => "System: OVERDUE REVERSED for " . $args{bill_note} . " Processing"});
+        my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues(
+            $e, $circ, {note => "System: OVERDUE REVERSED for " . $args{bill_note} . " Processing"});
         return $evt if $evt;
     }
 
@@ -995,3 +1010,22 @@ sub set_item_lost_or_lod {
 
     return undef;
 }
+
+# This is needed because KCLS has some work flows where checked out
+# items do not have the Checked Out status, e.g. Problem Shelf.
+sub copy_is_checked_out {
+    my ($class, $e, $copy_id) = @_;
+
+    my $results = $e->search_action_circulation({
+        target_copy => $copy_id,
+        checkin_time => undef,
+        '-or' => [
+            {stop_fines => ['MAXFINES','LONGOVERDUE']},
+            {stop_fines => undef}
+        ],
+    });
+
+    # Should only ever be 0 or 1 in length.
+    return @$results > 0 ? 1 : 0;
+}
+

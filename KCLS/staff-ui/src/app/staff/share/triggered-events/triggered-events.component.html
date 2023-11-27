@@ -1,0 +1,119 @@
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" (change)="reload()"
+        id="circ-radio" name="circ" value="circ" [(ngModel)]="eventClass"/>
+      <label class="form-check-label" for="circ-radio" i18n>Circ Events</label>
+    </div>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" (change)="reload()"
+        id="ahr-radio" name="ahr" value="ahr" [(ngModel)]="eventClass"/>
+      <label class="form-check-label" for="ahr-radio" i18n>Hold Events</label>
+    </div>
+
+    <span class="ml-3 mr-3">|</span>
+
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" (change)="reload()"
+        id="pending-radio" value="pending" name="pending" [(ngModel)]="eventState"/>
+      <label class="form-check-label" for="pending-radio" i18n>Pending</label>
+    </div>
+
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" (change)="reload()"
+        id="complete-radio" value="complete" name="complete" [(ngModel)]="eventState"/>
+      <label class="form-check-label" for="complete-radio" i18n>Complete</label>
+    </div>
+
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" (change)="reload()"
+        id="error-radio" value="error" name="error" [(ngModel)]="eventState"/>
+      <label class="form-check-label" for="error-radio" i18n>Error</label>
+    </div>
+  </div>
+</div>
+
+<ng-template #itemBarcodeTemplate let-r="row">
+  <a *ngIf="targetItem(r)" 
+    routerLink="/staff/cat/item/{{targetItem(r).id()}}/triggered-events">
+    {{targetItem(r).barcode()}}
+  </a>
+</ng-template>
+
+<ng-template #titleTemplate let-r="row">
+  <a *ngIf="targetBib(r)" 
+    routerLink="/staff/catalog/record/{{targetBib(r).id()}}">
+    {{targetBib(r).simple_record().title()}}
+  </a>
+</ng-template>
+
+
+<eg-grid #grid [dataSource]="dataSource" [persistKey]="persistKey"
+  [cellTextGenerator]="cellTextGenerator">
+
+  <eg-grid-toolbar-action
+    i18n-label label="Cancel Events" (onClick)="affectEvents($event, 'cancel')">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action
+    i18n-label label="Reset Events" (onClick)="affectEvents($event, 'reset')">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-column i18n-label label="Event ID" path="id" [index]="true">
+  </eg-grid-column>
+ 
+  <eg-grid-column i18n-label label="Event Name" path="event_def.name">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Add Time" path="add_time" 
+    datatype="timestamp" [datePlusTime]="true">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Run Time" path="run_time" 
+    datatype="timestamp" [datePlusTime]="true">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Start Time" path="start_time" 
+    datatype="timestamp" [datePlusTime]="true">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Complete Time" path="complete_time" 
+    datatype="timestamp" [datePlusTime]="true">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="State" path="state">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Trigger Reactor" path="event_def.reactor.module">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Trigger Condition" path="event_def.validator.module">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Item Barcode" name="item_barcode"
+    [cellTemplate]="itemBarcodeTemplate">
+  </eg-grid-column>
+
+  <eg-grid-column i18n-label label="Title" name="title"
+    [cellTemplate]="titleTemplate">
+  </eg-grid-column>
+
+  <ng-template let-r="row" #circLink>
+    <a target="_blank" 
+    routerLink="/staff/circ/patron/{{targetUserId(r)}}/bills/{{r.target().id()}}/statement">
+      {{r.target().id()}}
+    </a>
+  </ng-template>
+  <ng-container *ngIf="eventClass == 'circ'">
+   <eg-grid-column i18n-label label="Circ ID" name="target_id" [cellTemplate]="circLink">
+   </eg-grid-column>
+  </ng-container>
+
+  <ng-container *ngIf="eventClass == 'ahr'">
+   <eg-grid-column i18n-label label="Hold ID" path="target_id">
+   </eg-grid-column>
+  </ng-container>
+
+</eg-grid>
+

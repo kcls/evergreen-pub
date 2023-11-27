@@ -31,9 +31,7 @@ function($scope , $q , $routeParams , $window , $location , egCore , egGridDataP
         if (angular.isArray(item)) item = item[0];
         if (!item) return;
         $window.open(
-            $location.path(
-                '/circ/patron/register/stage/' + item.user.usrname()).absUrl(),
-            '_blank'
+            '/eg2/staff/circ/patron/register/stage/' + item.user.usrname()
         ).focus();
     }
 

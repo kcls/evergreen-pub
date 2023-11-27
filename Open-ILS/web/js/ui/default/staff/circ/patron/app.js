@@ -385,6 +385,7 @@ function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDi
         // Using node.style instead of ng-show/ng-hide in hopes it 
         // will be quicker, so the user never sees the textarea.
         lNode.style.visibility = 'visible';
+        lNode.style.display = 'block';
         lNode.focus();
         lNode.select();
 
@@ -393,6 +394,7 @@ function($scope,  $q , $location , $filter , egCore , egNet , egUser , egAlertDi
         }
 
         lNode.style.visibility = 'hidden';
+        lNode.style.display = 'none';
     }
 
     $scope.toggle_expand_summary = function() {

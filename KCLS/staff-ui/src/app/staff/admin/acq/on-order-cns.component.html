@@ -1,0 +1,37 @@
+<eg-staff-banner bannerText="On-Order Call Numbers" i18n-bannerText>
+</eg-staff-banner>
+
+<h2 i18n>Suggested Call Numbers for On-Order Items</h2>
+
+<div class="row">
+  <div class="col-lg-3">
+    <input type="text" class="form-control" [(ngModel)]="newCn"
+      (keyup)="makeUpper()"
+      placeholder="New Call Number..." i18n-placeholder/>
+  </div>
+  <div class="col-lg-1">
+    <button class="btn btn-success" (click)="add()" [disabled]="!hasPerm">
+      Add
+    </button>
+  </div>
+  <div class="col-lg-2 d-flex pr-0 mr-0">
+    <div class="flex-1"></div>
+    <button class="btn btn-danger" (click)="deleteSelected()" [disabled]="!hasPerm">
+      Delete Selected
+    </button>
+  </div>
+</div>
+
+<ul class="list-group w-50 mt-3">
+  <li class="list-group-item" *ngFor="let cn of callNumbers">
+    <div class="d-flex">
+      <div class="flex-1">
+         <label class="form-check-label" for="checkbox-{{cn}}">{{cn}}</label>
+      </div>
+      <div>
+        <input class="form-check-input" type="checkbox" 
+          id="checkbox-{{cn}}" [(ngModel)]="selected[cn]"/>
+      </div>
+    </div>
+  </li>
+</ul>

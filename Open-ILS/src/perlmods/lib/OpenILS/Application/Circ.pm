@@ -14,6 +14,8 @@ use OpenILS::Application::Circ::Money;
 use OpenILS::Application::Circ::NonCat;
 use OpenILS::Application::Circ::CopyLocations;
 use OpenILS::Application::Circ::CircCommon;
+use OpenILS::Application::Circ::RefundableApi;
+use OpenILS::Application::Circ::RefundableCommon;
 
 use DateTime;
 use DateTime::Format::ISO8601;
@@ -32,10 +34,13 @@ use OpenILS::Const qw/:const/;
 use OpenSRF::Utils::SettingsClient;
 use OpenILS::Application::Cat::AssetCommon;
 
+use Data::Dumper;
+
 my $apputils = "OpenILS::Application::AppUtils";
 my $U = $apputils;
 
 my $holdcode    = "OpenILS::Application::Circ::Holds";
+my $RFC = 'OpenILS::Application::Circ::RefundableCommon';
 
 # ------------------------------------------------------------------------
 # Top level Circ package;
@@ -113,7 +118,8 @@ __PACKAGE__->register_method(
     NOTES
 
 sub checkouts_by_user {
-    my($self, $client, $auth, $user_id) = @_;
+    my($self, $client, $auth, $user_id, $options) = @_;
+    $options ||= {};
 
     my $e = new_editor(authtoken=>$auth);
     return $e->event unless $e->checkauth;
@@ -128,6 +134,18 @@ sub checkouts_by_user {
         },
         {idlist => 1}
     );
+
+    if ($options->{include_lost}) {
+
+        my $lost_ids = $e->search_action_circulation(
+            {   usr => $user_id,
+                xact_finish => undef,
+                stop_fines => 'LOST',
+            }, {idlist => 1}
+        );
+
+        push(@$circ_ids, @$lost_ids);
+    }
 
     for my $id (@$circ_ids) {
         my $circ = $e->retrieve_action_circulation([
@@ -201,25 +219,30 @@ __PACKAGE__->register_method(
 sub checkouts_by_user_opac {
     my( $self, $client, $auth, $user_id ) = @_;
 
-    my $e = new_editor( authtoken => $auth );
+    my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
     $user_id ||= $e->requestor->id;
     return $e->event unless 
         my $patron = $e->retrieve_actor_user($user_id);
 
-    my $data;
-    my $search = {usr => $user_id, stop_fines => undef};
-
-    if( $user_id ne $e->requestor->id ) {
-        $data = $e->search_action_circulation(
-            $search, {checkperm=>1, permorg=>$patron->home_ou})
-            or return $e->event;
-
-    } else {
-        $data = $e->search_action_circulation($search);
+    if ($user_id ne $e->requestor->id) {
+        return $e->event unless 
+            $e->allowed('VIEW_CIRCULATIONS', $patron->home_ou);
     }
 
-    return $data;
+    my $search = {
+        usr => $user_id, 
+        checkin_time => undef,
+        '-or' => [
+            {stop_fines => undef},
+            {stop_fines => ['MAXFINES','LONGOVERDUE']}
+        ]
+    };
+
+    # NOTE: for backwards compatibility with bibliocommons, 
+    # continue returning data from storage, which represents
+    # null's as "" and numbers as bare numbers, unlike cstore.
+    return OpenILS::Utils::Editor->new->search_action_circulation($search);
 }
 
 
@@ -503,7 +526,7 @@ sub set_circ_claims_returned {
 
         # make it look like the circ stopped at the cliams returned time
         $circ->stop_fines_time($backdate);
-        my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {backdate => $backdate, note => 'System: OVERDUE REVERSED FOR CLAIMS-RETURNED', force_zero => 1});
+        my $evt = OpenILS::Application::Circ::CircCommon->void_or_zero_overdues($e, $circ, {backdate => $backdate, note => 'System: OVERDUE REVERSED FOR CLAIMS-RETURNED'});
         return $evt if $evt;
     }
 
@@ -1013,11 +1036,97 @@ sub create_copy_note {
     return $note->id;
 }
 
+__PACKAGE__->register_method(
+    api_name        => 'open-ils.circ.create_batch_copy_note',
+    method          => 'create_batch_copy_note',
+    api_level       => 1,
+);
+
+sub create_batch_copy_note {
+    
+    my( $self, $connection, $authtoken, $notes ) = @_;
+    
+    my( $reqr, $evt ) = $U->checkses($authtoken);
+    return $evt if $evt;
+    my $e = new_editor(requestor => $reqr, xact => 1);
+    
+    $logger->debug("create_batch_copy_note creator?: ".Dumper($reqr));
+    $logger->debug("create_batch_copy_note creator?: ".Dumper($reqr->id()));
+    
+    #my $meth = $self->method_lookup("open-ils.storage.asset.create_batch_copy_note");
+
+    #$meth->run($authtoken, $notes);
+    
+        # [{'creator' => 1,'ou_id' => '1493','value' => 'sfh','create_date' => 'now',
+    # 'acp_id' => '7130592','barcode' => 'NEW13415850','pub' => 'f'},{'creator' => 1,'ou_id' => '1495','value' => 'zxcv','create_date' => 'now','acp_id' => '7130591','barcode' => 'MALOLO13415843','pub' => 'f'},{'creator' => 1,'ou_id' => '1497','value' => 'fyj,','create_date' => 'now','acp_id' => '7130590','barcode' => 'MALOLO13415835','pub' => 'f'},{'creator' => 1,'ou_id' => '119','value' => 'xvb','create_date' => 'now','acp_id' => '7130584','barcode' => 'MALOLO3415777','pub' => 'f'}];
+    $logger->debug("create_batch_copy_note notes: ".Dumper($notes));
+    
+    #my $e = new_editor(authtoken => $authtoken);
+    #return $e->event unless $e->checkauth;
+    
+    #my @note_list;
+    my %response;
+    
+    foreach my $note (@{ $notes }) {
+
+        # pub is incorrect and creator isn't there...
+        if ($note->{'barcode'} && $note->{'ou_id'} && $note->{'acn_id'} &&
+            $note->{'pub'} && $note->{'value'}){
+                
+            #my @note_object;
+
+            #push (@note_object, $reqr->id()); # Creator is the current user
+            #push (@note_object, $note->{'pub'});
+            #push (@note_object, $note->{'value'});
+            
+            my $copy_id_ref = $e->json_query({
+              'from' => 'acp',
+              'select' => {
+                'acp' => [
+                  'id'
+                ]
+              },
+              'where' => {
+                '-and' => [
+                  {
+                     'barcode' => $note->{'barcode'}
+                  },
+                  {
+                     'circ_lib' => $note->{'ou_id'}
+                  },
+                  {
+                     'call_number' => $note->{'acn_id'}
+                  }
+                ]
+              }
+            });
+
+            #push (@note_object, ${$copy_id_ref->[0]}{'id'});
+            #push (@note_list, \@note_object);
+
+            my $cn = Fieldmapper::asset::copy_note->new;
+            $cn->owning_copy(${$copy_id_ref->[0]}{'id'});
+            $cn->creator($e->requestor->id);
+            $cn->pub($note->{'pub'});
+            $cn->value($note->{'value'});
+            $cn->title('');
+            
+            $cn->id(create_copy_note($self, $connection, $authtoken, $cn));
+
+            # key:copy_id, value:note_text
+            $response{ $cn->owning_copy() } = $note->{'value'};  
+        }
+
+    }
+    
+    return \%response;
+}
+
 
 __PACKAGE__->register_method(
-    method      => 'delete_copy_note',
-    api_name        =>  'open-ils.circ.copy_note.delete',
-    signature   => q/
+    method    => 'delete_copy_note',
+    api_name  =>  'open-ils.circ.copy_note.delete',
+    signature => q/
         Deletes an existing copy note
         @param authtoken The login session key
         @param noteid The id of the note to delete
@@ -1243,6 +1352,11 @@ __PACKAGE__->register_method(
 );
 __PACKAGE__->register_method(
     method => 'mark_item',
+    api_name => 'open-ils.circ.mark_item_damaged.details',
+    signature   => q/Same as above but returns more info in response/
+);
+__PACKAGE__->register_method(
+    method => 'mark_item',
     api_name => 'open-ils.circ.mark_item_missing',
     signature   => q/
         Changes the status of a copy to "missing". Requires MARK_ITEM_MISSING permission.
@@ -1357,11 +1471,30 @@ sub mark_item {
     # caller may proceed if either perm is allowed
     return $e->die_event unless $e->allowed([$perm, 'UPDATE_COPY'], $owning_lib);
 
+    if ($copy->status->id() == OILS_COPY_STATUS_LOST && ($self->api_name =~ /damaged/)) {
+        $e->rollback;
+        return OpenILS::Event->new('ITEM_TO_MARK_IS_LOST');
+    }
+
+    my $missing_pieces_stat = $U->ou_ancestor_setting_value(
+        $owning_lib, 'circ.missing_pieces.copy_status', $e);
+
+    # Check the item in if this is a mark-damaged call and the item
+    # was last marked as missing pieces.
+    my $damage_checkin_ok = (
+        $missing_pieces_stat
+        && $copy->status->id() ==  $missing_pieces_stat
+        && ($self->api_name =~ /damaged/)
+    );
+
     # Copy status checks.
-    if ($copy->status->id() == OILS_COPY_STATUS_CHECKED_OUT) {
-        # Checked out items should not be marked missing.
-        # Otherwise, attempt a checkin before a status change.
-        if ($stat ne OILS_COPY_STATUS_MISSING && $args->{handle_checkin}) {
+    if ($damage_checkin_ok ||
+        $copy->status->id() == OILS_COPY_STATUS_CHECKED_OUT ||
+        $copy->status->id() == OILS_COPY_STATUS_LOST ||
+        $copy->status->id() == OILS_COPY_STATUS_LONG_OVERDUE) {
+
+        # Items must be checked in before any attempt is made to change its status.
+        if ($args->{handle_checkin}) {
             $evt = try_checkin($auth, $copy_id);
         } else {
             $evt = OpenILS::Event->new('ITEM_TO_MARK_CHECKED_OUT');
@@ -1413,8 +1546,9 @@ sub mark_item {
     $e->xact_begin;
 
     # Handle extra mark damaged charges, etc.
+    my $damaged_details = {};
     if ($self->api_name =~ /damaged/) {
-        $evt = handle_mark_damaged($e, $copy, $owning_lib, $args);
+        $evt = handle_mark_damaged($e, $copy, $owning_lib, $args, $damaged_details);
         return $evt if $evt;
     }
 
@@ -1435,6 +1569,8 @@ sub mark_item {
 
     $logger->debug("resetting holds that target the marked copy");
     OpenILS::Application::Circ::Holds->_reset_hold($e->requestor, $_,OILS_HOLD_UPDATED) for @$holds;
+
+    return $damaged_details if $self->api_name =~ /damaged.details/;
 
     return 1;
 }
@@ -1478,7 +1614,8 @@ sub try_abort_transit {
 }
 
 sub handle_mark_damaged {
-    my($e, $copy, $owning_lib, $args) = @_;
+    my($e, $copy, $owning_lib, $args, $damaged_details) = @_;
+    $damaged_details ||= {};
 
     my $apply = $args->{apply_fines} || '';
     return undef if $apply eq 'noapply';
@@ -1493,11 +1630,21 @@ sub handle_mark_damaged {
         {   limit => 1, 
             order_by => {circ => "xact_start DESC"},
             flesh => 2,
-            flesh_fields => {circ => ['target_copy', 'usr'], au => ['card']}
+            flesh_fields => {
+                circ => ['target_copy', 'usr'], 
+                au => ['card', 'billing_address', 'mailing_address']
+            }
         }
     ])->[0];
 
     return undef unless $circ;
+
+    $damaged_details->{circ} = $circ;
+    # Only return the note value if staff entered a custom note.
+    $damaged_details->{note} = $new_note;
+
+    #my ($changes, $evt) = handle_pending_refund($e, $circ->id, $args);
+    #return $evt if $evt;
 
     my $charge_price = $U->ou_ancestor_setting_value(
         $owning_lib, 'circ.charge_on_damaged', $e);
@@ -1516,6 +1663,7 @@ sub handle_mark_damaged {
     if($apply) {
         
         if($new_amount and $new_btype) {
+            $damaged_details->{bill_amount} = $new_amount;
 
             # Allow staff to override the amount to charge for a damaged item
             # Consider the case where the item is only partially damaged
@@ -1529,12 +1677,16 @@ sub handle_mark_damaged {
         } else {
 
             if($charge_price and $copy_price) {
+                $damaged_details->{bill_amount} = $copy_price;
+
                 my $evt = OpenILS::Application::Circ::CircCommon->create_bill(
                     $e, $copy_price, 7, 'Damaged Item', $circ->id);
                 return $evt if $evt;
             }
 
             if($proc_fee) {
+                $damaged_details->{proc_fee} = $proc_fee;
+
                 my $evt = OpenILS::Application::Circ::CircCommon->create_bill(
                     $e, $proc_fee, 8, 'Damaged Item Processing Fee', $circ->id);
                 return $evt if $evt;
@@ -1556,6 +1708,20 @@ sub handle_mark_damaged {
 
         my $evt2 = OpenILS::Utils::Penalty->calculate_penalties($e, $circ->usr->id, $e->requestor->ws_ou);
         return $evt2 if $evt2;
+
+        # Create a patron alert penalty to also track the damaged note.
+        # Rolling this back in lieu of manual penalty creation.
+#        my $pen_type = 20; # Alert Note
+#        my $sp = $U->create_penalty_message(
+#            $e, 
+#            20, # Alert Note
+#            $circ->usr, 
+#            $e->requestor->ws_ou,
+#            'Damaged Item',
+#            $new_note
+#        );
+#
+#        return $U->is_event($sp) ? $sp : undef;
 
     } else {
         return OpenILS::Event->new('DAMAGE_CHARGE', 
@@ -1585,23 +1751,25 @@ __PACKAGE__->register_method(
 
 sub mark_item_missing_pieces {
     my( $self, $conn, $auth, $copy_id, $args ) = @_;
-    ### FIXME: We're starting a transaction here, but we're doing a lot of things outside of the transaction
-    ### FIXME: Even better, we're going to use two transactions, the first to affect pertinent holds before checkout can
-
-    my $e2 = new_editor(authtoken=>$auth, xact =>1);
-    return $e2->die_event unless $e2->checkauth;
     $args ||= {};
+
+    my $e2 = new_editor(authtoken => $auth);
+    return $e2->event unless $e2->checkauth;
 
     my $copy = $e2->retrieve_asset_copy([
         $copy_id,
         {flesh => 1, flesh_fields => {'acp' => ['call_number']}}])
-            or return $e2->die_event;
+            or return $e2->event;
+
+    if ($copy->status == OILS_COPY_STATUS_LOST) {
+        return OpenILS::Event->new('ITEM_TO_MARK_IS_LOST');
+    }
 
     my $owning_lib = 
         ($copy->call_number->id == OILS_PRECAT_CALL_NUMBER) ? 
             $copy->circ_lib : $copy->call_number->owning_lib;
 
-    return $e2->die_event unless $e2->allowed('MARK_ITEM_MISSING_PIECES', $owning_lib);
+    return $e2->event unless $e2->allowed('MARK_ITEM_MISSING_PIECES', $owning_lib);
 
     #### grab the last circulation
     my $circ = $e2->search_action_circulation([
@@ -1613,9 +1781,14 @@ sub mark_item_missing_pieces {
 
     if (!$circ) {
         $logger->info('open-ils.circ.mark_item_missing_pieces: no previous checkout');
-        $e2->rollback;
         return OpenILS::Event->new('ACTION_CIRCULATION_NOT_FOUND',{'copy'=>$copy});
     }
+
+#    $e2->xact_begin;
+#    my ($changes, $evt) = handle_pending_refund($e2, $circ->id, $args);
+#
+#    return $evt if $evt; # rolls back
+#    if ($changes) { $e2->commit } else { $e2->rollback; }
 
     my $holds = $e2->search_action_hold_request(
         { 
@@ -1628,9 +1801,28 @@ sub mark_item_missing_pieces {
     $logger->debug("resetting holds that target the marked copy");
     OpenILS::Application::Circ::Holds->_reset_hold($e2->requestor, $_, OILS_HOLD_UPDATED) for @$holds;
 
-    
-    if (! $e2->commit) {
-        return $e2->die_event;
+    # Re-fetch the copy in case its status was modifed in _reset_hold
+    $e2->xact_begin;
+    $copy = $e2->retrieve_asset_copy([
+        $copy_id, 
+        {flesh => 1, flesh_fields => {'acp' => ['call_number']}}]
+    ) or return $e2->die_event;
+    $e2->rollback;
+
+    if ($copy->status == OILS_COPY_STATUS_IN_TRANSIT) {
+        # KCLS JBAS-537 Abort active transits before attempting to
+        # check the item back out to the most recent patron.
+
+        $logger->info("Canceling active transit on mark-missing-pieces item");
+
+        my $resp = $apputils->simplereq('open-ils.circ', 
+            'open-ils.circ.transit.abort', $auth, {copyid => $copy->id});
+
+        unless ($resp && $resp == 1) {
+            $logger->error(
+                "Error canceling transit on mark-missing-pieces item");
+            return $resp;
+        }
     }
 
     my $e = new_editor(authtoken=>$auth, xact =>1);
@@ -1888,6 +2080,32 @@ sub fire_circ_events {
                   # failure down the line if handling many targets
 
     return undef unless @$targets;
+
+    # KCLS JBAS-2169 -- Alternate fix for LP#1370694
+    # Sort targets to match target-id order provided by the caller.
+    # This guarantees correct user-data / target linking for active 
+    # (i.e. print) hooks.
+    my @tmp;
+    for my $id (@$target_ids) {
+        # circ/hold/usr all have an "id" field.
+        my ($target) = grep {$_->id == $id} @$targets;
+        push(@tmp, $target);
+    }
+    $targets = \@tmp;
+
+    if ($hook eq 'email.selfcheck.checkout') {
+        # KCLS JBAS-1728 AND JBAS-2998
+        # Avoid firing passive email events here.  Create the events,
+        # then let them fire via the regular A/T processor.
+        $conn->respond_complete(1);
+
+        for my $target (@$targets) {
+            $U->create_events_for_hook(
+                $hook, $target, $org_id, $granularity, $user_data, 1);
+        }
+        return undef;
+    } 
+
     return $U->fire_object_event($event_def, $hook, $targets, $org_id, $granularity, $user_data);
 }
 
@@ -2147,6 +2365,75 @@ sub get_copy_due_date {
     return $circ->{due_date};
 }
 
+__PACKAGE__->register_method(
+    method    => "get_lineitem",
+    api_name  => "open-ils.circ.lineitem.latest_by_tcn",
+    signature => {
+        desc => "Grabs the latest lineitem by tcn value.  "
+    }
+);
+
+__PACKAGE__->register_method(
+    method    => "get_lineitem",
+    api_name  => "open-ils.circ.lineitem.lineitem_by_id",
+    signature => {
+        desc => "Grabs the latest lineitem by tcn value.  "
+    }
+);
+
+sub get_lineitem {
+    
+    my( $self, $client, $user_session, $id ) = @_;
+    
+    my $e = new_editor(authtoken => $user_session);
+    return $e->die_event unless $e->checkauth;
+    
+    my $meth = $self->method_lookup("open-ils.storage.asset.lineitem_by_id");
+    
+    if($self->api_name =~ /latest_by_tcn/) {
+        
+        $meth = $self->method_lookup("open-ils.storage.asset.latest_by_tcn");
+        $logger->debug("update_items latest_by_tcn");
+    }
+    
+    my ($arrayOfArrays) = $meth->run($user_session, $id);
+    
+    $logger->debug("update_items arrayOfArrays: ".Dumper($arrayOfArrays));
+    
+    # returnArray is [values, objectTemplate]
+    my @returnArray;
+    push(@returnArray, $arrayOfArrays);
+    
+    my %links;
+    $links{ 'acp' } = 1;
+    $links{ 'acn' } = 1;
+    
+    # Get the object template
+    my $returned = objectify(\%links);
+    
+    push(@returnArray, $returned);
+    
+    return \@returnArray;
+}
+
+# This will return a fieldmapped object template
+# type is the fieldmapper class you want to map to
+# links_to_follow is an optional list of links that will need to be fieldmapped in 
+sub objectify {
+    
+    my $links_to_follow = shift;
+    my %base_object;
+
+    for my $type ( keys %{ $links_to_follow } ){
+
+        my $class = Fieldmapper::class_for_hint($type);
+        my @fields = $class->all_fields();
+        
+        $base_object{ $type } = \@fields;
+    }
+
+    return \%base_object;
+}
 
 __PACKAGE__->register_method(
     method    => 'get_offline_data',
@@ -2237,6 +2524,29 @@ sub get_offline_data {
     return undef;
 }
 
+__PACKAGE__->register_method(
+    method    => 'copy_is_checked_out',
+    api_name  => 'open-ils.circ.copy.is_checked_out',
+    stream    => 1,
+    signature => {
+        desc => q/Returns true if the provided copy ID is checked out/,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Copy ID', type => 'number'}
+        ],
+        return => {desc => q/ /}
+    }
+);
+
+sub copy_is_checked_out {
+    my ($self, $client, $auth, $copy_id) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+    return $e->event unless $e->allowed('VIEW_CIRCULATIONS');
+
+    return OpenILS::Application::Cat::AssetCommon->copy_is_checked_out($e, $copy_id);
+}
 
 
 # {"select":{"acp":["id"],"circ":[{"aggregate":true,"transform":"count","alias":"count","column":"id"}]},"from":{"acp":{"circ":{"field":"target_copy","fkey":"id","type":"left"},"acn"{"field":"id","fkey":"call_number"}}},"where":{"+acn":{"record":200057}}

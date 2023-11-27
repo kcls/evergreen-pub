@@ -157,6 +157,9 @@ sub pick_winning_change {
     }
 
     if ($dist_formula) {
+        # Formulas have no cn_label
+        return if $field eq 'cn_label';
+
         my $hit;
 
         my $count_over_entries = 0;
@@ -199,10 +202,10 @@ sub adjust_lineitem_copy_counts {
 
         if ($counts{$jub->id} > $item_count) {
             # Take care of excess lineitem details.
-
-            for (my $i = $item_count; $i < $counts{$jub->id}; $i++) {
-                $jub->lineitem_details->[$i]->isdeleted(1);
-            }
+            return OpenILS::Event->new('ACQ_COPY_COUNT_TOO_LOW');
+            #for (my $i = $item_count; $i < $counts{$jub->id}; $i++) {
+            #    $jub->lineitem_details->[$i]->isdeleted(1);
+            #}
         } elsif ($counts{$jub->id} < $item_count) {
             # Add missing lineitem details.
 
@@ -215,6 +218,8 @@ sub adjust_lineitem_copy_counts {
             }
         }
     }
+
+    undef;
 }
 
 
@@ -277,13 +282,20 @@ sub lineitem_batch_update_impl {
     );
 
     my $item_count = pick_winning_item_count($changes, $dist_formula);
-    adjust_lineitem_copy_counts($lineitems, $item_count) if defined $item_count;
+
+    if (defined $item_count) {
+        my $evt = adjust_lineitem_copy_counts($lineitems, $item_count);
+        if ($evt) {
+            $e->rollback;
+            return $evt;
+        }
+    }
 
     # Now, going through all our lineitem details, make the updates
     # called for in $changes, other than the 'item_count' field (handled above).
 
     my %fund_cache;
-    my @fields = qw/owning_lib fund location collection_code circ_modifier/;
+    my @fields = qw/owning_lib fund location collection_code circ_modifier cn_label/;
     foreach my $jub (@$lineitems) {
         # We use the counting style of loop below because we need to know our
         # position for dist_formula application.
@@ -376,6 +388,8 @@ sub lineitem_batch_update_impl {
 __PACKAGE__->register_method(
     method => "lineitem_batch_update_api",
     api_name => "open-ils.acq.lineitem.batch_update",
+    stream => 1,
+    max_bundle_count => 1,
     signature => {
         desc => "Apply changes to the lineitem details realted to specified lineitems in batch",
         params => [
@@ -397,6 +411,8 @@ __PACKAGE__->register_method(
 __PACKAGE__->register_method(
     method => "lineitem_batch_update_api",
     api_name => "open-ils.acq.lineitem.batch_update.dry_run",
+    stream => 1,
+    max_bundle_count => 1,
     signature => {
         desc => "Impotent version of open-ils.acq.lineitem.batch_update that always ends in a rollback",
         params => "See open-ils.acq.lineitem.batch_update",

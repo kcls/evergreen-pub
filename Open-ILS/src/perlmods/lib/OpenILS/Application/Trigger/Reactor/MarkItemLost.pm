@@ -2,12 +2,10 @@ package OpenILS::Application::Trigger::Reactor::MarkItemLost;
 use base 'OpenILS::Application::Trigger::Reactor';
 use strict; use warnings;
 use Error qw/:try/;
-use Data::Dumper;
 use OpenSRF::Utils::Logger qw/:logger/;
 use OpenILS::Utils::CStoreEditor q/:funcs/;
 use OpenILS::Application::Cat::AssetCommon;
-$Data::Dumper::Indent = 0;
-
+my $U = "OpenILS::Application::AppUtils";
 
 sub ABOUT {
     return <<ABOUT;
@@ -38,8 +36,20 @@ sub handler {
 
     $e->commit;
 
-    my $ses = OpenSRF::AppSession->create('open-ils.trigger');
-    $ses->request('open-ils.trigger.event.autocreate', 'lost.auto', $circ, $circ->circ_lib);
+    # KCLS JBAS-1867 Avoid mysterious deaths of A/T drones
+    # my $ses = OpenSRF::AppSession->create('open-ils.trigger');
+    # $ses->request('open-ils.trigger.event.autocreate', 'lost.auto', $circ, $circ->circ_lib);
+
+    # KCLS JBAS-3049 Resume auto-lost notice
+    # This time wait for a response to see if that resolves the
+    # mysterious A/T drone deaths
+    $U->simplereq(
+        'open-ils.trigger',
+        'open-ils.trigger.event.autocreate', 
+        'lost.auto', 
+        $circ, 
+        $circ->circ_lib
+    );
 
     return 1;
 }

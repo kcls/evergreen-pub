@@ -307,6 +307,13 @@ sub read {
                 ($charge->{$field}) = $_ =~ /$edi_charge_fields{$field}/
                     if /$edi_charge_fields{$field}/;
             }
+
+            if (exists $charge->{type} && exists $charge->{amount}) {
+                # Remove the current charge in progress once it's
+                # complete to avoid cases where other amounts may
+                # creep in for charge types we're not tracking.
+                delete $msg->{_current_charge};
+            }
         }
 
         # - starting a new tax charge.  Taxes wind up on current lineitem if

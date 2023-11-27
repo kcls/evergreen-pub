@@ -607,8 +607,8 @@ function($scope,  $q , $routeParams , $timeout , $window , $uibModal , bucketSvc
             }
         ).then(function(key) {
             if (key) {
-                var tab = (hide_vols === true) ? 'attrs' : 'holdings';
-                var url = '/eg2/staff/cat/volcopy/' + tab + '/session/ ' + key;
+                //var url = egCore.env.basePath + 'cat/volcopy/' + key;
+                var url = '/eg2/staff/cat/volcopy/holdings/session/' + key;
                 $timeout(function() { $window.open(url, '_blank') });
             } else {
                 alert('Could not create anonymous cache key!');
@@ -643,130 +643,17 @@ function($scope,  $q , $routeParams , $timeout , $window , $uibModal , bucketSvc
         angular.forEach($scope.gridControls.selectedItems(), function (i) {
             cp_list.push(i.id);
         })
-        var url = egCore.env.basePath + '/cat/item/search/' + cp_list.join();
+        var url = '/eg2/staff/cat/item/list/' + cp_list.join();
         $timeout(function() { $window.open(url, '_blank') });
     }
 
-    $scope.requestItems = function() {
-        var copy_list = $scope.gridControls.selectedItems().map(
-            function (i) {
-                return i.id;
-            }
-        );
-        var record_list = $scope.gridControls.selectedItems().map(
-            function (i) {
-                return i['call_number.record.id'];
-            }
-        ).filter(function(v,i,s){ // dedup
-            return s.indexOf(v) == i;
+    $scope.requestItems = function(copies) {
+        var copy_list = [];
+        angular.forEach(copies, function(i) {
+            copy_list.push(i.id);
         });
 
-        if (copy_list.length == 0) return;
-
-        return $uibModal.open({
-            templateUrl: './cat/catalog/t_request_items',
-            backdrop: 'static',
-            animation: true,
-            controller:
-                   ['$scope','$uibModalInstance',
-            function($scope , $uibModalInstance) {
-                $scope.user = null;
-                $scope.first_user_fetch = true;
-
-                $scope.hold_data = {
-                    hold_type : 'C',
-                    copy_list : copy_list,
-                    record_list : record_list,
-                    pickup_lib: egCore.org.get(egCore.auth.user().ws_ou()),
-                    user      : egCore.auth.user().id(),
-                    honor_user_settings : 
-                        egCore.hatch.getLocalItem('eg.cat.request_items.honor_user_settings')
-                };
-
-                egUser.get( $scope.hold_data.user ).then(function(u) {
-                    $scope.user = u;
-                    $scope.barcode = u.card().barcode();
-                    $scope.user_name = egUser.format_name(u);
-                    $scope.hold_data.user = u.id();
-                });
-
-                $scope.user_name = '';
-                $scope.barcode = '';
-                function user_preferred_pickup_lib(u) {
-                    var pickup_lib = u.home_ou();
-                    angular.forEach(u.settings(), function (s) {
-                        if (s.name() == "opac.default_pickup_location") {
-                            pickup_lib = s.value();
-                        }
-                    });
-                    return egOrg.get(pickup_lib);
-                }
-                $scope.$watch('barcode', function (n) {
-                    if (!$scope.first_user_fetch) {
-                        egUser.getByBarcode(n).then(function(u) {
-                            $scope.user = u;
-                            $scope.user_name = egUser.format_name(u);
-                            $scope.hold_data.user = u.id();
-                            if ($scope.hold_data.honor_user_settings) {
-                                $scope.hold_data.pickup_lib = user_preferred_pickup_lib(u);
-                            }
-                        }, function() {
-                            $scope.user = null;
-                            $scope.user_name = '';
-                            delete $scope.hold_data.user;
-                        });
-                    }
-                    $scope.first_user_fetch = false;
-                });
-                $scope.$watch('hold_data.honor_user_settings', function (n) {
-                    if (n && $scope.user) {
-                        $scope.hold_data.pickup_lib = user_preferred_pickup_lib($scope.user);
-                    } else {
-                        $scope.hold_data.pickup_lib = egCore.org.get(egCore.auth.user().ws_ou());
-                    }
-                    egCore.hatch.setLocalItem('eg.cat.request_items.honor_user_settings',n);
-                });
-
-                $scope.ok = function(h) {
-                    var args = {
-                        patronid  : h.user,
-                        hold_type : h.hold_type,
-                        pickup_lib: h.pickup_lib.id(),
-                        depth     : 0
-                    };
-
-                    egCore.net.request(
-                        'open-ils.circ',
-                        'open-ils.circ.holds.test_and_create.batch.override',
-                        egCore.auth.token(), args,
-                        h.hold_type == 'T' ? h.record_list : h.copy_list,
-                        { 'all' : 1, 'honor_user_settings' : h.honor_user_settings }
-                    ).then(function(r) {
-                        console.log('request result',r);
-                        if (isNaN(r.result)) {
-                            if (typeof r.result.desc != 'undefined') {
-                                ngToast.danger(r.result.desc);
-                            } else {
-                                if (typeof r.result.last_event != 'undefined') {
-                                    ngToast.danger(r.result.last_event.desc);
-                                } else {
-                                    ngToast.danger(egCore.strings.FAILURE_HOLD_REQUEST);
-                                }
-                            }
-                        } else {
-                            ngToast.success(egCore.strings.SUCCESS_HOLD_REQUEST);
-                        }
-                    });
-
-                    $uibModalInstance.close();
-                }
-
-                $scope.cancel = function($event) {
-                    $uibModalInstance.dismiss();
-                    $event.preventDefault();
-                }
-            }]
-        });
+        itemSvc.requestItems(copy_list);
     }
 
     $scope.deleteCopiesFromCatalog = function(copies) {

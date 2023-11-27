@@ -45,6 +45,8 @@
         <command id="refund" label="&staff.patron.bill_interface.refund.label;" accesskey="&staff.patron.bill_interface.refund.accesskey;" disabled="true"/>
         <command id="add" label="&staff.patron.bill_interface.add_billing.label;" accesskey="&staff.patron.bill_interface.add_billing.accesskey;" disabled="true"/>
         <command id="details" label="&staff.patron.bill_interface.full_details.label;" accesskey="&staff.patron.bill_interface.full_details.accesskey;" disabled="true"/>
+        <command id="printthis" label="&staff.patron.bill_interface.print_selected.label;" accesskey="&staff.patron.bill_interface.full_details.accesskey;" disabled="true"/>
+        <command id="printlostpaid" label="Reprint Lost/Paid Receipt" disabled="true"/>
     </commandset>
 
     <popupset>
@@ -56,6 +58,8 @@
             <menuitem command="refund" />
             <menuitem command="add" />
             <menuitem command="details" />
+            <menuitem command="printthis" />
+            <menuitem command="printlostpaid" />
         </menupopup>
     </popupset>
 

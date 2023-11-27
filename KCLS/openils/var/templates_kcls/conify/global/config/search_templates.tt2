@@ -1,0 +1,286 @@
+[% WRAPPER base.tt2 %]
+[% INCLUDE 'opac/parts/js.tt2' %]
+[%
+    PROCESS "opac/parts/config.tt2";
+%]
+<script type="text/javascript" src="/xul/server/OpenILS/global_util.js"></script>
+<script type="text/javascript" src="/xul/server/main/constants.js"></script>
+<script type="text/javascript" src="/xul/server/main/JSAN.js"></script>
+<script type="text/javascript" src="/xul/server/util/file.js"></script>
+<script type="text/javascript" src="/xul/server/util/error.js"></script>
+<script type="text/javascript" src="/js/ui/kcls/conify/global/config/search_templates.js"></script>
+
+<style>
+    #adv_global_tbody input, #adv_global_tbody a {display:none;}
+    .ccvmSelect {width:200px;}
+    #currentSettings {float:right;  width:300px; height:200px;}
+    #options {float:left;}
+    #searchFilters td {padding:.5em;}
+    #currentSettings td {padding:.3em;}
+    #adv_global_tbody select {max-width:115px;}
+    #ssContainer {width:1200px;}
+</style>
+<div id="ssContainer">
+    <h1>[% l('Search Settings') %]</h1>
+    <br/>
+
+    <div id="currentSettings">
+        <h2>[% l('Current Template') %]</h2>
+        <select id="templateListSel" onChange="selectSearchTemplateOrClear(this.value), textIn.value = this.value" style="min-width:150px;">
+            <option value="">--Default--</option>
+        </select>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+
+        <strong>[% l('Template Name') %]</strong>
+        <br/>
+        <table>
+            <tr>
+                <td>
+                    <input type="text" id="nameInput" name="nameInput"/>
+                </td>
+                <td>
+                    <button id="save" onclick="create_template(textIn.value)">Save Template To Disk</button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button id="delete" onclick="removeTemplate(templateList,template)">[% l('Delete Template') %]</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="options">
+        <table width='100%' id='adv_global_input_table'>
+
+            <tbody id='adv_global_tbody' >
+               [% INCLUDE "opac/parts/advanced/global_row.tt2" %]
+
+            </tbody>
+        </table>
+
+        <br/>
+
+        <table id="searchFilters">
+[%
+    in_row = 0;
+    FOR adv_chunk IN search.adv_config;
+        NEXT IF adv_chunk.adv_hide;
+        IF in_row == 0;
+            in_row = 1; %]
+            <tr>
+[%
+        END; %]
+        [% IF adv_chunk.adv_attr.size || adv_chunk.adv_filter.size; %]
+                <td>
+                    <strong>[% adv_chunk.adv_label %]</strong>
+                    <br />
+                    <select name="type" multiple="multiple" size="7" class="ccvmSelect">
+                    </select>
+                </td>
+        [% END; %]
+      [%  IF adv_chunk.adv_break;
+            in_row = 0; %]
+            </tr>
+        [% END; %]
+ [%   END; %]
+            <tr>
+                <td>
+                    <strong>[% l('Search Library') %]</strong>
+                    <br />
+                    <select id="orgSel" name="orgSel"></select>
+                </td>
+                <td>
+                    <strong>[% l('Publication Date') %]</strong>
+                    <br/>
+                    <select id="pubdateSel" name="pubdateSel">
+                        <option value="is">[% l('Is') %]</option>
+                        <option value="before">[% l('Before') %]</option>
+                        <option value="after">[% l('After') %]</option>
+                        <option value="between">[% l('Between') %]</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    <strong>[% l('Search Results') %]</strong>
+                    <br/>
+                    <select id="sortBySel" name="sortBySel">
+                        <option value="">[% l('Sort by Relevance') %]</option>
+                        <optgroup label="[% l('Sort by Title') %]">
+                            <option value="titlesort">[% l('Title: A to Z') %]</option>
+                            <option value="titlesort.descending">[% l('Title: Z to A') %]</option>
+                        </optgroup>
+                        <optgroup label="[% l('Sort by Author') %]">
+                            <option value="authorsort">[% l('Author: A to Z') %]</option>
+                            <option value="authorsort.descending">[% l('Author: Z to A') %]</option>
+                        </optgroup>
+                        <optgroup label="[% l('Sort by Publication Date') %]">
+                            <option value="pubdate.descending">[% l('Date: Newest to Oldest') %]</option>
+                            <option value="pubdate">[% l('Date: Oldest to Newest') %]</option>
+                        </optgroup>
+                    </select>
+                </td>
+                <td>
+                    <strong>[% l('Result View') %]</strong>
+                    <br/>
+                    <select id="resultViewSel">
+                        <option value="0">[% l('Simple View') %]</option>
+                        <option value="1">[% l('Detail View') %]</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="checkbox" name="modifier" id="modifier" value="available" />
+                    <span>[% l('Limit to Available') %]</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                <button id="clear" onclick="clearOptions()">[% l('Clear Options') %]</button>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+</div>
+
+<!-- /////////////////  -- JAVASCRIPT -- /////////////////////// -->
+
+<script type="text/javascript">
+    dojo.require('openils.PermaCrud');
+    var pcrud;
+    pcrud = new openils.PermaCrud();
+    //HTML element handles
+    var templateSel = document.getElementById("templateListSel");
+    var pubdateSel = document.getElementById("pubdateSel");
+    var orgSel = document.getElementById("orgSel");
+    var sortBySel = document.getElementById("sortBySel");
+    var resultViewSel = document.getElementById("resultViewSel");
+    var modCheck = document.getElementById("modifier");
+    var textIn = document.getElementById("nameInput");
+    var ccvmTable = document.getElementById("searchFilters");
+    var searchFilters = ccvmTable.getElementsByTagName("select");
+
+
+    var ccvmList = pcrud.retrieveAll("ccvm", {"order_by" : {"ccvm" : 'value'}});
+    var searchfilterList = pcrud.retrieveAll("asfg",{ "flesh":2, "flesh_fields":{"asfg":["entries"],"asfge":["query"]},"order_by" : {"asfg" : 'code'}});
+    var ccvmLength = ccvmList.length;
+    var filterList = new Array();
+    var foundValue = 0;
+    var n = 0; //tracks filterList
+    var s = 0; // tracks adv_config
+    [%  FOR adv_chunk IN search.adv_config;
+        NEXT IF adv_chunk.adv_hide;
+        IF adv_chunk.adv_special; %]
+        s++;
+        [% NEXT; END; %]
+        foundValue = 0;
+        filterList[n] = {};
+        filterList[n].label = "[% adv_chunk.adv_label %]";
+        filterList[n].last_in_row = "[% adv_chunk.adv_break %]";
+        filterList[n].codeList = [];
+        filterList[n].groupList = [];
+        [% IF adv_chunk.adv_attr.defined; %]
+            [% FOR attr IN adv_chunk.adv_attr; %]
+            if(!foundValue)
+            {
+                filterList[n].ctype = "[% attr %]";
+                for ( i= 0; i < ccvmLength; i++)
+                {
+                    if (ccvmList[i].ctype() == "[% attr %]")
+                    {
+                        filterList[n].codeList.push(ccvmList[i]);
+                    }
+                }
+                if (filterList[n].codeList.length )
+                {
+                    foundValue = 1;
+                }
+            }
+            searchFilters[s].setAttribute("id", "[% attr %]" + "_selector");
+            filterList[n].id = "[% attr %]" + "_selector";
+           [% END;
+        ELSIF adv_chunk.adv_filter.defined; %]
+            [% FOR filter IN adv_chunk.adv_filter; %]
+            if(!foundValue)
+            {
+                filterList[n].ctype = "[% filter %]";
+                for ( i= 0; i < searchfilterList.length; i++)
+                {
+                    if (searchfilterList[i].code() == "[% filter %]")
+                    {
+                         var len = searchfilterList[i].entries().length;
+                        for (var k = 0; k < len; k++)
+                        {
+                           filterList[n].groupList.push(searchfilterList[i].entries()[k]);
+                        }
+                    }
+                }
+                if (filterList[n].groupList.length )
+                {
+                    foundValue = 1;
+                }
+            }
+            searchFilters[s].setAttribute("id", "[% filter %]" + "_selector");
+            filterList[n].id = "[% filter %]" + "_selector";
+            [% END; %]
+        [% END; %]
+        n++;
+
+[% END; %]
+
+    //Add option tags to searchFilters
+    for (var f = 0; f < searchFilters.length; f++)
+    {
+        if (searchFilters[f].multiple)
+        {
+            if (filterList[f] && filterList[f].id)
+            {
+                if (filterList[f].codeList.length)
+                {
+                    if (filterList[f].codeList.length)
+                    for(var i=0; i<filterList[f].codeList.length; i++)
+                    {
+                        searchFilters[f].options[i]= new Option(filterList[f].codeList[i].value(), filterList[f].codeList[i].code());
+                    }
+                }
+                else if (filterList[f].groupList.length)
+                {
+                    if (filterList[f].groupList.length)
+                    for(var i=0; i<filterList[f].groupList.length; i++)
+                    {
+                        searchFilters[f].options[i]= new Option(filterList[f].groupList[i].query().label(), filterList[f].groupList[i].id());
+                    }
+                }
+            }
+        }
+    }
+
+    //create org unit dropdown
+    var orgList;
+    orgList = pcrud.retrieveAll("aou",{"order_by" : [{'class' : "aou", 'field' : 'ou_type'}, {'class' : "aou", 'field' : "name" }]});
+    for(var i=0; i< orgList.length; i++){
+        document.getElementById("orgSel").options[i]= new Option(orgList[i].name(), orgList[i].id());
+    }
+
+    //get g.data cache
+    getSearchStash();
+    populateTemplateOptions(templateList);
+
+    if (template)
+    {
+        selectOptionValue(templateSel, template.name);
+        textIn.value = template.name;
+        if(template.name != "Default")
+        {
+            populateSearchOptions(template);
+        }
+    }
+
+</script>
+
+[% END %]

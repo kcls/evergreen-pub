@@ -755,6 +755,7 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                 $scope.enable_fast_add = false;
                 $scope.fast_item_callnumber = '';
                 $scope.fast_item_barcode = '';
+                $scope.saving = false;
 
                 $scope.flatEditor = { isEnabled : $scope.flatOnly ? true : false };
                 
@@ -762,8 +763,15 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                     $scope.flatEditor.isEnabled = val;
                 });
                 
+                var inPostSaveTabChange = false; // KCLS
                 $scope.$watch('flatEditor.isEnabled', function (newVal, oldVal) {
-                    if (newVal != oldVal) egCore.hatch.setItem('cat.marcedit.flateditor', newVal);
+                    if (newVal != oldVal) {
+                        if (inPostSaveTabChange) {
+                            inPostSaveTabChange = false;
+                        } else {
+                            egCore.hatch.setItem('cat.marcedit.flateditor', newVal);
+                        }
+                    }
                 });
 
                 // necessary to prevent ng-model scope hiding ugliness in egMarcEditBibSource:
@@ -1240,6 +1248,9 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                         $scope.dirtyFlag = false;
                         $scope.flat_text_marc = $scope.record.toBreaker();
 
+                        if ($scope.record_type == 'bre') {
+                            $scope.cataloging_date = Date.parse(rec.cataloging_date()) || new Date();
+                        }
                         if ($scope.record_type == 'bre' && !$scope.brandNewRecord) {
                             $scope.bib_source.id = $scope.bibSource = rec.source(); //$scope.Record().source();
                         }
@@ -1265,6 +1276,10 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                             $scope.force_render = false;
                         }
 
+                        // KCLS JBAS-2479
+                        // Empty lines result in a bare '=' getting added
+                        // to the breaker if the textarea loses focus.
+                        if (newVal) { newVal = newVal.replace(/^=$/gm, ''); }
                         $scope.flat_text_marc = newVal;
                     }
 
@@ -1303,6 +1318,40 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
 
                     return true;
                 };
+
+                $scope.checkDate = function(cataloging_date) {
+                    if (!cataloging_date || !$scope.Record().cataloging_date()) return cataloging_date == $scope.Record().cataloging_date();
+                    var ogCatDate = new Date($scope.Record().cataloging_date()).toISOString().split("T")[0];
+                    var compCatalogingDate = new Date(cataloging_date).toISOString().split("T")[0];
+                    return compCatalogingDate == ogCatDate;
+                }
+
+                $scope.updateDate = function(cataloging_date) {
+                    if (cataloging_date != $scope.Record().cataloging_date()) {
+                        if (cataloging_date instanceof Date && !isNaN(cataloging_date)) {
+                            saveDate($scope.Record().cataloging_date(), cataloging_date);
+                            $scope.Record().cataloging_date(new Date(cataloging_date).toISOString());
+                        } else if (!cataloging_date) {
+                            saveDate($scope.Record().cataloging_date(), cataloging_date);
+                            $scope.Record().cataloging_date(null);
+                        } else {
+                            return;
+                        }
+                    }
+                }
+
+                var saveDate = function(orig_date, new_date) {
+                    egCore.pcrud.retrieve(
+                        $scope.record_type, $scope.recordId
+                    ).then(function(rec) {
+                        if (new_date) {
+                            rec.cataloging_date(new Date(new_date).toISOString());
+                        } else {
+                            rec.cataloging_date(null);
+                        }
+                        egCore.pcrud.update(rec);
+                    });
+                }
 
                 $scope.processRedo = function () {
                     if ($scope.record_redo_stack.length) {
@@ -1362,24 +1411,27 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                 };
 
                 $scope.undeleteRecord = function () {
-                    if ($scope.record_type == 'bre') {
-                        egCore.net.request(
-                            'open-ils.cat',
-                            'open-ils.cat.biblio.record_entry.undelete',
-                            egCore.auth.token(), $scope.recordId
-                        ).then(function(resp) {
-                            var evt = egCore.evt.parse(resp);
-                            if (evt) {
-                                return egAlertDialog.open(
-                                    egCore.strings.ALERT_UNDELETE_FAILED,
-                                    { id : $scope.recordId, desc : evt.desc }
-                                );
-                            } else {
-                                ngToast.create(egCore.strings.SUCCESS_UNDELETE_RECORD);
-                                loadRecord().then($scope.processOnSaveCallbacks);
-                            }
-                        });
+                    if ($scope.record_type != 'bre') {
+                        $scope.Record().deleted(false);
+                        return $scope.saveRecord();
                     }
+
+                    egCore.net.request(
+                        'open-ils.cat',
+                        'open-ils.cat.biblio.record_entry.undelete',
+                        egCore.auth.token(), $scope.recordId
+                    ).then(function(resp) {
+                        var evt = egCore.evt.parse(resp);
+                        if (evt) {
+                            return egAlertDialog.open(
+                                egCore.strings.ALERT_UNDELETE_FAILED,
+                                {id : $scope.recordId, desc : evt.desc}
+                            );
+                        } else {
+                            ngToast.create(egCore.strings.SUCCESS_UNDELETE_RECORD);
+                            loadRecord().then(processOnSaveCallbacks);
+                        }
+                    });
                 };
 
                 $scope.validateHeadings = function () {
@@ -1423,15 +1475,24 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
 
                 $scope.processOnSaveCallbacks = function() {
                     var deferred = $q.defer();
-                    if (typeof $scope.onSaveCallback !== 'undefined') {
-                        var promise = deferred.promise;
+                    var promise = deferred.promise;
 
+                    if (typeof $scope.onSaveCallback !== 'undefined') {
                         angular.forEach($scope.onSaveCallback, function (f) {
                             if (angular.isFunction(f)) promise = promise.then(f);
                         });
-
                     }
-                    return deferred.resolve($scope.recordId)
+
+                    promise.finally(function() {$scope.saving = false});
+
+                    if ($scope.flatEditor.isEnabled) {
+                        // KCLS jump to 'front' editor after changes are
+                        // applied in the flat text editor.
+                        inPostSaveTabChange = true;
+                        $scope.flatEditor.isEnabled = false;
+                    }
+
+                    return deferred.resolve($scope.recordId);
                 };
 
                 // Returns a promise 
@@ -1498,6 +1559,7 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                 }
 
                 $scope.saveRecord = function () {
+                    $scope.saving = true;
                     
                     if ($scope.inPlaceMode) {
                         $scope.marcXml = $scope.record.toXmlString();
@@ -1555,7 +1617,12 @@ angular.module('egMarcMod', ['egCoreMod', 'ui.bootstrap'])
                 $scope.$watch('recordId',
                     function(newVal, oldVal) {
                         if (newVal && newVal !== oldVal) {
-                            loadRecord();
+                            // JBAS-2570 Reset the flat editor when 
+                            // navigating search results.
+                            egCore.hatch.getItem('cat.marcedit.flateditor').then(function(val) {
+                                $scope.flatEditor.isEnabled = val;
+                                loadRecord();
+                            });
                         }
                     }
                 );

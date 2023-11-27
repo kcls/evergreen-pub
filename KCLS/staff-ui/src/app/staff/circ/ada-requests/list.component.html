@@ -1,0 +1,26 @@
+<eg-staff-banner i18n-bannerText bannerText="Pending ADA Requests"></eg-staff-banner>
+
+<eg-ada-request-dialog #requestDialog></eg-ada-request-dialog>
+
+<ng-template #barcodeTemplate let-r="row">
+  <a target="_blank" routerLink="/staff/circ/patron/{{r.usr().id()}}/edit">
+    {{r.usr().card().barcode()}}
+  </a>
+</ng-template>
+
+<eg-grid #grid [dataSource]="dataSource" idlClass="aar"
+  [cellTextGenerator]="cellTextGenerator" persistKey="circ.ada_requests.list" 
+  (onRowActivate)="showRequest($event)">
+
+  <eg-grid-toolbar-action i18n-label label="Manage Request"
+    (onClick)="showRequest($event[0])"></eg-grid-toolbar-action>
+
+  <eg-grid-column name="barcode" [cellTemplate]="barcodeTemplate">
+  </eg-grid-column>
+
+  <eg-grid-column path="usr.family_name"></eg-grid-column>
+  <eg-grid-column path="usr.first_given_name"></eg-grid-column>
+  <eg-grid-column path="usr.second_given_name"></eg-grid-column>
+
+</eg-grid>
+

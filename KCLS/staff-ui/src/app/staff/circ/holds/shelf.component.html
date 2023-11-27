@@ -1,0 +1,17 @@
+
+<eg-staff-banner *ngIf="!clearOnLoad" i18n-bannerText bannerText="Holds Shelf"></eg-staff-banner>
+<eg-staff-banner *ngIf="clearOnLoad" i18n-bannerText bannerText="Clear Holds"></eg-staff-banner>
+
+<eg-holds-grid
+  printTemplate="hold_shelf_list"
+  persistKey="circ.wide_holds.shelf"
+  showFields="shelf_time,cc_label,cancel_note,cancel_time,capture_time,cp_barcode,last_notification_time,notification_count,pl_shortname,post_clear,request_time,status_string,title,hold_type"
+  [disablePaging]="clearOnLoad"
+  [showClearable]="clearOnLoad"
+  [hidePrintOption]="hidePrint()"
+  [hideHoldsCount]="!clearOnLoad"
+  [showRecordSummary]="true"
+  [enablePreFetch]="true"
+  [hidePickupLibFilter]="true"
+  [shelfOrg]="targetOrg()">
+</eg-holds-grid>

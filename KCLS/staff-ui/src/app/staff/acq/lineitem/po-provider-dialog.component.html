@@ -1,0 +1,39 @@
+<eg-alert-dialog #plNameExists
+  i18n-dialogBody dialogBody="Selection List Name Already In Use">
+</eg-alert-dialog>
+
+<ng-template #dialogContent>
+  <form class="form-validated">
+    <div class="modal-header bg-info">
+      <h3 class="modal-title" i18n>Change Purchase Order Provider</h3>
+      <button type="button" class="close"
+        i18n-aria-label aria-label="Close" (click)="close()">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <h4 i18n>Change Purchase Order Provider</h4>
+
+      <div class="form-group mt-2">
+        <label class="form-label" for="name-input" i18n>Provider</label>
+        <eg-combobox name='provider-input' domId="provider-input" [(ngModel)]="provider"
+          [asyncSupportsEmptyTermClick]="true"
+          idlIncludeLibraryInLabel="owner"
+          [idlQueryAnd]="{active: 't'}" idlClass="acqpro">
+        </eg-combobox>
+      </div>
+
+      <div *ngIf="moving" class="mt-2 mb-2">
+        <eg-progress-inline #progress></eg-progress-inline>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-success" [disabled]="!provider" 
+        (click)="move()" i18n>Apply</button>
+      <button type="button" class="btn btn-warning"
+        (click)="close()" i18n>Cancel</button>
+    </div>
+  </form>
+</ng-template>
+

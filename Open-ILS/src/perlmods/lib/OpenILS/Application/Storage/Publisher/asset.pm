@@ -1,12 +1,11 @@
 package OpenILS::Application::Storage::Publisher::asset;
 use base qw/OpenILS::Application::Storage/;
-#use OpenILS::Application::Storage::CDBI::asset;
-#use OpenILS::Utils::Fieldmapper;
 use OpenSRF::Utils::Logger qw/:level/;
 use OpenSRF::EX qw/:try/;
 use OpenSRF::Utils::JSON;
-
-#
+use Data::Dumper;
+use Storable 'dclone';
+use OpenSRF::Utils::Cache;
 
 my $log = 'OpenSRF::Utils::Logger';
 
@@ -875,6 +874,225 @@ __PACKAGE__->register_method(
     method      => 'merge_record_assets',
     argc        => 2,
     api_level   => 1,
+);
+
+
+__PACKAGE__->register_method(
+    api_name        => 'open-ils.storage.asset.map_asset_by_call_number',
+    method          => 'map_asset_by_call_number'
+    
+);
+
+sub map_asset_by_call_number {
+	
+	my( $self, $client, $user_session, $docid ) = @_;
+
+	# Build SQL statement
+	my $select = <<"	SQL";
+
+		SELECT * FROM asset.get_holdings_maintenance_page($docid);
+	SQL
+
+	# Load and execute statement
+	my $sth = asset::stat_cat->db_Main->prepare_cached($select);
+	
+	$sth->execute();
+	
+	# Catch DB response
+	my @holder_array = @{ $sth->fetchall_arrayref };
+
+    return format_asset_map(\@holder_array);
+}
+
+# Takes an array of strings from get_holdings_maintenance_page and 
+# fieldmaps it
+sub format_asset_map{
+	
+	my $result = shift;
+	
+	$log->debug("result_array: ".Dumper($result));
+	
+	my @copy_list = @{ $result };
+	
+	my @finalized_copy_list;
+	
+	foreach my $copy (@copy_list){
+
+		my @copy_items = @{ $copy };
+		my @finalized_copy;
+		
+		foreach my $item (@copy_items){
+			
+			#2011-08-10T14:16:12-0700
+			if ($item =~ m/"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}.*"/){
+				
+				# Replace the T with a space
+				$item =~ s/ /T/g;
+				
+				# Clobber all the quotes
+				$item =~ s/"//g;
+				
+				# Clobber the milliseconds
+				$item =~ s/\.[0-9]+//g;
+				
+				# Add minutes to the time zone
+				$item = $item.'00';
+			}
+			
+			# Clobber bookend quotes if they're there
+			if ($item =~ m/^"(.*)"$/){
+				
+				$item = $1;
+			}
+			
+			push(@finalized_copy, $item);
+		}
+		
+		push(@finalized_copy_list, \@finalized_copy);
+	}
+
+	$log->debug("asset holdings: ".Dumper(\@finalized_copy_list));
+	my $key = 'maintenance_data';
+        
+        #100 copies at a time appears to be optimal
+        #These times are for TCN 467795 (4085 copies)
+        #250-1:22 50-1:29 500-1:28 100-1:16
+	my $copies_at_a_time = 100;
+	my $end = $copies_at_a_time;
+	my $start = 0;
+	my $index = 0;
+	my @response;
+	my $cache = OpenSRF::Utils::Cache->new('global');
+	
+	while ($end < scalar @finalized_copy_list){
+
+		@response = @finalized_copy_list[$start..$end];
+		$cache->put_cache($key.$index, \@response);
+		
+		$end += $copies_at_a_time;
+		$start += $copies_at_a_time;
+		$index++;
+	}
+
+	@response = @finalized_copy_list[$start .. $#finalized_copy_list];
+	
+	$log->debug("asset response: ".Dumper(\@response));
+
+	$cache->put_cache($key.$index, \@response);
+	
+	my @key_pair;
+	
+	push(@key_pair, $key);
+	push(@key_pair, $index);
+	
+	$log->debug("asset key_pair: ".Dumper(\@key_pair));
+	
+	return \@key_pair;
+}
+
+sub retrieve_latest_lineitem_by_tcn {
+
+    # Grab self, client
+    my $self = shift;
+    my $client = shift;
+    my $auth = shift;
+    my $tcn = shift;
+    
+    $log->debug("update_items client: ".Dumper($client));
+    $log->debug("update_items tcn: ".$tcn);
+    
+    # This guards against SQL injection
+    return [] unless $tcn =~ m/^[\d]+$/;
+    
+    my $select = <<"    SQL";
+        SELECT jub.id, apo.id, bre.marc
+        FROM biblio.record_entry bre
+        JOIN acq.lineitem jub ON (bre.id = jub.eg_bib_id)
+        JOIN acq.purchase_order apo ON (jub.purchase_order = apo.id)
+        WHERE jub.eg_bib_id = $tcn
+        AND (jub.state = 'received' 
+            OR jub.state = 'on-order')
+        ORDER BY apo.order_date DESC
+    SQL
+
+    # Load and execute statement
+    my $sth = asset::stat_cat->db_Main->prepare_cached($select);
+
+    $sth->execute();
+    
+    my @returnArray;
+    my @lineitems;
+    
+    my $arrayref = $sth->fetchall_arrayref;
+    
+    my $n = 0;
+    
+    while ($arrayref->[$n] != undef){
+        
+        push(@lineitems, $arrayref->[$n]);
+        $n ++;
+    }
+    
+    push(@returnArray, \@lineitems);
+        
+    my $li_id = $returnArray[0]->[0]->[0];
+    
+    my $array_ref = fill_lineitem($self,$client,$auth,$li_id);
+    
+    # returnArray = [\@lineitem, \@copies]
+    #copies = [\@copy, \@copy, etc.]
+    push(@returnArray, $array_ref );
+    $log->debug("update_items copies: ".Dumper($returnArray[1]));
+    
+    return \@returnArray;
+}
+
+__PACKAGE__->register_method(
+    api_name        => 'open-ils.storage.asset.latest_by_tcn',
+    method          => 'retrieve_latest_lineitem_by_tcn',
+    api_level       => 1,
+    stream          => 1,
+);
+
+sub fill_lineitem{
+
+    # Grab self, client
+    my $self = shift;
+    my $client = shift;
+    my $auth = shift;
+    my $li_id = shift;
+
+    $log->debug("update_items fill_lineitem: $li_id");
+
+    return [] unless $li_id =~ m/^[\d]+$/;
+
+    my $SQL = <<"    SQL";
+        SELECT acp.age_protect, acp.alert_message, acp.barcode, acp.call_number, acp.circ_as_type,
+        acp.circ_lib, acp.circ_modifier, acp.circulate, acp.copy_number, acp.create_date, acp.active_date, 
+        acp.creator, acp.deleted, acp.dummy_isbn, acp.deposit, acp.deposit_amount, acp.dummy_author, 
+        acp.dummy_title, acp.edit_date, acp.editor, acp.fine_level, acp.holdable, acp.id, acp.loan_duration,
+        acp.location, acp.opac_visible, acp.price, acp.ref, acp.status, acp.status_changed_time, acp.mint_condition, acn.create_date, acn.creator,
+        acn.deleted, acn.edit_date, acn.editor, acn.id, acn.label, acn.owning_lib, acn.record, 
+        acn.label_sortkey, acn.label_class, acn.prefix, acn.suffix, ccs.name
+        FROM asset.copy acp
+        JOIN acq.lineitem_detail alid ON (acp.id = alid.eg_copy_id)
+        JOIN asset.call_number acn ON (acp.call_number = acn.id)
+        JOIN config.copy_status ccs ON (acp.status = ccs.id)
+        WHERE alid.lineitem = $li_id AND acp.deleted = 'f'
+    SQL
+
+    # Load and execute statement
+    my $dbcall = asset::stat_cat->db_Main->prepare_cached($SQL);
+
+    $dbcall->execute();
+    return $dbcall->fetchall_arrayref;
+}
+
+__PACKAGE__->register_method(
+    api_name        => 'open-ils.storage.asset.lineitem_by_id',
+    method          => 'fill_lineitem',
+    api_level       => 1,
+    stream          => 1,
 );
 
 1;

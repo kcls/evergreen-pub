@@ -153,6 +153,7 @@ cat.util.transfer_copies = function(params) {
     JSAN.use('util.error'); var error = new util.error();
     JSAN.use('OpenILS.data'); var data = new OpenILS.data();
     JSAN.use('util.network'); var network = new util.network();
+    JSAN.use('cat.util');
     try {
         data.stash_retrieve();
         if (!data.marked_volume) {
@@ -210,8 +211,11 @@ cat.util.transfer_copies = function(params) {
             alert($("catStrings").getString('staff.cat.util.transfer_copies.successful_transfer'));
         }
 
+        return network.simple_request('FM_ACP_UNFLESHED_BATCH_RETRIEVE.authoritative', [ params.copy_ids ]);
+
     } catch(E) {
         error.standard_unexpected_error_alert($("catStrings").getString('staff.cat.util.transfer_copies.transfer_error'),E);
+        return null;
     }
 }
 
@@ -368,6 +372,7 @@ cat.util.mark_item_damaged = function(copy_ids) {
         JSAN.use('util.error'); error = new util.error();
         JSAN.use('util.functional'); JSAN.use('util.date');
         JSAN.use('util.network'); var network = new util.network();
+        JSAN.use('cat.util');
         if (!copy_ids) { return; }
         copy_ids = util.functional.filter_list( copy_ids, function(o) { return o != null; } );
         if (copy_ids.length < 1) { return; }
@@ -516,9 +521,12 @@ cat.util.mark_item_damaged = function(copy_ids) {
                     $("catStrings").getFormattedString('staff.cat.util.mark_item_damaged.multiple_item_damaged', [count]));
             }
         }
+        
+        return network.simple_request('FM_ACP_UNFLESHED_BATCH_RETRIEVE.authoritative', [ copy_ids ]);
 
     } catch(E) {
         if (error) error.standard_unexpected_error_alert('cat.util.mark_item_damaged',E); else alert('FIXME: ' + E);
+        return null;
     }
 }
 
@@ -528,6 +536,7 @@ cat.util.mark_item_missing = function(copy_ids) {
         JSAN.use('util.error'); error = new util.error();
         JSAN.use('util.functional');
         JSAN.use('util.network'); var network = new util.network();
+        JSAN.use('cat.util');
         if (!copy_ids) { return; }
         copy_ids = util.functional.filter_list( copy_ids, function(o) { return o != null; } );
         if (copy_ids.length < 1) { return; }
@@ -570,8 +579,11 @@ cat.util.mark_item_missing = function(copy_ids) {
             }
         }
 
+        return network.simple_request('FM_ACP_UNFLESHED_BATCH_RETRIEVE.authoritative', [ copy_ids ]);
+
     } catch(E) {
         if (error) error.standard_unexpected_error_alert('cat.util.mark_item_missing',E); else alert('FIXME: ' + E);
+        return null;
     }
 }
 
@@ -815,7 +827,7 @@ cat.util.batch_edit_volumes = function(fleshed_volumes) {
             }
         }
 
-        return true;
+        return volumes;
 
     } catch(E) {
         alert('Error in cat.util.batch_edit_volumes: ' + E);
@@ -848,8 +860,9 @@ cat.util.mark_item_as_missing_pieces = function(copy_ids) {
         JSAN.use('util.error'); error = new util.error();
         JSAN.use('util.functional'); JSAN.use('util.date');
         JSAN.use('util.network'); var network = new util.network();
-        JSAN.use('util.print'); var print = new util.print();
+        JSAN.use('util.print'); var print = new util.print('receipt');
         JSAN.use('util.window'); var win = new util.window();
+        JSAN.use('cat.util');
         if (!copy_ids) { return; }
         copy_ids = util.functional.filter_list( copy_ids, function(o) { return o != null; } );
         if (copy_ids.length < 1) { return; }
@@ -864,7 +877,6 @@ cat.util.mark_item_as_missing_pieces = function(copy_ids) {
 
         if (r == 0) {
             var count = 0;
-            JSAN.use('cat.util');
             for (var i = 0; i < copies.length; i++) {
                 try {
                     var robj = network.simple_request('MARK_ITEM_MISSING_PIECES',[ses(),copies[i].id()]);
@@ -937,18 +949,16 @@ cat.util.mark_item_as_missing_pieces = function(copy_ids) {
                     error.standard_unexpected_error_alert($("catStrings").getFormattedString('staff.cat.util.mark_item_missing_pieces.marking_error', [copies[i].barcode()]),E);
                 }
             }
-            /*alert(count == 1 ? $("catStrings").getString('staff.cat.util.mark_item_missing_pieces.one_item_missing_pieces') :
-                $("catStrings").getFormattedString('staff.cat.util.mark_item_missing_pieces.multiple_item_missing_pieces', [count]));*/
         }
 
-        return true;
+        return network.simple_request('FM_ACP_UNFLESHED_BATCH_RETRIEVE.authoritative', [ copy_ids ]);
     } catch(E) {
         alert('Error in cat.util.mark_item_as_missing_pieces: ' + E);
         return false;
     }
 }
 
-cat.util.render_callnumbers_for_bib_menu = function(node, doc_id, label_class) {
+cat.util.render_callnumbers_for_bib_menu = function(node, doc_id, label_class, width) {
     try {
         var cn_blob;
         try {
@@ -974,7 +984,17 @@ cat.util.render_callnumbers_for_bib_menu = function(node, doc_id, label_class) {
             )
         ); hbox.appendChild(ml);
         ml.setAttribute('editable','true');
-        ml.setAttribute('width', '200');
+
+        if (width){
+
+            ml.setAttribute('width', width);
+        }
+
+        else{
+
+            ml.setAttribute('width', '200');
+        }
+
         ml.setAttribute('id', hbox.id + '_menulist');
     } catch(E) {
         alert('Error in cat.util.render_callnumbers_for_bib_menu: ' + E);
@@ -1146,6 +1166,40 @@ cat.util.render_cn_suffix_menu = function(ou_ids,extra_menuitems,menu_default) {
     }
 }
 
+cat.util.update_copies_by_id = function(copy_ids) {
+	
+    try {
+        JSAN.use('util.error'); error = new util.error();
+        JSAN.use('util.functional');
+        JSAN.use('util.network'); var network = new util.network();
+        JSAN.use('cat.util');
+        if (!copy_ids) { return; }
+        copy_ids = util.functional.filter_list( copy_ids, function(o) { return o != null; } );
+        if (copy_ids.length < 1) { return; }
+        
+        if(typeof copy_ids[0] == "object"){
+
+            for (var c in copy_ids){
+
+                if(typeof copy_ids[c] == "object"){
+
+                    copy_ids[c] = copy_ids[c].id();
+                }
+            }
+        }
+
+		var copies = network.simple_request('FM_ACP_UNFLESHED_BATCH_RETRIEVE.authoritative', [ copy_ids ]);
+		if (typeof copies.ilsevent != 'undefined') throw(copies);
+
+		return copies;
+
+    } catch(E) {
+        if (error) error.standard_unexpected_error_alert('cat.util.update_copies_by_id',E); else alert('FIXME: ' + E);
+        return null;
+    }
+	
+}
+
 cat.util.request_items = function(copy_ids) {
     var error;
     try {
@@ -1170,6 +1224,39 @@ cat.util.request_items = function(copy_ids) {
 
     } catch(E) {
         alert('Error in cat.util.request_items: ' + E);
+    }
+}
+
+cat.util.request_volumes = function(vol_ids){
+	
+	volumes = [];
+	
+    try {
+		
+		JSAN.use('util.network'); var network = new util.network();
+		
+		for (var i in vol_ids){
+
+			volumes.push(network.simple_request('FM_ACN_RETRIEVE', vol_ids[i]));
+		}
+		
+		return volumes;
+    } catch(E) {
+        alert('Error in cat.util.request_items: ' + E);
+        return null;
+    }
+}
+
+cat.util.request_copies_by_volumes = function(vol_ids){
+
+    try {
+
+		JSAN.use('util.network'); var network = new util.network();
+
+		return network.simple_request('FM_ACP_BATCH_RETRIEVE_VIA_ACN_LIST.authoritative', vol_ids);
+    } catch(E) {
+        alert('Error in cat.util.request_items: ' + E);
+        return null;
     }
 }
 

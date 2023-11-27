@@ -269,8 +269,25 @@ patron.util.mp_columns = function(modify,params) {
             'primary' : false, 'hidden' : false, 'editable' : false, 'render' : function(my) { return my.mp.cash_drawer().name(); }
         },
         {
-            'id' : 'mp_staff', 'label' : commonStrings.getString('staff.mp_accepting_usr_label'), 'flex' : 1,
+            'id' : 'mp_staff', 'label' : 'Login', 'flex' : 1,
             'primary' : false, 'hidden' : false, 'editable' : false, 'render' : function(my) { var s = my.mp.accepting_usr(); if (s && typeof s != "object") s = patron.util.retrieve_fleshed_au_via_id(ses(),s,["card"]); return s.family_name() + " (" + s.card().barcode() + ") @ " + data.hash.aou[ s.home_ou() ].shortname(); }
+        },
+        {   // KCLS  JBAS-2101
+            'id' : 'mp_lost_staff', 'label' : 'Staff', 'flex' : 1,
+            'primary' : false, 'hidden' : false, 'editable' : false,
+            'render' : function(my) { 
+                var rf_payment = g.network.request(
+                    'open-ils.circ',
+                    'open-ils.circ.refundable_payment.retrieve.by_payment',
+                    [ses(), my.mp.id()]
+                );
+
+                if (rf_payment) {
+                    return rf_payment.staff_email().replace(/@.*/g, ''); // remove @kcls.org
+                } else {
+                    return '';
+                }
+            }
         },
         {
             'id' : 'mp_xact', 'label' : commonStrings.getString('staff.mp_xact_label'), 'flex' : 1,
@@ -710,7 +727,8 @@ patron.util.set_penalty_css = function(patron) {
         removeCSSClass(document.documentElement,'PATRON_NET_ACCESS_1');
         removeCSSClass(document.documentElement,'PATRON_NET_ACCESS_2');
         removeCSSClass(document.documentElement,'PATRON_NET_ACCESS_3');
-
+        removeCSSClass(document.documentElement, 'PATRON_PC_ONLY');
+        
         JSAN.use('util.network'); var net = new util.network();
         net.simple_request('FM_MOUS_RETRIEVE.authoritative',[ ses(), patron.id() ], function(req) {
             var summary = req.getResultObject();
@@ -750,6 +768,7 @@ patron.util.set_penalty_css = function(patron) {
                 return (!(p.isdeleted() || p.stop_date()));
             }
         );
+        
         for (var i = 0; i < penalties.length; i++) {
             /* this comes from /opac/common/js/utils.js */
             addCSSClass(document.documentElement,penalties[i].standing_penalty().name());
@@ -786,7 +805,11 @@ patron.util.set_penalty_css = function(patron) {
             case 1: addCSSClass(document.documentElement,'ONE_PENALTY'); break;
             default: addCSSClass(document.documentElement,'MULTIPLE_PENALTIES'); break;
         }
-
+        //Check our permission group.  13 is Full priveliges, 90 is PC Only
+        if(patron.profile() == 90) { 
+            addCSSClass(document.documentElement, 'PATRON_PC_ONLY');
+        }
+        
         if (patron.alert_message()) {
             addCSSClass(document.documentElement,'PATRON_HAS_ALERT');
         }

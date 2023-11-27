@@ -33,8 +33,7 @@ function($scope , $q , $routeParams , $window , $timeout , egCore , egGridDataPr
         if (!log_entries) return;
         if (!angular.isArray(log_entries)) log_entries = [log_entries];
         angular.forEach(log_entries, function(log_entry) {
-            $window.open(
-                egCore.env.basePath + '/cat/item/' + log_entry.item_id,
+            $window.open('/eg2/staff/cat/item/' + log_entry.item_id,
                 '_blank'
             ).focus();
         });
@@ -48,10 +47,7 @@ function($scope , $q , $routeParams , $window , $timeout , egCore , egGridDataPr
         if (!log_entries) return;
         if (!angular.isArray(log_entries)) log_entries = [log_entries];
         angular.forEach(log_entries, function(log_entry) {
-            $window.open(
-                egCore.env.basePath +
-                '/circ/patron/' + log_entry.patron_id + '/checkout',
-                '_blank'
+            $window.open('/eg2/staff/circ/patron/' + log_entry.patron_id + '/checkout'
             ).focus();
         });
     }

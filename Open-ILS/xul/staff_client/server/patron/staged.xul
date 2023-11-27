@@ -34,6 +34,7 @@
     <commandset id="staged_cmds">
         <command id="cmd_load" disabled="true"/>
         <command id="cmd_cancel" disabled="true"/>
+        <command id="cmd_copy" disabled="true"/>
         <command id="cmd_reload" />
     </commandset>
 
@@ -66,6 +67,7 @@
         <menupopup id="stgu_actions" position="at_pointer">
             <menuitem command="cmd_load" label="&staff.patron_display.staged.menu.actions.load.label;" accesskey="&staff.patron_display.menu.actions.load.accesskey;"/>
             <menuitem command="cmd_cancel" label="&staff.patron_display.staged.menu.actions.cancel.label;" accesskey="&staff.patron_display.menu.actions.cancel.accesskey;"/>
+            <menuitem command="cmd_copy" label="&staff.generic.list_actions.sel_clip.label;" accesskey="&staff.generic.list_actions.sel_clip.accesskey;"/>
         </menupopup>
     </popupset>
 

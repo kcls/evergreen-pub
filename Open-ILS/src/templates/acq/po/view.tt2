@@ -27,11 +27,11 @@
                     <td>
                         <span id="acq-po-activate-checking"></span>
                         <span class="hidden" id="acq-po-activate-links" style='padding: 5px'>
-                            <span dojoType="dijit.form.Button" onClick="activatePo()" jsId="activatePoButton">
+                            <span dojoType="dijit.form.Button" onClick="activatePo('noVandelay')" jsId="activatePoButton">
                                 [% l('Activate Order') %]
                             </span>
                             <span style='padding: 5px;'> / </span>
-                            <span dojoType="dijit.form.Button" onClick="activatePo(true)" jsId="activatePoNoAssetsButton">
+                            <span dojoType="dijit.form.Button" onClick="activatePo('noAssets')" jsId="activatePoNoAssetsButton">
                                 [% l('Activate Without Loading Items') %]
                             </span>
                         </span>

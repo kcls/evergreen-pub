@@ -93,7 +93,7 @@ sub org_tree_js {
     $cache->delete_cache("orgtree.");
 
     foreach my $locale (@$locales) {
-        warn "removing OrgTree from the cache for locale " . $locale->code . "...\n";
+        print "removing OrgTree from the cache for locale " . $locale->code . "...\n";
         $cache->delete_cache("orgtree.".$locale->code);
 
         # fetch the org_unit's and org_unit_type's
@@ -279,7 +279,7 @@ sub facet_types {
     my $locales = get_locales();
 
     foreach my $locale (@$locales) {
-        warn "removing facet list from the cache for locale " . $locale->code . "...\n";
+        print "removing facet list from the cache for locale " . $locale->code . "...\n";
         my $cache = OpenSRF::Utils::Cache->new;
         $cache->delete_cache("facet_definition.".$locale->code);
 
