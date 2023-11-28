@@ -1,0 +1,318 @@
+[%- PROCESS "opac/parts/header.tt2";
+    ctx.page_title = l("ADA Circulation Qualification Program");
+%]
+
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>[% l('[_1]', ctx.page_title) %]</title>
+
+    <!-- testing alternate googalytics invocation -->
+    [% INCLUDE 'opac/parts/googalytics_new.tt2' %]
+
+    <script src="[% ctx.media_prefix %]/js/ui/default/common/build/js/jquery.min.js"></script>
+    <script src="[% ctx.media_prefix %]/js/ui/default/opac/handlebars-v4.7.7.js"></script>
+    <link rel="stylesheet" href="/js/ui/default/staff/build/css/bootstrap.min.css" />
+  <style>
+    body { font-size: 18px; }
+    #content-wrapper { padding-top: 20px; }
+    input { max-width: 15em; }
+    .form-group { margin-top: 10px; }
+
+    input[type=text], input[type=date], input[type=email] {
+      border: 2px solid #555;
+    }
+
+    input[type=submit], button {
+      border: 2px solid #555;
+      font-size: 120%;
+    }
+
+    .important-button {
+      border: 2px solid #555;
+      font-size: 120%;
+    }
+
+    /* BC screen reader links are not correctly hidden via their API.
+       Add some additional CSS to hide them */
+    .screen_reader_nav {
+      position: absolute;
+      top: -1000px;
+      left: -1000px;
+      z-index: 0;
+    }
+    .required {
+      color: firebrick;
+    }
+  </style>
+
+  <script>
+    function cbox_checked() {
+
+      var condCbox = document.getElementById('condition-cbox');
+      var certCbox = document.getElementById('certify-cbox');
+      var submitBtn = document.getElementById('submit-button');
+
+      if (condCbox.checked && certCbox.checked) {
+        submitBtn.disabled = false;
+      } else {
+        submitBtn.disabled = true;
+      }
+
+      return true;
+    }
+  </script>
+
+<!-- BC CSS -->
+[% ctx.bc_css %]
+<!-- BC END CSS -->
+
+  </head>
+  <body>
+
+<!-- BC SCREEN READER NAVIGATION -->
+[% ctx.bc_screen_reader_navigation %]
+<!-- BC END SCREEN READER NAVIGATION -->
+
+<!-- BC HEADER -->
+[% ctx.bc_header %]
+<!-- BC END HEADER -->
+
+<div id="content-wrapper" role="main">
+
+  [% IF NOT ctx.step_one_complete AND NOT ctx.account_already_ada
+    AND NOT ctx.account_not_found AND NOT ctx.pending_request_exists %]
+  <div style="row">
+    <div class="col-lg-8 col-lg-offset-2" style="padding-top:5px; padding-bottom:5px">
+      <h2>About Borrowing Accommodations</h2>
+
+      <p>Borrowing accommodations are available through our ADA Circulation Accommodation program.</p>
+
+      <h2>Who Can Use It</h2>
+      <p>
+        This program is for people who have:
+        <ul>
+          <li>
+            a temporary or a permanent condition that makes it difficult to
+            pick up or return items at the library on time. The condition
+            must be expected to last six months or longer.
+          </li>
+        </ul>
+      </p>
+
+      <h2>How it Works</h2>
+      <p>
+        If your request is approved, you will receive these accommodations:
+        <ul>
+          <li>Holds will remain available for pickup for 30 open days.</li>
+          <li>Loan period of six weeks on all items, except for downloads and
+            interlibrary loans. (We can’t change the due dates for downloads
+            or interlibrary loans. Due dates for those items are set by the
+            partner services who provide them.)
+          </li>
+          <li>Renew each item one time, except for downloads and interlibrary loans.</li>
+          <li>No fines on materials returned late.</li>
+        </ul>
+      </p>
+
+      <h2>Your Responsibilities</h2>
+      <p>
+        We offer these accommodations to qualified disabled persons only, and not to others.
+        <ul>
+          <li>You are responsible for and may be charged for damage to materials.</li>
+          <li>You are responsible for the replacement cost of lost materials.</li>
+          <li>Your account will be blocked if charges exceed $25.</li>
+        </ul>
+      </p>
+      <p>
+        By applying, you agree to notify the library if/when the need for these
+        accommodations ends. Your account will then revert to a standard account.
+      </p>
+
+      <h2>Apply</h2>
+
+      <p>Complete this form.</p>
+
+    </div>
+  </div>
+  [% END %]<!-- not step one complete -->
+
+  <form role="form" id="form" method="POST">
+
+    [% IF ctx.seskey %]
+      <input type="hidden" value="[% ctx.seskey %]" name="seskey"/>
+    [% END %]
+
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2">
+
+        [% IF ctx.card %]
+          <h3>
+            [% ctx.card.usr.family_name %],
+            [% ctx.card.usr.first_given_name %]
+            [% ctx.card.usr.second_given_name %]
+            ([% ctx.card.barcode %])
+          </h3>
+          <hr/>
+        [% END %]
+
+        [% IF ctx.pending_request_exists %]
+           <div class="alert alert-info" role="alert">
+             Patron has already submitted a request for an ADA form.
+          </div>
+          <br/>
+          <a href="/eg/opac/ada-form">Return to Form</a>
+
+        [% ELSIF NOT ctx.step_one_complete %]
+          [% IF ctx.account_not_found %]
+            <div class="alert alert-danger" role="alert">
+              No library card in our system with the information provided.
+              <div>
+                Register for an account <a href="https://kcls.org/library-cards/">here</a>.
+              </div>
+            </div>
+          [% ELSIF ctx.account_already_ada %]
+            <div class="alert alert-danger" role="alert">
+              The requested account already has ADA privileges.
+            </div>
+          [% END %]
+
+          <div class="form-group">
+            <label for="barcode">
+              <span class="required">*</span>
+              KCLS library card / account number
+            </label>
+            <input type="text" class="form-control" value="[% ctx.barcode | html %]"
+              id="barcode" name="barcode" placeholder="Barcode..." required/>
+          </div>
+          <div class="form-group">
+            <label for="dob"><span class="required">*</span> Birthdate</label>
+            <input type="date" class="form-control" value="[% ctx.dob | html %]"
+              id="dob" name="dob" placeholder="Birthdate..." required/>
+          </div>
+          <div class="form-group">
+            <label for="lastname"><span class="required">*</span> Last Name</label>
+            <input type="text" class="form-control" value="[% ctx.lastname | html %]"
+              id="lastname" name="lastname" placeholder="Last Name..." required/>
+          </div>
+          <button type="submit" class="btn btn-default important-button">Find Account</button>
+        [% ELSIF NOT ctx.step_two_complete %]
+          [% SET addr = ctx.card.usr.billing_address %]
+          <div class="form-group">
+            <label for="street1"><span class="required">*</span>
+              Mailing address / La dirección</label>
+            <input type="text" class="form-control"
+              value="[%-
+                IF addr.street1;
+                  addr.street1 || ' ' || addr.street2 | html;
+                ELSE;
+                  '';
+                END;
+              -%]"
+              id="street1" name="street1" placeholder="Mailing Address..." required/>
+          </div>
+          <div class="form-group">
+            <label for="city"><span class="required">*</span> City / Ciudad</label>
+            <input type="text" class="form-control" value="[% addr.city %]"
+              id="city" name="city" placeholder="City..." required/>
+          </div>
+          <div class="form-group">
+            <label for="post_code"><span class="required">
+              *</span> Zip Code / Código Postal</label>
+            <input type="text" class="form-control" value="[% addr.post_code %]"
+              id="post_code" name="post_code" placeholder="Zip Code..." required/>
+          </div>
+          <div class="form-group">
+            <label for="phone">Telephone / Teléfono</label>
+            <input type="text" class="form-control" value="[% ctx.card.usr.day_phone %]"
+              id="phone" name="phone" placeholder="Phone..."/>
+          </div>
+          <div class="form-group">
+            <label for="email">Email / Email</label>
+            <input type="email" class="form-control" value="[% ctx.card.usr.email %]"
+              id="email" name="email" placeholder="Email..."/>
+          </div>
+
+          [% IF ctx.card.usr.juvenile == 't' %]
+          <div class="form-group">
+            <label for="guardian">Parent / Guardian</label>
+            <input type="guardian" class="form-control" value="[% ctx.card.usr.guardian %]"
+              id="guardian" name="guardian" placeholder="Parent/Guardian..." required/>
+          </div>
+          [% END %]
+
+          <div class="form-group">
+            <label for="rationale">
+              <span class="required">*</span>
+              Please tell us about the disabling condition that keeps you from 
+              getting to the library on time to pick up holds or to return materials.
+            </label>
+            <textarea class="form-control" value="[% ctx.rationale %]"
+              id="rationale" name="rationale" required></textarea>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" id="condition-cbox" onclick="cbox_checked()"/>
+              I certify that I have a disabling condition that is expected to last six months or longer.
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" id="certify-cbox" onclick="cbox_checked()"/>
+              This information is correct.
+            </label>
+          </div>
+          <button id='submit-button' disabled
+            type="submit" class="btn btn-default important-button">Submit Request</button>
+        [% ELSE %]
+          <p>
+            Thank you. We've received your request for borrowing accommodations. 
+            While we do our best to review requests sooner, it may take us two weeks to reply.
+          </p>
+          <p>
+        [% END %]
+      </div>
+    </div>
+  </form>
+
+  <div class="row" style="margin-top:5px">
+
+    <div class="col-lg-8 col-lg-offset-2">
+
+      [% IF NOT ctx.step_two_complete %]
+        <div style="font-size:85%;margin-top:5px; margin-bottom:5px;">
+          <i>An asterisk (<span class="required">*</span>) indicates a required field</i>
+        </div>
+      [% END %]
+
+      <hr/>
+
+      <p>For questions, please contact</p>
+
+      <address>
+        Access Coordinator</br/>
+        King County Library System <br/>
+        960 Newport Way NW Issaquah, WA 98027 <br/>
+        <a href="mailto:access@kcls.org">access@kcls.org</a><br/>
+        <a href="tel:425-369-3453">425-369-3453</a>
+      </address>
+
+    </div>
+  </div>
+
+</div>
+
+
+<!-- BC FOOTER -->
+[% ctx.bc_footer %]
+<!-- BC END FOOTER -->
+
+<!-- BC JS -->
+[% ctx.bc_js %]
+<!-- BC END JS -->
+
+  </body>
+</html>
+

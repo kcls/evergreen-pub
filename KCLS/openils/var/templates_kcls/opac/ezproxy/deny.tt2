@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>[% l('Log In Databases | King County Library System') %]</title>
+    [% INCLUDE 'opac/parts/googalytics_new.tt2' tracking_id = 'UA-3018520-29' %]
+
+    <script src="[% ctx.media_prefix %]/js/ui/default/common/build/js/jquery.min.js"></script>
+    <script src="[% ctx.media_prefix %]/js/ui/default/opac/handlebars-v4.7.7.js"></script>
+
+    <!-- NOTE: BootstrapCSS v4 does not play nicely with BC headers -->
+    <link rel="stylesheet" href="/js/ui/default/staff/build/css/bootstrap.min.css" />
+
+    <!-- local CSS -->
+    <style>
+      /* BC screen reader links are not correctly hidden via their API.
+         Add some additional CSS to hide them */
+      .screen_reader_nav {
+        position: absolute;
+        top: -1000px;
+        left: -1000px;
+        z-index: 0;
+      }
+
+      @media (min-width: 1200px) {
+        #ezproxy-container-wrapper {
+          width: 1360px;
+        }
+      }
+
+      #ezproxy-container-wrapper {
+        display: flex;
+      }
+
+      .flex-1 {
+        flex: 1;
+      }
+
+      #ezproxy-container {
+        margin-top: 10px;
+        margin-bottom: 30px;
+        color: #585d5e;
+        font-family: 'Open Sans', sans-serif;
+        letter-spacing: .5pt;
+        font-size: 15px;
+        /*width: 900px; 
+        margin-left: auto;
+        margin-right: auto;
+        */
+      }
+      .margin-top {
+        margin-top: 20px;
+      }
+
+      input[type="text"], input[type="password"] {
+        width: 200px;
+      }
+
+      .blue-stuff {
+        color: #003f6b;
+      }
+
+    </style>
+
+    <!-- BC CSS -->
+    [% ctx.bc_css %]
+    <!-- BC END CSS -->
+
+  </head>
+  <body>
+
+    [% INCLUDE 'opac/parts/goog_tag_manager_noscript.tt2' %]
+
+    <!-- BC SCREEN READER NAVIGATION -->
+    [% ctx.bc_screen_reader_navigation %]
+    <!-- BC END SCREEN READER NAVIGATION -->
+
+    <!-- BC HEADER -->
+    [% ctx.bc_header %]
+    <!-- BC END HEADER -->
+
+    <div id='ezproxy-container-wrapper' class="container margin-top">
+      <div class="flex-1"></div>
+      <div id='ezproxy-container'>
+
+        <h3>
+          The requested resource is only available in our 
+          <a href="https://kcls.bibliocommons.com/locations/">community libraries.</a>
+          <br/>
+          Please return to the <a href="https://www.kcls.org/databases">databases page.</a>
+        </h3>
+
+      </div> <!-- ezproxy-container -->
+      <div class="flex-1"></div>
+    </div> <!-- ezproxy-container-wrapper --> 
+
+    <!-- BC FOOTER -->
+    [% ctx.bc_footer %]
+    <!-- BC END FOOTER -->
+
+    <!-- BC requires jquery, loaded from quipu (above) in this form -->
+    <!-- BC JS -->
+    [% ctx.bc_js %]
+    <!-- BC END JS -->
+
+  </body>
+</html>
+

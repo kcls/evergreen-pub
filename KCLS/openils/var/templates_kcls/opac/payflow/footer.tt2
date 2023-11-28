@@ -1,0 +1,9 @@
+<div id="footer">
+    <div class="float-left"</div>
+    <a href="http://www.kcls.org/ask/" 
+      style="font-size: 14px; color: white; font-family: Arial, Helvetica, sans-serif; font-weight: 600;" >
+      [% l('Ask KCLS') %]
+    </a>
+    <div class="common-no-pad"></div>
+</div>
+

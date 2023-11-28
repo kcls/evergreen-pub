@@ -1,0 +1,42 @@
+<div class="row">
+  <div class="col-md-offset-4 col-xs-9 col-md-8"><label>Items Checked Out</label></div>
+</div>
+<div class="row">
+  <div class="col-md-offset-1 col-md-5 pad-vert-btn">
+    <a href="javascript:;" onclick="selfCheckMgr.printList('items_out');" class="btn btn-success scko-action-btn">
+      Print List</a>
+  </div>
+  <div class="col-xs-3 col-md-offset-1 col-md-5 pad-vert-btn">
+    <a href="javascript:;" onclick="selfCheckMgr.renewItems();" class="btn btn-success scko-action-btn">
+      Renew Items</a>
+  </div>
+
+</div>
+
+<div class="scko-table">
+<div class="row">
+  <div id='scko-renewal-alerts' class='col-xs-12 oils-selfck-status-div status_box'>
+  </div>
+</div>
+<div class="row">
+  <div class="col-xs-12">
+    <table class="table scko-table-striped">
+      <tbody id='oils-selfck-circ-out-tbody'>
+        <tr id='oils-selfck-circ-out-row' class='oils-selfck-items-row'><td>
+          <table>
+            <tr>
+              <th rowspan="5"><input type="checkbox" name="renew_selector" class="oils-selfck-renewal-selector"></th>
+              <td class="scko-table-label">BARCODE:</td><td class="scko-table-content" name="barcode"></td>
+            </tr>
+            <tr><td class="scko-table-label">TITLE:</td><td class="scko-table-content" name="title"></td></tr>
+            <tr><td class="scko-table-label">AUTHOR:</td><td class="scko-table-content" name="author"></td></tr>
+            <tr><td class="scko-table-label">DUE DATE:</td><td class="scko-table-content" name="due_date"></td></tr>
+            <tr><td class="scko-table-label">REMAINING RENEWALS:</td><td class="scko-table-content" name="remaining_renewals"></td></tr>
+            <tr><td class="scko-table-label hideMe">FORMAT:</td><td class="scko-table-content hideMe" name="format"></td></tr>
+          </table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>

@@ -1,0 +1,8 @@
+<nav class="navbar navbar-default navbar-static-top navbar-scko" style="background:#D2232A" id="header">
+  <div class="navbar-header">
+      <a class="navbar-brand"><img src="[% ctx.media_prefix %]/images/selfcheck/kcls-logo.png" alt="kcls logo" class="scko-logo" /></a>
+  </div>
+  <div class="navbar-scko-container">
+    <span class="navbar-text-scko">CHECK OUT HERE</span>
+  </div>
+</nav>

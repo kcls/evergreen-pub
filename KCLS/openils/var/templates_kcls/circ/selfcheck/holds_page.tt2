@@ -1,0 +1,81 @@
+<div class="row">
+  <div class="col-md-offset-5 col-xs-9 col-md-7"><label>Your Holds</label></div>
+</div>
+<div class="row">
+  <div class="col-md-offset-1 col-md-5 pad-vert-btn">
+    <a href="javascript:;" onclick="selfCheckMgr.printList('ready')" class="btn btn-success scko-action-btn">Print Ready for Pick-up</a>
+  </div>
+    <div class="col-xs-3 col-md-offset-1 col-md-5 pad-vert-btn">
+    <a href="javascript:;" onclick="selfCheckMgr.printList('holds')" class="btn btn-success scko-action-btn">
+      Print Holds</a>
+  </div>
+</div>
+<div class="scko-table">
+<div class="row">
+  <div class="col-md-12 text-center"><label class="scko-table-header">Items Ready for Pick-up</label></div>
+</div>
+<div class="row">
+  <div class="col-xs-12">
+    <table class="table scko-table-striped">
+      <tbody id='oils-selfck-rdy-tbody'>
+        <tr id='oils-selfck-noready'><td>
+          <table>
+            <tr><td>There are currently no holds ready for pick-up.</tr></td>
+          </table>
+        </td></tr>
+        <tr id='oils-selfck-rdy-row'><td>
+          <table>
+            <tr><td class="scko-table-label scko-table-ready">TITLE:</td><td name="title" class="scko-table-ready scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-ready">AUTHOR:</td><td name="author" class="scko-table-ready scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-ready">CALL NUMBER:</td>
+              <td name="call_number" class="scko-table-ready scko-table-content"></td>
+            <tr><td class="scko-table-label scko-table-ready">STATUS:</td><td name="status" class="scko-table-ready scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-ready">LOCATION:</td>
+              <td name="pickup_lib" class="scko-table-ready scko-table-content"></td>
+            </tr>
+          </table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 text-center"><label class="scko-table-header">Holds</label></div>
+</div>
+<div class="row">
+  <div class="col-xs-12">
+    <table class="table scko-table-striped">
+      <tbody id='oils-selfck-hold-tbody'>
+        <tr id='oils-selfck-hold-row'><td>
+          <table>
+            <tr><td class="scko-table-label scko-table-holds">TITLE:</td><td name="title" class="scko-table-holds scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-holds">AUTHOR:</td><td name="author" class="scko-table-holds scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-holds">STATUS:</td><td name="status" class="scko-table-holds scko-table-content"></td></tr>
+          </table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 text-center"><label class="scko-table-header">Suspended</label></div>
+</div>
+<div class="row">
+  <div class="col-xs-12">
+    <table class="table scko-table-striped">
+      <tbody id='oils-selfck-suspended-tbody'>
+        <tr id='oils-selfck-suspended-row'><td>
+          <table>
+            <tr><td class="scko-table-label scko-table-suspended">TITLE:</td><td name="title" class="scko-table-suspended scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-suspended">AUTHOR:</td><td name="author" class="scko-table-suspended scko-table-content"></td></tr>
+            <tr><td class="scko-table-label scko-table-suspended">STATUS:</td><td name="status" class="scko-table-suspended scko-table-content"></td></tr>
+          </table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>

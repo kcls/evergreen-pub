@@ -1,0 +1,33 @@
+[%  
+    WRAPPER "opac/biblio/base.tt2";
+    PROCESS "opac/parts/header.tt2";
+%]
+    [% INCLUDE "opac/biblio/topnav.tt2" %]
+    <div id='fines_payments_wrapper'>
+        <div id='acct_fines_tabs'>
+
+            <a href='[% ctx.opac_root %]/biblio/main_fines'><img src='[% ctx.media_prefix %]/images/acct_fines_off.jpg'/></a>
+            <a href='[% ctx.opac_root %]/biblio/main_payments'><img src='[% ctx.media_prefix %]/images/acct_payments_on.jpg'/></a>
+
+        </div>
+    </div>
+    <div style="background:#fff">
+        [% IF ctx.email_receipt_result; # result should be undef on success %]
+        <div class="payment-error">
+            [% l('Error preparing receipt:') %]
+            <span title="[% ctx.email_receipt_result.textcode | html %]">
+                [% ctx.email_receipt_result.desc | html %]
+            </span>
+        </div>
+        [% ELSE %]
+        <div>
+            [% l('Your receipt will be emailed to [_1]', ctx.user.email) | html %]
+        </div>
+        [% END %]
+        <p>
+            [ <a href="[% ctx.opac_root %]/biblio/main_payments">[%l("Back to Payments History") %] </a> ]
+            [ <a href="javascript:window.close();">[%l("Close Page") %]</a> ]
+        </p>
+    </div>
+
+[% END %]

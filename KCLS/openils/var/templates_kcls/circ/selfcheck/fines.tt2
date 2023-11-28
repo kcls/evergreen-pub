@@ -1,0 +1,28 @@
+<div class="row">
+  <div class="col-md-offset-5 col-xs-9 col-md-7"><label>Fines</label></div>
+  <div class="col-xs-3 pad-vert-btn">
+    <a href="javascript:;" onclick="selfCheckMgr.printList('fines')" class="btn btn-success scko-action-btn">
+      Print List
+    </a>
+  </div>
+</div>
+
+<div class="scko-table">
+<div class="row ">
+  <div class="col-xs-12">
+    <table class="table scko-table-striped">
+      <tbody id='oils-selfck-fines-tbody'>
+        <tr id='oils-selfck-fines-row'><td>
+            <table>
+              <tr><td class="scko-table-label">TITLE:</td><td class="scko-table-content" name="title"></td></tr>
+              <tr class="dueDate"><td class="scko-table-label">DUE DATE:</td><td class="scko-table-content" name="due_date"></td></tr>
+              <tr class="dateReturn"><td class="scko-table-label">DATE RETURN:</td><td class="scko-table-content" name="date_return"></td></tr>
+              <tr class="billingType"><td class="scko-table-label">LAST CHARGE:</td><td class="scko-table-content" name="btype"></td></tr>
+              <tr><td class="scko-table-label">BALANCE OWED:</td><td style="color:red;">$<span class="scko-table-content" name="balance"></span></td></tr>
+            </table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>

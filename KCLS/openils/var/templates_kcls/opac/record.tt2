@@ -1,0 +1,21 @@
+[%  PROCESS "opac/parts/header.tt2";
+    WRAPPER "opac/parts/base.tt2";
+    INCLUDE "opac/parts/topnav.tt2";
+    ctx.page_title = l("Record Detail") %]
+        [% IF ( CGI.param('bterm') ) %]
+            <div id="search-wrapper" style="height:100px;">
+                [% INCLUDE "opac/parts/searchbar_browse.tt2" %]
+                [% INCLUDE "opac/parts/browse_set_nav.tt2" %]
+            </div>
+        [% ELSE %]
+            <div id="search-wrapper" style="height:120px;">
+                [% INCLUDE "opac/parts/searchbar.tt2" %]
+            </div>
+        [% END %]
+    <div id="content-wrapper" class="content-wrapper-record-page">
+        <div id="main-content">
+            [% INCLUDE "opac/parts/record/body.tt2" %]
+            <div class="common-full-pad"></div>	
+        </div>
+    </div>
+[% END %]

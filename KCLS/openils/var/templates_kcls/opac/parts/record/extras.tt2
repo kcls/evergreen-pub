@@ -1,0 +1,77 @@
+<div id="rdetail_main_div">
+    <div id='rdetail_extras_div' style='width: 100%;'> 
+
+        [%  # Hidden extras are not yet implemented.  Some may require JS
+
+        # Let's see if we should hide the content cafe / simple summary content
+        hide_summary = 1;
+        IF attrs.summary.0; hide_summary = 0; ELSE;
+            # Expose content cafe if it's reasonable to do so.
+            # This approach only works when using embedded content cafe.
+            IF ENV.OILS_CONTENT_CAFE_USER OR ENV.OILS_SYNDETICS_USER;
+                ident = attrs.isbn_clean || attrs.upc; 
+                IF ident; hide_summary = 0; END;
+            END;
+        END;
+
+        extras = [
+            {name => 'subjects', label => l('Subject')}, 
+            {name => 'summaryplus',  label => l('Summaries &amp; More'), hide => hide_summary}, 
+            {name => 'contents',  label => l('Contents'), hide => !attrs.contents},
+            {name => 'authors',  label => l('Authors')}, 
+            {name => 'series',   label => l('Series')},
+            {name => 'annotation', label => l('Annotation'), hide => 1}, 
+            {name => 'awards',  label => l('Awards, Reviews, & Suggested Reads')}, 
+            {name => 'excerpt',  label => l('Excerpt'), hide => 1},
+            {name => 'issues',   label => l('Issues Held'), hide => !(ctx.have_holdings_to_show || ctx.have_mfhd_to_show)},
+            {name => 'preview',  label => l('Preview'), hide => 1}, 
+            {name => 'copyinfo', label => l('Copy Summary'), hide => 1}, 
+            {name => 'marchtml', label => l('MARC Record')}
+        ];
+
+        MACRO tab_is_active(tab) BLOCK;
+            exp_name = 'expand_' _ tab;
+            IF ctx.$exp_name OR ctx.expand_all; 1; END;
+        END;
+
+        FOREACH extra IN extras;
+            IF extra.hide; NEXT; END; 
+            name = extra.name;
+        %]
+        <div class="rdetail_extras">
+            <div class="rdetail_extras_hr"></div>
+            <div class="rdetail_extras_link">
+                [%  
+                    IF tab_is_active(name);
+                        href = mkurl(ctx.opac_root _ '/record/' _ ctx.bre_id, {}, ['expand']);
+                        img_url = ctx.media_prefix _ '/images/kcls_rdetail_arrow_down.png';
+                    ELSE;
+                        href = mkurl(ctx.opac_root _ '/record/' _ ctx.bre_id, {expand => name}) _ '#' _ name;
+                        img_url = ctx.media_prefix _ '/images/kcls_rdetail_arrow.png';
+                    END;
+                %]
+                <a name='[% name %]' href='[% href %]'><img alt='[% extra.label %]' src='[% img_url %]'/></a>
+                <a href='[% href %]' class="rdetail_extras_lbl">[% extra.label %]</a>
+            </div>
+        </div>
+        <div class='rdetail_extras_div'>
+            [%  IF tab_is_active(name);
+                    IF name == 'marchtml';
+                        ctx.marchtml;
+                    ELSIF name == 'contents';
+                        attrs.contents;
+                    ELSE;
+                        # Load the template for the selected extra
+                        INCLUDE "opac/parts/record/${name}.tt2";
+                    END;
+                END; 
+            %]
+        </div>
+        [% END %]
+    </div>
+    <!--
+    <div id='rdetail_preview_full_text' class='hide_me'>[% l("Full text") %]</div>
+    <div id='rdetail_preview_title' class='hide_me'>[% l("See the full text of this book.") %]</div>
+    <div id='rdetail_preview_badge' class='hide_me'>[% l("Show a preview of this book from Google Book Search") %]</div>
+    -->
+</div>

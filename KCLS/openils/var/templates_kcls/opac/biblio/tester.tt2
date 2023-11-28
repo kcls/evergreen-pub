@@ -1,0 +1,12 @@
+<p><a href="javascript: void(0)" 
+   onclick="window.open('main_payments',
+  'windowname1', 
+  'width=800, height=550'); 
+   return false;">biblio/main_payments</a></p>
+   
+<p><a href="javascript: void(0)" 
+   onclick="window.open('main_fines',
+  'windowname1', 
+  'width=800, height=550'); 
+   return false;">biblio/main_fines</a></p>
+   

@@ -1,0 +1,49 @@
+<div class="payflow-error-container">
+
+<span>There was a problem processing the credit card payment:</span>
+<br/>
+<br/>
+
+<div class="payflow-error-text">
+[% 
+
+# Map PayFlow POST response codes to patron messages.
+# https://developer.paypal.com/docs/classic/payflow/integration-guide/#result-values-and-respmsg-text
+
+SWITCH ctx.payflow_hosted_ctx.RESULT;
+
+  CASE '12';  # Declined.
+    l('Declined. Please verify your card details.');
+
+  CASE '23'; # Invalid CC number (e..g mis-typed)
+    l('Declined. Please make sure you entered your credit card number correctly.');
+
+  CASE '25';  # Transaction type not mapped to this host
+    l('KCLS does not accept AMEX or Discover Card at this time. Please use your Visa or MasterCard.');
+
+  CASE '114'; # CVV2 or CID Mismatch 
+    l('Declined. Please make sure you entered the three digit code on the back of your card correctly.');
+
+  CASE '125';
+    handled = 0;
+    l('Declined.  ');
+
+    IF ctx.payflow_hosted_ctx.PROCCVV2 == 'N';
+      l('Please make sure you entered the three digit code on the back of your card correctly.  ');
+      handled = 1;
+    END;
+
+    IF NOT handled
+      OR ctx.payflow_hosted_ctx.AVSADDR == 'N'
+      OR ctx.payflow_hosted_ctx.AVSZIP == 'N';
+      l('Please make sure your billing information matches what the bank has on file for your credit card.');
+    END;
+
+  CASE DEFAULT;
+    l('An unkown error occurred attempting credit card payment.');
+END;
+%]
+</div>
+<br/>
+<span>Click the 'Pay Fines' button to try the payment again.</span>
+</div>

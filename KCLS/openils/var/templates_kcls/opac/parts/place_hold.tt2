@@ -1,0 +1,138 @@
+[%  PROCESS "opac/parts/misc_util.tt2";
+    PROCESS "opac/parts/hold_error_messages.tt2";
+%]
+
+<div id='holds_box' class='canvas' style='margin-top: 6px;'>
+    <h1>[% l('Place Hold') %]</h1>
+    <form method="post">
+        <input type="hidden" name="hold_type" value="[% CGI.param('hold_type') | html %]" />
+        [%  
+            redirect = CGI.param('hold_source_page') || CGI.param('redirect_to') || CGI.referer;
+            # since we have to be logged in to get this far, return to a secure page
+            redirect = redirect.replace('^http:', 'https:') 
+        %]
+        <input type="hidden" name="redirect_to" value="[% redirect | html %]" />
+
+        [% IF ctx.is_staff %]
+        <p class="staff-hold">
+            <input type="radio" id="hold_usr_is_requestor_not"
+                onchange="staff_hold_usr_input_disabler(this);"
+                name="hold_usr_is_requestor" value="0"
+                />
+            <label for="hold_usr_is_requestor_not">
+                [% l("Place hold for patron by barcode:") %]
+            </label>
+            <input type="text" name="hold_usr" id="hold_usr_input" onchange="staff_hold_usr_barcode_changed();" onpaste="setTimeout(staff_hold_usr_barcode_changed,1);" onkeypress="return no_hold_submit(event)" autofocus /> <span id="patron_name"></span><span id="patron_usr_barcode_not_found" style="display: none">[% l('Patron barcode was not found') %]</span><br />
+            <input type="hidden" id="staff_barcode" value="[% ctx.staff_recipient.card.barcode | html %]"/>
+            <script>document.getElementById('hold_usr_input').focus()</script>
+            <span style="visibility: hidden">
+                <input type="radio" id="hold_usr_is_requestor"
+                    onchange="staff_hold_usr_input_disabler(this);"
+                    name="hold_usr_is_requestor" value="1" />
+                <label for="hold_usr_is_requestor">
+                    [% l("Place this hold for me ([_1] [_2])", ctx.user.first_given_name, ctx.user.family_name) | html %]
+                </label>
+            </span>
+        </p>
+        [% END %]
+
+        <!-- loop through the holds and display status of request where appropriate -->
+        <table id='hold-items-list'>
+        [% FOR hdata IN ctx.hold_data;
+            attrs = {marc_xml => hdata.marc_xml};
+            PROCESS get_marc_attrs args=attrs %]
+            <tr>
+                <td>
+                    <input type="hidden" name="hold_target" value="[% hdata.target.id | html %]" />
+                    <div class='hold-items-list-title'>[% attrs.title_extended | html %]</div>
+                    [% IF hdata.parts %]
+                        [% IF hdata.parts.size > 0 %]
+                        <div style='padding-left: 10px'>
+                            <span><label for='select_hold_part'>[%
+                                hdata.part_required ? l('Select a Part:') : l('Select a Part (optional):')
+                            %]</label></span>
+                            <select id='select_hold_part' name='part'>
+                                [% IF !hdata.part_required %]
+                                <option selected='selected' value=''>[% l('- All Parts -') %]</option>
+                                [% END %]
+                                [% FOR part IN hdata.parts %]
+                                <option value='[% part.id %]'>[% part.label | html %]</option>
+                                [% END %]
+                            </select>
+                        </div>
+                        [% ELSE %]
+                        <input type='hidden' name='part' value=''/>
+                        [% END %]
+                    [% END %]
+                </td>
+            </tr>
+        [% END %]
+        </table>
+
+        <p>
+            [%- org_select_id = 'pickup_lib'; -%]
+            <label for="[% org_select_id %]">[%l('Pickup location:') %]</label>
+            [% PROCESS "opac/parts/org_selector.tt2";
+                INCLUDE build_org_selector name='pickup_lib' value=ctx.default_pickup_lib id=org_select_id can_have_vols_only=1 %]
+        </p>
+
+        <p>
+            [% |l %]If you use the Traveling Library Center (TLC) and ABC Express
+            services, please select "Outreach" to have the item delivered
+            during your scheduled visit.[% END %]
+        </p>
+<!-- 
+        <p>
+            [% l('Notify when hold is ready for pickup?') %]
+            <blockquote>
+                <input type="checkbox" id="email_notify" name="email_notify" value="t"
+                    [% IF !ctx.user.email %]disabled="true"[% ELSIF ctx.default_email_notify %]checked="checked"[% END %]/>
+                    <label for="email_notify">[% l('Yes, by Email') %]</label><br/>
+                <blockquote>
+                    [% l('Email Address:') %] <span name="email_address">[% ctx.user.email %]</span>
+                </blockquote>
+                [%- IF allow_phone_notifications == 'true' %]
+                <input type="checkbox" id="phone_notify_checkbox" name="phone_notify_checkbox"
+                    [% IF ctx.default_phone_notify %]checked="checked"[% END %]/>
+                    <label for="phone_notify_checkbox">[% l('Yes, by Phone') %]</label><br/>
+                <blockquote>
+                    <label>[% l('Phone Number:') %]<input type="text" name="phone_notify" [% setting = 'opac.default_phone';
+                    IF ctx.user_setting_map.$setting; %] value='[% ctx.user_setting_map.$setting | html %]'
+                    [%- ELSIF ctx.user.day_phone; %] value='[% ctx.user.day_phone | html %]' [% END %]/></label>
+                </blockquote>
+                [%- END -%]
+                [% IF ctx.get_org_setting(ctx.search_ou, 'sms.enable') == 1 %]
+                <input type="checkbox" id="sms_notify_checkbox" name="sms_notify_checkbox"
+                    [% IF ctx.default_sms_notify %]checked="checked"[% END %]/>
+                    <label for="sms_notify_checkbox">[% l('Yes, by Text Messaging') %]</label><br/>
+                <blockquote>
+                    [% INCLUDE "opac/parts/sms_carrier_selector.tt2" %]<br/>
+                    [% INCLUDE "opac/parts/sms_number_textbox.tt2" %]<br/>
+                </blockquote>
+                [% END %]
+            </blockquote>
+        </p>
+-->
+        <input id="place_hold_submit" type="image" name="submit" value="[% l('Submit') %]" title="[% l('Submit') %]"
+            alt="[% l('Submit') %]" class="opac-button" src="[% ctx.media_prefix %]/images/btnSubmit.png"/>
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <a href="javascript:history.go(-1);" id="holds_cancel">
+            <img alt="[% l('Cancel') %]" src="[% ctx.media_prefix %]/images/btnCancel.png" />
+        </a>
+    </form>
+
+    <p>
+        [% |l %]* If you need your item today, and it is checked in at your
+        library, please place your hold and then call your library to set it
+        aside. Placing a hold without calling the library will increase your
+        wait time.[% END %]
+        <br /><a href="#">[% l('Library phone numbers.') %]</a>
+    </p>
+    <p>
+        [% |l %]* For best possible service, we recommend keeping 
+        a printed copy of your most recent holds list.[% END %]
+    </p>
+</div>
+

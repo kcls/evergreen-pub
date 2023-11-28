@@ -1,0 +1,990 @@
+[%- PROCESS "opac/parts/header.tt2";
+    PROCESS "opac/parts/org_selector.tt2";
+    PROCESS "opac/parts/state_selector.tt2";
+    ctx.page_title = l("Get an All-Access Library Card");
+
+# for privacy, reload the page after (default) 5 minutes
+return_to  = CGI.param('return-to');
+kiosk = CGI.param('kiosk');
+
+# Ugh, CGI.new/.param insists on mangling the return-to URL. 
+# Build the redo_url by hand.
+redo_url = '/eg/opac/register';
+joiner = '?';
+IF return_to;
+  redo_url = redo_url _ '?return-to=' _ return_to;
+  joiner = '&';
+END;
+SET redo_url = redo_url _ joiner _ 'kiosk=1' IF kiosk;
+
+complete_url = 'https://www.kcls.org';
+IF return_to;
+  IF return_to == 'self';
+    # 'self' is a special return-to value that means return back to the 
+    # current URL.  Without this, to return back to the samge page, 
+    # we'd need an infinitely nesting series of return-to values.
+    # The self URL is the same as the redo ("submit another") url.
+    complete_url = redo_url;
+  ELSE;
+    complete_url = return_to;
+  END;
+END;
+
+# some useful variables and MACROs for display, 
+# field validation, and added info display
+ctx_org = ctx.physical_loc || ctx.search_ou || ctx.aou_tree.id;
+
+card_url = '/images/patron_cards/';
+wallet_cards = [
+#  'Card_blank', 
+#  '2016_Dog_Card',
+# 'Card_Pride',
+#  '2016_Sasquatch_Card'
+];
+# keychain_cards container doubles as the wallet/keychain combo container
+# If a time comes we need to support both, refactor here and the label
+# changes for wallet-key combo below.
+#keychain_cards = ['Keychain_red']; 
+keychain_cards = [
+  '2019_Dog_Combo', 
+  '2018_Pride_Combo', 
+  '2019_Sasquatch_Combo', 
+  '2019_Red_Combo',
+  '2018_Slug',
+  '2021_Baby_Yoda'
+];
+
+MACRO input_field(fclass, fname, label, type, css_class, value) BLOCK;
+  field_path = fclass _ "." _ fname; 
+  value = ctx.register.values.$fclass.$fname || value;
+  type = type || 'text';
+  css_class = css_class || '';
+%]
+  <input 
+    maxlength="1000"
+    size="25"
+    class='[% css_class %]'
+    aria-label="[% label | html %]"
+    type='[% type %]' 
+    id='[% field_path %]'
+    name='[% field_path %]'
+    onchange="validate('[% field_path %]')"
+    [% IF type == 'text' %]onkeyup="validate('[% field_path %]', true)"[% END %]
+    value='[% value || CGI.param(field_path) | html %]'/>
+
+  [% IF invalid_require %]
+    <span class='patron-reg-required'>
+      [% l('This field is required') %]
+    </span>
+  [% ELSIF invalid_regex %]
+    <span class='patron-reg-required'>
+      [% l('The value entered does not have the correct format') %]
+    </span>
+  [% END %]
+[% 
+END; # input_field()
+
+%]
+
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>[% l('[_1]', ctx.page_title) %]</title>
+
+    <!-- testing alternate googalytics invocation -->
+    [% INCLUDE 'opac/parts/googalytics_new.tt2' %]
+
+    <script src="[% ctx.media_prefix %]/js/ui/default/common/build/js/jquery.min.js"></script>
+    <script src="[% ctx.media_prefix %]/js/ui/default/opac/handlebars-v4.7.7.js"></script>
+    <script type="text/javascript"
+      src="[% ctx.media_prefix %]/js/ui/default/opac/register.js"></script>
+    <script>
+      var timeout_redirect = '[% complete_url | url %]';
+      var post_success_timeout = '[% kiosk ? 30000 : 30000 %]';
+      var activity_timeout = '[% kiosk ? 120000 : 300000 %]';
+    </script>
+
+<style>
+
+input[type=text], input[type=email] {
+  border: 2px solid #555;
+}
+
+input[type=submit], button {
+  border: 2px solid #555;
+  font-size: 120%;
+}
+
+/* Keep the CSS here for now for simplicity.  
+   If it gets too big, move to a dedicated file. */
+.patron-reg-invalid {
+    font-weight: bold;
+    /* background-color: red; */
+    background-color: #C11B17;
+    color: white;
+}
+.patron-reg-required {
+    font-weight: bold;
+    color: #961212;
+}
+.card-style-option {
+  text-align:center;
+}
+.patron-reg-action {
+    padding-right: 10px;
+}
+#main-content-register {
+    margin: 6px;                                                              
+    margin-bottom: 20px;                                                              
+    /*color: #585d5e;*/
+    color: black;
+    font-family: 'Open Sans', sans-serif;                                      
+    letter-spacing: .5pt;                                                      
+    font-size: 15px;                                                           
+    width: 900px; /* to match bibliocms */
+}
+#main-content-register label {
+    font-weight: bold;
+}
+#main-content-register h2 {
+    font-weight: bold;
+    font-size: 18px;
+}
+#main-content-register li {
+    margin-top: 12px;
+    list-style-type: none;
+}
+#main-content-left {
+  width: 74%;
+  float: left;
+}
+#main-content-right {
+  width: 25%;
+  float: right;
+  font-size: 85%;
+}
+
+#main-content-right img {
+  border: 0;
+}
+
+#main-content-right li {
+  list-style-type: disc;
+}
+
+.grid { width: 95%; }
+.grid-cell {
+  float: left;
+  margin-right: 10px;
+}
+.grid-clear {
+  clear:both;
+}
+#content-wrapper {
+  width: 98%;
+}
+#main-content-register {
+  margin-left: auto;
+  margin-right: auto;
+}
+#main-content-register .wide-input {
+    width: 90%;
+}
+/* images are pre-sized
+#main-content-register .card-img {
+  width: 195px;
+  height:123px;
+}
+*/
+
+#wallet-cards {
+  /* force 2 cards per row */
+  width: 500px;
+}
+.mailing-address-hidden {
+  display:none;
+}
+#submit-another, #exit {
+  background-color: #02729e;
+  color: white;
+}
+.success-minus-1 { font-size: 95%; }
+.success-minus-2 { font-size: 90%; }
+
+.smaller-text {
+  font-size: 85%;
+}
+
+#download-forms-list a, download-forms-list a:visited {
+  /*color: #41bee8;*/
+  /*color: #0000FF;*/
+  text-decoration: none;
+  font-weight: 600;
+}
+
+a, a:visited, button {
+  color: #003f6b;
+}
+
+a:hover {
+  color: #02729E;
+  text-decoration: none;
+}
+
+.blue-link, .blue-link:visited {
+  /*color: #0000FF;*/
+  text-decoration: none;
+  font-weight: 600;
+}
+
+#kiosk-verification-reqs {
+  padding: 8px;
+  border: 1px solid black;
+}
+
+.ghost-button {
+  border: 2px solid #000c39;
+  background-color: white;
+}
+
+/* BC screen reader links are not correctly hidden via their API.
+   Add some additional CSS to hide them */
+.screen_reader_nav {
+  position: absolute;
+  top: -1000px;
+  left: -1000px;
+  z-index: 0;
+}
+
+</style>
+
+<!-- BC CSS -->
+[% ctx.bc_css %]
+<!-- BC END CSS -->
+
+</head>
+<body>
+
+<!-- BC SCREEN READER NAVIGATION -->
+[% ctx.bc_screen_reader_navigation %]
+<!-- BC END SCREEN READER NAVIGATION -->
+
+<!-- BC HEADER -->
+[% ctx.bc_header %]
+<!-- BC END HEADER -->
+
+<div id="content-wrapper" role="main">
+  <div id="main-content-register">
+
+  <div id='main-content-left'>
+    <h1>
+      [% IF ctx.register.success %]
+        [% l('Registration successful!') %]
+      [% ELSE %]
+        [% l('Get a Library Card')%]
+      [% END %]
+    </h1>
+
+    <div>
+      <p>
+        Get access to all the 
+        <a href="https://kcls.org/library-cards/#allaccess">services</a> 
+        that are available from the King County Library System. 
+      </p>
+      <p>
+        Fill out the application below to apply for your All-Access Library Card.
+      </p>
+      <p>
+        You’ll need to 
+        <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
+          bring proof of address and photo ID that shows your date of birth
+        </a>
+        to a library to activate your card. (Parents or guardians can help 
+        with this for applicants younger than age 18.)  
+      </p>
+      <p style="font-style:italic">
+        Reasonable accommodation for individuals with disabilities is available 
+        upon request. Accommodations include modifications to policies, 
+        programs, appropriate equipment, and services. Contact your 
+        community library or visit 
+        <a href="https://kcls.org/accessibility/">https://kcls.org/accessibility/</a>
+        to request accommodation. 
+      </p>
+      <p>
+        <a href="https://kcls.org/faq/library-cards/">
+          Learn about All-Access cards in our frequently asked questions. 
+        </a>
+      </p>
+      <p>
+        Read our <a href="https://kcls.bibliocommons.com/info/privacy">Privacy Policy</a>
+      </p>
+    </div>
+
+    [% IF ctx.register.success %]
+      [% IF !kiosk %]
+      <a href='[% redo_url | html %]'><button 
+        id='submit-another'>Submit Another Application</button></a>
+      <br/>
+      [% END %]
+      <br/>
+      <div class='success-minus-2'>
+        [% IF kiosk %]
+          <a href="[% complete_url | html %]">
+            <button id="exit">Exit and Return</button></a>
+        [% ELSE %]
+          You will be automatically redirected to 
+          <a href="[% complete_url | html %]">[% complete_url | html %]</a>...
+        [% END %]
+      </div>
+      <hr/>
+      <input type='hidden' id='register-success' value='yep'/>
+      [% IF kiosk %]
+        <h3>Verification Requirements</h3>
+
+        <div id='kiosk-verification-reqs'>
+        <p>
+        1. Photo identification with birth date (one piece required for adults).
+        Acceptable examples are as follows and may be current or expired:
+        </p>
+        <ul>
+          <li>Driver’s License</li>
+          <li>Passport</li>
+          <li>Washington ID Card</li>
+          <li>U.S. Military ID</li>
+          <li>Matricula Consular (issued by Mexican government)</li>
+        </ul>
+        <br/>
+
+        <p>
+        2. Address verification matching qualifying residential address and given name
+        (one piece required for adults and minors).
+        Acceptable examples–chosen document must be current:
+        </p>
+
+        <ul>
+          <li>Washington Driver’s License</li>
+          <li>Washington ID Card</li>
+          <li>Printed Checks</li>
+          <li>Utility Bill (printout of online bill acceptable)</li>
+          <li>Apartment Lease</li>
+          <li>Voter’s Registration</li>
+          <li>King County Tax Bill</li>
+          <li>Other (Must be of a legal or permanent nature)</li>
+        </ul>
+
+        <p>
+        If residence address differs from mailing address, the residence address determines patron eligibility.
+        You may get a library card today without address verification, but you will be limited to checking
+        out 2 items. If you do not bring address verification, the card will expire after 90 days.
+        </p>
+        </div>
+      [% END %]
+
+    [% ELSE %]
+
+    <h2>Card Options</h2>
+
+    <form autocomplete="off" method='POST' onsubmit="return onsub()">
+      <input type="hidden" name="return-to"  value="[% return_to %]"/>
+      <input type="hidden" name="kiosk" value="[% kiosk %]"/>
+      <ul>
+        [%# if there is only one type of card, hide the selector %]
+        [% IF keychain_cards.size > 0 AND wallet_cards.size > 0 %]
+        <li>
+          <label id='card-size-label'>Choose a card size....</label>
+          <span class="patron-reg-required">*</span>
+          <div>
+            <ul>
+              <li>
+                <input type="radio" name='card-type' id="card-type-wallet" 
+                  onclick="show_card_types('wallet')">
+                <label for="card-type-wallet">Wallet Size (3in x 2in)</label>
+              </li>
+              <!--
+              <li>
+                <input type="radio" id="card-type-keychain" name='card-type'
+                  onclick="show_card_types('keychain')">
+                <label for="card-type-keychain">Keychain</label>
+              </li>
+              -->
+              <li>
+                <input type="radio" id="card-type-keychain" name='card-type'
+                  onclick="show_card_types('keychain')">
+                <label for="card-type-keychain">
+                  Wallet-Key Combo (wallet: 3in x 2in, key chain card: 2in x 1in)
+                </label>
+              </li>
+            </ul>
+          </div>
+        </li>
+        [% END %]
+        <!-- if there are no keychain cards, show the wallet cards by default -->
+        <li id='wallet-cards' 
+          [% IF keychain_cards.size > 0 %]style='display:none'[% END %]>
+          [% IF keychain_cards.size > 0 %]
+          <label id='card-choice-1'>Wallet Options</label>
+          [% ELSE %]
+          <label id='card-choice-1'>Choose a card:</label><br/><br/>
+          [% END %]
+          <div class="grid">
+            [% FOR ctype IN wallet_cards %]
+            <div class="grid-cell">
+              <div><img class="card-img" src="[% card_url _ ctype _ '.png' %]"
+                alt="Card Option [% ctype %]"
+                onclick="select_card('[% ctype %]')"/></div>
+              <label hidden id='card-option-[% ctype %]'>[% ctype %]</label>
+              <div class="card-style-option">
+                <input [% IF loop.first %]id='first-wallet-card'[% END %]
+                  aria-labelledby='card-choice-1 card-option-ctype-[% ctype %]'
+                  type="radio" name="stgsc.10" value="[% ctype %]"/>
+              </div>
+            </div>
+            [% END %]
+          </div>
+          <div class="grid-clear"></div>
+        </li>
+        <li id='keychain-cards' 
+          [% IF wallet_cards.size > 0 %]style='display:none'[% END %]>
+          [% IF wallet_cards.size > 0 %]
+          <label id='card-choice-2'>Wallet-Key Combo Options</label>
+          [% ELSE %]
+          <label id='card-choice-2'>Choose a card:</label>
+          <br/>
+          <span>You'll receive one wallet-size and one keychain-size card.</span>
+          <br/><br/>
+          [% END %]
+
+          <div class="grid">
+            [% card_idx = 0;
+              # limit to 2 cards per line for the first 2 cards, which
+              # are horizontal.  The remaining cards are vertical, so
+              # show 3 per line. Consider breaking these up into two
+              # sets for easier tracking long term.
+              #
+              # UPDATE 2022-09-01 2 per line regardless
+              FOR ctype IN keychain_cards;
+                IF card_idx % 2 == 0 %]
+                <div class="grid-clear"> </div>
+                [% END %]
+                [% card_idx = card_idx + 1; %]
+            <div class="grid-cell">
+              <div><img class="card-img" src="[% card_url _ ctype _ '.png' %]"
+                alt="Card Option [% ctype %]"
+                onclick="select_card('[% ctype %]')"/></div>
+              <label hidden id='card-option-[% ctype %]'>[% ctype %]</label>
+              <div class="card-style-option">
+                <input [% IF loop.first %]id='first-keychain-card'[% END %]
+                  aria-labelledby='card-choice-2 card-option-[% ctype %]'
+                  type="radio" name="stgsc.10" value="[% ctype %]"/>
+              </div>
+            </div>
+            [% END %]
+          </div>
+          <div class="grid-clear"></div>
+          <div>[% l('Some libraries may have additional library card selections.') %]</div>
+        </li>
+
+        <li>
+          <label id='delivery-label'>Choose How to Get Your Card</label>
+          <div>
+            <ul>
+              <li>
+                <input type='radio' name='stgu.delivery_method' 
+                  aria-labelledby='delivery-label delivery-by-mail'
+                  value='Mail' [% IF !kiosk %]checked='checked'[% END %]/>
+                <label id='delivery-by-mail'>Mail my card.
+                  <span style='font-size:85%; font-style:italic'>
+                    (You’ll receive your card and activation instructions within 1-2 weeks.)
+                  </span>
+                </label>
+              </li>
+              <li>
+                <input type='radio' name='stgu.delivery_method' 
+                  aria-labelledby='delivery-label delivery-by-pickup'
+                  value='Pick up' [% IF kiosk %]checked='checked'[% END %]/>
+                <label id='delivery-by-pickup'>
+                  I will pick up at my home library
+                  <span style='font-size:85%; font-style:italic'>
+                    (Available same day.)
+                  </span>
+                </label>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <li><h2>Your Information</h2></li>
+        <li><hr/></li>
+
+        <li><h3>Name</h3></li>
+        <li>
+          <div class="grid">
+            <div class="grid-cell">
+              <div>
+                <label for="sgtu.first_given_name">First Name</label>
+                <span class="patron-reg-required">*</span>
+              </div>
+              <div>[% input_field('stgu', 'first_given_name', 'First Name') %]</div>
+            </div>
+            <div class="grid-cell">
+              <div><label for="sgtu.second_given_name">Middle Name</label></div>
+              <div>[% input_field('stgu', 'second_given_name', 'Middle Name') %]</div>
+            </div>
+            <div class="grid-cell">
+              <div>
+                <label for="sgtu.family_name">Last Name</label>
+                <span class="patron-reg-required">*</span>
+              </div>
+              <div>[% input_field('stgu', 'family_name', 'Last Name') %]</div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+        </li>
+
+        <li>
+          <label>Legal Name</label>
+          <div>
+            <input type="checkbox" onclick="show_hide_legal_name(this.checked)"
+              name="legal_name_matches_billing"
+              id="legal_name_matches" checked="checked">
+            <label for="legal_name_matches">
+              Same as above; uncheck to submit a legal name that appears on valid photo ID.
+            </label>
+          </div>
+        </li>
+
+        <li id='legal-name-div' style='display:none'>
+          <div class="grid">
+            <div class="grid-cell">
+              <div>
+                 <label for="sgtu.pref_first_given_name">Legal First Name</label>
+              </div>
+              <div>
+                [% input_field('stgu', 'pref_first_given_name', 'Legal First Name') %]
+              </div>
+            </div>
+            <div class="grid-cell">
+              <div>
+                 <label for="sgtu.pref_second_given_name">Legal Middle Name</label>
+              </div>
+              <div>
+                [% input_field('stgu', 'pref_second_given_name', 'Legal Middle Name') %]
+              </div>
+            </div>
+          </div>
+            <div class="grid-cell">
+              <div>
+                 <label for="sgtu.pref_family_name">Legal Last Name</label>
+              </div>
+              <div>
+                [% input_field('stgu', 'pref_family_name', 'Legal Last Name') %]
+              </div>
+            </div>
+          <div class="grid-clear"></div>
+        </li>
+
+        <li>
+          <label for="stgu.day_phone">Phone Number</label>
+          <span class="patron-reg-required">*</span>
+          <input type="hidden" name="stgu.day_phone" id="stgu.day_phone"/>
+          <div class="grid">
+            <div class="grid-cell">
+              <div>
+                (<input onchange="compile_phone(event)" type="text" 
+                  maxlength="3" size="3" id="phone.area">)
+              </div>
+            </div>
+            <div class="grid-cell">
+              <div>
+                <input onchange="compile_phone(event)" type="text" 
+                  maxlength="3" size="3" id="phone.prefix"> -
+              </div>
+            </div>
+            <div class="grid-cell">
+              <div>
+                <input onchange="compile_phone(event)" type="text" 
+                  maxlength="4" size="4" id="phone.suffix">
+              </div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+          <span class='smaller-text'>Only enter numbers. Use the format 425 444 4444.</span>
+        </li>
+
+        <li>
+          <label for="stgu.dob">
+            Birth Date<span class="patron-reg-required">*</span>
+          </label>
+          <br/>
+          <span class='smaller-text'>Use the format MM DD YYYY.</span>
+          <input type="hidden" name="stgu.dob" id="stgu.dob"/>
+          <div class="grid">
+            <div class="grid-cell">
+              <div><input onchange="compile_dob()" type="text" 
+                maxlength="2" size="2" id="dob.month"></div>
+              <div><label for="dob.month">MM</label></div>
+            </div>
+            <div class="grid-cell">
+              <div><input onchange="compile_dob()" type="text" 
+                maxlength="2" size="2" id="dob.day"></div>
+              <div><label for="dob.day">DD</label></div>
+            </div>
+            <div class="grid-cell">
+              <div><input onchange="compile_dob()" type="text" 
+                maxlength="4" size="4" id="dob.year"></div>
+              <div><label for="dob.year">YYYY</label></div>
+            </div>
+            <div class="grid-cell">
+              <div><span id='dob.display'></span></div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+        </li>
+
+        <li>
+          <label for="stgu.email">
+            Enter your email address for the fastest delivery of library notices.
+          </label>
+          <div>[% input_field('stgu', 'email', 'Email', 'email') %]</div>
+        </li>
+
+        <li>
+          <label for="none.email2">
+            Confirm your email address.
+          </label>
+          <div>[% input_field('none', 'email2', 'Email', 'email') %]</div>
+        </li>
+
+        <li>
+          <label class="gfield_label" for="">
+            If you’re younger than age 18, list the names of all parents and 
+            guardians who live with you.
+          </label>
+          <div>[% input_field('stgu', 'ident_value2', 'Parent / Guardian', 'text', 'wide-input') %]</div>
+        </li>
+
+        <li>
+          <label for="stgu.home_ou">What library is closest to your residence?</label>
+          <br/>
+
+          [% IF NOT kiosk %]
+          <span class='smaller-text'>
+            Not sure? Find your nearest library on this 
+            <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
+          </span>
+          [% END %]
+
+          <div>
+            [% INCLUDE build_org_selector 
+                name='stgu.home_ou' 
+                id='stgu.home_ou' 
+                value=value || ''
+                can_have_users_only=1
+                no_indent=1
+                no_root=1
+                none_label=l('Please choose a library...')
+                onchange="validate('stgu.home_ou')"
+                valid_org_list=ctx.register.valid_orgs
+            %]
+            <span class="patron-reg-required">*</span>
+            [% IF ctx.register.invalid.bad_home_ou %]
+            <span class='patron-reg-required'>
+                [% l('Please select a valid library') %]
+            </span>
+            [% END %]
+          </div>
+        </li>
+
+        <li><h2>Contact Preferences</h2></li>
+        <li><hr/></li>
+
+        <li>
+          <label>May we contact you?</label>
+          <div>
+            <ul>
+              <li>
+                [% input_field('stgsc', '3', 'Events Mailing', 'checkbox') %]
+                <label for="stgsc.3">Tell me about library news and events</label>
+              </li>
+              <li>
+                [% input_field('stgsc', '4', 'Foundation Mailing', 'checkbox') %]
+                <label for="stgsc.4">
+                  Send me information about supporting the King County Library System Foundation.
+                </label>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <li>
+          <h3>
+            Residential Address<span class="patron-reg-required">*</span>
+          </h3>
+        </li>
+
+        <li>
+          <div>[% input_field(
+            'stgba', 'street1', 'Street Address', 'text', 'wide-input') %]</div>
+          <label for="stgba.street1">
+            Street Address
+            <span class="patron-reg-required">*</span>
+          </label>
+        </li>
+        <li>
+          <div class="grid">
+            <div class="grid-cell" style="width:45%">
+              <div>[% input_field(
+                'stgba', 'street2', 'Apartment or Unit', 'text', 'wide-input') %]</div>
+              <div><label for="stgba.street2">Apartment or Unit</label></div>
+            </div>
+            <div class="grid-cell" style="width:45%">
+              <div>[% input_field('stgba', 'city', 'City') %]</div>
+              <div>
+                <label for="stgba.city">
+                  City<span class="patron-reg-required">*</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+        </li>
+        <li>
+          <div class="grid">
+            <div class="grid-cell" style="width:45%">
+              <div>[% PROCESS state_selector name='stgba.state' id='stgba.state' %]</div>
+              <div>
+                <label for="stgba.state">
+                  State<span class="patron-reg-required">*</span>
+                </label>
+              </div>
+            </div>
+            <div class="grid-cell" style="width:45%">
+              <div>[% input_field('stgba', 'post_code', 'Zip Code') %]</div>
+              <div>
+                <label for="stgba.post_code">
+                  Zip Code<span class="patron-reg-required">*</span>
+                </label>
+                <br/>
+                <span class='smaller-text'>Use the format 45287 or 45287-9586.</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+          <input type='hidden' name='stgba.country' value='USA'/>
+        </li>
+        
+        <li>
+          <label>Mailing Address</label>
+          <div>
+            <input type="checkbox" onclick="show_hide_mailing(this.checked)"
+              name="mailing_matches_billing"
+              id="mail_addr_matches_billing" checked="checked">
+            <label for="mail_addr_matches_billing">Same as Residential Address</label>
+          </div>
+        </li>
+
+        <li id='mailing-address-1' style='display:none'>
+          <div>[% input_field(
+            'stgma', 'street1', 'Street Address', 'text', 'wide-input') %]</div>
+          <label for="stgma.street1">
+            Street Address
+            <span class="patron-reg-required">*</span>
+          </label>
+        </li>
+        <li id='mailing-address-2' style='display:none'>
+          <div class="grid">
+            <div class="grid-cell" style="width:45%">
+              <div>[% input_field(
+                'stgma', 'street2', 'Address Line 2', 'text', 'wide-input') %]</div>
+              <div><label for="stgma.street2">Address Line 2</label></div>
+            </div>
+            <div class="grid-cell" style="width:45%">
+              <div>[% input_field('stgma', 'city', 'City') %]</div>
+              <div>
+                <label for="stgma.city">
+                  City<span class="patron-reg-required">*</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+        </li>
+        <li id='mailing-address-3' style='display:none'>
+          <div class="grid">
+            <div class="grid-cell" style="width:45%">
+              <div>[% PROCESS state_selector name='stgma.state' id='stgma.state' %]</div>
+              <div>
+                <label for="stgma.state">
+                  State<span class="patron-reg-required">*</span>
+                </label>
+              </div>
+            </div>
+            <div class="grid-cell" style="width:45%">
+              <div>[% input_field('stgma', 'post_code', 'Zip / Post Code') %]</div>
+              <div>
+                <label for="stgma.post_code">
+                  Zip / Post Code<span class="patron-reg-required">*</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+          <input type='hidden' name='stgma.country' value='USA'/>
+        </li>
+
+        <li>
+          <input type="checkbox" id='take-responsibility' onclick="take_responsibility()"/>
+          <span class="patron-reg-required">*</span>
+          <label for='take-responsibility'>
+            I assume full responsibility for the use of this card and all 
+            charges associated with its use.  I will give immediate notice 
+            of loss of card or change of address. 
+          </label>
+        </li>
+
+        <li>
+          <div class="grid">
+            <div class="grid-cell">
+              <input type="submit" id='main-submit' disabled
+                value="[% l('Apply') %]"/>
+            </div>
+            <div class="grid-cell">
+              <button class="ghost-button" 
+                onclick="return handleCancel('[% complete_url | html %]')">
+                Cancel
+              </button>
+            </div>
+          </div>
+          <div class="grid-clear"></div>
+        </li>
+      </ul>
+    </form>
+    [% END # IF ctx.success %]
+    </div><!-- main-content-left -->
+    <div id='main-content-right'>
+    [% UNLESS kiosk %]
+      <h3>
+        <a href='http://kcls.bibliocms.com/faq/library-cards/'>Related FAQs</a>
+      </h3>
+
+      <h3>Download an Application</h3>
+      [% app_url = 'https://w3.kcls.org/PDF/applications';
+         text_img_url = 'https://w3.kcls.org/cardimages';
+         langs = [{
+            label => 'አማርኛ | Amharic',
+            pdf => 'KCLS%20Library%20Card%20Application%20AMH.pdf',
+          }, { 
+            label => 'اللغة العربية / Arabic',
+            pdf => 'ARABIC%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => '中文 / Chinese',
+            label2 => 'Mandarin'
+            pdf => 'CHINESE%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'رى / Dari',
+            pdf => 'DARI%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'English', 
+            #pdf => 'ENG%20KCLS%20600%20Library%20Card%20Application.pdf'
+            pdf => '04-2023%20KCLS%20600%20Library%20Card%20Application%20ENG.pdf'
+          }, { 
+            label => 'English Large Print',
+            pdf => '062211%20KCLS%20600%20LP.pdf',
+          }, { 
+            label => 'فارسی / Farsi',
+            pdf => 'FARSI%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'Français / French',
+            pdf => 'FRENCH%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'हिंदू / Hindi',
+            pdf => 'KCLS%20Library%20Card%20Application%20HIN.pdf',
+          }, { 
+            label => '한국어 / Korean',
+            pdf => 'KOREAN%20KCLS%20600%20Library%20Card%20Application.pdf'
+          }, { 
+            label => 'kajin ṃajeḷ / Marshallese',
+            pdf => 'MARSHALLESE%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'ښتو / Pashto',
+            pdf => 'PASHTO%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'ਪੰਜਾਬੀ / Punjabi',
+            pdf => 'Punjabi%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'Pусский / Russian',
+            pdf => 'RUSSIAN%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'afka soomaaliga / Somali',
+            pdf => 'SOMALI%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'Español / Spanish',
+            pdf => '04-2023%20Library%20Card%20Application_SPL.pdf',
+          }, { 
+            label => 'tagalog / Tagalog',
+            pdf => 'TAGALOG%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'ትግርኛ / Tigrinya',
+            pdf => 'TIGRINYA%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'мова українська / Ukranian',
+            pdf => 'UKRANIAN%20KCLS%20600%20Library%20Card%20Application.pdf',
+          }, { 
+            label => 'tiếng Việt / Vietnamese',
+            pdf => 'VIETNAMESE%20KCLS%20600%20Library%20Card%20Application.pdf',
+        }];
+      %]
+      <ul id='download-forms-list'>
+        [% FOREACH lang IN langs %]
+          <li>
+            <a href='[% app_url %]/[% lang.pdf %]' class="blue-link">[% lang.label %]</a>
+          </li>
+          [% IF lang.img %]
+            <li>
+              <a href='[% app_url %]/[% lang.pdf %]'>
+                <img src='[% text_img_url %]/[% lang.img %]'
+                  alt="Instructions for [% lang.label %]"
+                  width="[% lang.img_width %]"
+                  height="[% lang.img_height %]"
+                />
+              </a>
+              [% IF lang.img2 %]
+              <a href='[% app_url %]/[% lang.pdf %]'>
+                <img src='[% text_img_url %]/[% lang.img2 %]'
+                  alt="Instructions for [% lang.label2 %]"
+                  width="[% lang.img2_width %]"
+                  height="[% lang.img2_height %]"
+                />
+              </a>
+              [% END %]
+            </li>
+          [% END %]
+        [% END %]
+        <li>
+          You'll need <a href='http://get.adobe.com/reader/'>PDF Reader</a>
+        </li>
+        <li>
+          <hr/>
+          Read our 
+          <a href='https://kcls.bibliocommons.com/info/privacy'>Privacy Policy</a>.
+        </li>
+      </ul>
+    [% END %]<!-- UNLESS kiosk -->
+    </div>
+    <div class="grid-clear"></div>
+  </div>
+</div>
+
+<!-- BC FOOTER -->
+[% ctx.bc_footer %]
+<!-- BC END FOOTER -->
+
+<!-- BC JS -->
+[% ctx.bc_js %]
+<!-- BC END JS -->
+
+    </body>
+</html>
+

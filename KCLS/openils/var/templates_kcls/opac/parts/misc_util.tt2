@@ -1,0 +1,446 @@
+[% 
+    # Support multiscript records via alternate graphic 880 fields
+    # get_graphic_880s(target_field='100')
+    # See "Model A" in http://www.loc.gov/marc/bibliographic/ecbdmulti.html
+    # and $6 description in http://www.loc.gov/marc/bibliographic/ecbdcntf.html
+    MACRO get_graphic_880s BLOCK;
+        FOR node IN xml.findnodes('//*[@tag="' _ target_field _ '"]');
+            raw_vals = [];
+            core_val = '';
+            FOR subnode IN node.findnodes('./*[not(contains("w e 0 4 5 6 8 9", @code))]');
+                raw_vals.push(subnode.textContent());
+            END;
+            core_val = raw_vals.join(" ");
+            raw_vals = [];
+
+            linked_fields = [];
+            FOR sub IN node.findnodes('./*[@code="6"]');
+                linked_fields.push(sub.textContent);
+            END;
+            graphics = [];
+            get_linked_880s;
+            graphic_880s.push({
+                primary => {"occur" => occurrence, "value" => core_val},
+                graphic => graphics
+            });
+        END;
+    END;
+
+    MACRO get_linked_880s BLOCK;
+        FOR link_field IN linked_fields;
+            target = target_field _ link_field.substr(3);
+            # Get the linked 880 value
+            raw_val = '';
+            dir = '';
+            occurrence = '';
+            script = '';
+            FOR node IN xml.findnodes('//*[@tag="880"]');
+                # Operate only on the target linked fields
+                FOR linknode IN node.findnodes('./*[@code="6"]');
+                    lf = linknode.textContent();
+                    IF lf.substr(0, target.length) == target;
+                        occurrence = lf.substr(4, 2);
+                        rawscript = lf.substr(7, 2);
+                        SWITCH rawscript;
+                        CASE '(3';
+                            script = 'Arabic';
+                        CASE '(B';
+                            script = 'Latin';
+                        CASE '$1';
+                            script = 'CJK';
+                        CASE '(N';
+                            script = 'Cyrillic';
+                        CASE '(S';
+                            script = 'Greek';
+                        CASE '(2';
+                            script = 'Hebrew';
+                        END;
+
+                        rawdir = lf.substr(9, 1);
+                        SWITCH rawdir;
+                        CASE 'r';
+                            dir = 'rtl';
+                        END;
+
+                        raw_vals = [];
+                        FOR subnode IN node.findnodes('./*[not(contains("w 0 5 6 8 9", @code))]');
+                            raw_vals.push(subnode.textContent());
+                        END;
+                        raw_val = raw_vals.join(" ");
+                    END;
+                END;
+            END;
+            graphics.push({
+                occur => occurrence,
+                value => raw_val,
+                script => script,
+                dir => dir
+            });
+        END;
+    END;
+
+    # Extract MARC fields from XML
+    #   get_marc_attrs( { marc_xml => doc } )
+    BLOCK get_marc_attrs;
+        xml = args.marc_xml;
+
+        # Map item types to schema.org types; impedance mismatch :(
+        args.schema.itemtype = {};
+        schema_typemap = {};
+        schema_typemap.a = 'http://schema.org/Book';
+        schema_typemap.e = 'http://schema.org/Map';
+        schema_typemap.j = 'http://schema.org/MusicAlbum';
+
+        args.isbns = [];
+        FOR isbn IN xml.findnodes('//*[@tag="020"]/*[@code="a"]');
+            args.isbns.push(isbn.textContent);
+        END;
+
+        args.upcs = [];
+        FOR upc IN xml.findnodes('//*[@tag="024"]/*[@code="a"]');
+            args.upcs.push(upc.textContent);
+        END;
+        args.upc = args.upcs.0; # use first UPC as the default
+
+        args.issns = [];
+        FOR sub IN xml.findnodes('//*[@tag="022"]/*[@code="a"]');
+            args.issns.push(sub.textContent);
+        END;
+        args.issn = (args.issns.size) ? args.issn.0 : '';
+
+        graphic_880s = [];
+        get_graphic_880s(target_field='100');
+        get_graphic_880s(target_field='110');
+        get_graphic_880s(target_field='111');
+        args.graphic_authors = graphic_880s;
+        args.authors = [];
+        FOR author IN args.graphic_authors;
+            args.authors.push(author.primary.value);
+        END;
+        args.author = (args.authors.size) ? args.authors.0 : '';
+
+        # Include subfields 'abnp' to generate a more comprehensive title display in search results
+        titresults = xml.findnodes('//*[@tag="245"]/*[@code="a" or @code="b" or @code="n" or @code="p"]');
+        titresults_content = [];
+            FOR sub IN titresults; titresults_content.push(sub.textContent); END;
+        args.title = titresults_content.join(" ");
+        # Avoid ugly trailing syntax on brief titles
+        args.title = args.title | replace('[:;/]$', '');
+
+        graphic_880s = [];
+        get_graphic_880s(target_field='245');
+        args.graphic_titles = graphic_880s;
+        args.titles = [];
+        FOR title IN args.graphic_titles;
+            args.titles.push(title.primary.value);
+        END;
+        args.title_extended = (args.titles.size) ? args.titles.0 : '';
+
+        args.pubplaces = [];
+        pubplace_hunt = xml.findnodes('//*[@tag="260"]/*[@code="a"]') ||
+            xml.findnodes('//*[@tag="264" and @ind2="1"]/*[@code="a"]');
+        FOR sub IN pubplace_hunt;
+            args.pubplaces.push(sub.textContent);
+        END;
+        args.pubplace = (args.pubplaces.size) ? args.pubplaces.0 : '';
+
+        args.publishers = [];
+        publishers_hunt = xml.findnodes('//*[@tag="260"]/*[@code="b"]') ||
+            xml.findnodes('//*[@tag="264" and @ind2="1"]/*[@code="b"]');
+        FOR sub IN publishers_hunt;
+            args.publishers.push(sub.textContent);
+        END;
+        args.publisher = (args.publishers.size) ? args.publishers.0 : '';
+
+        args.pubdates = [];
+        pubdates_hunt = xml.findnodes('//*[@tag="260"]/*[@code="c"]') || 
+            xml.findnodes('//*[@tag="264" and @ind2="1"]/*[@code="c"]');
+        FOR sub IN pubdates_hunt;
+            args.pubdates.push(sub.textContent);
+        END;
+        args.pubdate = (args.pubdates.size) ? args.pubdates.0 : '';
+
+        # Copyright | KCLS requested copyright date display
+        args.copyright = (args.pubdates.size) ? xml.findnodes('//*[@tag="264" and @ind2="4"]/*[@code="c"]').textContent : '';
+
+
+        # TCN | KCLS requested TCN display
+        args.tcnlist = [];
+        tcn_hunt = xml.findnodes('//*[@tag="901"]/*[@code="c"]');
+        FOR sub IN tcn_hunt;
+            args.tcnlist.push(sub.textContent);
+        END;
+        args.tcn = (args.tcnlist.size) ? args.tcnlist.0 : '';
+
+        # Full publisher info
+        args.pubinfo = "$args.pubplace $args.publisher $args.pubdate";
+
+        graphic_880s = [];
+        get_graphic_880s(target_field='260');
+        args.graphic_pubinfos = graphic_880s;
+        args.pubinfos = [];
+        FOR pubinfo IN args.graphic_pubinfos;
+            args.pubinfos.push(pubinfo.primary.value);
+        END;
+        args.pubinfo = (args.pubinfos.size) ? args.pubinfos.0 : '';
+
+        args.summaries = [];
+        FOR sub IN xml.findnodes('//*[@tag="520"]/*[@code="a"]');
+            args.summaries.push(sub.textContent);
+        END;
+        args.summary = (args.summaries.size) ? args.summaries.0 : '';
+
+        # 250 gets pride of place for edition statement, and is the
+        # only logical choice for 880 graphic fields
+        graphic_880s = [];
+        get_graphic_880s(target_field='250');
+        args.graphic_editions = graphic_880s;
+        args.editions = [];
+        FOR edition IN args.graphic_editions;
+            args.editions.push(edition.primary.value);
+        END;
+
+        ed_hunt = xml.findnodes('//*[@tag="250"]/*[@code="a"]') ||
+            xml.findnodes('//*[@tag="534"]/*[@code="b"]') ||
+            xml.findnodes('//*[@tag="775"]/*[@code="b"]');
+        FOR sub IN ed_hunt;
+            args.editions.push(sub.textContent);
+        END;
+        args.edition = (args.editions.size) ? args.editions.0 : '';
+
+        phys_content = [];
+        FOR sub IN xml.findnodes(
+            '//*[@tag="300"]/*[@code="a" or @code="b" or @code="c" or @code="e"]'
+        );
+            phys_content.push(sub.textContent);
+        END;
+        args.phys_desc = phys_content.join(" ");
+
+        graphic_880s = [];
+        get_graphic_880s(target_field='505');
+        args.graphic_contents = graphic_880s;
+        FOR content IN args.graphic_contents;
+            args.contents.push(content.primary.value);
+        END;
+        args.content = (args.contents.size) ? args.contents.0 : '';
+
+        # Maintain contents_list in case any custom use was made of it
+        args.contents_list = [];
+        FOR sub IN xml.findnodes('//*[@tag="505"]');
+            args.contents_list.push(sub.textContent);
+        END;
+
+        # MARC Callnumber
+        args.marc_cns = [];
+        FOR sub IN xml.findnodes('//*[@tag="092" or @tag="099"]/*');
+            args.marc_cns.push(sub.textContent);
+        END;
+        args.marc_cn = (args.marc_cns.size ) ? args.marc_cns.join(" ") : 'N/A';
+            
+
+        # clean up the ISBN
+        args.isbn_clean = args.isbns.0.replace('\ .*', '');
+
+        # Extract the 856 URLs that are not otherwise represented by asset.uri's
+        args.online_res = [];
+        FOR node IN xml.findnodes('//*[@tag="856" and @ind1="4" and (@ind2="0" or @ind2="1")]');
+            IF node.findnodes('./*[@code="9" or @code="w" or @code="n"]'); NEXT; END; # asset.uri's
+            label = node.findnodes('./*[@code="y"]');
+            notes = node.findnodes('./*[@code="z" or @code="3"]');
+            FOR href IN node.findnodes('./*[@code="u"]');
+                NEXT UNLESS href;
+                # it's possible for multiple $u's to exist within 1 856 tag.
+                # in that case, honor the label/notes data for the first $u, but
+                # leave any subsequent $u's as unadorned href's. 
+                # use href/link/note keys to be consistent with args.uri's
+                args.online_res.push({
+                    href => href.textContent, 
+                    link => (loop.first AND label) ? label.textContent : href.textContent,
+                    note => (loop.first) ? notes.textContent : ''
+                });
+            END;
+        END;
+ 
+        args.holdings = [];
+        args.uris = [];
+        args.issns = [];
+        args.resolver_isbns = [];
+        args.resolver_issns = [];
+
+        # we use $9 of ISBN and ISSN as a flag for e-version
+        FOR resolver_isbn IN xml.findnodes('//*[@tag="020"]/*[@code="9"]');
+            IF resolver_isbn.textContent == "SFX" || resolver_isbn.textContent == "CUFTS";
+                my_parent = resolver_isbn.parentNode();
+                FOR resolver_isbn_val IN my_parent.findnodes('./*[@code="a"]');
+                    args.resolver_isbns.push(
+                        resolver_isbn_val.textContent.replace('-', '').replace('\ .*', '')
+                    );
+                END;
+            END;
+        END;
+
+        FOR resolver_issn IN xml.findnodes('//*[@tag="022"]/*[@code="9"]');
+            IF resolver_issn.textContent == "SFX" || resolver_issn.textContent == "CUFTS";
+                my_parent = resolver_issn.parentNode();
+                FOR resolver_issn_val IN my_parent.findnodes('./*[@code="a"]');
+                    args.resolver_issns.push(
+                        resolver_issn_val.textContent.replace('[^\d\-X]', '')
+                    );
+                END;
+            END;
+        END;
+
+        # now snag all issns 
+        FOR rawissn IN xml.findnodes('//*[@tag="022"]/*[@code="a"]');
+            args.issns.push(
+                rawissn.textContent.replace('[^\d\-X]', '')
+            );
+        END;
+
+        ou_hiding_disabled = ctx.org_hiding_disabled();
+
+        FOR volume IN xml.findnodes('//*[local-name()="volumes"]/*[local-name()="volume"]');
+
+            # Check volume visibility - could push this into XPath
+            vol.label = volume.getAttribute('label');
+
+            # Prepend prefix, if any
+            prefix = volume.findnodes('./*[local-name()="call_number_prefix"][@ident!="-1"]');
+            IF prefix.getAttribute('label') != '';
+                vol.label = prefix.getAttribute('label') _ " " _ vol.label;
+            END;
+
+            # Append prefix, if any
+            suffix = volume.findnodes('./*[local-name()="call_number_suffix"][@ident!="-1"]');
+            IF suffix.getAttribute('label') != '';
+                vol.label = vol.label _ " " _ suffix.getAttribute('label');
+            END;
+
+            vol.id = volume.getAttribute('id');
+            NEXT IF volume.getAttribute('opac_visible') == 'false';
+            NEXT IF volume.getAttribute('deleted') == 'true';
+
+            IF vol.label == '##URI##';
+                FOR uri IN volume.findnodes('./*[local-name()="uris"]/*[local-name()="uri"]');
+                    res = {};
+                    res.href = uri.getAttribute('href');
+                    res.link = uri.getAttribute('label');
+                    res.note = uri.getAttribute('use_restriction');
+                    args.uris.push(res);
+                END;
+                NEXT;
+            ELSE;
+                copies = volume.findnodes('./*[local-name()="copies"]/*[local-name()="copy"]');
+                FOR copy IN copies;
+                    parts = copy.findnodes('./*[local-name()="monograph_parts"]/*[local-name()="monograph_part"]');
+                    FOREACH part IN parts;
+                        part_label = part.getAttribute('label');
+                        LAST IF part_label != '';
+                    END;
+                    # Check copy visibility
+                    cp.deleted = copy.getAttribute('deleted');    
+                    cp.visible = copy.getAttribute('opac_visible');
+                    NEXT IF (cp.deleted == 'true' OR cp.visible == 'false');
+
+                    # Iterate through all of the children to determine visibility
+                    FOR node IN cp.childNodes;
+                        NEXT IF cp.visible == 'false';
+                        vis = node.getAttribute('opac_visible');
+                        del = node.getAttribute('deleted');
+                        IF vis == 'false' or del == 'true';
+                            cp.visible = 'false';
+                        END;
+                    END;
+
+                    NEXT IF cp.visible == 'false';
+                    
+                    loc = copy.findnodes('./*[local-name()="location"]');
+                    NEXT IF loc.getAttribute('opac_visible') == 'false';
+
+                    circlib = copy.findnodes('./*[local-name()="circlib"]');
+                    NEXT IF circlib.getAttribute('opac_visible') == 'false';
+
+                    status = copy.findnodes('./*[local-name()="status"]');
+                    NEXT IF status.getAttribute('opac_visible') == 'false';
+
+                    UNLESS ou_hiding_disabled;
+                        # extract the circ_lib id from the circ_lib node
+                        circ_lib = copy.findnodes('./*[local-name()="circ_lib"]');
+                        circ_lib_id = circ_lib.getAttribute('id').replace('.*/', '');
+                        NEXT UNLESS ctx.org_within_hiding_scope(circ_lib_id);
+                    END;
+
+                    holding = {
+                        label => vol.label,
+                        part_label => part_label,
+                        location => loc.textContent,
+                        library => circlib.textContent,
+                        status => status.textContent,
+                        barcode => copy.getAttribute('barcode'),
+                        owner => volume.getAttribute('lib')
+                    };
+                    args.holdings.push(holding);
+                    part_label = '';
+                END;
+            END;
+        END;
+
+        # Extract the copy count summary
+        count_type = (ctx.is_staff) ? 'staff' : 'public';
+
+         # Extract the copy count summary
+         count_type = (ctx.is_staff) ? 'staff' : 'public';
+         xpath = '//*[local-name()="counts"]/*[local-name()="count"][@type="' _ count_type _ '"]';
+         FOR node IN xml.findnodes(xpath);
+             args.copy_counts = {};
+             FOR attr IN ['count', 'available', 'unshadow', 'transcendant'];
+                 args.copy_counts.$attr = node.getAttribute(attr);
+             END;
+         END;
+
+        # "mattype" == "custom marc format specifier"
+        FOR icon_style IN ['mattype', 'item_type']; 
+            node = xml.findnodes(
+                '//*[local-name()="attributes"]/*[local-name()="field"][@name="' _ icon_style _ '"]');
+            IF node AND node.textContent;
+                type = node.textContent;
+                args.format_label = node.getAttribute('coded-value')
+                args.schema.itemtype = schema_typemap.$type;
+                args.format_icon = ctx.media_prefix _ '/images/format_icons/' _ icon_style _ '/' _ type _ '.png';
+                LAST;
+            END;
+        END;
+
+        # Jacket image URL ---
+        IF ENV.OILS_SYNDETICS_USER;
+          # Content from Syndetics is loaded directly from their servers.
+          isbn_ident = args.isbn_clean;
+          upc_ident = args.upc;
+          jacket_url = ENV.OILS_SYNDETICS_BASE_URL _ '?';
+          IF isbn_ident;
+            jacket_url = jacket_url _ 'isbn=' _ isbn_ident _ '/sc.gif';
+          ELSIF upc_ident;
+            jacket_url = jacket_url _ 'isbn=/sc.gif&upc=' _ upc_ident;
+          ELSE;
+            jacket_url = '';
+          END;
+          args.jacket_url = jacket_url _ '&client=' _ ENV.OILS_SYNDETICS_USER;
+          args.jacket_url_large = args.jacket_url.replace('sc.gif', 'lc.gif');
+        ELSE;
+          args.jacket_url = ctx.media_prefix _ 
+            '/opac/extras/ac/jacket/small/r/' _ rec.id;
+          args.jacket_url_large = args.jacket_url.replace('small', 'large');
+        END;
+
+    END;
+
+    # Get the library or location group
+    # get_library()
+    # magically upgrades any use of 'loc' to 'locg', 
+    # which is a superset of 'loc'.
+    BLOCK get_library;
+        loc_name = 'locg';
+        loc_value = CGI.param(loc_name) || CGI.param('loc') || ctx.search_ou;
+    END;
+
+%]

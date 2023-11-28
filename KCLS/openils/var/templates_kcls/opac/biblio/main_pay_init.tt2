@@ -1,0 +1,25 @@
+[%
+    WRAPPER "opac/biblio/base.tt2";
+    PROCESS "opac/parts/header.tt2";
+%]
+
+[% INCLUDE "opac/biblio/topnav.tt2" %]
+<div id='fines_payments_wrapper'>
+	<div id='acct_fines_tabs'>
+
+		<a href='[% ctx.opac_root %]/biblio/main_fines'><img src='[% ctx.media_prefix %]/images/acct_fines_on.jpg'/></a>
+		<a href='[% ctx.opac_root %]/biblio/main_payments'><img src='[% ctx.media_prefix %]/images/acct_payments_off.jpg'/></a>
+
+	</div>
+</div>
+    
+<div id="myopac_summary_div" style="background-color:#FFF;">
+
+    <div class="payment-processing">
+        [% l('Processing...') %] <br/><br/>
+        [% l('Processing your payment may take some time.') %]<br/>
+        [% l("Please do not Refresh or use your browser's Back button or your credit card may be charged more than once.") %]<br/>
+    </div>
+
+</div>
+[% END %]

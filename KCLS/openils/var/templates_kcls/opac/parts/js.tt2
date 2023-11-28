@@ -1,0 +1,82 @@
+<!-- JS imports, etc.  -->
+<script type="text/javascript" src="[% ctx.media_prefix %]/js/ui/default/opac/simple.js"></script>
+
+[%- IF ctx.is_staff %]
+<script type="text/javascript" src="[% ctx.media_prefix %]/js/ui/default/opac/staff.js"></script>
+
+[%- IF NOT ctx.is_browser_staff %]
+<script type="text/javascript" src="/xul/server/OpenILS/global_util.js"></script>
+<script type="text/javascript" src="/xul/server/main/constants.js"></script>
+<script type="text/javascript" src="/xul/server/main/JSAN.js"></script>
+<script type="text/javascript">
+
+try {
+    var data = {};
+    var error = {};
+
+    if (window.netscape && window.netscape.security.PrivilegeManager.enablePrivilege) {
+        netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+    }
+
+    if (typeof JSAN == 'undefined') { 
+        throw( document.getElementById("commonStrings").getString('common.jsan.missing') ); 
+    } 
+
+    JSAN.errorLevel = "die"; // none, warn, or die
+    JSAN.addRepository('/xul/server/');
+    JSAN.use('util.error'); 
+    error = new util.error();
+    error.sdump('D_TRACE','loading table.tt2');
+
+    JSAN.use('OpenILS.data'); 
+    data = new OpenILS.data();
+    data.stash_retrieve();
+
+} catch(E) {  
+    try { 
+        error.standard_unexpected_error_alert('js.tt2',E); 
+    } catch(F) { alert(E); }
+}
+
+</script>
+[% END %]
+    [% IF ctx.page == 'record' %]
+        [% IF ctx.search_result_index >= 0 %]
+        <script>
+            rdetail_next_prev_actions(
+                "[% ctx.search_result_index %]",
+                "[% ctx.hit_count %]",
+                "[% ctx.prev_rec_url || '' %]",
+                "[% ctx.next_rec_url || '' %]",
+                "[% mkurl(ctx.first_search_record, {page => 0}) %]",
+                "[% mkurl(ctx.opac_root _ '/results', {find_last => 1, page => POSIX.floor((ctx.hit_count - 1) / ctx.page_size)}) %]",
+                [% IF CGI.param('bterm') %]
+                    "[% mkurl(ctx.opac_root _ '/browse_items', {}, ['expand','cnoffset']) %]"
+                [% ELSE %]
+                    "[% mkurl(ctx.opac_root _ '/results', {}, ['expand','cnoffset']) %]"
+                [% END %]
+            );
+        </script>
+        [% END %]
+        [% IF ctx.mfhd_summaries.size %]
+        <script>
+            window.mfhdDetails = [
+                [% FOR summary IN ctx.mfhd_summaries %]
+                {
+                    'id' : '[% summary.sre_id %]', 
+                    'label' : '[% summary.location %]',
+                    'entryNum' : '[% loop.index %]',
+                    'owning_lib' : '[% summary.owning_lib %]'
+                },
+                [% END %]
+            ];
+        </script>
+        [% END %]
+    [% END %]
+[%- END %]
+
+[%- IF ENV.OILS_NOVELIST_URL AND ctx.page == 'record';
+    url = ENV.OILS_NOVELIST_URL;
+    IF CGI.https; url = url.replace('^http:', 'https:'); END; %]
+<script type='text/javascript' id='EIT' src='[% url %]'></script>
+[% END %]

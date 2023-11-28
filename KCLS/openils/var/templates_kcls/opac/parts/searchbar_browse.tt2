@@ -1,0 +1,41 @@
+    [% PROCESS "opac/parts/org_selector.tt2"
+    sort = CGI.param('sort') || "pubdate.descending";
+     %]
+    <script type="text/javascript" src="/js/dojo/dojo/dojo.js"></script>
+	
+    <div id="search-box">
+        <span class="adv_search_catalog_lbl">
+            <a href="[% mkurl(ctx.opac_root _ '/advanced', {pane => 'advanced'}, depart_list) %]" id="home_adv_search_link">
+                [%l('Advanced Search')%]
+            </a>
+        </span>
+        |
+        <span class="browse_the_catalog_lbl mobile_hide">
+            [% l('Browse the Catalog') %]
+        </span>
+    </div>
+    <div id="search-box" class='searchbar' style="padding-top: 15px; padding-bottom: 10px;">
+        <form method="get" action="[% ctx.opac_root %]/browse_results" onsubmit="$('browse-submit-spinner').className = ''; return true">
+        
+            <input type="hidden" name="blimit" value="[% blimit %]" />
+			<input type="hidden" name="sort" value="[% sort %]" />
+			
+            [% control_qtype = INCLUDE "opac/parts/qtype_selector.tt2"
+                id="browse-search-class" browse_only=1 plural=1 %]
+
+            [% control_bterm = BLOCK %]<input type="text" name="bterm" id="browse-term"
+                style="border: 2px inset;" value="[% CGI.param('bterm') | html %]" />[% END %]
+            [% control_locg = INCLUDE build_org_selector id='browse-context'
+                show_loc_groups=1
+                arialabel=l('Select holding library') %]
+            [% control_mattype = INCLUDE "opac/parts/coded_value_selector.tt2" 
+              attr=["mattype", "item_type"] none_ok=1 none_label=l('All Formats') 
+              id="browse-search-format" browse_only=1 plural=1 %]    
+            [% l('Browse for [_1] that begin with [_2] at [_3] in [_4]', 
+              control_qtype, control_bterm, control_locg, control_mattype) %]
+            <input id='search-submit-go' type="submit" value="[% l('Browse') %]" alt="[% l('Browse') %]" class="opac-button"/>
+            <img id="browse-submit-spinner" src="[% ctx.media_prefix %]/opac/images/progressbar_green.gif" class="hidden" style="width: 16px; height: 16px;" alt="" />
+            [% # Sets the browse search term field as the default on browse search page load. %]
+            <script>document.getElementById('browse-term').focus()</script>
+        </form>
+    </div>

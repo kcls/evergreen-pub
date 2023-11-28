@@ -1,0 +1,35 @@
+[%- PROCESS "opac/parts/header.tt2";
+    WRAPPER "opac/parts/base.tt2";
+    INCLUDE "opac/parts/topnav.tt2";
+    ctx.page_title = l("Advanced Search");
+    pane = CGI.param("pane") || "advanced";
+    sort = CGI.param("defaultsort") || CGI.param("sort") ||  "pubdate.descending";
+    loc = ctx.search_ou;
+-%]
+    <div id="search-wrapper">
+        <div id="adv_search_parent">
+            <div id="adv_search_tabs">
+                <a href="?pane=browse;sort=[%sort%];defaultsort=[%sort%]" alt="[% l('Browse Search') %]" [% IF pane == 'browse' %]class="on" [% END %]id="browse_search"></a>
+                <a href="?pane=advanced;sort=[%sort%];defaultsort=[%sort%]" alt="[% l('Advanced Search') %]" [% IF pane == 'advanced' %]class="on" [% END %]id="adv_search"></a>
+                <a href="?pane=numeric;sort=[%sort%];defaultsort=[%sort%]" alt="[% l('Numeric Search') %]" [% IF pane == 'numeric' %]class="on" [% END %]id="num_search"></a>
+                <a href="?pane=expert;sort=[%sort%];defaultsort=[%sort%]" alt="[% l('Expert Search') %]" [% IF pane == 'expert' %]class="on" [% END %]id="expert_search"></a>
+            </div>
+        </div>
+    </div>
+    <div id="content-wrapper">
+        <div id="main-content">
+            <div class="advanced_div">
+            [% IF pane == 'advanced' %]
+            [% INCLUDE "opac/parts/advanced/search.tt2" %]
+            [% ELSIF pane == 'numeric' %]
+            [% INCLUDE "opac/parts/advanced/numeric.tt2" %]
+            [% ELSIF pane == 'expert' %]
+            [% INCLUDE "opac/parts/advanced/expert.tt2" %]
+            [% ELSIF pane == 'browse' %]
+            [% INCLUDE "opac/parts/advanced/browse.tt2" %]
+            [% END %]
+            </div>
+            <div class="common-full-pad"></div>	
+        </div>
+    </div>
+[% END %]

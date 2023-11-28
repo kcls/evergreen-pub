@@ -1,0 +1,20 @@
+
+<form method="POST" action="[% ctx.payflow_hosted_ctx.forms_server %]">
+
+  <input type="hidden" name="SECURETOKEN" 
+    value="[% ctx.payflow_hosted_ctx.secure_token %]"/>
+
+  <input type="hidden" name="SECURETOKENID" 
+    value="[% ctx.payflow_hosted_ctx.secure_token_id %]"/>
+
+  <table>
+    <tr>
+      <input type="submit" value="[% l('Pay') %]"/>
+      <a href="[% mkurl(ctx.opac_root _ '/biblio/main_fines', {}, 1) %]">
+        [% l('Cancel') %]
+      </a>
+      </td>
+    </tr>
+  </table>
+</form>
+
