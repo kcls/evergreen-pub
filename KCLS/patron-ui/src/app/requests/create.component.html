@@ -1,0 +1,132 @@
+<ng-container *ngIf="app.getAuthSession() && requests.requestsAllowed">
+  <div class="flex justify-center mt-5" i18n>
+    <div>
+      <p>Text goes here for the patron...</p>
+      <p>Text goes here for the patron...</p>
+      <p>Text goes here for the patron...</p>
+    </div>
+  </div>
+
+  <form role="form" class="mt-4">
+
+    <div class="flex p-2" *ngIf="requests.selectedFormat !== 'journal'">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>ISBN, ISSN, UPC, OCLC Number</mat-label>
+        <input type="text" matInput [formControl]="controls.identifier"
+        />
+          <!--
+          (keyup.enter)="identLookup()" (blur)="identLookup()"/>
+          -->
+        <mat-spinner *ngIf="searchingRecords" [diameter]="18" class="mr-3" matSuffix>
+        </mat-spinner>
+      </mat-form-field>
+    </div>
+
+    <div class="flex p-2" *ngIf="requests.selectedFormat === 'journal'">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Journal DOI</mat-label>
+        <input type="text" matInput [formControl]="controls.identifier"
+          placeholder="E.g. http://dx.doi.org/10.1093/ajae/aaq063"/>
+      </mat-form-field>
+    </div>
+
+    <div class="p-4 border rounded borderr-slate-400" *ngIf="suggestedRecords.length > 0">
+      <p i18n>Is it one of these items?</p>
+      <hr class="m-3"/>
+      <div class="flex mt-2" *ngFor="let record of suggestedRecords">
+        <mat-checkbox aria-label="Select title {{record.display.title}}"
+          [checked]="selectedRecord && selectedRecord.id === record.id"
+          i18n-aria-label (change)="selectedRecordChanged($event, record)">
+            <div class="ml-3 font-bold">{{record.display.title_proper || record.display.title_proper}}</div>
+            <div class="ml-3">Published: {{record.display.pubdate}}</div>
+            <div class="ml-3" *ngIf="record.attributes.mattype">
+              Format: {{record.attributes.mattype.label}}
+            </div>
+        </mat-checkbox>
+      </div>
+    </div>
+
+    <div class="p-4 border rounded borderr-slate-400" *ngIf="holdRequestUrl">
+      <p i18n>This item is already available in the catalog.  Holds 
+        may be placed <a target="_blank" [attr.href]="holdRequestUrl">here.</a>
+      </p>
+    </div>
+
+    <div class="flex p-2">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Title</mat-label>
+        <input type="text" matInput [formControl]="controls.title"/>
+        <mat-error *ngIf="controls.title.hasError('required')" i18n>
+            Title <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="flex p-2">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Author, Creator, Performer</mat-label>
+        <input type="text" matInput [formControl]="controls.author"/>
+      </mat-form-field>
+    </div>
+
+    <div class="flex p-2">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Publication Year</mat-label>
+        <input type="number" maxlength="4" minlength="4" matInput [formControl]="controls.pubdate"/>
+        <mat-error *ngIf="controls.pubdate.hasError('pattern')" i18n>
+            Publication Year <strong>must be a 4 digit number</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="flex p-2">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Publisher</mat-label>
+        <input matInput [formControl]="controls.publisher"/>
+      </mat-form-field>
+    </div>
+
+    <div class="flex p-2">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Select a Language</mat-label>
+        <mat-select [formControl]="controls.language">
+          <mat-option value="eng" i18n>English</mat-option>
+          <mat-option value="spa" i18n>Español / Spanish</mat-option>
+          <mat-option value="fre" i18n>Français / French</mat-option>
+          <mat-option value="other" i18n>Other</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="flex p-2">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Other Notes &amp; Comments</mat-label>
+        <textarea rows="3" matInput [formControl]="controls.notes">
+        </textarea>
+      </mat-form-field>
+    </div>
+
+    <div class="flex justify-center mt-4" i18n>
+      <div>
+        <p>Text goes here for the patron...</p>
+        <p>Text goes here for the patron...</p>
+        <p>Text goes here for the patron...</p>
+      </div>
+    </div>
+
+    <div class="flex justify-center p-2 mt-4">
+      <button mat-raised-button class="kcls-background-dark kcls-text-light" 
+        [disabled]="!canSubmit()" (click)="submitRequest()" i18n>
+        Submit Request
+      </button>
+    </div>
+
+    <div class="flex justify-center p-2 mt-4">
+      <mat-error *ngIf="requestSubmitError" i18n>
+        An error occurred submitting your request.
+      </mat-error>
+    </div>
+  </form>
+</ng-container>
+
+

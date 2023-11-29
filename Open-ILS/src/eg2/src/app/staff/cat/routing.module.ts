@@ -19,6 +19,10 @@ const routes: Routes = [{
   loadChildren: () =>
     import('./marcsr/marcsr.module').then(m => m.MarcSearchReplaceModule)
 }, {
+  path: 'requests',
+  loadChildren: () =>
+    import('./requests/requests.module').then(m => m.ItemRequestModule)
+}, {
   path: 'bib-from/:identType',
   component: BibByIdentComponent
 }, {

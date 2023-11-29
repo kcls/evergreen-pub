@@ -33,6 +33,7 @@ use OpenILS::Application::Actor::UserGroups;
 use OpenILS::Application::Actor::Friends;
 use OpenILS::Application::Actor::Stage;
 use OpenILS::Application::Actor::Settings;
+use OpenILS::Application::Actor::PatronRequests;
 
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Penalty;
@@ -2953,6 +2954,26 @@ sub session_home_lib {
     return undef unless $e->checkauth;
     my $org = $e->retrieve_actor_org_unit($e->requestor->home_ou);
     return $org->shortname;
+}
+
+__PACKAGE__->register_method(
+    method   => 'session_hash',
+    api_name => 'open-ils.actor.session.retrieve.hash',
+    signature => q/
+        Returns the user object linked to the auth session,
+        fleshed with barcode.
+
+        NOTE: once we have a hashifying gateway, we don't need this API.
+    /
+);
+
+sub session_hash {
+    my ($self, $conn, $auth) = @_;
+    my $e = new_editor(authtoken => $auth);
+    return undef unless $e->checkauth;
+    my $user = $e->requestor;
+    $user->card($e->retrieve_actor_card($user->card)) if $user->card;
+    return $user->to_bare_hash;
 }
 
 __PACKAGE__->register_method(

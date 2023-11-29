@@ -1,0 +1,53 @@
+@import "tailwindcss/base";
+@import "tailwindcss/utilities";
+
+@layer base {
+  h1 {
+    @apply text-3xl;
+  }
+  h2 {
+    @apply text-2xl;
+  }
+  h3 {
+    @apply text-xl;
+  }
+}
+
+/*
+KCLS link/button colors -- when the time comes.
+$color-dark: #003F6B;
+$color-light: #FFF;
+*/
+
+html, body { height: 100%; }
+body { 
+  margin: 0; 
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+}
+
+/* BC screen reader links are not correctly hidden via their API. */
+.screen_reader_nav {
+  position: absolute;
+  top: -1000px;
+  left: -1000px;
+  z-index: 0;
+}
+
+/* this will likely go away once we setup our material theme */
+a, a:visited {
+  color: #02729e;
+}
+
+
+
+/* EXAMPLE:
+<a routerLink="/requests/list" class="mat-icon-plus-text" i18n>
+  <span class="material-icons mr-2">list</span>
+  View my requests
+</a>
+*/
+.mat-icon-plus-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

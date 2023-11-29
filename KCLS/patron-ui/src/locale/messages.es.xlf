@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en" datatype="plaintext" original="ng2.template">
+    <body>
+      <trans-unit id="6254712182003786007" datatype="html">
+        <source>Credentials Verified</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">6</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5277685503220593332" datatype="html">
+        <source>Username or Barcode</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">14</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1781353784603582009" datatype="html">
+        <source> Username or Barcode <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">16,17</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1492955468582029328" datatype="html">
+        <source>PIN/Password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="679025416755802110" datatype="html">
+        <source> PIN/Password <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">26,27</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5981936975708312941" datatype="html">
+        <source>Login Failed</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">32</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3565721919053724953" datatype="html">
+        <source> Verify Account </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">35,37</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3797778920049399855" datatype="html">
+        <source>Logout</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.html</context>
+          <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4882493102348010411" datatype="html">
+        <source><x id="START_TAG_DIV" ctype="x-div" equiv-text="&lt;div&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Text goes here for the patron...<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Text goes here for the patron...<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Text goes here for the patron...<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="CLOSE_TAG_DIV" ctype="x-div" equiv-text="&lt;/div&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">3,7</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">64,68</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5701618810648052610" datatype="html">
+        <source>Title</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">13</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7377189366563682057" datatype="html">
+        <source> Title <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">15,16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7071470734400948493" datatype="html">
+        <source>Author</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8860567190320038063" datatype="html">
+        <source>ISBN</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="166818556527779945" datatype="html">
+        <source> ISBN <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>must be a 10 or 13 digit number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">32,33</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="27494424370894008" datatype="html">
+        <source>Publication Year</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">40</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2148262324518509477" datatype="html">
+        <source> Publication Year <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>must be a 4 digit number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">42,43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7734042519638532672" datatype="html">
+        <source>Publisher</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="387666953589231990" datatype="html">
+        <source>Other Notes &amp; Comments</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">57</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7558913366513914554" datatype="html">
+        <source> Submit Request </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">73,75</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3020005801864584697" datatype="html">
+        <source> An error occurred submitting your request. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">79,81</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1128746416604602240" datatype="html">
+        <source>Request an Item</source>
+        <!-- just an example; google translate -->                             
+        <target>Solicitar un Artículo</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.ts</context>
+          <context context-type="linenumber">37</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">6</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2841176699704477669" datatype="html">
+        <source>Request Submitted</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.ts</context>
+          <context context-type="linenumber">90</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1120520575993707434" datatype="html">
+        <source>View My Requests</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.ts</context>
+          <context context-type="linenumber">91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2259395705858047022" datatype="html">
+        <source>My Requests</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5758976989282986600" datatype="html">
+        <source> You Have No Requests </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">6,8</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3199073823575190201" datatype="html">
+        <source>Requested <x id="INTERPOLATION" equiv-text="{{request.create_date | date}}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="305142716106924307" datatype="html">
+        <source>Author:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="224925897782274053" datatype="html">
+        <source>ISBN:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">24</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1072657834185712664" datatype="html">
+        <source>Publisher:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">28</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1944615016778726582" datatype="html">
+        <source>Publication Year:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">32</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="176284322192820771" datatype="html">
+        <source>Comments:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">36</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8766543515727166681" datatype="html">
+        <source>Status:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">40</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4416413576346763682" datatype="html">
+        <source>Pending</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5906272961955453157" datatype="html">
+        <source>Approved</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="426701527291002798" datatype="html">
+        <source>Cancel Request</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">52</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2471355358504998369" datatype="html">
+        <source> Never Mind </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">55,57</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="614101743220272620" datatype="html">
+        <source> Confirm Request Cancellation </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">59,61</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3412701665956286602" datatype="html">
+        <source>Start by Verifying Your Library Account</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="98875018711101221" datatype="html">
+        <source> Create a New Request </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">18,20</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8084919590548678315" datatype="html">
+        <source> View My Requests </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">22,24</context>
+        </context-group>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

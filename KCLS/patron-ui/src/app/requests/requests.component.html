@@ -1,0 +1,99 @@
+<div class="flex">
+  <div class="flex-1"></div>
+
+  <div class="w-5/6 md:w-4/6 xl:w-3/6 2xl:w-2/5 p-1 md:p-3 lg:p-5">
+    <div class="flex justify-center">
+      <h1 i18n>Request an Item</h1>
+    </div>
+    <div class="flex justify-center mt-3">
+      <a routerLink="/requests/list" class="border rounded p-2 mat-icon-plus-text" i18n>
+        <span class="material-icons mr-2">list</span>
+        View my requests
+      </a>
+    </div>
+
+    <div class="flex p-2 mt-10">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Select a Format</mat-label>
+        <mat-select [formControl]="controls.format">
+          <mat-option value="book" i18n>Book</mat-option>
+          <mat-option value="audiobook" i18n>Audiobook</mat-option>
+          <mat-option value="cd" i18n>CD</mat-option>
+          <mat-option value="dvd" i18n>DVD</mat-option>
+          <mat-option value="audiobook-download" i18n>Downloadable Audiobook</mat-option>
+          <mat-option value="ebook" i18n>eBook</mat-option>
+          <mat-option value="journal" i18n>Journal Articles</mat-option>
+          <mat-option value="microfilm" i18n>Microfilm</mat-option>
+          <mat-option value="article" i18n>Magazine / Newspaper Article</mat-option>
+          <mat-option value="subscription" i18n>Magazine / Newspaper Subscription</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div *ngIf="controls.format.value === 'ebook'" 
+      class="mt-5 flex justify-center border rounded border-orange-400 p-4">
+      <p i18n>
+        Log into 
+        <a href="http://ebooks.kcls.org/">OverDrive</a>
+        to suggest an eBook purchase. Need help? 
+        <a href="https://kcls.org/faqs/how-do-i-suggest-an-ebook-for-purchase/">
+          See our FAQ
+        </a>.
+      </p>
+    </div>
+
+    <div *ngIf="controls.format.value === 'audiobook-download'" 
+      class="mt-5 flex justify-center border rounded border-orange-400 p-4">
+      <p i18n>
+        Something, something Libby app.
+      </p>
+    </div>
+
+    <div *ngIf="controls.format.value === 'subscription'" 
+      class="mt-5 flex justify-center border rounded border-orange-400 p-4">
+      <p i18n>
+        Magazine and Newspaper subscription requests are reviewed yearly
+        and may take some time to fill if approved.
+      </p>
+    </div>
+
+    <ng-container *ngIf="typeCanBeRequested() || tab === 'list'">
+      <div class="flex justify-center mt-4 mb-4 border rounded p-3"
+        *ngIf="!app.getAuthSession()">
+        <h3 i18n>Start by Verifying Your Library Account</h3>
+      </div>
+
+      <div class="mt-10">
+        <app-login></app-login>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="typeCanBeRequested() || tab === 'list'">
+      <ng-container *ngIf="app.getAuthSession()">
+        <ng-container *ngIf="!requests.requestsAllowed">
+          <div class="mt-5 flex justify-center border rounded border-orange-400 p-4">
+            <p i18n>This account does not have permission to create new requests.</p>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="requests.requestsAllowed">
+          <nav class="mt-10" mat-tab-nav-bar [tabPanel]="tabPanel">
+            <a mat-tab-link routerLink="/requests/create" [active]="tab === 'create'" i18n>
+              Create a New Request
+            </a>
+            <a mat-tab-link routerLink="/requests/list" [active]="tab === 'list'" i18n>
+              View My Requests
+            </a>
+          </nav>
+          <mat-tab-nav-panel #tabPanel>
+            <div class="mt-10">
+              <router-outlet></router-outlet>
+            </div>
+          </mat-tab-nav-panel>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+  </div>
+
+  <div class="flex-1"></div>
+</div>
+

@@ -15970,6 +15970,53 @@ SELECT  usr,
 		</permacrud>
 	</class>
 
+	<!-- This is a precursor object which may branch out to different
+			points of resolution (ILL, purchase request, etc.)
+	-->
+	<class id="auir" 
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="actor::user_item_request" 
+		oils_persist:tablename="actor.usr_item_request" 
+		reporter:label="User Item Request">
+		<fields oils_persist:primary="id" oils_persist:sequence="actor.usr_item_request_id_seq">
+			<field reporter:label="Request ID" name="id" reporter:datatype="id" />
+			<field reporter:label="User" name="usr" reporter:datatype="link"/>
+			<field reporter:label="Identifier" name="identifier" reporter:datatype="text"/>
+			<field reporter:label="Format" name="format" reporter:datatype="text"/>
+			<field reporter:label="Title" name="title" reporter:datatype="text"/>
+			<field reporter:label="Author" name="author" reporter:datatype="text"/>
+			<field reporter:label="Publisher" name="publisher" reporter:datatype="text"/>
+			<field reporter:label="Pubdate" name="pubdate" reporter:datatype="int"/>
+			<field reporter:label="Language" name="language" reporter:datatype="text"/>
+			<field reporter:label="Notes" name="notes" reporter:datatype="text"/>
+			<field reporter:label="Request Date" name="create_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Route To" name="route_to" reporter:datatype="text"/>
+			<field reporter:label="Staff Notes" name="staff_notes" reporter:datatype="text"/>
+			<field reporter:label="Claim Date" name="claim_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Claimed By" name="claimed_by" reporter:datatype="link"/>
+			<field reporter:label="Vendor" name="vendor" reporter:datatype="text"/>
+			<field reporter:label="Reject Date" name="reject_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Rejected By" name="rejected_by" reporter:datatype="link"/>
+			<field reporter:label="Reject Reason" name="reject_reason" reporter:datatype="text"/>
+			<field reporter:label="Complete Date" name="complete_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Cancel Date" name="cancel_date" reporter:datatype="timestamp"/>
+		</fields>
+		<links>
+			<link field="usr" reltype="has_a" key="id" map="" class="au"/>
+			<link field="claimed_by" reltype="has_a" key="id" map="" class="au"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<update permission="MANAGE_USER_ITEM_REQUEST">
+					<context link="usr" field="home_ou"/>
+				</update>
+				<retrieve permission="VIEW_USER">
+					<context link="usr" field="home_ou"/>
+				</retrieve>
+			</actions>
+		</permacrud>
+	</class>
+
 	<class id="cpt" controller="open-ils.cstore open-ils.pcrud"
 		oils_obj:fieldmapper="config::print_template" 
 		oils_persist:tablename="config.print_template" 

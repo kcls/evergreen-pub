@@ -1,0 +1,48 @@
+<form role="form">
+  <div class="flex">
+    <mat-expansion-panel class="flex-1" [expanded]="initDone && !app.getAuthSession()" 
+      [disabled]="app.getAuthSession()" hideToggle>
+      <mat-expansion-panel-header *ngIf="app.getAuthSession()">
+        <mat-panel-title i18n>Credentials Verified</mat-panel-title>
+        <mat-panel-description class="flex justify-end" *ngIf="app.getAuthSession()">
+          <span class="mr-2">{{app.getAuthSession()!.usrname}}</span>
+          <mat-icon color="primary" _class="text-emerald-500">done</mat-icon>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <div class="flex p-2">
+        <mat-form-field class="flex-1">
+          <mat-label i18n>Username or Barcode</mat-label>
+          <input type="text" matInput [formControl]="controls.identifier"/>
+          <mat-error *ngIf="controls.identifier.hasError('required')" i18n>
+              Username or Barcode <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+      <div class="flex p-2">
+        <mat-form-field class="flex-1">
+          <mat-label i18n>PIN/Password</mat-label>
+          <input type="password" matInput [formControl]="controls.password"
+            autocomplete="patron-requests-password"/>
+          <mat-error *ngIf="controls.password.hasError('required')" i18n>
+              PIN/Password <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+      <div *ngIf="loginFailed" class="flex justify-center p-2">
+        <mat-error class="text-xl" i18n>Login Failed</mat-error>
+      </div>
+      <div class="flex justify-center p-2">
+        <button mat-raised-button [disabled]="disableSubmit()" (click)="login()" i18n>
+          Verify Account
+        </button>
+      </div>
+    </mat-expansion-panel>
+    <div class="mat-expansion-panel" *ngIf="app.getAuthSession()">
+      <!-- keyup / tabindex required for div (click) -->
+      <div class="mat-expansion-panel-header" tabindex="0" (keyup.enter)="logout()" (click)="logout()">
+        <button class="text-sm" i18n>Logout</button>
+      </div>
+    </div>
+  </div>
+</form>
+

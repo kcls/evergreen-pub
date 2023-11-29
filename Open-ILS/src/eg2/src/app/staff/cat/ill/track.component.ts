@@ -48,6 +48,7 @@ export class TrackIllComponent implements OnInit {
 
     constructor(
         private router: Router,
+        private route: ActivatedRoute,
         private store: StoreService,
         private serverStore: ServerStoreService,
         private idl: IdlService,
@@ -60,6 +61,16 @@ export class TrackIllComponent implements OnInit {
     ) { }
 
     ngOnInit() {
+        this.route.queryParamMap.subscribe(params => {
+            if (params.get('title')) {
+                this.title += params.get('title');
+            }
+
+            if (params.get('patronBarcode')) {
+                this.patronBarcode = params.get('patronBarcode');
+            }
+        });
+
         this.marcDoc = new DOMParser().parseFromString(STUB_MARC, "text/xml");
 
         this.serverStore.getItem('cat.copy.templates')

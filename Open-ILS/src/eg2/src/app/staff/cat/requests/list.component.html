@@ -1,0 +1,78 @@
+<eg-staff-banner bannerText="Patron Item Requests" i18n-bannerText></eg-staff-banner>
+<eg-prompt-dialog #vendorPrompt dialogTitle="Enter a Vendor" i18n-dialogTitle>
+</eg-prompt-dialog>
+
+<ng-template #patronBarcodeTemplate let-row="row">
+  <ng-container *ngIf="row.usr().card()">
+    <a target="_blank" routerLink="/staff/circ/patron/{{row.usr().id()}}">
+      {{row.usr().card().barcode()}}
+    </a>
+  </ng-container>
+</ng-template>
+
+<ng-template #routeToTemplate let-row="row">
+  {{row.route_to() | uppercase}}
+</ng-template>
+
+<eg-grid #grid idlClass="auir" [dataSource]="gridDataSource" pageSize="50"
+  persistKey="staff.cat.requests" (onRowActivate)="showRequestDialog($event)"
+  [cellTextGenerator]="cellTextGenerator"
+  [showDeclaredFieldsOnly]="true" [filterable]="true">
+
+  <eg-grid-toolbar-checkbox i18n-label label="ILL"
+    initialValue="showRouteToIll"
+    #routeToIllCbox (onChange)="toggleRouteToIll($event)">
+  </eg-grid-toolbar-checkbox>
+
+  <eg-grid-toolbar-checkbox i18n-label label="Purchasing"
+    initialValue="showRouteToPurchasing"
+    #routeToPurchasingCbox (onChange)="toggleRouteToPurchasing($event)">
+  </eg-grid-toolbar-checkbox>
+
+  <eg-grid-toolbar-action i18n-label label="Claim for Processing"
+    (onClick)="claimItems($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Apply Vendor"
+    (onClick)="applyVendor($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Create ILL Request"
+    (onClick)="createIllRequest($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-column i18n-label label="Request ID" path="id" [hidden]="true" [required]="true">
+  </eg-grid-column>
+  <eg-grid-column path="usr.family_name" label="Patron Last Name" i18n-label>
+  </eg-grid-column>
+  <eg-grid-column name="patron_barcode" [cellTemplate]="patronBarcodeTemplate" label="Patron Card" i18n-label>
+  </eg-grid-column>
+  <eg-grid-column i18n-label [cellTemplate]="routeToTemplate" label="Route To" name="route_to" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Format" name="format" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="ISBN, etc." name="identifier" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Title" name="title" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Author" name="author" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Publisher" name="publisher" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Pubdate" name="pubdate" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Language" name="language" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Patron Notes" name="notes" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Request Date" name="create_date" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Claimed By" name="claimed_by" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Claim Date" name="claim_date" [sortable]="true">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Vendor" name="vendor" [sortable]="true">
+  </eg-grid-column>
+</eg-grid>
+
+

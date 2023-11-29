@@ -1,0 +1,76 @@
+<ng-container *ngIf="app.getAuthSession()">
+  <div class="flex justify-center mt-5">
+    <h2 i18n>My Requests</h2>
+  </div>
+
+  <div class="flex justify-center mt-4 p-2 border rounded" *ngIf="requests.length === 0" i18n>
+    You Have No Requests
+  </div>
+
+  <div class="flex justify-center mt-4 p-2" *ngFor="let request of requests">
+    <mat-card class="w-full">
+      <mat-card-content>
+        <div class="flex">
+          <h3>{{request.title}}</h3>
+          <div class="flex-1"> </div>
+          <div i18n>{{request.create_date | date}}</div>
+        </div>
+        <div class="mt-3 p-1 w-full">
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Author:</div>
+            <div class="pl-2">{{request.author}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Identifier</div>
+            <div class="pl-2">{{request.identifier}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Publisher:</div>
+            <div class="pl-2">{{request.publisher}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Publication Year:</div>
+            <div class="pl-2">{{request.pubdate}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Language:</div>
+            <div class="pl-2">{{request.language}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Format:</div>
+            <div class="pl-2">{{request.format}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Comments:</div>
+            <div class="pl-2">{{request.notes}}</div>
+          </div>
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Status:</div>
+            <div class="pl-2">
+              <ng-container *ngIf="!request.claim_date" i18n>Pending</ng-container>
+              <ng-container *ngIf="request.claim_date" i18n>Processing</ng-container>
+            </div>
+          </div>
+        </div>
+        <hr class="mt-3 mb-3"/>
+      </mat-card-content>
+      <mat-card-actions>
+        <div class="p-2 flex w-full">
+          <ng-container *ngIf="cancelRequested !== request.id">
+            <button mat-button (click)="cancel(request)" i18n>Cancel Request</button>
+          </ng-container>
+          <ng-container *ngIf="cancelRequested === request.id">
+            <button mat-button color="primary" (click)="cancelRequested = null" i18n>
+              Never Mind
+            </button>
+            <div class="flex-1"></div>
+            <button mat-button color="accent" (click)="cancel(request)" i18n>
+              Confirm Request Cancellation
+            </button>
+          </ng-container>
+        </div>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</ng-container>
+
