@@ -237,6 +237,10 @@
       <a *ngIf="p().email()" href="mailto:{{p().email()}}">{{p().email()}}</a>
     </div> 
   </div>
+  <div class="row mb-1">
+    <div class="col-lg-5" i18n>Last Editor</div>
+    <div class="col-lg-7">{{p().dibs()}}</div>
+  </div>
   <ng-container *ngIf="getStatCatValue(7)">
   <div class="row mb-1">
     <div class="col-lg-5" i18n>Outreach</div>
