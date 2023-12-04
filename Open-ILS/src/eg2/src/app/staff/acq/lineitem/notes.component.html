@@ -43,9 +43,7 @@
           </span>
         </ng-container>
       </div>
-      <div class="flex-5 ms-2 p-1">
-        <div *ngFor="let line of noteLines(note.value())">{{line}}</div>
-      </div>
+      <div class="flex-5 ms-2 p-1">{{note.value()}}</div>
       <div class="ms-2 p-1">{{note.create_time() | date:'short'}}</div>
       <div class="ms-2 p-1">
         <a href="javascript:;" class="text-danger" 

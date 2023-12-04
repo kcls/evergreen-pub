@@ -33,6 +33,7 @@ use OpenILS::Application::Actor::UserGroups;
 use OpenILS::Application::Actor::Friends;
 use OpenILS::Application::Actor::Stage;
 use OpenILS::Application::Actor::Settings;
+use OpenILS::Application::Actor::PatronRequests;
 
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Penalty;
@@ -2983,6 +2984,26 @@ sub session_home_lib {
 }
 
 __PACKAGE__->register_method(
+    method   => 'session_hash',
+    api_name => 'open-ils.actor.session.retrieve.hash',
+    signature => q/
+        Returns the user object linked to the auth session,
+        fleshed with barcode.
+
+        NOTE: once we have a hashifying gateway, we don't need this API.
+    /
+);
+
+sub session_hash {
+    my ($self, $conn, $auth) = @_;
+    my $e = new_editor(authtoken => $auth);
+    return undef unless $e->checkauth;
+    my $user = $e->requestor;
+    $user->card($e->retrieve_actor_card($user->card)) if $user->card;
+    return $user->to_bare_hash;
+}
+
+__PACKAGE__->register_method(
     method    => 'session_safe_token',
     api_name  => 'open-ils.actor.session.safe_token',
     signature => q/
@@ -4284,11 +4305,15 @@ sub negative_balance_users {
     return $e->die_event unless $e->checkauth;
     return $e->die_event unless $e->allowed('VIEW_USER', $org_id);
 
+    my %where = $options->{any_negatives} ?
+        ('+mobts' => {balance_owed => {'<' => 0}}) :
+        ('+mous' => {balance_owed => {'<' => 0}});
+
     my $query = {
         select => {
             mous => ['usr', 'balance_owed'],
             au => ['home_ou'],
-            mbts => [
+            mobts => [
                 {column => 'last_billing_ts', transform => 'max', aggregate => 1},
                 {column => 'last_payment_ts', transform => 'max', aggregate => 1},
             ]
@@ -4299,7 +4324,7 @@ sub negative_balance_users {
                     fkey => 'usr',
                     field => 'id',
                     join => {
-                        mbts => {
+                        mobts => {
                             key => 'id',
                             field => 'usr'
                         }
@@ -4309,7 +4334,7 @@ sub negative_balance_users {
         },
         where => {
             '+au' => {deleted => 'f'},
-            '+mous' => {balance_owed => {'<' => 0}}
+            %where
         },
         offset => $options->{offset},
         limit => $options->{limit},
@@ -4323,10 +4348,25 @@ sub negative_balance_users {
     my $list = $e->json_query($query, {timeout => 600});
 
     for my $data (@$list) {
+
+        my $neg_balance = $e->json_query({
+            select => {mobts => [{
+                column => 'balance_owed', 
+                transform => 'sum', 
+                aggregate => 1
+            }]},
+            from => 'mobts',
+            where => {
+                usr => $data->{usr},
+                balance_owed => {'<' => 0}
+            }
+        })->[0]->{balance_owed} || 0;
+
         $conn->respond({
             usr => $e->retrieve_actor_user([$data->{usr}, {flesh => 1, flesh_fields => {au => ['card']}}]),
             balance_owed => $data->{balance_owed},
-            last_billing_activity => max($data->{last_billing_ts}, $data->{last_payment_ts})
+            last_billing_activity => max($data->{last_billing_ts}, $data->{last_payment_ts}),
+            negative_transaction_total => $neg_balance
         });
     }
 

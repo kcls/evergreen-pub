@@ -7,12 +7,10 @@ import {BookingModule} from '@eg/staff/share/booking/booking.module';
 import {PatronModule} from '@eg/staff/share/patron/patron.module';
 import {HoldsUiRoutingModule} from './routing.module';
 import {HoldsPullListComponent} from './pull-list.component';
-import {HoldsShelfComponent} from './shelf.component';
 
 @NgModule({
   declarations: [
-    HoldsPullListComponent,
-    HoldsShelfComponent
+    HoldsPullListComponent
   ],
   imports: [
     StaffCommonModule,

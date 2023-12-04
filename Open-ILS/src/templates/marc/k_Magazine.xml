@@ -1,0 +1,16 @@
+<record>
+  <leader>00620nam a22     Ka 4500</leader>
+  <controlfield tag="008">070101s                      000 0 und d</controlfield>
+  <datafield tag="040" ind1="" ind2="">
+    <subfield code="a">NTG</subfield>
+  </datafield>
+  <datafield tag="092" ind1="" ind2="">
+    <subfield code="a">X</subfield>
+  </datafield>
+  <datafield tag="245" ind1="0" ind2="0">
+    <subfield code="a">MAGAZINE</subfield>
+  </datafield>
+  <datafield tag="998" ind1="" ind2="">
+    <subfield code="d">b</subfield>
+  </datafield>
+</record>

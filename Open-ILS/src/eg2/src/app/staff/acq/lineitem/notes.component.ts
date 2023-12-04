@@ -61,8 +61,6 @@ export class LineitemNotesComponent implements OnInit, AfterViewInit {
             if (resp.note) {
                 this.lineitem.lineitem_notes().unshift(resp.note);
             }
-            this.vendorPublic = false;
-            this.noteText = '';
         });
     }
 
@@ -82,14 +80,6 @@ export class LineitemNotesComponent implements OnInit, AfterViewInit {
             'open-ils.acq',
             'open-ils.acq.lineitem_note.cud.batch',
             this.auth.token(), notes);
-    }
-
-    noteLines(note: string): string[] {
-        if (note) {
-            return note.split(/\n/);
-        }
-
-        return [];
     }
 }
 

@@ -14,10 +14,9 @@ import {ConjoinedItemsDialogComponent} from './conjoined-items-dialog.component'
 import {TransferItemsComponent} from './transfer-items.component';
 import {TransferHoldingsComponent} from './transfer-holdings.component';
 import {BatchItemAttrComponent} from './batch-item-attr.component';
-import {PauseRefundDialogComponent} from './pause-refund-dialog.component';
 import {CopyAlertManagerDialogComponent} from './copy-alert-manager.component';
-import {MarkItemsDialogComponent} from './mark-items-dialog.component';
-import {FmRecordEditorModule} from '@eg/share/fm-editor/fm-editor.module';
+import {CopyNotesEditComponent} from './copy-notes-edit/copy-notes-edit.component';
+import { FmRecordEditorModule } from '@eg/share/fm-editor/fm-editor.module';
 
 @NgModule({
     declarations: [
@@ -34,8 +33,6 @@ import {FmRecordEditorModule} from '@eg/share/fm-editor/fm-editor.module';
       TransferItemsComponent,
       TransferHoldingsComponent,
       BatchItemAttrComponent,
-      PauseRefundDialogComponent,
-      MarkItemsDialogComponent,
       CopyAlertManagerDialogComponent
     ],
     imports: [
@@ -56,8 +53,6 @@ import {FmRecordEditorModule} from '@eg/share/fm-editor/fm-editor.module';
       TransferItemsComponent,
       TransferHoldingsComponent,
       BatchItemAttrComponent,
-      PauseRefundDialogComponent,
-      MarkItemsDialogComponent,
       CopyAlertManagerDialogComponent
     ],
     providers: [

@@ -15,7 +15,7 @@ import {DialogComponent} from '@eg/share/dialog/dialog.component';
   selector: 'eg-hold-note-dialog',
   templateUrl: 'note-dialog.component.html'
 })
-export class HoldNoteDialogComponent extends DialogComponent implements OnInit {
+export class HoldNoteDialogComponent extends DialogComponent {
     pub = false;
     slip = false;
     title: string;
@@ -28,16 +28,6 @@ export class HoldNoteDialogComponent extends DialogComponent implements OnInit {
         private idl: IdlService,
         private pcrud: PcrudService
     ) { super(modal); }
-
-    ngOnInit() {
-
-        this.onOpen$.subscribe(_ => {
-            this.pub = false;
-            this.slip = true;
-            this.title = '';
-            this.body = '';
-        });
-    }
 
     createNote() {
         const note = this.idl.create('ahrn');

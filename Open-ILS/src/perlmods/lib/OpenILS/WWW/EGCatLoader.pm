@@ -199,6 +199,26 @@ sub load {
     return $self->load_ezproxy_deny if $path =~ m|opac/ezproxy/deny|;
     return $self->load_ezproxy_headerfooter if $path =~ m|opac/ezproxy/headerfooter|;
 
+    if($path =~ m|opac/login_oa|) {
+        return $self->load_login_oa unless $self->editor->requestor; # already logged in?
+
+
+        # This will be less confusing to users than to be shown a login form
+        # when they're already logged in.
+#        return $self->generic_redirect(
+#            sprintf(
+#                "%s://%s%s/myopac/main",
+#                $self->ctx->{proto},
+#                $self->ctx->{hostname}, $self->ctx->{opac_root}
+#            )
+#        );
+        
+        # If we end up here, it's likely becuase someone navigated backward,
+        # likely expecting to be returnd to the database page.  Send them there.
+        return $self->generic_redirect('https://kcls.org/databases');
+    }
+
+
     if($path =~ m|opac/login|) {
         return $self->load_login unless $self->editor->requestor; # already logged in?
 
@@ -270,6 +290,10 @@ sub load {
     # ----------------------------------------------------------------
     #  Everything below here requires authentication
     # ----------------------------------------------------------------
+    if ($path =~ m|opac/sso/openathens$| && !$self->editor->requestor) {
+        return $self->redirect_auth_oa;
+    }
+
     return $self->redirect_auth unless $self->editor->requestor;
 
     # Don't cache anything requiring auth for security reasons
@@ -367,6 +391,17 @@ sub redirect_auth {
             ($self->ctx->{is_staff} ? 'oils' : 'https'), 
             $self->ctx->{hostname}, $self->ctx->{opac_root});
         }
+    
+    return $self->generic_redirect("$login_page?redirect_to=$redirect_to");
+}
+
+sub redirect_auth_oa {
+    my $self = shift;
+
+    my $login_page = sprintf(
+        'https://%s%s/%s', $self->ctx->{hostname}, $self->ctx->{opac_root}, 'login_oa');
+
+    my $redirect_to = uri_escape_utf8($self->apache->unparsed_uri);
     
     return $self->generic_redirect("$login_page?redirect_to=$redirect_to");
 }
@@ -603,6 +638,192 @@ sub get_carousel_loc {
     my $self = shift;
     return $self->cgi->param('carousel_loc') || $ENV{carousel_loc};
 }
+
+
+my $DATABASE_ACTIVITY_AGENT = 'ezproxy'; # for backwards compat.
+
+# OpenAthens dedicated login page.
+#
+# Patrons accessing databases are not required to have the OPAC_LOGIN
+# permission, which means we can't use open-ils.auth for logging in
+# (unless we add a new login type to open-ils.auth, which seems tedious
+# in C and has security implications).  Instead, manually create an
+# internal session for the patron after verifying the credentials and
+# account viability.
+sub load_login_oa {
+    my $self = shift;
+    my $cgi = $self->cgi;
+    my $ctx = $self->ctx;
+
+    $self->collect_header_footer;
+    $ctx->{page} = 'login';
+
+    my $username = $cgi->param('username') || '';
+    $username =~ s/\s//g;  # Remove blanks
+    my $password = $cgi->param('password');
+    my $org_unit = $ctx->{aou_tree}->()->id;
+
+    # Initial page load (or incomplete form)
+    return Apache2::Const::OK unless $username and $password;
+
+    my $bc_regex = $ctx->{get_org_setting}->($org_unit, 'opac.barcode_regex');
+
+    # To avoid surprises, default to "Barcodes start with digits"
+    $bc_regex = '^\d' unless $bc_regex;
+
+    my $barcode; 
+
+    if ($bc_regex and ($username =~ /$bc_regex/)) {
+        $barcode = $username;
+        $username = undef;
+    }
+
+    $logger->info("OA login with u=$username b=$barcode (regex=$bc_regex)");
+
+    my $response = 
+        $self->check_database_login($username, $barcode, $password)
+        || OpenILS::Event->new('LOGIN_FAILED');
+
+    if($U->event_code($response)) { 
+        # login failed, report the reason to the template
+        $ctx->{login_failed} = 1;
+        $ctx->{login_failed_event} = $response;
+        return Apache2::Const::OK;
+    }
+
+    # login succeeded, redirect as necessary
+
+    my $acct = $self->apache->unparsed_uri;
+    $acct =~ s|/login|/myopac/main|;
+
+    my $cookie_list = [
+        # contains the actual auth token and should be sent only over https
+        $cgi->cookie(
+            -name => COOKIE_SES,
+            -path => '/',
+            -secure => 1,
+            -value => $response->{payload}->{authtoken},
+        ),
+        # contains only a hint that we are logged in, and is used to
+        # trigger a redirect to https
+        $cgi->cookie(
+            -name => COOKIE_LOGGEDIN,
+            -path => '/',
+            -secure => 0,
+            -value => '1',
+        )
+    ];
+
+    # TODO: maybe move this logic to generic_redirect()?
+    my $redirect_to = $cgi->param('redirect_to') || $acct;
+
+    if (my $login_redirect_gf = $self->editor->retrieve_config_global_flag('opac.login_redirect_domains')) {
+        if ($login_redirect_gf->enabled eq 't') {
+
+            my @redir_hosts = ();
+            if ($login_redirect_gf->value) {
+                @redir_hosts = map { '(?:[^/.]+\.)*' . quotemeta($_) } grep { $_ } split(/,\s*/, $login_redirect_gf->value);
+            }
+            unshift @redir_hosts, quotemeta($ctx->{hostname});
+
+            my $hn = join('|', @redir_hosts);
+            my $relative_redir = qr#^(?:(?:(?:(?:f|ht)tps?:)?(?://(?:$hn))(?:/|$))|/$|/[^/]+)#;
+
+            if ($redirect_to !~ $relative_redir) {
+                $logger->warn(
+                    "Login redirection of [$redirect_to] ".
+                    "disallowed based on Global Flag opac.".
+                    "login_redirect_domains RE [$relative_redir]"
+                );
+                $redirect_to = $acct; # fall back to myopac/main
+            }
+        }
+    }
+
+    return
+        $self->_perform_any_sso_required($response, $redirect_to, $cookie_list)
+        || $self->generic_redirect(
+            $redirect_to,
+            $cookie_list
+        );
+}
+
+sub check_database_login {
+    my ($self, $username, $barcode, $password) = @_;
+
+    my $patron;
+    my $e = $self->editor;
+
+    if ($barcode) {
+
+        my $card = $e->search_actor_card([
+            {barcode => $barcode},
+            {flesh => 1, flesh_fields => {ac => ['usr']}}
+        ])->[0];
+
+        $patron = $card->usr if $card and $card->active eq 't';
+
+    } elsif ($username) {
+
+        $patron = $e->search_actor_user([
+            {usrname => $username},
+            {flesh => 1, flesh_fields => {au => ['card']}}
+        ])->[0];
+
+        $patron = undef unless 
+            $patron && $patron->card && $patron->card->active eq 't';
+    }
+
+    return undef unless $patron;
+
+    if ($patron->deleted eq 't') {
+        $logger->warn("openathens: patron is deleted $barcode");
+        return undef;
+    }
+
+    if ($patron->barred eq 't') {
+        $logger->warn("openathens: patron is barred $barcode");
+        return undef;
+    }
+
+    if ($patron->active eq 'f') {
+        $logger->warn("openathens: patron is not active $barcode");
+        return undef;
+    }
+
+    if (!$U->verify_migrated_user_password($e, $patron->id, $password)) {
+        $logger->warn("openathens: bad password for $barcode");
+        return undef;
+    }
+
+    my $expire =
+        DateTime::Format::ISO8601->new->parse_datetime(
+            cleanse_ISO8601($patron->expire_date));
+
+    if ($expire < DateTime->now) {
+        $logger->warn("openathens: patron account is expired $barcode");
+        return undef;
+    }
+
+    $e->requestor($patron);
+
+    if (!$e->allowed('ACCESS_EBOOKS_AND_DATABASES', $patron->home_ou)) {
+        $logger->warn("openathens: patron does not have database permission $barcode");
+        return undef;
+    }
+
+    $logger->info("openathens: successful authentication for $barcode");
+
+    $U->log_user_activity($patron->id, $DATABASE_ACTIVITY_AGENT, 'verify');
+
+    # Create a session so the openathens code can access it.
+    return $U->simplereq(
+        'open-ils.auth_internal',
+        'open-ils.auth_internal.session.create',
+        {user_id => $patron->id, login_type => 'opac'}
+    );
+}
+
 
 # -----------------------------------------------------------------------------
 # Log in and redirect to the redirect_to URL (or home)

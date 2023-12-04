@@ -10,7 +10,6 @@ import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {VolCopyService} from './volcopy.service';
-import {PermService} from '@eg/core/perm.service';
 
 @Component({
   selector: 'eg-vol-edit',
@@ -65,9 +64,6 @@ export class VolEditComponent implements OnInit {
 
     recordVolLabels: string[] = [];
 
-    // Where are we allowed to update volume labels
-    updateVolLabelsAt: number[] = [];
-
     @ViewChild('confirmDelVol', {static: false})
         confirmDelVol: ConfirmDialogComponent;
 
@@ -75,7 +71,7 @@ export class VolEditComponent implements OnInit {
         confirmDelCopy: ConfirmDialogComponent;
 
     // Emitted when the save-ability of this form changes.
-    @Output() canSaveChange: EventEmitter<boolean[]> = new EventEmitter<boolean[]>();
+    @Output() canSaveChange: EventEmitter<boolean> = new EventEmitter<boolean>();
 
     constructor(
         private renderer: Renderer2,
@@ -84,7 +80,6 @@ export class VolEditComponent implements OnInit {
         private pcrud: PcrudService,
         private net: NetService,
         private auth: AuthService,
-        private perms: PermService,
         private holdings: HoldingsService,
         public  volcopy: VolCopyService
     ) {}
@@ -99,26 +94,16 @@ export class VolEditComponent implements OnInit {
         this.volcopy.fetchRecordVolLabels(this.context.recordId)
         .then(labels => this.recordVolLabels = labels)
         .then(_ => this.volcopy.fetchBibParts(this.context.getRecordIds()))
-        .then(_ => this.loadPerms())
         .then(_ => this.addStubCopies())
         // It's possible the loaded data is not strictly allowed,
         // e.g. empty string call number labels
-        // Pass ignoreChanges to that simply loading the page does not
-        // force the user to click through the saved changes dialog.
         .then(_ => this.emitSaveChange(true));
-    }
 
-    loadPerms(): Promise<any> {
-        return this.perms.hasWorkPermAt(['UPDATE_VOLUME_LABEL'], true)
-        .then(perms => this.updateVolLabelsAt = perms.UPDATE_VOLUME_LABEL);
-    }
-
-    canEditVolLabel(vol: IdlObject) {
-        return (
-            vol.isnew() ||
-            vol.creator() === this.auth.user().id() ||
-            this.updateVolLabelsAt.includes(vol.owning_lib())
-        );
+        // Check to see if call number label is required
+        this.org.settings('cat.require_call_number_labels')
+            .then(settings => {this.requireCNL =
+                Boolean(settings['cat.require_call_number_labels']);
+        });
     }
 
     copyStatLabel(copy: IdlObject): string {
@@ -152,6 +137,7 @@ export class VolEditComponent implements OnInit {
         if (!org) { return; }
         const orgNode = this.context.findOrCreateOrgNode(org.id());
         this.createVols(orgNode, 1);
+        this.context.sortHoldings();
     }
 
     // This only removes copies that were created during the
@@ -371,8 +357,7 @@ export class VolEditComponent implements OnInit {
 
         if (copies.length > 1) { // seed barcode will always be present
             this.proceedWithAutogen(copies)
-            .then(_ => this.autoBarcodeInProgress = false)
-            .then(_ => this.emitSaveChange())
+            .then(_ => this.autoBarcodeInProgress = false);
         }
     }
 
@@ -605,9 +590,19 @@ export class VolEditComponent implements OnInit {
 
         const badVols = this.context.volNodes().filter(volNode => {
             const vol = volNode.target;
-            return !(
-                vol.prefix() && vol.label() && vol.suffix() && vol.label_class()
-            );
+
+            // If call number label is not required, then require prefix
+            if (!vol.label()) {
+                if (this.requireCNL == true) {
+                    return !(
+                        vol.label()
+                    );
+                } else {
+                    return (
+                        vol.prefix() < 0
+                    );
+                }
+            }
         }).length > 0;
 
         return !badVols;
@@ -615,9 +610,15 @@ export class VolEditComponent implements OnInit {
 
     // Called any time a change occurs that could affect the
     // save-ability of the form.
-    emitSaveChange(ignoreChanges?: boolean) {
+    emitSaveChange(initialLoad?: boolean) {
+        const saveable = this.canSave();
+
+        // Avoid emitting a save change event when this was called
+        // during page load and the resulting data is saveable.
+        if (initialLoad && saveable) { return; }
+
         setTimeout(() => {
-            this.canSaveChange.emit([this.canSave(), ignoreChanges]);
+            this.canSaveChange.emit(saveable);
         });
     }
 

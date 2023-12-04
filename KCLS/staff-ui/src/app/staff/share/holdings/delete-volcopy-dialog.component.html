@@ -1,0 +1,40 @@
+
+<eg-string #successMsg
+    text="Successfully Holdings" i18n-text></eg-string>
+<eg-string #errorMsg 
+    text="Failed To Delete Holdings" i18n-text></eg-string>
+
+<eg-confirm-dialog #confirmOverride
+  i18n-dialogTitle dialogTitle="One or more items could not be deleted. Override?"
+  i18n-dialogBody dialogBody="Reason(s) include: {{deleteEventDesc}}">
+</eg-confirm-dialog>
+
+<eg-alert-dialog #checkOutAlert
+  i18n-dialogTitle dialogTitle="One or more items could not be deleted."
+  i18n-dialogBody dialogBody="Batch deletion was blocked becuase the following items are currently checked out: {{checkedOutItemsStr}}">
+</eg-alert-dialog>
+ 
+
+<ng-template #dialogContent>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <span i18n>Delete Holdings</span>
+    </h4>
+    <button type="button" class="btn-close btn-close-white" 
+      i18n-aria-label aria-label="Close" (click)="close()"></button>
+  </div>
+  <div class="modal-body">
+    <p i18n>Delete {{numCallNums}} call numbers and {{numCopies}} copies?</p>
+  </div>
+  <div class="modal-footer">
+    <ng-container>
+      <button type="button" class="btn btn-success" 
+        (click)="maybeDeleteHoldings()" i18n>
+        Delete Holdings
+      </button>
+      <button type="button" class="btn btn-warning" 
+        (click)="close()" i18n>Cancel</button>
+    </ng-container>
+  </div>
+</ng-template>
+

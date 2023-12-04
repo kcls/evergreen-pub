@@ -1,0 +1,16 @@
+[%#
+    Override the audio config values by copying this template into your local templates
+    directory (matching the relative path) and change the values accordingly.
+#%]
+
+<script type="text/javascript">
+    SelfCheckManager.audioConfig = {
+        'login-success' : '/opac/skin/kcls/audio/good.wav',
+        'login-failure' : 
+'/opac/skin/kcls/audio/bad.wav',
+        'checkout-success' : 
+'/opac/skin/kcls/audio/good.wav',
+        'checkout-failure' : 
+'/opac/skin/kcls/audio/bad.wav',
+    }
+</script>

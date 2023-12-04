@@ -1,0 +1,86 @@
+[%
+    PROCESS "opac/parts/header.tt2";
+    PROCESS "opac/parts/misc_util.tt2";
+    WRAPPER "opac/biblio/base.tt2";
+    last_chance = CGI.param("last_chance");
+%]
+[% INCLUDE "opac/biblio/topnav.tt2" %]
+
+<div id='fines_payments_wrapper'>
+	<div id='acct_fines_tabs'>
+		<a href='[% ctx.opac_root %]/biblio/main_fines'>
+      <img src='[% ctx.media_prefix %]/images/acct_fines_off.jpg'/></a>
+		<a href='[% ctx.opac_root %]/biblio/main_payments'>
+      <img src='[% ctx.media_prefix %]/images/acct_payments_on.jpg'/></a>
+	</div>
+</div>
+
+<style>
+  #pay-form-container {
+    background: #fff;
+    padding: 10px;
+  }
+
+  #paypal-form {
+    font-size: 130%;
+  }
+
+  #paypal-cancel-div {
+    font-size: 120%;
+  }
+
+  .myopac_payments_table thead th:first-child { width: auto; }
+  .myopac_payments_table td { padding: 10px }
+</style>
+
+<div id="pay-form-container">
+  <h2>[% l('KCLS only accepts Visa or MasterCard') %]</h2>
+  <br/>
+
+  <div id='pay-form-div'>
+
+    [% IF ctx.payflow_hosted_ctx.init_error %]
+      <div class="payment-error">
+        [% l('Error initializing credit card payments.  Unable to make payments at this time.') %]
+      </div>
+
+    [% ELSE %]
+      <form id='paypal-form' method="POST" action="[% ctx.payflow_hosted_ctx.forms_server %]">
+        <input type="hidden" name="SECURETOKEN" 
+          value="[% ctx.payflow_hosted_ctx.secure_token %]"/>
+
+        <input type="hidden" name="SECURETOKENID" 
+          value="[% ctx.payflow_hosted_ctx.secure_token_id %]"/>
+
+        <input type="submit" value="[% l('Pay') %]"/>
+      </form>
+    [% END %]
+  </div>
+
+  <br/>
+  <div id='paypal-cancel-div'>
+    Click 
+    <i><b>
+      <a href="[% mkurl(ctx.opac_root _ '/biblio/main_fines', {}, 1) %]">
+      [% l('Cancel') %]
+      </a>
+    </b></i>
+    to go back and change your selection.
+  </div>
+
+  <div id='pay-xacts-div'>
+    [% INCLUDE "opac/parts/myopac/payment_xacts.tt2" %]
+  <div class="clear-both"></div>
+
+  <br/>
+  <table>
+  [% INCLUDE "opac/biblio/main_refund_policy.tt2" %]
+  </table>
+
+</div>
+
+[% INCLUDE 'opac/payflow/footer.tt2' %]
+
+<script src='/js/ui/default/opac/kcls.js'></script>
+
+[% END %]

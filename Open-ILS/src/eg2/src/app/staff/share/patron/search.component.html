@@ -70,7 +70,7 @@
           [(ngModel)]="search.email"/>
       </div>
       <div class="col-lg-2 ps-1 pe-1">
-        <button class="btn btn-warning w-100" (click)="clear()" i18n>Reset Form</button>
+        <button class="btn btn-warning w-100" (click)="clear()" i18n>Clear Form</button>
       </div>
       <div class="col-lg-2 ps-1 pe-1">
       </div>
@@ -126,8 +126,8 @@
           [(ngModel)]="search.profile">
         </eg-profile-select>
       </div>
-      <div class="col-lg-2 pl-1 pe-1">
-        <eg-org-select #homeLibSelect (onChange)="searchOrg = $event"
+      <div class="col-lg-2 ps-1 pe-1">
+        <eg-org-select (onChange)="searchOrg = $event"
           persistKey="patron.search"
           [fallbackOrg]="org.root()"
           i18n-placeholder placeholder="Home Library">
@@ -191,12 +191,11 @@
 </ng-template>
 
 <div class="patron-search-grid mt-4">
-  <eg-grid #searchGrid idlClass="au" [pageSize]="25" [stickyHeader]="stickyGridHeader"
-    persistKey="circ.patron.search" [disableSaveSettings]="true"
+  <eg-grid #searchGrid idlClass="au" 
+    persistKey="circ.patron.search"
     (rowSelectionChange)="gridSelectionChange($event)"
     (onRowActivate)="rowsActivated($event)"
     [dataSource]="dataSource" 
-    [cellTextGenerator]="cellTextGenerator"
     [showDeclaredFieldsOnly]="true"> 
 
     <eg-grid-toolbar-button label="Add to Bucket" i18n-label 
@@ -206,15 +205,11 @@
       [disabled]="getSelected().length !== 2"
       (onClick)="mergePatrons($event)"></eg-grid-toolbar-button>
 
-    <eg-grid-toolbar-action i18n-label label="Retrieve Selected Patrons"
-      (onClick)="retrieveSelected($event)">
-    </eg-grid-toolbar-action>
-
-    <eg-grid-column path='id' 
-      [sortable]="true" i18n-label label="ID"></eg-grid-column>      
-    <eg-grid-column name="patron_barcode" path='card.barcode' 
-      [cellTemplate]="barcodeTemplate" i18n-label label="Card"></eg-grid-column>
-    <eg-grid-column path='profile.name' [sortable]="true"
+    <eg-grid-column path='id' [hidden]="true"
+      i18n-label label="ID"></eg-grid-column>      
+    <eg-grid-column name='card.barcode' [cellTemplate]="barcodeTemplate"
+      i18n-label label="Card"></eg-grid-column>
+    <eg-grid-column path='profile.name' 
       i18n-label label="Profile"></eg-grid-column>
     <eg-grid-column name='family_name' [cellTemplate]="familyNameTemplate"
       [sortable]="true" [multiSortable]="true"></eg-grid-column>
@@ -222,18 +217,18 @@
       [sortable]="true" [multiSortable]="true"></eg-grid-column>
     <eg-grid-column path='second_given_name' [hidden]="true"
       [sortable]="true" [multiSortable]="true"></eg-grid-column>
-    <eg-grid-column path='dob' dateFormat="M/d/yyyy"
+    <eg-grid-column path='dob' [hidden]="true"
       [sortable]="true" [multiSortable]="true"></eg-grid-column>
     <eg-grid-column path='home_ou.shortname' 
       i18n-label label="Home Library"></eg-grid-column>
     <eg-grid-column path='create_date' i18n-label label="Created On"
       [hidden]="true" [sortable]="true" [multiSortable]="true"></eg-grid-column>
 
-    <eg-grid-column i18n-label label="Mailing:Street 1" [sortable]="true"
+    <eg-grid-column i18n-label label="Mailing:Street 1" [hidden]="true"
       path='mailing_address.street1' visible></eg-grid-column>
     <eg-grid-column i18n-label label="Mailing:Street 2" [hidden]="true"
       path='mailing_address.street2'></eg-grid-column>
-    <eg-grid-column i18n-label label="Mailing:City" [sortable]="true"
+    <eg-grid-column i18n-label label="Mailing:City" [hidden]="true"
       path='mailing_address.city'></eg-grid-column>
     <eg-grid-column i18n-label label="Mailing:County" [hidden]="true"
       path='mailing_address.county'></eg-grid-column>

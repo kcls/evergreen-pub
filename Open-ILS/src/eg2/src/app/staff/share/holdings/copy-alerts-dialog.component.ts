@@ -29,15 +29,14 @@ export class CopyAlertsDialogComponent
     extends DialogComponent {
 
     // If there are multiple copyIds, only new alerts may be applied.
-    // If there is only one copyId, then tags may be applied or removed.
+    // If there is only one copyId, then alerts may be applied or removed.
     @Input() copyIds: number[] = [];
 
     mode: string; // create | manage
 
-    // If true, no attempt is made to save the new alerts to the
+    // If true, no attempt is made to save new alerts to the
     // database.  It's assumed this takes place in the calling code.
-    // This is useful for creating alerts for new copies.
-    @Input() inPlaceMode = false;
+    @Input() inPlaceCreateMode = false;
 
     // In 'create' mode, we may be adding notes to multiple copies.
     copies: IdlObject[];
@@ -77,7 +76,7 @@ export class CopyAlertsDialogComponent
         this.newAlerts = [];
         this.newAlert.create_staff(this.auth.user().id());
 
-        if (this.copyIds.length === 0 && !this.inPlaceMode) {
+        if (this.copyIds.length === 0 && !this.inPlaceCreateMode) {
             return throwError('copy ID required');
         }
 
@@ -104,10 +103,10 @@ export class CopyAlertsDialogComponent
     getAlertTypes(): Promise<any> {
         if (this.alertTypes) { return Promise.resolve(); }
 
-        return this.pcrud.search('ccat',
+        return this.pcrud.retrieveAll('ccat',
         {   active: true,
             scope_org: this.org.ancestors(this.auth.user().ws_ou(), true)
-        }, {}, {atomic: true}
+        }, {atomic: true}
         ).toPromise().then(alerts => {
             this.alertTypes = alerts.map(a => ({id: a.id(), label: a.name()}));
         });
@@ -134,7 +133,6 @@ export class CopyAlertsDialogComponent
     // the alert type.
     getCopyAlerts(): Promise<any> {
         const typeIds = this.alertTypes.map(a => a.id);
-        if (typeIds.length === 0) { return Promise.resolve(null); }
 
         return this.pcrud.search('aca',
             {copy: this.copyIds, ack_time: null, alert_type: typeIds},
@@ -183,7 +181,7 @@ export class CopyAlertsDialogComponent
             }
         });
 
-        if (this.inPlaceMode) {
+        if (this.inPlaceCreateMode) {
             this.close({ newAlerts: this.newAlerts, changedAlerts: changedAlerts });
             return;
         }

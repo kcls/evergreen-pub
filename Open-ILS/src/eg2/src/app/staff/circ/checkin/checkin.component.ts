@@ -2,11 +2,10 @@ import {Component, ViewChild, OnInit, AfterViewInit, HostListener} from '@angula
 import {Location} from '@angular/common';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {empty, from} from 'rxjs';
-import {concatMap, tap} from 'rxjs/operators';
+import {concatMap} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
-import {PcrudService} from '@eg/core/pcrud.service';
 import {AuthService} from '@eg/core/auth.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
@@ -31,8 +30,6 @@ import {CancelTransitDialogComponent
     } from '@eg/staff/share/circ/cancel-transit-dialog.component';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {AnonCacheService} from '@eg/share/util/anon-cache.service';
-import {DateSelectNativeComponent
-    } from '@eg/share/date-select-native/date-select-native.component';
 
 
 interface CheckinGridEntry extends CheckinResult {
@@ -52,7 +49,6 @@ const CHECKIN_MODIFIERS = [
     'retarget_holds_all',
     'noop',
     'auto_print_holds_transits',
-    'auto_print_ill_receipt',
     'do_inventory_update'
 ];
 
@@ -94,7 +90,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
     @ViewChild('itemNeverCircedStr') private itemNeverCircedStr: StringComponent;
     @ViewChild('backdateDialog') private backdateDialog: BackdateDialogComponent;
     @ViewChild('cancelTransitDialog') private cancelTransitDialog: CancelTransitDialogComponent;
-    @ViewChild('backdateSelect') private backdateSelect: DateSelectNativeComponent;
 
     constructor(
         private router: Router,
@@ -102,7 +97,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
-        private pcrud: PcrudService,
         private auth: AuthService,
         private store: ServerStoreService,
         private circ: CircService,
@@ -159,7 +153,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
     checkin(params?: CheckinParams, override?: boolean): Promise<CheckinResult> {
         if (!this.barcode) { return Promise.resolve(null); }
-        if (this.backdateSelect.invalid()) { return Promise.resolve(null); }
 
         const promise = params ? Promise.resolve(params) : this.collectParams();
 
@@ -372,17 +365,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         }
     }
 
-    updateCopyStatus(rows: CheckinGridEntry[]): Promise<any> {
-        const copies = rows.filter(r => Boolean(r.copy)).map(r => r.copy);
-
-        if (copies.length === 0) { return Promise.resolve(); }
-
-        return from(copies).pipe(concatMap(copy => {
-            return this.pcrud.retrieve('acp',
-                copy.id(), {flesh: 1, flesh_fields: {acp: ['status']}})
-            .pipe(tap(c => copy.status(c.status())))
-        })).toPromise();
-    }
 
     cancelTransits(rows: CheckinGridEntry[]) {
 
@@ -395,7 +377,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
                 .then(transit => row.transit = transit)
             );
         }))
-        .toPromise().then(_ => {
+        .pipe(concatMap(_ => {
 
             const ids = rows
                 .filter(row => Boolean(row.transit))
@@ -403,14 +385,12 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
             if (ids.length > 0) {
                 this.cancelTransitDialog.transitIds = ids;
-                return this.cancelTransitDialog.open().toPromise();
+                return this.cancelTransitDialog.open();
+            } else {
+                return empty();
             }
-        })
-        .then(changesMade => {
-            if (changesMade) {
-                return this.updateCopyStatus(rows);
-            }
-        });
+
+        })).subscribe();
     }
 
     showRecordHolds(rows: CheckinGridEntry[]) {
@@ -429,17 +409,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
     showRecentCircs(rows: CheckinGridEntry[]) {
         const copyId = this.getCopyIds(rows)[0];
         if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/circs`);
-            window.open(url);
-        }
-    }
-
-    showItemDetails(rows: CheckinGridEntry[]) {
-        const copyId = this.getCopyIds(rows)[0];
-        if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/summary`);
+            const url = `/eg/staff/cat/item/${copyId}/circs`;
             window.open(url);
         }
     }

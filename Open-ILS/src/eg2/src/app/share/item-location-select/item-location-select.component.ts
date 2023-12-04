@@ -78,15 +78,13 @@ export class ItemLocationSelectComponent
     // Emits the combobox entry or null on value change
     @Output() entryChange: EventEmitter<ComboboxEntry>;
 
-    @Output() keyUpEnter: EventEmitter<void> = new EventEmitter<void>();
-
     @Input() required: boolean;
 
     @Input() domId = 'eg-item-location-select-' +
         ItemLocationSelectComponent.domIdAuto++;
 
     // If false, selector will be click-able
-    @Input() loadAsync = true;
+    @Input() loadAsync = false;
 
     @Input() disabled = false;
 
@@ -96,9 +94,6 @@ export class ItemLocationSelectComponent
 
     // See combobox
     @Input() startsWith = false;
-
-    // See combobox
-    @Input() asyncSupportsEmptyTermClick: boolean;
 
     // Show <Unset> when no value is applied.
     // This only applies to non-required fields, since <Unset> would
@@ -111,8 +106,6 @@ export class ItemLocationSelectComponent
     @Input() startId: number = null;
     filterOrgs: number[] = [];
     filterOrgsApplied = false;
-
-    localOrgs: number[] = [];
 
     initDone = false; // true after first data load
     propagateChange = (id: number) => {};
@@ -132,8 +125,6 @@ export class ItemLocationSelectComponent
     }
 
     ngOnInit() {
-        this.localOrgs = this.org.ancestors(this.auth.user().ws_ou(), true);
-
         if (this.loadAsync) {
             this.initDone = true;
         } else {
@@ -149,10 +140,7 @@ export class ItemLocationSelectComponent
         this.comboBox.formatDisplayString = (result: ComboboxEntry) => {
             let display = result.label || result.id;
             display = (display + '').trim();
-
-            // KCLS only shows location owning lib if it's outside
-            // of the display scope.
-            if (result.userdata && this.locationIsRemote(result.userdata)) {
+            if (result.userdata) {
                 display += ' (' +
                     this.orgName(result.userdata.owning_lib()) + ')';
             }
@@ -160,18 +148,7 @@ export class ItemLocationSelectComponent
         };
     }
 
-    // True if the provided location is not within our filterOrgs scope.
-    locationIsRemote(loc: IdlObject): boolean {
-        if (!this.localOrgs) { return false; } // still loading
-        return !this.localOrgs.includes(loc.owning_lib());
-    }
-
     getLocations(): Promise<any> {
-
-        if (this.loc.allLocationEntries) {
-            this.comboBox.entries = this.loc.allLocationEntries;
-            return Promise.resolve();
-        }
 
         if (this.filterOrgs.length === 0) {
             this.comboBox.entries = [];
@@ -204,15 +181,10 @@ export class ItemLocationSelectComponent
             entries.push({id: loc.id(), label: loc.name(), userdata: loc});
         })).toPromise().then(_ => {
             this.comboBox.entries = entries;
-            this.loc.allLocationEntries = entries;
         });
     }
 
     getLocationsAsync(term: string): Observable<ComboboxEntry> {
-        if (this.loc.allLocationEntries) {
-            return from(this.loc.allLocationEntries);
-        }
-
         // "1" is ignored, but a value is needed for pipe() below
         let obs = of([1]);
 
@@ -356,16 +328,13 @@ export class ItemLocationSelectComponent
 
             this.filterOrgs = [...new Set(trimmedOrgIds)];
             this.loc.filterOrgsCache[this.permFilter] = this.filterOrgs;
+
             return this.filterOrgs;
         });
     }
 
     orgName(orgId: number): string {
         return this.org.get(orgId)[this.orgUnitLabelField]();
-    }
-
-    clear() {
-        this.comboBox.selectedId = null;
     }
 }
 

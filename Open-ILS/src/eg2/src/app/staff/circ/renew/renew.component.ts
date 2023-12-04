@@ -283,8 +283,7 @@ export class RenewComponent implements OnInit, AfterViewInit {
     showRecentCircs(rows: RenewGridEntry[]) {
         const copyId = this.getCopyIds(rows)[0];
         if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/circs`);
+            const url = `/eg/staff/cat/item/${copyId}/circs`;
             window.open(url);
         }
     }

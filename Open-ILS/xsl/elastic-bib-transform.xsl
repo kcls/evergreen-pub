@@ -542,6 +542,12 @@
     </xsl:call-template>
     <xsl:call-template name="add_search_entry">
       <xsl:with-param name="tag">800</xsl:with-param>
+      <xsl:with-param name="field_class">title</xsl:with-param>
+      <xsl:with-param name="index_name">combined</xsl:with-param>
+      <xsl:with-param name="index_subfields">t</xsl:with-param>
+    </xsl:call-template>
+    <xsl:call-template name="add_search_entry">
+      <xsl:with-param name="tag">800</xsl:with-param>
       <xsl:with-param name="field_class">series</xsl:with-param>
       <xsl:with-param name="index_name">seriestitle</xsl:with-param>
       <xsl:with-param name="index_subfields">fgklmnoprst</xsl:with-param>
@@ -577,6 +583,12 @@
       <xsl:with-param name="field_class">series</xsl:with-param>
       <xsl:with-param name="index_name">seriestitle</xsl:with-param>
       <xsl:with-param name="index_subfields">abcefgijklmnopqrstuvwxyz</xsl:with-param>
+    </xsl:call-template>
+    <xsl:call-template name="add_search_entry">
+      <xsl:with-param name="tag">830</xsl:with-param>
+      <xsl:with-param name="field_class">title</xsl:with-param>
+      <xsl:with-param name="index_name">combined</xsl:with-param>
+      <xsl:with-param name="index_subfields">a</xsl:with-param>
     </xsl:call-template>
     <xsl:call-template name="keyword_full_entry" />
   </xsl:template>

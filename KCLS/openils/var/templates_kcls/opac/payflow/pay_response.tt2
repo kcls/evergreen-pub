@@ -1,0 +1,95 @@
+<!-- 
+  This page is loaded within an iframe.  Keep it as slim as possible.
+  No footers, etc.
+-->
+[% WRAPPER "opac/biblio/base.tt2" %]
+<div id="myopac_summary_div" style="background:#fff">
+
+  <script>
+    function go_to_url(url) {
+      // If we're inside an iframe, this redirects the parent frame
+      // to the requested URL.  Otherwise, redirects the current page.
+      var win = window.top ? window.top : window;
+      win.location.href = url;
+    }
+  </script>
+
+[% IF ctx.payflow_hosted_ctx.pay_result_code 
+  AND ctx.payflow_hosted_ctx.pay_result_code != '0' %]
+
+  <!-- 
+    Payment rejected.  
+    Redirect the parent frame to the form1 page to display the error message.
+  -->
+  <script>
+    setTimeout(
+      function(){ go_to_url(
+        '[% ctx.opac_root _ "/payflow/pay_form/" _ 
+          ctx.payflow_hosted_ctx.secure_token_id %]') },
+      100
+    );
+  </script>
+
+[% ELSIF ctx.on_processing_page %]
+
+  <div class="payment-processing">
+      [% l('Processing...') %] <br/><br/>
+      [% l("Please do not Refresh or use your browser's Back button") %]<br/>
+  </div>
+
+[% ELSIF ctx.payment_response.textcode %]
+  <!-- 
+    Payment tracking attempt failed.  Display the error message 
+    then offer a button to escape the iframe by redirecting the
+    parent frame to the main fines page. 
+  -->
+
+  <div class="payment-error">
+    <span>
+      Error processing payment after credit card payment succeeded.
+      Please see staff to complete transaction.
+      <br/><br/>
+      Payment order number: <b>[% ctx.payflow_hosted_ctx.order_number %]</b>.
+    </span>
+
+    <span title="[% ctx.payment_response.textcode %]">
+      [% ctx.payment_response.desc || ctx.payment_response.textcode %]
+    </span>
+    <br/>
+    [% ctx.payment_response.note %]
+    [% ctx.payment_response.payload.error_message %]
+
+  </div>
+  <p>
+    [%
+      url_args = {xact => [], xact_misc => []};
+      FOR k IN ['xact', 'xact_misc'];
+        FOR val IN CGI.param(k);
+          url_args.$k.push(val);
+        END;
+      END;
+      retry_url =  mkurl(ctx.opac_root _ '/payflow/pay_form', url_args, 1);
+    %]
+    <br/>
+    <a href="javascript:go_to_url('[% retry_url %]')">[% l('Go back') %]</a>
+    [% l('to try again or to cancel this payment attempt.') %]
+  </p>
+
+[% ELSE %]
+  <!-- 
+    Payment succeeded.  
+    Redirect the parent frame to the receipts page. 
+  -->
+  <script>
+    setTimeout(
+      function(){ go_to_url(
+        '[% ctx.opac_root _ "/payflow/pay_receipt/" _ 
+          ctx.payflow_hosted_ctx.secure_token_id %]') },
+      100
+    );
+  </script>
+
+[% END %]
+
+</div>
+[% END %]

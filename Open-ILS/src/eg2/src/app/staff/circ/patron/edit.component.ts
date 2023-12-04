@@ -174,16 +174,13 @@ export class EditComponent implements OnInit {
     inetLevels: ComboboxEntry[];
     statCats: StatCat[] = [];
     grpList: IdlObject;
-    editProfiles: number[] = [];
+    editProfiles: IdlObject[] = [];
     userStatCats: {[statId: number]: ComboboxEntry} = {};
     userSettings: {[name: string]: any} = {};
     userSettingTypes: {[name: string]: IdlObject} = {};
     optInSettingTypes: {[name: string]: IdlObject} = {};
-    groupedOptInSettingTypes: IdlObject[][] = [];
-    groupedOptInSettingChecked: {[grp: string]: boolean} = {};
-    groupedSettingsVisible: {[grp: string]: boolean} = {};
     secondaryGroups: IdlObject[] = [];
-    expireDate: string;
+    expireDate: Date;
     changesPending = false;
     dupeBarcode = false;
     dupeUsername = false;
@@ -273,9 +270,6 @@ export class EditComponent implements OnInit {
         // an nonsaveable state on every page load, check the save state
         // after a 1 second delay.
         .then(_ => setTimeout(() => {
-            if (this.stageUsername) {
-                this.setExpireDate(true);
-            }
             this.emitSaveState();
             this.loading = false;
         }, 1000));
@@ -306,12 +300,7 @@ export class EditComponent implements OnInit {
 
             failed = failed || failedPerms.includes(grp.application_perm());
 
-            if (!failed) {
-                const id = Number(grp.id());
-                if (!this.editProfiles.includes(id)) {
-                    this.editProfiles.push(id);
-                }
-            }
+            if (!failed) { this.editProfiles.push(grp.id()); }
 
             const children = profiles.filter(p => p.parent() === grp.id());
             children.forEach(child => traverseTree(child, failed));
@@ -364,7 +353,6 @@ export class EditComponent implements OnInit {
         })
         .then(reqr => this.stageUserRequestor = reqr)
         .then(_ => this.copyStageData())
-        .then(_ => this.checkStageUserDupes())
         .then(_ => this.maintainJuvFlag());
     }
 
@@ -375,23 +363,12 @@ export class EditComponent implements OnInit {
         Object.keys(this.idl.classes.stgu.field_map).forEach(key => {
             const field = this.idl.classes.au.field_map[key];
             if (field && !field.virtual) {
-                let value = stageData.user[key]();
+                const value = stageData.user[key]();
                 if (value !== null) {
-                    if (key === 'email') {
-                        value = value.toLowerCase();
-                    }
                     patron[key](value);
-                    if (key === 'day_phone') {
-                        this.handlePhoneChange('day_phone', value);
-                    }
                 }
             }
         });
-
-        // Self-register form collects guardian data in the ident_value2 field.
-        if (patron.ident_value2() && !patron.guardian()) {
-            patron.guardian(patron.ident_value2());
-        }
 
         // Clear the usrname if it looks like a UUID
         if (patron.usrname().replace(/-/g, '').match(/[0-9a-f]{32}/)) {
@@ -413,7 +390,6 @@ export class EditComponent implements OnInit {
             addr.isnew(true);
             addr.id(this.autoId--);
             addr.valid('t');
-            addr.within_city_limits('f');
 
             this.strings.interpolate('circ.patron.edit.default_addr_type')
             .then(msg => addr.address_type(msg));
@@ -503,18 +479,12 @@ export class EditComponent implements OnInit {
 
         const patron = this.patron;
 
-        // Fire-and-forget the email search because it takes way
-        // too long (~15 seconds) for KCLS.  TODO: make query faster.
+        // Fire-and-forget the email search because it can take several seconds
         if (patron.email()) {
             this.dupeValueChange('email', patron.email());
         }
 
         return this.dupeValueChange('name', patron.family_name())
-        .then(_ => {
-            if (patron.pref_family_name()) {
-                return this.dupeValueChange('name', '', true);
-            }
-        })
 
         .then(_ => {
             if (patron.ident_value()) {
@@ -720,8 +690,7 @@ export class EditComponent implements OnInit {
             ]
         };
 
-        return this.pcrud.search('cust', query,
-            {flesh: 1, flesh_fields: {cust: ['grp']}}, {atomic : true})
+        return this.pcrud.search('cust', query, {}, {atomic : true})
         .toPromise().then(types => {
 
             types.forEach(stype => {
@@ -739,75 +708,11 @@ export class EditComponent implements OnInit {
                             // false otherwise.
                             val = Boolean((val + '').match(/^t/i));
                         }
-                        this.userSettings[stype.name()] = val
+                        this.userSettings[stype.name()] = val;
                     }
                 }
             });
-
-            this.groupOptInSettingTypes();
         });
-    }
-
-    groupOptInSettingTypes() {
-
-        const groups: {[grpName: string]: IdlObject[]} = {};
-
-        const other = this.idl.create('csg');
-        other.name('_other');
-        other.label('Other'); // TODO
-
-        Object.values(this.optInSettingTypes).forEach(stype => {
-
-            // Protect against opt-in setting types that have no group.
-            // Ideally this would not happen or at least be resolved.
-            if (!stype.grp()) { stype.grp(other); }
-
-            const grpName = stype.grp().name();
-
-            if (!groups[grpName]) { groups[grpName] = []; }
-
-            groups[grpName].push(stype);
-        });
-
-        this.groupedOptInSettingTypes = Object.values(groups);
-
-        this.applyGroupedSettingValues();
-    }
-
-    applyGroupedSettingValues() {
-         this.groupedOptInSettingTypes.forEach(group => {
-
-            const gName = group[0].grp().name();
-            let anySelected = false;
-            let anyNotSelected = false;
-
-            group.forEach(stype => {
-                if (this.userSettings[stype.name()]) {
-                    anySelected = true;
-                } else {
-                    anyNotSelected = true;
-                }
-            });
-
-            if (anyNotSelected) {
-                if (anySelected) {
-                    // Partial selection.
-                    // Leave grouped checkbox unchecked, but expand the
-                    // list so staff can see which are selected.
-                    this.groupedSettingsVisible[gName] = true;
-                }
-            } else {
-                // All are selected.
-                // Leave the list collapsed but select the group checkbox.
-                this.groupedOptInSettingChecked[gName] = true;
-            }
-         });
-    }
-
-    groupedSettingClicked(value: boolean, grpName: string) {
-        this.groupedOptInSettingTypes
-            .filter(g => g[0].grp().name() === grpName)[0]
-            .forEach(stype => this.userSettings[stype.name()] = value);
     }
 
     loadPatron(): Promise<any> {
@@ -841,7 +746,7 @@ export class EditComponent implements OnInit {
 
         const holdNotify = usets['opac.hold_notify'];
 
-        if (false && holdNotify) { // KCLS relies solely on opt-in settings
+        if (holdNotify) {
             this.holdNotifyTypes.email = this.holdNotifyValues.email_notify
                 = holdNotify.match(/email/) !== null;
 
@@ -869,8 +774,7 @@ export class EditComponent implements OnInit {
             usets['opac.default_pickup_location'] = Number(setting);
         }
 
-        this.expireDate =
-            DateUtil.localYmdFromDate(new Date(this.patron.expire_date()));
+        this.expireDate = new Date(this.patron.expire_date());
 
         // stat_cat_entries() are entry maps under the covers.
         this.patron.stat_cat_entries().forEach(map => {
@@ -1068,15 +972,6 @@ export class EditComponent implements OnInit {
         const oldValue = this.getFieldValue(path, index, field);
         if (oldValue === value) { return; }
 
-        if (field === 'email' && value) {
-            // KCLS wants lower case email
-            value = value.toLowerCase();
-        }
-
-        if (field === 'barcode' && value) {
-            value = value.trim();
-        }
-
         this.changeHandlerNeeded = true;
         this.objectFromPath(path, index)[field](value);
     }
@@ -1117,11 +1012,6 @@ export class EditComponent implements OnInit {
                 this.dupeValueChange(field, value);
                 break;
 
-            case 'pref_first_given_name':
-            case 'pref_family_name':
-                this.dupeValueChange(field, '', true);
-                break;
-
             case 'street1':
             case 'street2':
             case 'city':
@@ -1159,7 +1049,7 @@ export class EditComponent implements OnInit {
         cutoff.setTime(cutoff.getTime() -
             Number(DateUtil.intervalToSeconds(interval) + '000'));
 
-        const isJuve = DateUtil.localDateFromYmd(this.patron.dob()) > cutoff;
+        const isJuve = new Date(this.patron.dob()) > cutoff;
 
         this.fieldValueChange(null, null, 'juvenile', isJuve);
         this.afterFieldChange(null, null, 'juvenile');
@@ -1185,7 +1075,7 @@ export class EditComponent implements OnInit {
             if (!resp) { return; }
 
             ['city', 'state', 'county'].forEach(field => {
-                if (resp[field] && !addr[field]()) {
+                if (resp[field]) {
                     addr[field](resp[field]);
                 }
             });
@@ -1237,7 +1127,7 @@ export class EditComponent implements OnInit {
         });
     }
 
-    dupeValueChange(name: string, value: any, prefName?: boolean): Promise<any> {
+    dupeValueChange(name: string, value: any): Promise<any> {
 
         if (name.match(/phone/)) { name = 'phone'; }
         if (name.match(/name/)) { name = 'name'; }
@@ -1247,19 +1137,9 @@ export class EditComponent implements OnInit {
         switch (name) {
 
             case 'name':
-                let fname = this.patron.first_given_name();
-                let lname = this.patron.family_name();
-
-                // Patron search API searches name values across both
-                // pref and non-pref variants.  When searching for pref
-                // name dupes, use regular name search with pref name values.
-                if (prefName) {
-                    fname = this.patron.pref_first_given_name() || fname;
-                    lname = this.patron.pref_family_name() || lname;
-                }
-
+                const fname = this.patron.first_given_name();
+                const lname = this.patron.family_name();
                 if (!fname || !lname) { return; }
-
                 search = {
                     first_given_name : {value : fname, group : 0},
                     family_name : {value : lname, group : 0}
@@ -1346,9 +1226,6 @@ export class EditComponent implements OnInit {
                 // If the user ops in for email notices, require
                 // an email address
                 return this.holdNotifyTypes.email;
-
-            case 'au.guardian':
-                return this.patron.juvenile() === 't';
         }
 
         return this.fieldVisibility[field] === 3;
@@ -1394,23 +1271,15 @@ export class EditComponent implements OnInit {
           .map(org => org.id());
     }
 
-    setExpireDate(noPending?: boolean) {
+    setExpireDate() {
         const profile = this.profileSelect.profiles[this.patron.profile()];
         if (!profile) { return; }
 
         const seconds = DateUtil.intervalToSeconds(profile.perm_interval());
         const nowEpoch = new Date().getTime();
         const newDate = new Date(nowEpoch + (seconds * 1000 /* millis */));
-        const ymd = DateUtil.localYmdFromDate(newDate);
-        this.expireDate = ymd;
-
-        if (noPending) {
-            // Avoid firing the pending-changes handlers
-            this.patron.expire_date(ymd);
-            return;
-        }
-
-        this.fieldValueChange(null, null, 'expire_date', ymd);
+        this.expireDate = newDate;
+        this.fieldValueChange(null, null, 'expire_date', newDate.toISOString());
         this.afterFieldChange(null, null, 'expire_date');
     }
 
@@ -1605,7 +1474,7 @@ export class EditComponent implements OnInit {
 
         return this.saveUser()
         .then(_ => this.saveUserSettings())
-        // .then(_ => this.updateHoldPrefs()) // KCLS does not need
+        .then(_ => this.updateHoldPrefs())
         .then(_ => this.removeStagedUser())
         .then(_ => this.postSaveRedirect(clone));
     }
@@ -1911,7 +1780,7 @@ export class EditComponent implements OnInit {
     groupEditForbidden(): boolean {
         return (
             this.patron.profile()
-            && !this.editProfiles.includes(Number(this.patron.profile()))
+            && !this.editProfiles.includes(this.patron.profile())
         );
     }
 

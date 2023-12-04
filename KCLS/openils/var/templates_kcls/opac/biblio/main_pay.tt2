@@ -1,0 +1,72 @@
+[%
+    WRAPPER "opac/biblio/base.tt2";
+    PROCESS "opac/parts/header.tt2";
+%]
+
+[% INCLUDE "opac/biblio/topnav.tt2" %]
+<div id='fines_payments_wrapper'>
+	<div id='acct_fines_tabs'>
+
+		<a href='[% ctx.opac_root %]/biblio/main_fines'><img src='[% ctx.media_prefix %]/images/acct_fines_on.jpg'/></a>
+		<a href='[% ctx.opac_root %]/biblio/main_payments'><img src='[% ctx.media_prefix %]/images/acct_payments_off.jpg'/></a>
+
+	</div>
+</div>
+
+<div id="myopac_summary_div" style="background-color:#FFF;">
+
+    [% IF ctx.payment_response.textcode %]
+        <div class="payment-error">
+            <span title="[% ctx.payment_response.textcode %]">
+                [% ctx.payment_response.desc || ctx.payment_response.textcode %]
+            </span><br />
+            [% ctx.payment_response.note %]
+            [% ctx.payment_response.payload.error_message %]
+        </div>
+        <p>
+            [%
+                url_args = {xact => [], xact_misc => []};
+                FOR k IN ['xact', 'xact_misc'];
+                    FOR val IN CGI.param(k);
+                        url_args.$k.push(val);
+                    END;
+                END;
+                retry_url =  mkurl(ctx.opac_root _ '/biblio/main_payment_form', url_args, 1);
+            %]
+            <br/>
+            <a href="[% retry_url %]">[% l('Go back') %]</a>
+            [% l('to try again or to cancel this payment attempt.') %]
+        </p>
+    [% ELSE %]
+        <p><big>[% l('Your payment has been approved.') %]</big></p>
+        [% IF ctx.printable_receipt.template_output;
+            print_args = [];
+            FOR p IN ctx.payment_response.payments;
+                print_args.push('payment=' _ p);
+            END %]
+        <p>[ <a href="[% ctx.opac_root %]/biblio/receipt_print?[% print_args.join('&amp;') %]"
+            target="_egrecpt"
+            onclick="try { print_node('printable-receipt'); } catch (e) { window.print(); } return false;">[% l('Print receipt') %]</a> ]</p>
+        <tt id="printable-receipt">
+            [% ctx.printable_receipt.template_output.data %]
+        </tt>
+        [% ELSE %]
+        <div class="payment-error">
+            [% l(
+                'Error creating receipt: [_1]',
+                    (ctx.printable_receipt.textcode ? ctx.printable_receipt.textcode _ ' / ' _ ctx.printable_receipt.desc : 0) ||
+                    ctx.printable_receipt.error_output.data ||
+                    l('No receipt data returned from server')
+                ) | html %]
+        </div>
+        [% END %]
+        <p>[ <a href="[% ctx.opac_root %]/biblio/main_fines">[%
+            l("Back to Account Summary") %]</a> ]</p>
+    [% END %]
+</div>
+<div id="footer">
+    <div class="float-left"</div>
+    <a href="http://www.kcls.org/ask/" style=" font-size: 14px; color: white; font-family: Arial, Helvetica, sans-serif; font-weight: 600;" >[% l('Ask KCLS') %]</a>
+    <div class="common-no-pad"></div>
+</div>
+[% END %]

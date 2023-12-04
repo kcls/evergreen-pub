@@ -9,17 +9,13 @@ import {ManageAuthorityComponent} from './manage.component';
 import {AuthorityMergeDialogComponent} from './merge-dialog.component';
 import {BrowseService} from './browse.service';
 import {BibListModule} from '@eg/staff/share/bib-list/bib-list.module';
-import {NewHeadingsComponent} from './new-headings.component';
-import {HeadingDetailComponent} from './heading-detail.component';
 
 @NgModule({
   declarations: [
     AuthorityMarcEditComponent,
     BrowseAuthorityComponent,
     ManageAuthorityComponent,
-    AuthorityMergeDialogComponent,
-    HeadingDetailComponent,
-    NewHeadingsComponent
+    AuthorityMergeDialogComponent
   ],
   imports: [
     StaffCommonModule,

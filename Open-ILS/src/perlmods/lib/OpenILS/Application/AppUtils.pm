@@ -2694,8 +2694,14 @@ sub org_operates_on_date {
 
 # TODO: Move this into the database
 my @NO_REFUND_CIRC_MODIFIERS = (1, 7, 45, 46, 66, 40, 41, 47, 48); 
+# Returns true if the item/circ meet the criteria for refundability.
+# By default, this version also makes sure the item is not yet checked in -- this
+# is needed by the Money code when creating refundable payments
+# at payment time.
+#
+# Setting $skip_checked_in will bypass the "is checked in" test.
 sub circ_is_refundable {
-    my ($class, $circ_id, $e) = @_;
+    my ($class, $circ_id, $e, $skip_checked_in) = @_;
 
     $e ||= OpenILS::Utils::CStoreEditor->new;
 
@@ -2706,7 +2712,7 @@ sub circ_is_refundable {
     my $copy = $circ->target_copy;
 
     return 0 if $circ->stop_fines ne 'LOST';
-    return 0 if $circ->checkin_time;
+    return 0 if $circ->checkin_time && !$skip_checked_in;
     return 0 if $copy->call_number == -1;
     return 0 if grep {$_ == $copy->circ_modifier} @NO_REFUND_CIRC_MODIFIERS;
 
@@ -2721,6 +2727,40 @@ sub marc_xml_to_doc {
     $marc_doc->documentElement->setNamespace(MARC_NAMESPACE);
     return $marc_doc;
 }
+
+# Penalty creator that can be run within a transaction.
+sub create_penalty_message {
+    my ($class, $e, $pen_type, $user_id, $org_id, $title, $message) = @_;
+
+    $pen_type = $e->retrieve_config_standing_penalty($pen_type)
+        or return $e->die_event;
+
+    my $depth = $pen_type->org_depth || 0;
+    $org_id = $class->org_unit_ancestor_at_depth($org_id, $depth);
+
+    my $penalty = Fieldmapper::actor::user_standing_penalty->new;
+    $penalty->usr($user_id);
+    $penalty->org_unit($org_id);
+    $penalty->standing_penalty($pen_type->id);
+    $penalty->staff($e->requestor->id);
+
+    my $aum = Fieldmapper::actor::usr_message->new;
+    $aum->sending_lib($e->requestor->ws_ou);
+    $aum->title($title);
+    $aum->usr($user_id);
+    $aum->message($message);
+    $aum->pub('f'); # TODO
+
+    $aum = $e->create_actor_usr_message($aum) or return $e->die_event;
+
+    # Link 'em
+    $penalty->usr_message($aum->id);
+
+    $e->create_actor_user_standing_penalty($penalty) or return $e->die_event;
+
+    return $penalty;
+}
+
 
 1;
 

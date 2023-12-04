@@ -340,6 +340,9 @@ function onsub() {
         return false;
     }
 
+
+    document.getElementById('main-submit').disabled = true;
+
     if (typeof ga === 'function') {
         console.debug('sending GA Submit event');
         ga('send', 'event', 'Full Application', 'submit', 'Forms');
@@ -371,12 +374,20 @@ function activity_checker_thread() {
     console.debug('checking activity timeout=' + 
       timeout + ' : time range (ms) = ' + diff);
 
+    // Update the "will redirect in X seconds display"
+    var node = document.getElementById('logout_redirect_remaining');
+    if (node) { node.innerHTML = 1 + Math.abs(Math.floor((timeout - diff) / 1000)); }
+
     if (diff > timeout) {
         location.href = timeout_redirect;
         return;
     }
 
-    setTimeout(activity_checker_thread, 5000);
+    if (document.getElementById('register-success')) {
+        setTimeout(activity_checker_thread, 1000);
+    } else {
+        setTimeout(activity_checker_thread, 5000);
+    }
 }
 
 

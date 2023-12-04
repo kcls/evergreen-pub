@@ -1,6 +1,5 @@
 import {Injectable, EventEmitter, NgZone} from '@angular/core';
-import {Injectable, EventEmitter} from '@angular/core';
-import {Router, ActivatedRoute, NavigationEnd} from '@angular/router';
+import {Router, ActivatedRoute} from '@angular/router';
 import {IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
 import {CatalogService} from '@eg/share/catalog/catalog.service';
@@ -26,6 +25,7 @@ export class StaffCatalogService {
     routeIndex = 0;
     defaultSearchOrg: IdlObject;
     defaultSearchLimit: number;
+    // Track the current template through route changes.
     selectedTemplate: string;
 
     // Display the Exclude Electronic checkbox
@@ -58,15 +58,16 @@ export class StaffCatalogService {
     // Add digital bookplate to search options.
     enableBookplates = false;
 
-    // whether to redirect to record page upon a single search
-    // result
-    jumpOnSingleHit = false;
-
     // Cache of browse results so the browse pager is not forced to
     // re-run the browse search on each navigation.
     browsePagerData: any[];
 
-    hideFacets = false;
+    // whether to redirect to record page upon a single search
+    // result
+    jumpOnSingleHit = false;
+
+    // discovery layer URL to display an item in "patron view"
+    patronViewUrl = '';
 
     constructor(
         private router: Router,
@@ -78,7 +79,7 @@ export class StaffCatalogService {
         private catUrl: CatalogUrlService,
         private broadcaster: BroadcastService,
         private zone: NgZone
-    ) {}
+    ) { }
 
     createContext(): void {
         // Initialize the search context from the load-time URL params.

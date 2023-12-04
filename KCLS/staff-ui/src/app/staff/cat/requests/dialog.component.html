@@ -1,0 +1,316 @@
+<ng-template #dialogContent>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <span i18n>
+        Item Request<ng-container *ngIf="requestId"> #{{requestId}}</ng-container>
+      </span>
+    </h4>
+    <button type="button" class="btn-close btn-close-white" 
+      i18n-aria-label aria-label="Close" (click)="close(false)"> </button>
+  </div>
+  <div class="modal-body form-validated" *ngIf="request">
+
+    <div class="row" *ngIf="mode === 'create'">
+      <div class="col-2" i18n>Patron Barcode</div>
+      <div class="col-4">
+        <input required class="form-control" type="text" 
+          [(ngModel)]="patronBarcode" (change)="findPatron()"/>
+      </div>
+    </div>
+
+    <div class="row mt-3" *ngIf="patronHasBlocks()">
+      <div class="col-12 alert alert-warning p-1">
+        <div class="mt-1" *ngIf="patronHasMasRequests" i18n>
+          Patron has reached the maximum number of allowed open requests.
+        </div>
+        <div class="mt-1" #checkAllowed *ngIf="!patronRequestsAllowed" i18n>
+          This account does not have permission to create new requests.
+        </div>
+        <div class="mt-1" #checkIll *ngIf="!patronIllAllowed" i18n>
+          Interlibrary loan service is not available for this library card type.
+        </div>
+        <div class="mt-1" *ngIf="patronHasOverdueIll" i18n>
+          This patron has overdue ILL items.
+        </div>
+        <div class="mt-1" *ngIf="patronHasMaxRequests" i18n>
+          This patron has reached the maxiumum active requests limit.
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-3" *ngIf="patronNotFound">
+      <div class="col-12 alert alert-danger" i18n>
+        Patron barcode '{{patronBarcode}}' not found.
+      </div>
+    </div>
+
+    <div class="row mt-3" *ngIf="request.usr() && request.usr().id">
+      <div class="col-2" i18n>Patron</div>
+      <div class="col-4">
+        {{request.usr().family_name()}}, {{request.usr().first_given_name()}}
+        (<a *ngIf="request.usr().card()" target="_blank"
+            routerLink="/staff/circ/patron/{{request.usr().id()}}/checkout"
+            >{{request.usr().card().barcode()}}</a>)
+      </div>
+      <div class="col-2" i18n>Claimed By</div>
+      <div class="col-3" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
+        {{request.claimed_by().usrname()}} @ {{request.claim_date() | date:'shortDate'}}
+      </div>
+      <div class="col-1 ps-0" *ngIf="request.claimed_by()">
+        <button class="btn btn-primary" (click)="clearClaimedBy()" i18n>Clear</button>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Title</div>
+      <div class="col-10">
+        <input class="form-control" type="text" required
+          (ngModelChange)="request.title($event)" [ngModel]="request.title()"/>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-2" i18n>Article</div>
+      <div class="col-10">
+        <input class="form-control" type="text"
+          (ngModelChange)="request.article($event)" [ngModel]="request.article()"/>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <ng-container *ngIf="mode !== 'create'">
+        <div class="col-2" i18n>Format</div>
+        <div class="col-4">{{request.format().label()}}</div>
+      </ng-container>
+
+      <ng-container *ngIf="mode === 'create'">
+        <div class="col-2" i18n>Format</div>
+        <div class="col-4">
+          <select (ngModelChange)="setFormat($event)" required
+            [ngModel]="request.format()?.code()" class="form-select">
+            <option *ngFor="let format of formats" [value]="format.code()">
+              {{format.label()}}
+            </option>
+          </select>
+        </div>
+      </ng-container>
+
+      <div class="col-2" i18n>Author</div>
+      <div class="col-4">
+        <input class="form-control" type="text"
+          (ngModelChange)="request.author($event)" [ngModel]="request.author()"/>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-2" i18n>ISBN/UPC/Etc.</div>
+      <div class="col-4">
+        <input class="form-control" type="text"
+          (ngModelChange)="request.identifier($event)" [ngModel]="request.identifier()"/>
+      </div>
+      <div class="col-2" i18n>Language</div>
+      <div class="col-4">
+        <select class="form-select"
+          (ngModelChange)="setLanguage($event)"
+          [ngModel]="request.language()?.code()">
+          <option *ngFor="let lang of languages" [value]="lang.code()">{{lang.label()}}</option>
+        </select>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Publication Year</div>
+      <div class="col-4">
+        <input class="form-control" type="number" min="1900"
+          (ngModelChange)="request.pubdate($event)" [ngModel]="request.pubdate()"/>
+      </div>
+      <div class="col-2" i18n>Publisher</div>
+      <div class="col-4">
+        <input class="form-control" type="text"
+          (ngModelChange)="request.publisher($event)" [ngModel]="request.publisher()"/>
+      </div>
+    </div>
+    <div class="row mt-3" *ngIf="mode !== 'create'">
+      <div class="col-2" i18n>Match Found?</div>
+      <div class="col-1">
+        <eg-bool [value]="request.id_matched()"></eg-bool>
+      </div>
+      <div class="col-lg-3">
+        <a *ngIf="request.id_matched() === 't'"
+          target="_blank" routerLink="/staff/catalog/search"
+          [queryParams]="{query: 'id:' + request.identifier()}">
+          {{request.identifier()}}
+        </a>
+      </div>
+      <div class="col-2" i18n>ILL Opt Out?</div>
+      <div class="col-4">
+        <eg-bool [value]="request.ill_opt_out()"></eg-bool>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Pickup Lib</div>
+      <ng-container *ngIf="mode !== 'create'">
+        <div class="col-4">
+          <ng-container *ngIf="request.pickup_lib()" i18n>
+            {{orgName(request.pickup_lib())}} ({{orgSn(request.pickup_lib())}})
+          </ng-container>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="mode === 'create'">
+        <div class="col-4">
+          <eg-org-select [required]="true"
+            [disableOrgs]="disabledPickupOrgs"
+            [applyOrgId]="request.pickup_lib()"
+            (onChange)="request.pickup_lib($event ? $event.id() : null)">
+          </eg-org-select>
+        </div>
+      </ng-container>
+      <div class="col-2" i18n>Audience</div>
+      <div class="col-4">
+        <select class="form-select"
+          (ngModelChange)="setAudience($event)"
+          [ngModel]="request.audience()?.code()">
+          <option *ngFor="let audience of audiences" [value]="audience.code()">
+            {{audience.label()}}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Route To</div>
+      <div class="col-4">
+        <ng-container *ngIf="mode === 'create'">
+          <span class="fst-italic" i18n>Pending...</span>
+        </ng-container>
+        <ng-container *ngIf="mode !== 'create'">
+          <eg-combobox 
+            [disabled]="!patronIllAllowed || patronHasOverdueIll"
+            [startId]="request.route_to()"
+            [selectedId]="request.route_to()"
+            (onChange)="request.route_to($event ? $event.id : null)"
+            i18n-placeholder placeholder="Route To...">
+            <eg-combobox-entry entryId="acq" entryLabel="Acquisitions" 
+              i18n-entryLabel></eg-combobox-entry>
+            <eg-combobox-entry entryId="ill" entryLabel="ILL"
+              i18n-entryLabel></eg-combobox-entry>
+          </eg-combobox>
+        </ng-container>
+      </div>
+      <ng-container *ngIf="request.route_to() === 'ill'">
+        <div class="col-2" i18n>ILL #</div>
+        <div class="col-4">
+          <input class="form-control" type="text"
+            (ngModelChange)="request.illno($event)" [ngModel]="request.illno()"/>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="request.route_to() === 'acq'">
+        <div class="col-2" i18n>Lineitem #</div>
+        <div class="col-4">
+          <input class="form-control" type="number" [min]="0"
+            (ngModelChange)="request.lineitem($event)" [ngModel]="request.lineitem()"/>
+        </div>
+      </ng-container>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Vendor</div>
+      <div class="col-4">
+        <input class="form-control" type="text"
+          (ngModelChange)="request.vendor($event)" [ngModel]="request.vendor()"/>
+      </div>
+      <div class="col-2" i18n>Price</div>
+      <div class="col-4">
+        <input class="form-control" type="number" step="0.1" min="0.00"
+          (ngModelChange)="request.price($event)" [ngModel]="request.price()"/>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Request Notes</div>
+      <div class="col-10">
+        <ng-container *ngIf="request.notes()">
+          {{request.notes()}}
+        </ng-container>
+        <ng-container *ngIf="!request.notes()">
+          <span i18n class="fst-italic">No Patron Request Notes</span>
+        </ng-container>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Internal Staff Notes</div>
+      <div class="col-10">
+        <textarea rows="2" class="form-control"
+          (ngModelChange)="request.staff_notes($event)" [ngModel]="request.staff_notes()">
+        </textarea>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Patron-Visible Note *</div>
+      <div class="col-10">
+        <textarea rows="2" class="form-control border border-warning"
+          (ngModelChange)="request.patron_notes($event)" [ngModel]="request.patron_notes()">
+        </textarea>
+      </div>
+    </div>
+    <div class="row mt-3" *ngIf="mode !== 'create'">
+      <div class="col-2" i18n>Status</div>
+      <div class="col-4">{{getStatus()}}</div>
+      <div class="col-6 d-flex">
+        <div class="flex-1"></div>
+        <button class="btn btn-outline-dark ms-2" 
+          [disabled]="request.reject_date() || request.complete_date()"
+          (click)="setStatus('rejected')" i18n>Set as Rejected</button>
+        <button class="btn btn-outline-dark ms-2" 
+          [disabled]="!request.reject_date() && !request.complete_date()"
+          (click)="setStatus('active')" i18n>Re-Activate</button>
+
+        <button class="btn btn-outline-dark ms-2" 
+          [disabled]="!canBeSetComplete()"
+          (click)="setStatus('complete')" i18n>Set as Complete</button>
+      </div>
+    </div>
+    <div class="row mt-3" *ngIf="request.route_to() === 'acq' && request.reject_date()">
+      <div class="col-2" i18n>Reason for Rejection</div>
+      <div class="col-10">
+        <input type="text" class="form-control" 
+          [ngModel]="request.reject_reason()"
+          (ngModelChange)="request.reject_reason($event)"/>
+      </div>
+    </div>
+    <div class="row mt-3" *ngIf="request.route_to() === 'ill' && request.reject_date()">
+      <div class="col-2" i18n>ILL Denial Reason *</div>
+      <div class="col-10">
+        <div class="row">
+          <div class="col-4">
+            <select class="form-select" 
+              [ngModel]="illDenialSelectorVal" (ngModelChange)="illDenialChanged($event)">
+              <option value="" selected></option>
+              <option *ngFor="let reason of illDenialOptions" 
+                [value]="reason.content()">{{reason.label()}}</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mt-1">
+          <div class="col-12">
+            <textarea rows="3" class="form-control" 
+              (ngModelChange)="request.ill_denial($event)" [ngModel]="request.ill_denial()">
+            </textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-12 fst-italic" i18n>
+        Items marked with <strong>*</strong> are visible to patrons.
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-warning"
+      (click)="close(false)" i18n>Cancel</button>
+
+    <button type="button" class="btn btn-success ms-2" [disabled]="disableSave()"
+      (click)="save()" i18n>Save</button>
+
+    <ng-container *ngIf="mode !== 'create'">
+      <button type="button" class="btn btn-primary ms-2" [disabled]="disableSave()"
+        (click)="save(true)" i18n>Save &amp; Claim</button>
+    </ng-container>
+  </div>
+</ng-template>

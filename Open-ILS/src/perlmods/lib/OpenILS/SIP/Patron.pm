@@ -858,7 +858,7 @@ sub __circ_to_title {
 }
 
 sub charged_items {
-    my ($self, $start, $end, $ids_only) = shift;
+    my ($self, $start, $end, $ids_only) = @_;
     return $self->charged_items_impl($start, $end, undef, $ids_only);
 }
 
@@ -866,7 +866,7 @@ sub charged_items {
 # force_bc -- return barcode data regardless of msg64_summary_datatype;
 #             this is used by the renew-all code
 sub charged_items_impl {
-    my ($self, $start, $end, $force_bc, $ids_only) = shift;
+    my ($self, $start, $end, $force_bc, $ids_only) = @_;
 
     $self->__patron_items_info();
 

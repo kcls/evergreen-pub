@@ -1,4 +1,3 @@
-<!--
 <ng-template #ccvmOption let-list="list">
   <ng-container *ngFor="let ccv of list">
   <option *ngIf="ccv.is_simple() === 't'" value="{{ccv.code()}}">
@@ -13,7 +12,6 @@
   </option>
   </ng-container>
 </ng-template>
--->
 
 <div id='staffcat-search-form' role="form">
 
@@ -46,8 +44,9 @@
                 <label i18n class="form-label select-label" for="context-termSearch-format">Format</label>
                 <select class="form-select" id="context-termSearch-format" [(ngModel)]="context.termSearch.format">
                   <option i18n value=''>All Formats</option>
-                  <option *ngFor="let fmt of ccvmMap.mattype"
-                    value="{{fmt.code()}}">{{fmt.value()}}</option>
+                  <ng-container
+                    *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.search_format}">
+                  </ng-container> 
                 </select>
               </div>
               <div *ngIf="idx > 0">
@@ -66,16 +65,12 @@
                 [(ngModel)]="context.termSearch.fieldClass[idx]">
                 <option i18n value='keyword'>Keyword</option>
                 <option i18n value='title'>Title</option>
-                <!-- KCLS
                 <option i18n value='jtitle'>Journal Title</option>
-                -->
                 <option i18n value='author'>Author</option>
                 <option i18n value='subject'>Subject</option>
                 <option i18n value='series'>Series</option>
-                <!-- KCLS -->
-                <option i18n value='identifier|bibcn'>Bib Call Number</option>
-                <option i18n value='identifier'>ISBN/ISSN/Other</option>
-                <option i18n value='keyword|publisher'>Publisher</option>
+                <option i18n value='bookplate'
+                  *ngIf="showBookplate()">Digital Bookplate</option>
               </select>
             </div>
             <div class="col-lg-2 ps-0 pe-2">
@@ -85,9 +80,7 @@
                 <option i18n value='contains'>Contains</option>
                 <option i18n value='nocontains'>Does not contain</option>
                 <option i18n value='phrase'>Contains phrase</option>
-                <option [disabled]="context.termSearch.fieldClass[idx]=='keyword'"
-                  i18n value='containsexact'>Contains exact</option>
-                <option [disabled]="context.termSearch.fieldClass[idx]=='keyword'"
+                <option [disabled]="context.termSearch.fieldClass[idx]==='keyword'"
                   i18n value='exact'>Matches exactly</option>
                 <option [disabled]="context.termSearch.fieldClass[idx]==='keyword'"
                   i18n value='starts'>Starts with</option>
@@ -153,12 +146,10 @@
                     <option value='pubdate.descending' i18n>Date: Newest to Oldest</option>
                     <option value='pubdate' i18n>Date: Oldest to Newest</option>
                   </optgroup>
-                  <!--
                   <optgroup label="Sort by Popularity" i18n-label>
                     <option value='popularity' i18n>Most Popular</option>
                     <option value='poprel' i18n>Popularity Adjusted Relevance</option>
                   </optgroup>
-                  -->
                 </select>
               </div>
                 <div class="col checkbox ps-2 ms-2 pt-2">
@@ -167,19 +158,17 @@
                     <span class="ps-1" i18n>Limit to Available</span>
                   </label>
                 </div>
-                <!-- KCLS
-                <div class="checkbox pl-3">
-                  <label>
-                    <input type="checkbox"
+                <div class="col checkbox ps-3 pt-2">
+                  <label class="form-label" for="context-termSearch-groupByMetarecord">
+                    <input type="checkbox" id="context-termSearch-groupByMetarecord"
                       [(ngModel)]="context.termSearch.groupByMetarecord"/>
                     <span class="ps-1" i18n>Group Formats/Editions</span>
                   </label>
                 </div>
-                -->
-                <div class="checkbox pl-3">
-                  <label>
-                    <input type="checkbox" [(ngModel)]="context.global"/>
-                    <span class="pl-1" i18n>Results from All Libraries</span>
+                <div class="col checkbox ps-3 pt-2">
+                  <label class="form-label" for="context-global">
+                    <input type="checkbox" id="context-global" [(ngModel)]="context.global"/>
+                    <span class="ps-1" i18n>Results from All Libraries</span>
                   </label>
                 </div>
                 <div class="col checkbox ps-3 pt-2" *ngIf="showExcludeElectronic()">
@@ -191,79 +180,84 @@
                 </div>
               </div>
           </div>
-          <div class="row mt-3" *ngIf="showFilters()">
-            <div class="col-lg-3">
-              <select class="form-control"  multiple="true" size="5"
+          <div class="row" *ngIf="showFilters()">
+            <div class="col mt-3" *ngIf="searchFilters().includes('item_type')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-item_type">Item Type</label>
+              <select class="form-select"  multiple="true" id="context-termSearch-ccvmFilters-item_type"
                 [(ngModel)]="context.termSearch.ccvmFilters.item_type">
                 <option value='' i18n>All Item Types</option>
-                <option *ngFor="let option of ccvmMap.item_type"
-                  value="{{option.code()}}">{{option.value()}}</option>
+                <ng-container
+                  *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.item_type}">
+                </ng-container> 
               </select>
             </div>
-            <div class="col-lg-3">
-              <select class="form-control" multiple="true" size="5"
+            <div class="col mt-3" *ngIf="searchFilters().includes('item_form')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-item_form">Form</label>
+              <select class="form-select" multiple="true" id="context-termSearch-ccvmFilters-item_form"
                 [(ngModel)]="context.termSearch.ccvmFilters.item_form">
                 <option value='' i18n>All Item Forms</option>
-                <option *ngFor="let option of ccvmMap.item_form"
-                  value="{{option.code()}}">{{option.value()}}</option>
+                <ng-container
+                  *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.item_form}">
+                </ng-container> 
               </select>
             </div>
-            <div class="col-lg-3">
-              <select class="form-control" multiple="true" size="5"
-                [(ngModel)]="context.termSearch.ccvmFilters.item_lang">
+            <div class="col mt-3" *ngIf="searchFilters().includes('item_lang')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-item_lang">Language</label>
+              <select class="form-select" id="context-termSearch-ccvmFilters-item_lang"
+                [(ngModel)]="context.termSearch.ccvmFilters.item_lang" multiple="true">
                 <option value='' i18n>All Languages</option>
-                <option *ngFor="let option of ccvmMap.item_lang"
-                  value="{{option.code()}}">{{option.value()}}</option>
+                <ng-container
+                  *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.item_lang}">
+                </ng-container> 
               </select>
             </div>
-            <div class="col-lg-3">
-              <select class="form-control" multiple="true" size="5" 
-                [(ngModel)]="context.termSearch.ccvmFilters.audience">
+            <div class="col mt-3" *ngIf="searchFilters().includes('audience')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-audience">Audience</label>
+              <select class="form-select" id="context-termSearch-ccvmFilters-audience"
+                [(ngModel)]="context.termSearch.ccvmFilters.audience" multiple="true">
                 <option value='' i18n>All Audiences</option>
-                <option *ngFor="let option of ccvmMap.audience"
-                  value="{{option.code()}}">{{option.value()}}</option>
+                <ng-container
+                  *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.audience}">
+                </ng-container> 
               </select>
             </div>
           </div>
-          <div class="row mt-3" *ngIf="showFilters()">
-            <div class="col-lg-3">
-              <!--
-              <select class="form-control" 
+          <div class="row" *ngIf="showFilters()">
+            <div class="col mt-3" *ngIf="searchFilters().includes('vr_format')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-vr_format">Video Format</label>
+              <select class="form-select" id="context-termSearch-ccvmFilters-vr_format"
                 [(ngModel)]="context.termSearch.ccvmFilters.vr_format" multiple="true">
                 <option value='' i18n>All Video Formats</option>
                 <ng-container
                   *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.vr_format}">
                 </ng-container> 
               </select>
-              -->
-              <!-- KCLS replace video recording format with mattype multiselec -->
-              <select class="form-control" multiple="true" size="5" 
-                [(ngModel)]="context.termSearch.ccvmFilters.mattype">
-                <option value='' i18n>All Material Types</option>
-                <option *ngFor="let mattype of ccvmMap.mattype"
-                  value="{{mattype.code()}}">{{mattype.value()}}</option>
-              </select>
             </div>
-            <div class="col-lg-3">
-              <select class="form-control" multiple="true" size="5" 
-                [(ngModel)]="context.termSearch.ccvmFilters.bib_level">
+            <div class="col mt-3" *ngIf="searchFilters().includes('bib_level')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-bib_level">Bibliographic Level</label>
+              <select class="form-select" id="context-termSearch-ccvmFilters-bib_level"
+                [(ngModel)]="context.termSearch.ccvmFilters.bib_level" multiple="true">
                 <option value='' i18n>All Bib Levels</option>
-                <option *ngFor="let option of ccvmMap.bib_level"
-                  value="{{option.code()}}">{{option.value()}}</option>
+                <ng-container
+                  *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.bib_level}">
+                </ng-container> 
               </select>
             </div>
-            <div class="col-lg-3">
-              <select class="form-control" multiple="true" size="5" 
-                [(ngModel)]="context.termSearch.ccvmFilters.lit_form">
+            <div class="col mt-3" *ngIf="searchFilters().includes('lit_form')">
+              <label i18n class="form-label select-label" for="context-termSearch-ccvmFilters-lit_form">Literary Form</label>
+              <select class="form-select" id="context-termSearch-ccvmFilters-lit_form"
+                [(ngModel)]="context.termSearch.ccvmFilters.lit_form" multiple="true">
                 <option value='' i18n>All Literary Forms</option>
-                <option *ngFor="let option of ccvmMap.lit_form"
-                  value="{{option.code()}}">{{option.value()}}</option>
+                <ng-container
+                  *ngTemplateOutlet="ccvmOption;context:{list:ccvmMap.lit_form}">
+                </ng-container> 
               </select>
             </div>
-            <div class="col-lg-3">
-              <select class="form-control" multiple="true" size="5" 
-                [(ngModel)]="context.termSearch.copyLocations">
-                <option value='' i18n>All Copy Locations</option>
+            <div class="col mt-3">
+              <label i18n class="form-label select-label" for="context-termSearch-copyLocations">Shelving Location</label>
+              <select class="form-select" id="context-termSearch-copyLocations"
+                [(ngModel)]="context.termSearch.copyLocations" multiple="true">
+                <option value='' i18n>All Shelving Locations</option>
                 <option *ngFor="let loc of copyLocations" value="{{loc.id()}}" i18n>
                   {{loc.name()}} ({{orgName(loc.owning_lib())}})
                 </option>
@@ -334,60 +328,51 @@
           <div class="mt-1">
               <div class="row mt-2 gx-3 row-cols-auto" 
                 *ngFor="let q of context.marcSearch.values; let idx = index; trackBy:trackByIdx">
-                <label for="marc-tag-{{idx}}" i18n>Tag</label>
-                <input class="form-control ml-2" size="3" type="text" 
-                  name="marc-tag-{{idx}}" id="{{ idx == 0 ? 'first-marc-tag' : '' }}"
-                  [(ngModel)]="context.marcSearch.tags[idx]"
-                  (keyup.enter)="searchByForm()"/>
-                <label for="marc-subfield-{{idx}}" class="ml-2" i18n>Subfield</label>
-                <input class="form-control ml-2" size="1" type="text" 
-                  name="marc-subfield-{{idx}}"
-                  [(ngModel)]="context.marcSearch.subfields[idx]"
-                  (keyup.enter)="searchByForm()"/>
-                <select class="form-control ml-2" 
-                  [(ngModel)]="context.marcSearch.matchOp[idx]">
-                  <option i18n value='contains'>Contains</option>
-                  <option i18n value='nocontains'>Does not contain</option>
-                  <option i18n value='phrase'>Contains phrase</option>
-                  <option i18n value='containsexact'>Contains exact</option>
-                  <option i18n value='exact'>Matches exactly</option>
-                  <option i18n value='starts'>Starts with</option>
-                  <option i18n value='regexp'>Regex Match</option>
-                </select>
-                <label for="marc-value-{{idx}}" class="ml-2" i18n>Value</label>
-                <input class="form-control ml-2" type="text" name="marc-value-{{idx}}"
-                  [(ngModel)]="context.marcSearch.values[idx]" 
-                  (keyup.enter)="searchByForm()"/>
-                <button class="btn btn-sm material-icon-button ml-2"
-                  (click)="addMarcSearchRow(idx + 1)">
-                  <span class="material-icons">add_circle_outline</span>
-                </button>
-                <button class="btn btn-sm material-icon-button ml-2"
-                  [disabled]="context.marcSearch.values.length < 2"
-                  (click)="delMarcSearchRow(idx)">
-                  <span class="material-icons">remove_circle_outline</span>
-                </button>
+                <label class="form-label col-form-label" for="marc-tag-{{idx}}" i18n>Tag</label>
+                <div class="col ps-0">
+                  <input class="form-control ms-0" size="3" type="text" 
+                    name="marc-tag-{{idx}}" id="{{ idx === 0 ? 'first-marc-tag' : '' }}"
+                    [(ngModel)]="context.marcSearch.tags[idx]"
+                    (keyup.enter)="searchByForm()"/>
+                </div>
+                <label class="form-label col-form-label" for="marc-subfield-{{idx}}" i18n>Subfield</label>
+                <div class="col ps-0">
+                  <input class="form-control ms-0" size="1" type="text" 
+                    name="marc-subfield-{{idx}}"
+                    [(ngModel)]="context.marcSearch.subfields[idx]"
+                    (keyup.enter)="searchByForm()"/>
+                </div>
+                <label class="form-label col-form-label"  for="marc-value-{{idx}}" i18n>Value</label>
+                <div class="col ps-0">
+                  <input class="form-control ms-0" type="text" name="marc-value-{{idx}}"
+                    [(ngModel)]="context.marcSearch.values[idx]" 
+                    (keyup.enter)="searchByForm()"/>
+                </div>
+                <div class="col">
+                  <button class="btn btn-sm material-icon-button ms-2"
+                    i18n-title title="Add Search Row"
+                    i18n-aria-label aria-label="Add Search Row"
+                    (click)="addMarcSearchRow(idx + 1)">
+                    <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+                  </button>
+                </div>
+                <div class="col">
+                  <button class="btn btn-sm material-icon-button ps-0 ms-0"
+                    i18n-title title="Remove Search Row"
+                    i18n-aria-label aria-label="Remove Search Row"
+                    [disabled]="context.marcSearch.values.length < 2"
+                    (click)="delMarcSearchRow(idx)">
+                    <span class="material-icons" aria-hidden="true">remove_circle_outline</span>
+                  </button>
+                </div>
               </div>
           </div>
-          <div class="row mt-4">
-            <div class="col-lg-12">
-              <div class="form-inline mt-2">
-                <select class="form-control mr-2" [(ngModel)]="context.sort">
-                  <option value='' i18n>Sort by Relevance</option>
-                  <optgroup label="Sort by Title" i18n-label>
-                    <option value='titlesort' i18n>Title: A to Z</option>
-                    <option value='titlesort.descending' i18n>Title: Z to A</option>
-                  </optgroup>
-                  <optgroup label="Sort by Author" i18n-label>
-                    <option value='authorsort' i18n>Author: A to Z</option>
-                    <option value='authorsort.descending' i18n>Author: Z to A</option>
-                  </optgroup>
-                  <optgroup label="Sort by Publication Date" i18n-label>
-                    <option value='pubdate.descending' i18n>Date: Newest to Oldest</option>
-                    <option value='pubdate' i18n>Date: Oldest to Newest</option>
-                  </optgroup>
-                </select>
-              </div>
+          <div class="row mt-2">
+            <div class="checkbox ps-3">
+              <label>
+                <input type="checkbox" [(ngModel)]="context.global"/>
+                <span class="ps-1" i18n>Results from All Libraries</span>
+              </label>
             </div>
           </div>
         </ng-template>
@@ -404,7 +389,6 @@
                 <option i18n value='author'>Author</option>
                 <option i18n value='subject'>Subject</option>
                 <option i18n value='series'>Series</option>
-                <option i18n value='identifier'>Bib Call Number</option>
               </select>
             </div>
             <label class="form-label col-form-label" for="query"> starting with </label>
@@ -413,14 +397,7 @@
                 id='browse-term-input' name="query"
                 [(ngModel)]="context.browseSearch.value"
                 (keyup.enter)="searchByForm()"
-                placeholder="Browse for..."/>
-              <label for="browse-mattype-select" class="ml-2"> in </label>
-              <select class="form-control ml-2" 
-                [(ngModel)]="context.browseSearch.format">
-                <option i18n value=''>All Formats</option>
-                <option *ngFor="let fmt of ccvmMap.mattype"
-                  value="{{fmt.code()}}">{{fmt.value()}}</option>
-              </select>
+                placeholder="Browse for..." i18n-placeholder />
             </div>
           </div>
         </ng-template>

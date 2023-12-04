@@ -388,21 +388,21 @@ sub ol_execute {
 	$DB->disconnect;
 
 
-	if( safe_fork() ) {
+#	if( safe_fork() ) {
 
 		# --------------------------------------------------------------------
 		# Tell the client all is well
 		# --------------------------------------------------------------------
-		ol_handle_event('SUCCESS'); # - this exits
+#		ol_handle_event('SUCCESS'); # - this exits
 
-	} else {
+#	} else {
 
 
 		# --------------------------------------------------------------------
 		# close stdout/stderr or apache will wait on the child to finish
 		# --------------------------------------------------------------------
-		close(STDOUT);
-		close(STDERR);
+#		close(STDOUT);
+#		close(STDERR);
 
 		$logger->debug("offline: child $$ processing data...");
 
@@ -428,7 +428,9 @@ sub ol_execute {
 			my $e = shift;
 			$logger->error("offline: child process error $e");
 		};
-	}
+#	}
+
+    ol_handle_event('SUCCESS'); # - this exits
 }
 
 sub ol_file_to_perl {

@@ -1,0 +1,90 @@
+[%  PROCESS "opac/parts/header.tt2";
+    PROCESS "opac/parts/misc_util.tt2";
+    PROCESS "opac/parts/hold_status.tt2";
+    WRAPPER "opac/parts/myopac/base.tt2";
+    myopac_page = "holds";
+    limit = ctx.hold_history_limit;
+    offset = ctx.hold_history_offset;
+%]
+
+<div id='myopac_holds_div'>
+
+    <div id="acct_holds_tabs" style="padding-bottom: 12px;color:#666;">
+        <div class="align selected">
+            <a href='holds'><img src="[% ctx.media_prefix %]/images/sub_holds_off.jpg"/></a>
+        </div>
+        <div class="align">
+            <img src="[% ctx.media_prefix %]/images/sub_holds_hist_on.jpg"/>
+        </div>
+        <div class="clear-both"></div>
+    </div>
+
+    <div class="header_middle">
+        <span style="float:left;">[% l("Previously Held Items") %]</span>
+        <span class='float-left' style='padding-left: 10px;'>
+            <a href='hold_history?limit=[% limit %]&amp;offset=[% offset - limit %]'
+                [% IF offset == 0 %] class='invisible' [% END %]><span class="nav_arrow_fix">&#9668;</span>[% l('Previous') %]</a>
+            [%# TODO: get total to prevent paging off then end of the list.. %]
+            <a href='hold_history?limit=[% limit %]&amp;offset=[% offset + limit %]'
+               [% IF ctx.holds.size < limit %] class='invisible' [% END %] >[% l('Next') %]<span class="nav_arrow_fix">&#9658;</span></a>
+        </span>
+        <span style="float:right;">
+            <a class="hide_me" href="#">Export List</a>
+        </span>
+    </div>
+    <div class="clear-both"></div>
+
+    <div id='holds_main'>
+        [% IF ctx.holds.size < 1 %]
+        <div class="opac-auto-079">
+            <big><strong>[% l('No holds found.') %]</strong></big>
+        </div>
+        [% ELSE %]
+        <table style='border-collapse:collapse; width: 100%;'>
+            <thead id='acct_holds_main_header'>
+                <tr>
+                    <td><span>[% l('Title') %]</span></td>
+                    <td><span>[% l('Author') %]</span></td>
+                    <td><span>[% l('Format') %]</span></td>
+                    <td><span>[% l('Date Placed') %]</span></td>
+                    <td><span>[% l('Pickup Location') %]</span> </td>
+                </tr>
+            </thead>
+            <tbody>
+                [% FOR hold IN ctx.holds;
+                    attrs = {marc_xml => hold.marc_xml};
+                    PROCESS get_marc_attrs args=attrs;
+                    ahr = hold.hold.hold %]
+
+                <tr id="acct_holds_temp" name="acct_holds_temp" class="acct_holds_temp">
+
+                    <td width="138">
+                        <div style="margin-top:10px;margin-bottom:10px;">
+                            <a href="[% ctx.opac_root %]/record/[% hold.hold.bre_id %]">[% attrs.title_extended | html %]</a>
+                        </div>
+                    </td>
+                    <td width="123">
+                        <div style="margin-top:10px;margin-bottom:10px;">
+                            <a href="[% ctx.opac_root %]/results?qtype=author&amp;query=[% attrs.author | replace('[,\.:;]', '') | url %]">[% attrs.author | html %]</a>
+                        </div>
+                    </td>
+                    <td width="64">
+                        <div style="width:26px;height:23px;margin-top:6px;margin-bottom:6px;">
+                            [% IF attrs.format_icon %]
+                            <img title="[% attrs.format_label | html %]" alt="[% attrs.format_label | html %]" src="[% attrs.format_icon %]" />
+                            [% END %]
+                        </div>
+                    </td>
+                    <td width="123">
+                        [% date.format(ctx.parse_datetime(ahr.request_time), DATE_FORMAT) %]
+                    </td>
+                    <td width="136">
+                        [% ctx.get_aou(ahr.pickup_lib).name | html %]
+                    </td>
+                </tr>
+                [% END %]
+            </tbody>
+        </table>
+        [% END %]
+    </div>
+[% END %]

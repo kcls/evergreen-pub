@@ -1,10 +1,8 @@
 <ng-template #dialogContent>
-  <div class="modal-header bg-info">
+  <div class="modal-header">
     <h4 i18n>Barcode "{{barcode}}" was mis-scanned or is a non-cataloged item.</h4>
-    <button type="button" class="close"
-      i18n-aria-label aria-label="Close" (click)="close()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close btn-close-white"
+      i18n-aria-label aria-label="Close" (click)="close()"></button>
   </div>
   <div class="modal-body">
 
@@ -35,7 +33,7 @@
     <div class="row mt-2">
       <div class="col-lg-4" i18n>Circulation Modifier</div>
       <div class="col-lg-8">
-        <eg-combobox idlClass="ccm" [asyncSupportsEmptyTermClick]="true"
+        <eg-combobox idlClass="ccm" 
           i18n-placeholder placeholder="Circulation Modifier..."
           (onChange)="values.circ_modifier = $event ? $event.id : null">
         </eg-combobox>

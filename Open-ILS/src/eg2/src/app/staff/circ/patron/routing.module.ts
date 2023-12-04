@@ -7,8 +7,6 @@ import {TestPatronPasswordComponent} from './test-password.component';
 import {RegisterPatronComponent} from './register.component';
 import {LastPatronComponent} from './last.component';
 import {CanDeactivateGuard} from '@eg/share/util/can-deactivate.guard';
-import {PendingPatronsComponent} from './pending.component';
-import {CircSearchComponent} from './circ-search.component';
 
 const routes: Routes = [{
     path: '',
@@ -38,9 +36,6 @@ const routes: Routes = [{
     path: 'credentials',
     component: TestPatronPasswordComponent
   }, {
-    path: 'pending',
-    component: PendingPatronsComponent
-  }, {
     path: 'search',
     component: PatronComponent,
     resolve: {resolver : PatronResolver}
@@ -49,9 +44,6 @@ const routes: Routes = [{
     component: PatronComponent,
     resolve: {resolver : PatronResolver},
     data: {showRecentPatrons: true}
-  }, {
-    path: 'circ-search',
-    component: CircSearchComponent
   }, {
     path: 'bcsearch',
     component: BcSearchComponent

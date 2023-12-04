@@ -2321,11 +2321,16 @@ sub reset_hold_batch {
 sub _reset_hold {
     my ($self, $reqr, $hold) = @_;
 
-    my $e = new_editor(xact =>1, requestor => $reqr);
-
-    $logger->info("reseting hold ".$hold->id);
-
     my $hid = $hold->id;
+
+    $logger->info("reseting hold $hid");
+
+    if ($hold->cancel_time) {
+        $logger->warn("attempt to reset canceled hold $hid; ignoring");
+        return;
+    }
+
+    my $e = new_editor(xact =>1, requestor => $reqr);
 
     if( $hold->capture_time and $hold->current_copy ) {
 
@@ -2342,7 +2347,11 @@ sub _reset_hold {
         } elsif( $copy->status == OILS_COPY_STATUS_IN_TRANSIT ) {
 
             $logger->warn("! reseting hold [$hid] that is in transit");
-            my $transid = $e->search_action_hold_transit_copy({hold=>$hold->id,cancel_time=>undef},{idlist=>1})->[0];
+
+            my $transid = $e->search_action_hold_transit_copy(
+                {hold => $hold->id, cancel_time => undef, dest_recv_time => undef},
+                {idlist => 1}
+            )->[0];
 
             if( $transid ) {
                 my $trans = $e->retrieve_action_transit_copy($transid);

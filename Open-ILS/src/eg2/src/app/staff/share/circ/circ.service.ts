@@ -4,7 +4,7 @@ import {map, concatMap, mergeMap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
-import {PcrudService, PcrudQueryOps} from '@eg/core/pcrud.service';
+import {PcrudService} from '@eg/core/pcrud.service';
 import {EventService, EgEvent} from '@eg/core/event.service';
 import {AuthService} from '@eg/core/auth.service';
 import {BibRecordService, BibRecordSummary} from '@eg/share/catalog/bib-record.service';
@@ -15,8 +15,6 @@ import {StringService} from '@eg/share/string/string.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {WorkLogService, WorkLogEntry} from '@eg/staff/share/worklog/worklog.service';
-import {PermService} from '@eg/core/perm.service';
-import {PrintService} from '@eg/share/print/print.service';
 
 export interface CircDisplayInfo {
     title?: string;
@@ -44,7 +42,6 @@ const CAN_OVERRIDE_CHECKOUT_EVENTS = [
     'COPY_ALERT_MESSAGE',
     'ITEM_ON_HOLDS_SHELF',
     'INVALID_PATRON_ADDRESS',
-    'PATRON_IN_COLLECTIONS',
     'STAFF_C',
     'STAFF_CH',
     'STAFF_CHR',
@@ -78,11 +75,9 @@ const CAN_OVERRIDE_RENEW_EVENTS = [
     'COPY_IS_REFERENCE',
     'COPY_ALERT_MESSAGE',
     'COPY_NEEDED_FOR_HOLD',
-    'AVAIL_HOLD_COPY_RATIO_EXCEEDED',
     'MAX_RENEWALS_REACHED',
     'CIRC_CLAIMS_RETURNED',
     'INVALID_PATRON_ADDRESS',
-    'PATRON_IN_COLLECTIONS',
     'STAFF_C',
     'STAFF_CH',
     'STAFF_CHR',
@@ -149,12 +144,10 @@ export interface CircResultCommon {
     success: boolean;
     copy?: IdlObject;
     volume?: IdlObject;
-    record?: IdlObject; // MVR
+    record?: IdlObject;
     circ?: IdlObject;
     parent_circ?: IdlObject;
     hold?: IdlObject;
-
-    recordDisplay?: IdlObject[]; // New-style display fields
 
     // Set to one of circ_patron or hold_patron depending on the context.
     patron?: IdlObject;
@@ -191,7 +184,6 @@ export interface CheckinParams {
     claims_never_checked_out?: boolean;
     void_overdues?: boolean;
     auto_print_holds_transits?: boolean;
-    auto_print_ill_receipt?: boolean;
     backdate?: string;
     capture?: string;
     next_copy_status?: number[];
@@ -201,8 +193,7 @@ export interface CheckinParams {
     manual_float?: boolean;
     do_inventory_update?: boolean;
     no_precat_alert?: boolean;
-    retarget_holds?: boolean;
-    retarget_holds_all?: boolean;
+    retarget_mode?: string;
 
     // internal / local values that are moved from the API request.
     _override?: boolean;
@@ -215,18 +206,6 @@ export interface CheckinResult extends CircResultCommon {
     destOrg?: IdlObject;
     destAddress?: IdlObject;
     destCourierCode?: string;
-}
-
-export interface ItemCircInfo {
-    maxHistoryCount: number;
-    circSummary?: IdlObject;
-    prevCircSummary?: IdlObject;
-    currentCirc?: IdlObject;
-    prevCircUser?: IdlObject;
-    totalCircs: number;
-    circsThisYear: number;
-    circsPrevYear: number;
-    allYears: {[year: string]: number};
 }
 
 @Injectable()
@@ -250,11 +229,9 @@ export class CircService {
         private pcrud: PcrudService,
         private serverStore: ServerStoreService,
         private strings: StringService,
-        private printer: PrintService,
         private auth: AuthService,
         private holdings: HoldingsService,
         private worklog: WorkLogService,
-        private perms: PermService,
         private bib: BibRecordService
     ) {}
 
@@ -267,7 +244,7 @@ export class CircService {
         });
     }
 
-    // 'circ' is fleshed with copy, vol, bib, flat_display_entries
+    // 'circ' is fleshed with copy, vol, bib, wide_display_entry
     // Extracts some display info from a fleshed circ.
     getDisplayInfo(circ: IdlObject): CircDisplayInfo {
         return this.getCopyDisplayInfo(circ.target_copy());
@@ -287,31 +264,20 @@ export class CircService {
 
         const volume = copy.call_number();
         const record = volume.record();
-        const values = this.getBibDisplayValues(record.flat_display_entries());
+        const display = record.wide_display_entry();
+
+        let isbn = JSON.parse(display.isbn());
+        if (Array.isArray(isbn)) { isbn = isbn.join(','); }
 
         return {
-            title: values.title,
-            author: values.author,
-            isbn: values.isbn,
+            title: JSON.parse(display.title()),
+            author: JSON.parse(display.author()),
+            isbn: isbn,
             copy: copy,
             volume: volume,
-            record: record
+            record: record,
+            display: display
         };
-    }
-
-    getBibDisplayValues(entries: IdlObject[]): CircDisplayInfo {
-        const info: CircDisplayInfo = {};
-
-        const titleField = entries.filter(e => e.name() === 'title_proper')[0];
-        info.title = titleField ? titleField.value() : '';
-
-        const authorField = entries.filter(e => e.name() === 'author')[0];
-        info.author = authorField ? authorField.value() : '';
-
-        const isbns = entries.filter(e => e.name() === 'isbn').map(e => e.value());
-        info.isbn = isbns.join(',');
-
-        return info;
     }
 
     getOrgAddr(orgId: number, addrType): Promise<IdlObject> {
@@ -429,7 +395,6 @@ export class CircService {
         // Should be _-prefixed, but we already have a workstation setting,
         // etc. for this one.  Just manually remove it from the API params.
         delete apiParams['auto_print_holds_transits'];
-        delete apiParams['auto_print_ill_receipt'];
 
         return apiParams;
     }
@@ -819,20 +784,6 @@ export class CircService {
 
         let promise: Promise<any> = Promise.resolve();
 
-        if (result.record) {
-            promise = promise.then(_ => {
-                return this.pcrud.search(
-                    'mfde', {source: result.record.doc_id()}, {}, {atomic: true})
-                .toPromise().then(entries => {
-                    result.recordDisplay = entries;
-                    const values = this.getBibDisplayValues(entries);
-                    result.title = values.title;
-                    result.author = values.author;
-                    result.isbn = values.isbn;
-                });
-            });
-        }
-
         if (hold) {
             console.debug('fleshCommonData() hold ', hold.usr());
             promise = promise.then(_ => {
@@ -863,12 +814,18 @@ export class CircService {
             result.patron = result.hold_patron || result.circ_patron;
         });
 
-        if (copy) {
+        if (result.record) {
+            result.title = result.record.title();
+            result.author = result.record.author();
+            result.isbn = result.record.isbn();
 
+        } else if (copy) {
             result.title = result.copy.dummy_title();
             result.author = result.copy.dummy_author();
             result.isbn = result.copy.dummy_isbn();
+        }
 
+        if (copy) {
             if (this.copyLocationCache[copy.location()]) {
                 copy.location(this.copyLocationCache[copy.location()]);
             } else {
@@ -1111,8 +1068,7 @@ export class CircService {
             case 4: /* MISSING */
             case 7: /* RESHELVING */
                 this.audio.play('success.checkin');
-                return this.handleCheckinLocAlert(result)
-                    .then(r => this.maybePrintIllReceipt(r));
+                return this.handleCheckinLocAlert(result);
 
             case 8: /* ON HOLDS SHELF */
                 this.audio.play('info.checkin.holds_shelf');
@@ -1150,41 +1106,6 @@ export class CircService {
                 this.audio.play('success.checkin');
                 console.debug(`Unusual checkin copy status (may have been
                     set via copy alert): status=${statId}`);
-        }
-
-        return Promise.resolve(result);
-    }
-
-    getCopyNotes(copyId: number): Promise<IdlObject[]> {
-        return this.pcrud.search('acpn', {owning_copy: copyId}, {}, {atomic: true})
-        .toPromise();
-    }
-
-    maybePrintIllReceipt(result: CheckinResult): Promise<CheckinResult> {
-        if (!result.params.auto_print_ill_receipt) {
-            return Promise.resolve(result);
-        }
-
-        const copy = result.copy;
-        const vol = result.volume;
-        const rec = result.record;
-
-        // NOTE This could be, um, better re: is this an ILL?
-        if (copy && vol && rec
-            && vol.label().toUpperCase().startsWith("IL")
-            && rec.title().toUpperCase().startsWith("ILL TITLE -")) {
-
-            return this.getCopyNotes(copy.id())
-            .then(notes => {
-                copy.notes(notes);
-
-                this.printer.print({
-                    printContext: 'receipt',
-                    templateName: 'ill_return_receipt',
-                    contextData: {copy: copy}
-                });
-            })
-            .then(_ => result);
         }
 
         return Promise.resolve(result);
@@ -1394,153 +1315,6 @@ export class CircService {
         if (checkDigit === 10) { checkDigit = 0; }
 
         return checkDigit;
-    }
-
-    getCircChain(circId: number): Promise<IdlObject> {
-        return this.net.request(
-            'open-ils.circ',
-            'open-ils.circ.renewal_chain.retrieve_by_circ.summary',
-            this.auth.token(), circId
-        ).toPromise();
-    }
-
-    getPrevCircChain(circId: number): Promise<IdlObject> {
-
-        return this.net.request(
-            'open-ils.circ',
-            'open-ils.circ.prev_renewal_chain.retrieve_by_circ.summary',
-            this.auth.token(), circId
-
-        ).toPromise();
-    }
-
-    getLatestCirc(item: IdlObject, ops?: PcrudQueryOps): Promise<IdlObject> {
-        return this.getRecentCircs(item, ops, 1)
-        .then(circs => circs[0]);
-    }
-
-    getRecentCircs(item: IdlObject,
-        ops?: PcrudQueryOps, count?: number): Promise<IdlObject[]> {
-
-        if (!ops) {
-            ops = {
-                flesh: 2,
-                flesh_fields: {
-                    aacs: [
-                        'usr',
-                        'workstation',
-                        'checkin_workstation',
-                        'duration_rule',
-                        'max_fine_rule',
-                        'recurring_fine_rule'
-                    ],
-                    au: ['card']
-                }
-            };
-        }
-
-        ops.order_by = {aacs: 'xact_start desc'};
-
-        const promise = count ?
-            Promise.resolve(count) : this.getMaxCircDisplayCount(item);
-
-        return promise.then(limit => {
-            ops.limit = limit;
-            return this.pcrud.search('aacs',
-                {target_copy : item.id()}, ops, {atomic: true}).toPromise();
-        });
-    }
-
-    getMaxCircDisplayCount(item: IdlObject): Promise<number> {
-
-        const copyOrg: number =
-            item.call_number().id() === -1 ?
-            item.circ_lib().id() :
-            item.call_number().owning_lib().id();
-
-        return this.perms.hasWorkPermAt(['VIEW_COPY_CHECKOUT_HISTORY'], true)
-        .then(hasPerm => {
-            if (hasPerm['VIEW_COPY_CHECKOUT_HISTORY'].includes(copyOrg)) {
-                return this.org.settings('circ.item_checkout_history.max')
-                .then(sets => {
-                    return sets['circ.item_checkout_history.max'] || 4;
-                });
-            } else {
-                return 0;
-            }
-        });
-    }
-
-    getItemCircInfo(item: IdlObject): Promise<ItemCircInfo> {
-
-        const response: ItemCircInfo = {
-            maxHistoryCount: 0,
-            totalCircs: 0,
-            circsThisYear: 0,
-            circsPrevYear: 0,
-            allYears: {}
-        };
-
-        return this.pcrud.search('circbyyr',
-            {copy : item.id()}, null, {atomic : true}).toPromise()
-
-        .then(counts => {
-
-            const curYear = new Date().getFullYear();
-            const prevYear = curYear - 1;
-
-            counts.forEach(c => {
-                response.totalCircs += Number(c.count());
-                if (c.year() === curYear) {
-                    response.circsThisYear += Number(c.count());
-                }
-                if (c.year() === prevYear) {
-                    response.circsPrevYear += Number(c.count());
-                }
-
-                if (!response.allYears[c.year()]) {
-                    response.allYears[c.year()] = 0;
-                }
-
-                response.allYears[c.year()] += Number(c.count());
-            });
-        })
-        .then(_ => this.getMaxCircDisplayCount(item))
-        .then(count => response.maxHistoryCount = count)
-        .then(_ => this.getLatestCirc(item))
-        .then(circ => {
-
-            if (!circ) { return response; }
-
-            response.currentCirc = circ;
-
-            return this.getCircChain(circ.id())
-            .then(summary => {
-                response.circSummary = summary;
-
-                if (response.maxHistoryCount <= 1) {
-                    return response;
-                }
-
-                return this.getPrevCircChain(circ.id())
-                .then(prevSummary => {
-                    if (!prevSummary) { return response; }
-
-                    response.prevCircSummary = prevSummary.summary;
-
-                    if (!prevSummary.usr) { // aged circs have no 'usr'.
-                        return response;
-                    }
-
-                    return this.pcrud.retrieve('au', prevSummary.usr,
-                        {flesh : 1, flesh_fields : {au : ['card']}})
-                    .toPromise().then(user => {
-                        response.prevCircUser = user;
-                        return response;
-                    });
-                });
-            });
-        });
     }
 }
 

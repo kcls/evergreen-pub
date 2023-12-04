@@ -1,4 +1,4 @@
-import {Component, Input, ViewChild} from '@angular/core';
+import {Component, OnInit, Input, ViewChild} from '@angular/core';
 import {Observable, from, empty} from 'rxjs';
 import {switchMap, tap} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';

@@ -1,9 +1,8 @@
 import {Component, Input, ViewChild, OnInit} from '@angular/core';
-import {Location} from '@angular/common';
 import {EMPTY} from 'rxjs';
 import {map, tap, concatMap} from 'rxjs/operators';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
-import {NgbTabset, NgbTabChangeEvent} from '@ng-bootstrap/ng-bootstrap';
+import {NgbNav, NgbNavChangeEvent} from '@ng-bootstrap/ng-bootstrap';
 import {OrgService} from '@eg/core/org.service';
 import {AuthService} from '@eg/core/auth.service';
 import {NetService} from '@eg/core/net.service';
@@ -26,6 +25,7 @@ export class NegativeBalancesComponent implements OnInit {
     dataSource: GridDataSource = new GridDataSource();
     contextOrg: IdlObject;
     contextOrgLoaded = false;
+    cellTextGenerator: GridCellTextGenerator;
 
     @ViewChild('grid') private grid: GridComponent;
 
@@ -36,12 +36,15 @@ export class NegativeBalancesComponent implements OnInit {
         private net: NetService,
         private pcrud: PcrudService,
         private strings: StringService,
-        private ngLocation: Location,
         private toast: ToastService
     ) {}
 
     ngOnInit() {
         this.contextOrg = this.org.get(this.auth.user().ws_ou());
+
+        this.cellTextGenerator = {
+            barcode: row => row.card().barcode()
+        };
 
         this.dataSource.getRows = (pager: Pager, sort: any[]) => {
 
@@ -68,16 +71,10 @@ export class NegativeBalancesComponent implements OnInit {
         };
     }
 
-    orgChnaged(org: IdlObject) {
+    orgChanged(org: IdlObject) {
         if (org) {
             this.contextOrg = org;
             this.grid.reload();
         }
-    }
-
-    rowActivated(patron: any) {
-        const url = this.ngLocation.prepareExternalUrl(
-          `/staff/circ/patron/${patron.id()}/`);
-        window.open(url);
     }
 }

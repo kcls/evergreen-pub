@@ -1,31 +1,32 @@
-<ng-template #cnTemplate let-copy="row">
+<ng-template #cnTemplate let-copy="row" let-context="userContext">
     <div id="copy-callnumber-{{copy.call_number}}">
     {{copy.call_number_prefix_label}}
     <span id="copy-callnumber-label-{{copy.call_number_label}}">{{copy.call_number_label}}</span>
     {{copy.call_number_suffix_label}}
     </div>
   <div>
-    <a routerLink="/staff/cat/volcopy/holdings/callnumber/{{copy.call_number}}"
+    <ng-container *ngIf="context.editableCN(copy)">
+      <a routerLink="/staff/cat/volcopy/holdings/callnumber/{{copy.call_number}}"
       target="_blank" i18n attr.aria-describedby="copy-callnumber-label-{{copy.call_number_label}}">Edit</a> 
+    </ng-container>
   </div>
 </ng-template>
 
 <ng-template #barcodeTemplate let-copy="row" let-context="userContext">
   <div id="copy-barcode-{{copy.id}}">{{copy.barcode}}</div>
   <div>
-    <a class="ps-1" target="_blank" 
-      routerLink="/staff/cat/item/{{copy.id}}/summary" i18n>View</a>
-    | 
+  <a class="ps-1" target="_blank" attr.aria-describedby="copy-barcode-{{copy.id}}"
+    href="/eg/staff/cat/item/{{copy.id}}" i18n>View</a>
     <ng-container *ngIf="context.editable(copy)">
-    <a class="pl-1" target="_blank"
-      routerLink="/staff/cat/volcopy/attrs/item/{{copy.id}}" i18n>Edit</a>
+      | <a class="ps-1" target="_blank"  attr.aria-describedby="copy-barcode-{{copy.id}}"
+        routerLink="/staff/cat/volcopy/attrs/item/{{copy.id}}" i18n>Edit</a>
     </ng-container>
   </div>
 </ng-template>
 
 <ng-template #holdableTemplate let-copy="row" let-context="userContext">
   <div *ngIf="context.holdable(copy)">
-    <div>
+    <div class="border-bottom">
       <a routerLink="/staff/catalog/hold/C"
         attr.aria-describedby="copy-barcode-{{copy.id}}"
         [queryParams]="{target: copy.id}"
@@ -33,7 +34,6 @@
         Item Hold
       </a>
     </div>
-    <!--
     <div>
       <a routerLink="/staff/catalog/hold/V"
         attr.aria-describedby="copy-barcode-{{copy.id}}"
@@ -42,7 +42,6 @@
         Call Number Hold
       </a>
     </div>
-    -->
   </div>
   <div *ngIf="!context.holdable(copy)" i18n>No</div>
 </ng-template>
@@ -61,29 +60,17 @@
   {{copy.age_protect_label}}
 </ng-template>
 
-<ng-template #circModTemplate let-row="row" let-userContext="userContext">
-  <ng-container *ngIf="row.circ_modifier_code" i18n>
-    {{row.circ_modifier_code}} : {{row.circ_modifier_name}}
-  </ng-container>
-</ng-template>
-
-<div class='eg-copies w-100 mt-3' *ngIf="limitToViable !== null">
+<div class='eg-copies w-100 mt-3'>
   <eg-grid #copyGrid [dataSource]="gridDataSource" 
     [disableSelect]="true" [cellTextGenerator]="cellTextGenerator"
     [sortable]="false" persistKey="catalog.record.copies">
-
-    <eg-grid-toolbar-checkbox i18n-label label="Limit to Viable Items"
-      [initialValue]="limitToViable"                                           
-      #limitToViableCbox (onChange)="toggleLimitToViable($event)">
-    </eg-grid-toolbar-checkbox>
-
     <eg-grid-column i18n-label label="Item ID" path="id" 
       [hidden]="true" [index]="true">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Location" path="circ_lib" datatype="org_unit">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Call Number / Item Notes" name="callnumber" 
-      [cellTemplate]="cnTemplate">
+      [cellTemplate]="cnTemplate" [cellContext]="copyContext">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Part" path="part_label" name="monograph_part">
     </eg-grid-column>
@@ -92,17 +79,13 @@
     </eg-grid-column>
     <eg-grid-column i18n-label label="Shelving Location" path="copy_location">
     </eg-grid-column>
-    <eg-grid-column i18n-label label="Circulation Modifier"
-      [cellTemplate]="circModTemplate" name="circ_modifier">
+    <eg-grid-column i18n-label label="Circulation Modifier" path="circ_modifier">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Age Hold Protection" path="age_protect"
       [cellTemplate]="ageTemplate">
     </eg-grid-column>
-    <eg-grid-column i18n-label label="Active Date" 
+    <eg-grid-column i18n-label label="Active/Create Date" 
       path="active_date" datatype="timestamp">
-    </eg-grid-column>
-    <eg-grid-column i18n-label label="Create Date" 
-      path="create_date" datatype="timestamp">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Holdable?" name="holdable" 
       [cellTemplate]="holdableTemplate" [cellContext]="copyContext">
@@ -113,8 +96,6 @@
     <eg-grid-column i18n-label label="Status" path="copy_status">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Due Date" path="due_date" datatype="timestamp">
-    </eg-grid-column>
-    <eg-grid-column i18n-label label="Alert Message" path="alert_message">
     </eg-grid-column>
     <eg-grid-column i18n-label label="Last Circ Date" path="last_circ" datatype="timestamp">
     </eg-grid-column>

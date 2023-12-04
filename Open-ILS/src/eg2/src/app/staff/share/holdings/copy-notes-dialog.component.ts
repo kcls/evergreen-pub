@@ -10,11 +10,15 @@ import {OrgService} from '@eg/core/org.service';
 import {StringComponent} from '@eg/share/string/string.component';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
-import {StaffService} from '@eg/staff/share/staff.service';
 
 /**
  * Dialog for managing copy notes.
  */
+
+export interface CopyNotesChanges {
+    newNotes: IdlObject[];
+    delNotes: IdlObject[];
+}
 
 @Component({
   selector: 'eg-copy-notes-dialog',
@@ -24,16 +28,29 @@ import {StaffService} from '@eg/staff/share/staff.service';
 export class CopyNotesDialogComponent
     extends DialogComponent {
 
-    @Input() copyId: number = null;
+    // If there are multiple copyIds, only new notes may be applied.
+    // If there is only one copyId, then notes may be applied or removed.
+    @Input() copyIds: number[] = [];
 
+    mode: string; // create | manage | edit
+
+    // If true, no attempt is made to save the new notes to the
+    // database.  It's assumed this takes place in the calling code.
+    @Input() inPlaceCreateMode = false;
+
+    // In 'create' mode, we may be adding notes to multiple copies.
+    copies: IdlObject[] = [];
+
+    // In 'manage' mode we only handle a single copy.
     copy: IdlObject;
 
-    creating = false;
     curNote: string;
     curNoteTitle: string;
     curNotePublic = false;
-    curDibs: string;
-    newNote: IdlObject;
+    newNotes: IdlObject[] = [];
+    delNotes: IdlObject[] = [];
+
+    autoId = -1;
 
     idToEdit: number;
 
@@ -46,7 +63,6 @@ export class CopyNotesDialogComponent
         private net: NetService,
         private idl: IdlService,
         private pcrud: PcrudService,
-        private staff: StaffService,
         private org: OrgService,
         private auth: AuthService) {
         super(modal); // required for subclassing
@@ -54,72 +70,120 @@ export class CopyNotesDialogComponent
 
     /**
      */
-    open(args: NgbModalOptions): Observable<IdlObject[]> {
+    open(args: NgbModalOptions): Observable<CopyNotesChanges> {
         this.copy = null;
+        this.copies = [];
+        this.newNotes = [];
+        this.delNotes = [];
 
-        if (!this.copyId) {
+        if (this.copyIds.length === 0 && !this.inPlaceCreateMode) {
             return throwError('copy ID required');
         }
 
+        // In manage mode, we can only manage a single copy.
+        // But in create mode, we can add notes to multiple copies.
+        // We can only manage copies that already exist in the database.
+        if (this.copyIds.length === 1 && this.copyIds[0] > 0) {
+            this.mode = 'manage';
+        } else {
+            this.mode = 'create';
+        }
+
         // Observify data loading
-        const obs = from(this.getCopy());
+        const obs = from(this.getCopies());
 
         // Return open() observable to caller
         return obs.pipe(switchMap(_ => super.open(args)));
     }
 
-    getCopy(): Promise<any> {
+    getCopies(): Promise<any> {
 
-        return this.pcrud.retrieve('acp', this.copyId,
-            {flesh: 1, flesh_fields: {acp: ['notes']}}
+        // Avoid fetch if we're only adding notes to isnew copies.
+        const ids = this.copyIds.filter(id => id > 0);
+        if (ids.length === 0) { return Promise.resolve(); }
+
+        return this.pcrud.search('acp', {id: this.copyIds},
+            {flesh: 1, flesh_fields: {acp: ['notes']}},
+            {atomic: true}
         )
-        .toPromise().then(copy => this.copy = copy);
-    }
-
-    create() {
-        this.creating = true;
-        setTimeout(() => {
-            const node = document.getElementById('note-title');
-            if (node) { node.focus(); }
+        .toPromise().then(copies => {
+            this.copies = copies;
+            if (copies.length === 1) {
+                this.copy = copies[0];
+            }
         });
     }
 
+    editNote(note: IdlObject) {
+        this.idToEdit = note.id();
+        this.mode = 'edit';
+    }
+
+    returnToManage() {
+        this.getCopies().then(() => {
+            this.idToEdit = null;
+            this.mode = 'manage';
+        })
+    }
+
     removeNote(note: IdlObject) {
-        if (note.isnew()) { return; }
+        this.newNotes = this.newNotes.filter(t => t.id() !== note.id());
+
+        if (note.isnew() || this.mode === 'create') { return; }
 
         const existing = this.copy.notes().filter(n => n.id() === note.id())[0];
         if (!existing) { return; }
 
         existing.isdeleted(true);
+        this.delNotes.push(existing);
 
-        return this.pcrud.remove(existing).toPromise()
-        .then(_ => {
-            this.copy.notes(this.copy.notes().filter(n => n.id() !== note.id()));
-        });
+        // Remove from copy for dialog display
+        this.copy.notes(this.copy.notes().filter(n => n.id() !== note.id()));
     }
 
     addNew() {
-        if (!this.curDibs || !this.curNote) { return; }
+        if (!this.curNoteTitle || !this.curNote) { return; }
 
         const note = this.idl.create('acpn');
         note.isnew(true);
         note.creator(this.auth.user().id());
         note.pub(this.curNotePublic ? 't' : 'f');
-        note.title(this.curNoteTitle || ''); // Not required in XUL
-        note.value(this.staff.appendInitials(this.curNote, this.curDibs));
-        note.owning_copy(this.copyId);
+        note.title(this.curNoteTitle);
+        note.value(this.curNote);
+        note.id(this.autoId--);
 
-        this.pcrud.create(note).toPromise().then(newNote => {
+        this.newNotes.push(note);
 
-            this.curDibs = '';
-            this.curNote = '';
-            this.curNoteTitle = '';
-            this.curNotePublic = false;
+        this.curNote = '';
+        this.curNoteTitle = '';
+        this.curNotePublic = false;
+    }
 
-            this.copy.notes().push(newNote);
+    applyChanges() {
 
-            this.creating = false;
+        if (this.inPlaceCreateMode) {
+            this.close({ newNotes: this.newNotes, delNotes: this.delNotes });
+            return;
+        }
+
+        const notes = [];
+        this.newNotes.forEach(note => {
+            this.copies.forEach(copy => {
+                const n = this.idl.clone(note);
+                n.id(null); // remove temp ID, it will be duped
+                n.owning_copy(copy.id());
+                notes.push(n);
+            });
+        });
+
+        this.pcrud.create(notes).toPromise()
+        .then(_ => {
+            if (this.delNotes.length) {
+                return this.pcrud.remove(this.delNotes).toPromise();
+            }
+        }).then(_ => {
             this.successMsg.current().then(msg => this.toast.success(msg));
+            this.close({ newNotes: this.newNotes, delNotes: this.delNotes });
         });
     }
 }

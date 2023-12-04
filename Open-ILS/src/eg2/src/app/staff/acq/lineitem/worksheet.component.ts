@@ -33,11 +33,6 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
 
     ngOnInit() {
 
-        this.closing = this.route.snapshot.url
-          .filter(part => part.path === 'close').length > 0;
-        this.printing = this.route.snapshot.url
-          .filter(part => part.path === 'print').length > 0;
-
         this.route.paramMap.subscribe((params: ParamMap) => {
             const id = +params.get('lineitemId');
             if (id !== this.lineitemId) {
@@ -72,12 +67,7 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
         ).toPromise()
         .then(li => this.lineitem = li)
         .then(_ => this.getRemainingData())
-        .then(_ => this.populatePreview())
-        .then(_ => {
-            if (this.printing) {
-                this.printWorksheet();
-            }
-        });
+        .then(_ => this.populatePreview());
     }
 
     getRemainingData(): Promise<any> {

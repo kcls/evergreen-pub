@@ -64,11 +64,6 @@ export class ProfileSelectComponent implements ControlValueAccessor, OnInit {
     }
 
     ngOnInit() {
-        if (this.initialGroupId) {
-            // Sometimes we need to coerce
-            this.initialGroupId = Number(this.initialGroupId);
-        }
-
         this.collectGroups().then(grps => this.sortGroups(grps))
         .then(_ => this.fetchInitialGroup())
         .then(_ => this.cbox.selectedId = this.initialGroupId);
@@ -100,7 +95,7 @@ export class ProfileSelectComponent implements ControlValueAccessor, OnInit {
 
         return this.pcrud.search('pgtde',
             {org: this.org.ancestors(this.auth.user().ws_ou(), true)},
-            {flesh: 1, flesh_fields: {'pgtde': ['grp']}},
+            {flesh: 1, flesh_fields: {'pgtde': ['grp', 'children']}, 'order_by':{'pgtde':'position desc'}},
             {atomic: true}
 
         ).toPromise().then(groups => {

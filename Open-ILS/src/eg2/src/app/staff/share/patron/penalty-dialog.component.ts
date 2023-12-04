@@ -9,7 +9,6 @@ import {NetService} from '@eg/core/net.service';
 import {EventService} from '@eg/core/event.service';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {PcrudService} from '@eg/core/pcrud.service';
-import {StaffService} from '@eg/staff/share/staff.service';
 import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {StringComponent} from '@eg/share/string/string.component';
@@ -39,16 +38,14 @@ export class PatronPenaltyDialogComponent
 
     penalty: IdlObject; // modifying an existing penalty
     penaltyTypes: IdlObject[];
-    patronMessage = 0;
-    patronMessages: IdlObject[];
     penaltyTypeFromSelect = '';
     penaltyTypeFromButton: number;
     patron: IdlObject;
     dataLoaded = false;
     requireInitials = false;
     initials: string;
+    title = '';
     noteText = '';
-    defaultType = this.SILENT_NOTE;
 
     @ViewChild('successMsg', {static: false}) successMsg: StringComponent;
     @ViewChild('errorMsg', {static: false}) errorMsg: StringComponent;
@@ -62,7 +59,6 @@ export class PatronPenaltyDialogComponent
         private evt: EventService,
         private toast: ToastService,
         private auth: AuthService,
-        private staff: StaffService,
         private pcrud: PcrudService) {
         super(modal);
     }
@@ -77,7 +73,6 @@ export class PatronPenaltyDialogComponent
 
         this.penaltyTypeFromButton = 0;
         this.penaltyTypeFromSelect = '';
-        this.patronMessage = 0;
         this.initials = '';
         this.noteText = '';
 
@@ -87,17 +82,14 @@ export class PatronPenaltyDialogComponent
             if (sp === this.ALERT_NOTE ||
                 sp === this.SILENT_NOTE || sp === this.STAFF_CHR) {
                 this.penaltyTypeFromButton = sp;
-                this.penaltyTypeFromSelect = sp; // display in modify mode
             } else {
                 this.penaltyTypeFromSelect = sp;
             }
 
-            if (pen.usr_message()) {
-                this.noteText = pen.usr_message().message() || pen.usr_message().title();
-            }
+            this.noteText = pen.note();
 
         } else {
-            this.penaltyTypeFromButton = this.defaultType;
+            this.penaltyTypeFromButton = this.SILENT_NOTE;
         }
 
         this.store.getItem('ui.staff.require_initials.patron_standing_penalty')
@@ -108,88 +100,24 @@ export class PatronPenaltyDialogComponent
 
         if (this.penaltyTypes) { return obs1; }
 
-        return obs1
-        .pipe(switchMap(_ => {
-            return this.pcrud.search('csp', {id: {'!=': null}}, {}, {atomic: true})
+        return obs1.pipe(switchMap(_ => {
+            return this.pcrud.search('csp', {id: {'>': 100}}, {}, {atomic: true})
 
             .pipe(tap(ptypes => {
                 this.penaltyTypes =
                     ptypes.sort((a, b) => a.label() < b.label() ? -1 : 1);
             }));
-        }))
-        .pipe(switchMap(_ => {
-            return this.pcrud.retrieveAll('cpm', {}, {atomic: true})
-            .pipe(tap(messages => {
-                this.patronMessages = messages.sort((m1, m2) => {
-                    if (m1.weight() === m2.weight()) {
-                        return m1.message() < m2.message() ? -1 : 1;
-                    }
-                    return m1.weight() < m2.weight() ? -1 : 1;
-                });
-            }));
         }));
     }
 
-    setPenaltyType() {
-        const pen = this.penalty;
-
-        const id = pen.standing_penalty().id();
-
-        if (id < 100 && (id < 20 || id > 28)) {
-            // Modifying system penalties is verboten unless they are
-            // canned alert, note, etc. penalty types.
-            return;
-        }
-
-        if (this.penaltyTypeFromButton) {
-
-            // Button type is activated...
-
-            if (!this.penaltyTypeFromSelect ||
-                this.penaltyTypeFromSelect === pen.standing_penalty().id()) {
-                // Selector type is unset or matches the existing value.
-                // This means the user wants to change from a selector
-                // type to a button type.
-                pen.standing_penalty(this.penaltyTypeFromButton);
-                return;
-            }
-        }
-
-        if (this.penaltyTypeFromSelect) {
-            pen.standing_penalty(this.penaltyTypeFromSelect);
-            return;
-        }
-
-        // No type selected.  Should not get here, but to be safe:
-        pen.standing_penalty(this.defaultType);
-    }
-
     modifyPenalty() {
+        this.penalty.note(this.initials ?
+            `${this.noteText} [${this.initials}]` : this.noteText);
 
-        let msg: IdlObject;
-        if (msg = this.penalty.usr_message()) {
-            msg.ischanged(true);
-        } else {
-            msg = this.idl.create('aum');
-            msg.isnew(true);
-            msg.create_date('now');
-            msg.sending_lib(this.penalty.org_unit());
-            msg.pub(false);
-            msg.usr(this.penalty.usr());
-        }
+        this.penalty.standing_penalty(
+            this.penaltyTypeFromSelect || this.penaltyTypeFromButton);
 
-        msg.message(
-            this.initials ?
-            this.staff.appendInitials(this.noteText, this.initials) :
-            this.noteText
-        );
-
-        this.setPenaltyType();
-
-        this.net.request(
-            'open-ils.actor',
-            'open-ils.actor.user.penalty.modify',
-            this.auth.token(), this.penalty, msg).toPromise()
+        this.pcrud.update(this.penalty).toPromise()
         .then(ok => {
             if (!ok) {
                 this.errorMsg.current().then(msg => this.toast.danger(msg));
@@ -209,26 +137,22 @@ export class PatronPenaltyDialogComponent
             return;
         }
 
-        // Determin the context org unit of the applied penalty.
-        const ptypeId = Number(this.penaltyTypeFromSelect || this.penaltyTypeFromButton);
-        const ptype = this.penaltyTypes.filter(pt => Number(pt.id()) === ptypeId)[0];
-        const ptypeDepth = ptype.org_depth() || 0;
-        const ctxOrg = this.org.ancestorAtDepth(this.auth.user().ws_ou(), ptypeDepth);
-
         const pen = this.idl.create('ausp');
+        const msg = {
+            title: this.title,
+            message: this.noteText ? this.noteText : ''
+        };
         pen.usr(this.patronId);
+        pen.org_unit(this.auth.user().ws_ou());
         pen.set_date('now');
         pen.staff(this.auth.user().id());
-        pen.standing_penalty(ptypeId);
-        pen.org_unit(ctxOrg.id());
 
-        const msg = {
-            message:
-                this.initials ?
-                this.staff.appendInitials(this.noteText, this.initials) :
-                this.noteText,
-            pub: false
-        };
+        if (this.initials) {
+            msg.message = `${this.noteText} [${this.initials}]`;
+        }
+
+        pen.standing_penalty(
+            this.penaltyTypeFromSelect || this.penaltyTypeFromButton);
 
         this.net.request(
             'open-ils.actor',
@@ -237,11 +161,11 @@ export class PatronPenaltyDialogComponent
         ).subscribe(resp => {
             const e = this.evt.parse(resp);
             if (e) {
-                this.errorMsg.current().then(msg => this.toast.danger(msg));
+                this.errorMsg.current().then(m => this.toast.danger(m));
                 this.error(e, true);
             } else {
                 // resp == penalty ID on success
-                this.successMsg.current().then(msg => this.toast.success(msg));
+                this.successMsg.current().then(m => this.toast.success(m));
                 this.close(resp);
             }
         });
@@ -250,23 +174,6 @@ export class PatronPenaltyDialogComponent
     buttonClass(pType: number): string {
         return this.penaltyTypeFromButton === pType ?
             'btn-primary' : 'btn-light';
-    }
-
-    showPenaltyType(ptype: IdlObject): boolean {
-
-        if (this.penalty) {
-            if (this.penalty.standing_penalty()) {
-                const id = typeof this.penalty.standing_penalty() === 'object'
-                    ? this.penalty.standing_penalty().id()
-                    : this.penalty.standing_penalty();
-
-                return ptype.id() === id;
-            }
-        } else {
-            return ptype.id() >= 100;
-        }
-
-        return false;
     }
 }
 

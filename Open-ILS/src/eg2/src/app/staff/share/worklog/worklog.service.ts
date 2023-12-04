@@ -16,7 +16,6 @@ export interface WorkLogEntry {
     patron_id?: number;
     hold_id?: number;
     amount?: number; // paid amount
-    index?: number; // for grid display
 }
 
 
@@ -41,14 +40,6 @@ export class WorkLogService {
             this.maxEntries = sets['ui.admin.work_log.max_entries'] || 20;
             this.maxPatrons = sets['ui.admin.patron_log.max_entries'] || 10;
         });
-    }
-
-    getPatrons(): WorkLogEntry[] {
-        return this.store.getLocalItem('eg.patron_log') || [];
-    }
-
-    getActions(): WorkLogEntry[] {
-        return this.store.getLocalItem('eg.work_log') || [];
     }
 
     record(entry: WorkLogEntry) {

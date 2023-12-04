@@ -3,16 +3,11 @@
 <eg-string #failure i18n-text text="Some Transits Failed to Cancel">
 </eg-string>
 
-<eg-alert-dialog #alertDialog
-  i18n-dialogTitle dialogTitle="Some Transits Could Not Be Canceled">
-</eg-alert-dialog>
-
 <ng-template #dialogContent>
   <div class="modal-header">
     <h4 i18n>Cancel Transits</h4>
     <button type="button" class="btn-close btn-close-white"
       i18n-aria-label aria-label="Close" (click)="close()"></button>
-    </button>
   </div>
   <div class="modal-body">
     <strong i18n>Cancel {{numTransits}} transits?</strong>

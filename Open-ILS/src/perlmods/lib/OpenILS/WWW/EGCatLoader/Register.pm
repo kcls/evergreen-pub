@@ -102,6 +102,7 @@ sub load_patron_reg {
 
         $logger->info("Patron self-reg success; usrname $resp");
         $ctx->{register}{success} = 1;
+        $ctx->{register}{user} = $user;
     }
 
     return Apache2::Const::OK;
@@ -209,12 +210,9 @@ sub handle_addresses {
             OpenILS::Utils::KCLSNormalize::normalize_address_street(
                 $bill_addr->street1, $bill_addr->street2);
 
+        $bstreet1 .= " #$bstreet2" if $bstreet2;
         $bill_addr->street1($bstreet1);
-        if ($bstreet2) {
-            $bill_addr->street2($bstreet2);
-        } else {
-            $bill_addr->clear_street2;
-        }
+        $bill_addr->clear_street2;
     }
 
     if ($mail_addr) {
@@ -222,12 +220,9 @@ sub handle_addresses {
             OpenILS::Utils::KCLSNormalize::normalize_address_street(
                 $mail_addr->street1, $mail_addr->street2);
 
-        $mail_addr->street1($mstreet1);
-        if ($mstreet2) {
-            $mail_addr->street2($mstreet2);
-        } else {
-            $mail_addr->clear_street2;
-        }
+        $mstreet1 .= " #$mstreet2" if $mstreet2;
+        $bill_addr->street1($mstreet1);
+        $bill_addr->clear_street2;
     }
 
     return ($bill_addr, $mail_addr);

@@ -19,7 +19,7 @@ import {VandelayService, VandelayImportSelection} from './vandelay.service';
 export class QueuedRecordMatchesComponent {
 
     @Input() queueType: string;
-    @Input() recordId: number; // queued record ID
+    @Input() recordId: number;
     @ViewChild('bibGrid', { static: false }) bibGrid: GridComponent;
     @ViewChild('authGrid', { static: false }) authGrid: GridComponent;
 
@@ -83,24 +83,16 @@ export class QueuedRecordMatchesComponent {
                 selection = new VandelayImportSelection();
                 this.vandelay.importSelection = selection;
             }
-
             const match = this.matchMap[matchId];
-            selection.overlayMap[this.recordId] = match;
-
-            if (!selection.recordIds.includes(this.recordId)) {
-                selection.recordIds.push(this.recordId);
-            }
+            selection.overlayMap[this.recordId] = match.eg_record();
         }
     }
 
     isOverlayTarget(matchId: number): boolean {
         const selection = this.vandelay.importSelection;
         if (selection) {
-            const forRec: IdlObject = selection.overlayMap[this.recordId];
-            if (forRec) {
-                const match = this.matchMap[matchId];
-                return forRec.id() === match.id();
-            }
+            const match = this.matchMap[matchId];
+            return selection.overlayMap[this.recordId] === match.eg_record();
         }
         return false;
     }

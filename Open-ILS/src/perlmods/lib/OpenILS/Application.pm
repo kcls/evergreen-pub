@@ -74,7 +74,9 @@ sub authoritative_wrapper {
     my $method = $self->method_lookup($self->{real_api_name});
     die unless $method;
 
-    local $OpenILS::Utils::CStoreEditor::always_xact = 1;
+    # ".authoritative" is deprecated.  Disable it.
+
+    local $OpenILS::Utils::CStoreEditor::always_xact = 0;
 
     $client->respond( $_ ) for ( $method->run(@args) );
 

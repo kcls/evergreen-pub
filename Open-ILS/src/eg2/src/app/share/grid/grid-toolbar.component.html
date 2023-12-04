@@ -27,12 +27,13 @@
     <ng-container *ngFor="let cb of gridContext.toolbarCheckboxes; index as i">
       <div class="form-check form-check-inline">
         <input class="form-check-input" type="checkbox" id="eg-grid-toolbar-cb{{i}}"
-          [disabled]="cb.disabled"
           [(ngModel)]="cb.isChecked"
           (click)="cb.onChange.emit($event.target.checked)"/>
         <label class="form-check-label" for="eg-grid-toolbar-cb{{i}}">{{cb.label}}</label>
       </div>
     </ng-container>
+  
+
   </div>
 
   <!-- push everything else to the right -->
@@ -83,7 +84,7 @@
     </button>
     <div class="dropdown-menu" ngbDropdownMenu>
       <button type="button" class="dropdown-item"
-        *ngFor="let count of [5, 10, 25, 50, 100, 500, 1000, 10000]"
+        *ngFor="let count of [5, 10, 25, 50, 100]"
         (click)="gridContext.pager.setLimit(count)">
         <span class="ms-2">{{count}}</span>
       </button>
@@ -124,13 +125,6 @@
         <span class="material-icons" aria-hidden="true">build</span>
         <span class="ms-2" i18n>Manage Columns</span>
       </button>
-      <button class="dropdown-item label-with-material-icon"
-        *ngIf="!disableSaveSettings"
-        [disabled]="gridContext.toolbarActions.length === 0"
-        (click)="toolbarActionsEditor.open().subscribe()">
-        <span class="material-icons">menu</span>
-        <span class="ml-2" i18n>Manage Actions Menu</span>
-      </button>
       <button nbgDropdownItem class="dropdown-item label-with-material-icon"
         (click)="colWidthConfig.isVisible = !colWidthConfig.isVisible">
         <span class="material-icons" aria-hidden="true">compare_arrows</span>
@@ -146,27 +140,23 @@
         <span class="material-icons" aria-hidden="true">save</span>
         <span class="ms-2" i18n>Save Grid Settings</span>
       </button>
-      <a nbgDropdownItem class="dropdown-item label-with-material-icon"
-        (click)="gridContext.resetColumns()">
-        <span class="material-icons">restore</span>
-        <span class="ml-2" i18n>Reset Columns</span>
+      <button nbgDropdownItem class="dropdown-item label-with-material-icon" (click)="gridContext.columnSet.reset()">
+        <span class="material-icons" aria-hidden="true">restore</span>
+        <span class="ms-2" i18n>Reset Columns</span>
+      </button>
+      <a nbgDropdownItem class="dropdown-item label-with-material-icon" (click)="generateCsvExportUrl($event)"
+        [download]="csvExportFileName" [href]="csvExportUrl">
+        <span class="material-icons" aria-hidden="true">cloud_download</span>
+        <span class="ms-2" i18n>Download Full CSV</span>
       </a>
-      <a nbgDropdownItem class="dropdown-item label-with-material-icon"
-        (click)="generateCsvExportUrl($event)"
-        [download]="csvExportFileName"
-        [href]="csvExportUrl">
-        <span class="material-icons">cloud_download</span>
-        <span class="ml-2" i18n>Download Full CSV</span>
-      </a>
-      <a class="dropdown-item label-with-material-icon" (click)="printHtml()">
-        <span class="material-icons">print</span>
-        <span class="ml-2" i18n>Print Full Grid</span>
-      </a>
-
+      <button nbgDropdownItem class="dropdown-item label-with-material-icon" (click)="printHtml()">
+        <span class="material-icons" aria-hidden="true">print</span>
+        <span class="ms-2" i18n>Print Full Grid</span>
+      </button>
+  
       <div class="dropdown-divider"></div>
-
-      <a class="dropdown-item label-with-material-icon"
-        (click)="toggleVisibility(col)"
+  
+      <button nbgDropdownItem class="dropdown-item label-with-material-icon" (click)="toggleVisibility(col)"
         *ngFor="let col of gridContext.columnSet.sortForColPicker()">
         <!-- Note that the ARIA labels describe the action that will happen when the button
           is pressed, not the current state indicated by the badge -->

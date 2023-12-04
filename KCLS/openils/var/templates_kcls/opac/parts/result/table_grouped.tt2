@@ -1,0 +1,159 @@
+<!-- 
+This table is used for "grouped" style searching. When one wishes to search for a
+subject, author or series heading this table will be shown instead of table.tt2.
+
+The purpose is to show the user a list of headings, sorting their overall results 
+by specific heading and displaying an item count for each one.
+ -->
+
+[%  PROCESS "opac/parts/misc_util.tt2";
+    USE ResolverResolver;
+
+    ctx.result_start = 1 + ctx.page_size * page;
+    ctx.result_stop = ctx.page_size * (page + 1);
+
+    IF ctx.result_stop > ctx.hit_count; ctx.result_stop = ctx.hit_count; END;
+
+    result_count = ctx.result_start;
+%]
+
+[% IF ctx.is_staff %] 
+<script type="text/javascript">
+	/*
+	 * Catalyst IT Services
+	 * New tab function, which opens a fresh tab with user's selection. Called when user clicks on a result group.
+	 */
+	function new_tab( element ) {
+	
+        var tabName = element.getAttribute( 'tabname' );
+        var url = element.getAttribute( 'url' );
+        var params = { 'tab_name' : tabName };
+        var content_params = { 'override_tab_lock' : true, 
+                               'no_xulG' : false, 
+                               'show_print_button' : false, 
+                               'show_nav_buttons' : false, 
+                               'opac_url' : url };
+
+        xulG.new_tab( 
+            xulG.url_prefix( 'chrome://open_ils_staff_client/content/cat/opac.xul' ), 
+            params, 
+            content_params
+        );
+	}     
+</script>
+[% END %]
+
+<div style="height: 10px;"></div>
+
+[% PROCESS "opac/parts/result/paginate.tt2" %]
+[% ctx.results_count_header = PROCESS results_count_header;
+    ctx.results_count_header %]
+
+<div id="result_table_div">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+    	<tr>
+	        <td valign="top" width="1" style="padding-right:20px;">
+		        <div style="width:174px;">
+        	        [% INCLUDE 'opac/parts/result/facets.tt2' %]
+    	        </div>
+	        </td>
+	        <td class='opac-auto-015' width="1"></td>
+	        <td valign="top">
+	    	    <table id="res_table" 
+                       cellpadding="0" 
+                       cellspacing="0"
+		    	       border="0" 
+                       width="100%" 
+                       style="margin-top:10px;">
+                    <tbody id="result_table">
+                        [%  FOR group IN ctx.groupings;
+                            attrs = {marc_xml => rec.marc_xml};
+                    	    PROCESS get_marc_attrs args=attrs;
+                    	    IF CGI.param( 'detail_record_view' );
+                                attrs.title = attrs.title_extended;
+                    	    END; %]
+                	    <div>
+			                <tr class='result_table_row'> 
+				                <table cellpading="0" cellspacing="0" class='result_table_subtable'>
+				                    <tbody class='result_table_subtbody'>
+					                    <tr name='counts_row'>
+                    			            <td width="58" 
+						                        style="font-weight:bold;padding-left:10px;"
+						                        name="results_row_count">
+                            			        [% result_count; result_count = result_count + 1 %].
+                    			            </td>
+                    			            <td class='result_table_pic_header'>
+                    			            </td>
+<!-- Heading Title -->
+                    			            <td class='result_table_title_cell'
+                        			            name='result_table_title_cell'>
+                            			        <div class="bold">
+                            			            [%  
+                                    			        href = mkurl( '', { 
+                                		                    groupings_result_start => ctx.result_start, 
+                                			                groupings_page => ctx.search_page, 
+                                			                groupings_query => 'true', 
+                                			                grouping_name => group.value,  
+                                			                query_slice => ctx.query_slice,  
+                                			                query => ctx.query,
+                                			                query_look_up => group.query
+                                			            } );
+                            			            %]
+                            			            [% IF ctx.is_staff %]
+					                                <!-- Group Link opens in a new tab ( staff client only ). If the group name 
+						                            is longer than 25 characters, shorten it to 22 and add ellipsis -->
+                            			                <a href=''
+	                            			               url = "[% href %]";
+		                        		                   [% IF group.value.length > 25 %]
+	                            			               tabname = "[% group.value.substr( 0, 22 ) %]...";
+	                            			               [% ELSE %]
+	                                		               tabname = "[% group.value %]";
+	                            			               [% END %]
+                            				               onclick = "new_tab( this )";>
+	                                		                [% group.value %]
+	                            		                </a>
+	                        		                [% END %]
+	                        		                [% IF !ctx.is_staff %]
+	                           		                    <a href='[% href %]'>
+	                                		                [% group.value %]
+	                            		                </a>
+	                        		                [% END %]
+                        		                </div>
+                    			            </td>
+<!-- Item Count -->
+                                            <td nowrap='nowrap' 
+                                                width="1" 
+                                                align="right">
+                                                <div class="result_table_utils_cont">
+                                                    <div class="result_table_utils">
+                                                        <div class="results_aux_utils">
+                                                            <h4>Items: [% group.count %]</h4>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+<!-- Separating Line -->                                          
+                                            <tr>
+                                                <td colspan="5">
+                                                    <div style="height:0px;
+                                                                border-top:1px solid #b7b7b7;
+                                                                border-bottom:1px solid #d4d4d4;
+                                                                margin:15px 0px;">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                			            </tr>
+				                    [% END %]
+				                    </tbody>
+        			            </table>
+			                </tr>
+			            </div>
+		            </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+<div>
+    [% ctx.results_count_header %]
+</div>

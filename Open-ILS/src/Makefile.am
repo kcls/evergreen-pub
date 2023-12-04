@@ -16,7 +16,7 @@
 
 export STAFF_CLIENT_BUILD_ID = `/bin/cat @top_srcdir@/Open-ILS/xul/staff_client/build/BUILD_ID`
 export DEF_LDFLAGS = -L. -L$(TMP) -L$(OPENSRF_LIBS)
-export DEF_CFLAGS = -D_LARGEFILE64_SOURCE -pipe -g -Wall -O2 -fPIC -I@top_srcdir@/include -I$(LIBXML2_HEADERS) -I$(APACHE2_HEADERS) -I$(APR_HEADERS)  -I$(LIBXML2_HEADERS)/libxml  -I$(TMP) -I$(OPENSRF_HEADERS)
+export DEF_CFLAGS = -D_LARGEFILE64_SOURCE -pipe -g -Wall -O2 -fPIC -I@top_srcdir@/include -I$(LIBXML2_HEADERS) -I$(APACHE2_HEADERS) -I$(APR_HEADERS)  -I$(LIBXML2_HEADERS)/libxml  -I$(TMP) -I$(OPENSRF_HEADERS) -I$(HIREDIS_HEADERS)
 export DEF_LDLIBS = -lopensrf 
 
 
@@ -265,6 +265,9 @@ ilscore-install:
 	sed -i 's|LOCALSTATEDIR|@localstatedir@|g' '$(DESTDIR)@sysconfdir@/oils_sip.xml.example'
 	sed -i 's|SYSCONFDIR|@sysconfdir@|g' '$(DESTDIR)@sysconfdir@/oils_sip.xml.example'
 	sed -i 's|LIBDIR|@libdir@|g' '$(DESTDIR)@sysconfdir@/oils_sip.xml.example'
+	sed -i 's|OPENSRF_BUS_PASSWORD|@OPENSRF_BUS_PASSWORD@|g' '$(DESTDIR)@sysconfdir@/opensrf_core.xml.example'
+	sed -i 's|GATEWAY_BUS_PASSWORD|@GATEWAY_BUS_PASSWORD@|g' '$(DESTDIR)@sysconfdir@/opensrf_core.xml.example'
+	sed -i 's|ROUTER_BUS_PASSWORD|@ROUTER_BUS_PASSWORD@|g' '$(DESTDIR)@sysconfdir@/opensrf_core.xml.example'
 	sed -i 's|LOCALSTATEDIR|@localstatedir@|g' '$(DESTDIR)@sysconfdir@/opensrf_core.xml.example'
 	sed -i 's|SYSCONFDIR|@sysconfdir@|g' '$(DESTDIR)@sysconfdir@/opensrf_core.xml.example'
 	sed -i 's|LOCALSTATEDIR|@localstatedir@|g' '$(DESTDIR)@sysconfdir@/opensrf.xml.example'

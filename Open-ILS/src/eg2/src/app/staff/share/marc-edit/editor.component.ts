@@ -38,18 +38,8 @@ export class MarcEditorComponent implements OnInit {
     sources: ComboboxEntry[];
     context: MarcEditContext;
 
-    catDate: Date; // cat date in selector
-    origCatDate: Date; // cat date pulled from bib record
-
     // True if the save request is in flight
     dataSaving: boolean;
-
-    saveCount = 0;
-
-    // KCLS
-    // True if we are changing tabs to the "Front" (enriched) editor
-    // after applying changes in the flat text editor.
-    inPostSaveTabChange = false;
 
     @Input() recordType: MARC_RECORD_TYPE = 'biblio';
 
@@ -124,13 +114,7 @@ export class MarcEditorComponent implements OnInit {
         this.recordSaved = new EventEmitter<MarcSavedEvent>();
         this.context = new MarcEditContext();
 
-        this.recordSaved.subscribe(_ => {
-            this.dataSaving = false;
-            if (this.editorTab === 'flat') {
-                this.inPostSaveTabChange = true;
-                this.editorTab = 'rich';
-            }
-        });
+        this.recordSaved.subscribe(_ => this.dataSaving = false);
     }
 
     ngOnInit() {
@@ -139,28 +123,12 @@ export class MarcEditorComponent implements OnInit {
 
         this.context.recordType = this.recordType;
 
-        if (!this.record && this.recordId) {
-            this.fromId(this.recordId);
-        }
-
         this.store.getItem('cat.marcedit.flateditor').then(
             useFlat => this.editorTab = useFlat ? 'flat' : 'rich');
 
-        if (this.recordType !== 'biblio') { return; }
-
-        this.pcrud.retrieveAll('cbs').subscribe(
-            src => this.sources.push({id: +src.id(), label: src.source()}),
-            _ => {},
-            () => {
-                this.sources = this.sources.sort((a, b) =>
-                    a.label.toLowerCase() < b.label.toLowerCase() ? -1 : 1
-                );
-
-                if (this.recordSource) {
-                    this.sourceSelector.applyEntryId(this.recordSource);
-                }
-            }
-        );
+        if (!this.record && this.recordId) {
+            this.fromId(this.recordId);
+        }
     }
 
     changesPending(): boolean {
@@ -177,16 +145,6 @@ export class MarcEditorComponent implements OnInit {
         // Avoid undo persistence across tabs since that could result
         // in changes getting lost.
         this.context.resetUndos();
-
-        // explicit values to make compiler happy
-        this.editorTab = evt.nextId === 'flat' ? 'flat' : 'rich';
-
-
-        if (this.inPostSaveTabChange) {
-            // Avoid saving post-save tab changes to settings.
-            this.inPostSaveTabChange = false;
-            return;
-        }
 
         if (evt.nextId === 'flat') {
             this.store.setItem('cat.marcedit.flateditor', true);
@@ -220,7 +178,6 @@ export class MarcEditorComponent implements OnInit {
         if (this.inPlaceMode) {
             // Let the caller have the modified XML and move on.
             this.recordSaved.emit(emission);
-            this.saveCount++;
             return Promise.resolve();
         }
 
@@ -241,7 +198,6 @@ export class MarcEditorComponent implements OnInit {
         // callers responsibility to tear us down and rebuild us.
         return promise.then(marcXml => {
             if (!marcXml) { return null; }
-            this.saveCount++;
             this.successMsg.current().then(msg => this.toast.success(msg));
             emission.marcXml = marcXml;
             emission.recordId = this.recordId;
@@ -301,32 +257,13 @@ export class MarcEditorComponent implements OnInit {
     fromId(id: number): Promise<any> {
         const idlClass = this.recordType === 'authority' ? 'are' : 'bre';
 
-        // KCLS JBAS-2640 apply tab preference each time a new record is
-        // loaded, e.g. catalog nex/prev navigation.  Beware if we start
-        // using fromId() directly after a save, this could clobber the
-        // inPostSaveTabChange (jump-to-fron-editor) handling.
-        this.store.getItem('cat.marcedit.flateditor').then(
-            useFlat => this.editorTab = useFlat ? 'flat' : 'rich');
-
         return this.pcrud.retrieve(idlClass, id)
         .toPromise().then(rec => {
             this.context.record = new MarcRecord(rec.marc());
             this.record.id = id;
             this.record.deleted = rec.deleted() === 't';
-
             if (idlClass === 'bre') {
-                if (rec.source()) {
-                    this.sourceSelector.applyEntryId(+rec.source());
-                }
-
-                if (rec.cataloging_date()) {
-                    this.catDate = this.origCatDate =
-                        new Date(Date.parse(rec.cataloging_date()));
-                } else {
-                    // Default to now when unset.
-                    this.catDate = new Date();
-                    this.origCatDate = null;
-                }
+                this.recordSource = +rec.source();
             }
         });
     }
@@ -338,47 +275,6 @@ export class MarcEditorComponent implements OnInit {
     fromXml(xml: string) {
         this.context.record = new MarcRecord(xml);
         this.record.id = null;
-    }
-
-    setCatDate(clear?: boolean) {
-
-        let date: string = null;
-
-        if (clear) {
-            this.catDate = null;
-            if (this.origCatDate === null) {
-                return; // nothing to clear
-            }
-        } else if (this.catDate === null) {
-            return; // nothing to set
-        } else {
-            date = this.catDate.toISOString();
-        }
-
-        this.net.request('open-ils.cat',
-            'open-ils.cat.biblio.cataloging_date.set',
-            this.auth.token(), this.record.id, date
-        ).subscribe(
-            resp => {
-                if (Number(resp) === 1) {
-                    if (date) {
-                        this.origCatDate = this.catDate;
-                    } else {
-                        this.origCatDate = null;
-                    }
-
-                    if (clear) {
-                        // Reset to Now on clear.
-                        this.catDate = new Date();
-                    }
-
-                } else {
-                    console.error('Could not set cat date');
-                    const evt = this.evt.parse(resp);
-                    if (evt) { alert(evt); }
-                }
-            }
-        );
     }
 
     deleteRecord(): Promise<any> {

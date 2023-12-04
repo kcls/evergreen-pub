@@ -3,19 +3,18 @@
   <div *ngFor="let facetConf of facetConfig.display">
     <div *ngIf="searchContext.result.facetData[facetConf.facetClass]">
       <div *ngFor="let name of facetConf.facetOrder">
-        <div class="row" *ngIf="facetHasData(facetConf.facetClass, name)">
-          <div class="card mb-2">
-            <!-- pending a facet-label-map in the DB, just map the 
-                newly collapsed facets to simple names -->
-            <h4 class="card-header" i18n>
-              Related 
-              <ng-container [ngSwitch]="facetConf.facetClass">
-                <span *ngSwitchCase="'title'">Titles</span>
-                <span *ngSwitchCase="'author'">Authors</span>
-                <span *ngSwitchCase="'subject'">Subjects</span>
-                <span *ngSwitchCase="'series'">Series</span>
-              </ng-container>
-            </h4>
+        <div class="row"
+          *ngIf="searchContext.result.facetData[facetConf.facetClass][name]">
+          <div class="card mb-2 p-0" [ngClass]="{'list-truncate': this.displayFullFacets.indexOf(facetConf.facetClass+'-'+name) < 0}">
+            <div class="card-header d-flex align-items-start justify-content-between">
+              <h3>{{searchContext.result.facetData[facetConf.facetClass][name].cmfLabel}}</h3>
+              <button type="button" *ngIf="searchContext.result.facetData[facetConf.facetClass][name].valueList.length > 5"
+                (click)="facetToggle(name, facetConf.facetClass)" i18n-title
+                title="Show {{displayFullFacets.indexOf(facetConf.facetClass+'-'+name) < 0 ? searchContext.result.facetData[facetConf.facetClass][name].valueList.length : 5}}"
+                class="btn btn-link p-0" i18n>
+                {{displayFullFacets.indexOf(facetConf.facetClass+'-'+name) < 0 ? 'More' : 'Less'}}
+              </button>
+            </div>
             <ul class="list-group list-group-flush">
               <li class="list-group-item" 
                 [ngClass]="{'facet-selected' :

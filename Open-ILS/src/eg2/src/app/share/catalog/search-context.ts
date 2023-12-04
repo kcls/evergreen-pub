@@ -14,7 +14,8 @@ export const CATALOG_CCVM_FILTERS = [
     'vr_format',
     'bib_level',
     'lit_form',
-    'mattype'
+    'search_format',
+    'icon_format'
 ];
 
 export enum CatalogSearchState {
@@ -63,13 +64,11 @@ export class CatalogBrowseContext {
     value: string;
     pivot: number;
     fieldClass: string;
-    format: string; // KCLS mattype filter
 
     reset() {
         this.value = '';
         this.pivot = null;
         this.fieldClass = 'title';
-        this.format = '';
     }
 
     isSearchable(): boolean {
@@ -84,16 +83,11 @@ export class CatalogBrowseContext {
         ctx.value = this.value;
         ctx.pivot = this.pivot;
         ctx.fieldClass = this.fieldClass;
-        ctx.format = this.format;
         return ctx;
     }
 
     equals(ctx: CatalogBrowseContext): boolean {
-        return (
-            ctx.value === this.value &&
-            ctx.fieldClass === this.fieldClass &&
-            ctx.format === this.format
-        );
+        return ctx.value === this.value && ctx.fieldClass === this.fieldClass;
     }
 }
 
@@ -101,13 +95,11 @@ export class CatalogMarcContext {
     tags: string[];
     subfields: string[];
     values: string[];
-    matchOp: string[];
 
     reset() {
         this.tags = [''];
         this.values = [''];
         this.subfields = [''];
-        this.matchOp = ['contains'];
     }
 
     isSearchable() {
@@ -122,14 +114,12 @@ export class CatalogMarcContext {
         ctx.tags = [].concat(this.tags);
         ctx.values = [].concat(this.values);
         ctx.subfields = [].concat(this.subfields);
-        ctx.matchOp = [].concat(this.matchOp);
         return ctx;
     }
 
     equals(ctx: CatalogMarcContext): boolean {
         return ArrayUtil.equals(ctx.tags, this.tags)
             && ArrayUtil.equals(ctx.values, this.values)
-            && ArrayUtil.equals(ctx.matchOp, this.matchOp)
             && ArrayUtil.equals(ctx.subfields, this.subfields);
     }
 }
@@ -202,10 +192,6 @@ export class CatalogTermContext {
     matchOp: string[];
     format: string;
     available = false;
-
-    // TODO: configurable
-    // format limiter default to using the search_format filter
-    formatCtype = 'mattype';
     ccvmFilters: {[ccvmCode: string]: string[]};
     facetFilters: FacetFilter[];
     copyLocations: string[]; // ID's, but treated as strings in the UI.
@@ -312,8 +298,7 @@ export class CatalogTermContext {
 
     isSearchable(): boolean {
         return (
-            // KCLS JBAS-2605
-            this.query.filter(val => val !== '').length > 0
+            this.query[0] !== ''
             || this.hasBrowseEntry !== ''
             || this.fromMetarecord !== null
         );
@@ -463,7 +448,7 @@ export class CatalogSearchContext {
             this.pager.resultCount
         );
         for (let idx = this.pager.offset; idx < max; idx++) {
-            ids.push(Number(this.resultIds[idx]));
+            ids.push(this.resultIds[idx]);
         }
         return ids;
     }
@@ -663,7 +648,7 @@ export class CatalogSearchContext {
         }
 
         if (ts.format) {
-            str += ' ' + ts.formatCtype + '(' + ts.format + ')';
+            str += ' search_format(' + ts.format + ')';
         }
 
         if (this.global) {

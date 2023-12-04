@@ -1,0 +1,51 @@
+
+<div class="row mb-3">
+  <div class="col-lg-2">
+    <button class="btn btn-info label-with-material-icon" type="button"
+      routerLink="/staff/cat/vandelay/queue/{{queueType}}/{{queueId}}">
+      <span class="material-icons" aria-hidden="true">arrow_back</span>
+      <span i18n>Return to Queue</span>
+    </button>
+  </div>
+</div>
+
+<ul ngbNav #recordTabs="ngbNav" [(activeId)]="recordTab" 
+      (navChange)="onNavChange($event)" [keyboard]="true" [roles]="false" role="tablist" class="nav-tabs">
+  <li role="presentation" [ngbNavItem]="'marc'">
+    <a i18n ngbNavLink role="tab">Queued Record MARC</a>
+    <ng-template ngbNavContent>
+      <eg-marc-html [recordId]="recordId" [recordType]="'vandelay-'+queueType">
+      </eg-marc-html>
+    </ng-template>
+  </li>
+  <li role="presentation" [ngbNavItem]="'edit'">
+    <a i18n ngbNavLink role="tab">Edit Record</a>
+    <ng-template ngbNavContent>
+      <ng-container *ngIf="queuedRecord">
+        <eg-marc-editor [inPlaceMode]="true" [recordXml]="queuedRecord.marc()"
+          [recordSource]="queuedRecord.bib_source()"
+          (recordSaved)="handleMarcRecordSaved($event)"
+          *ngIf="queueType === 'bib'"></eg-marc-editor>
+        <eg-marc-editor [inPlaceMode]="true" [recordXml]="queuedRecord.marc()"
+          (recordSaved)="handleMarcRecordSaved($event)"
+          *ngIf="queueType !== 'bib'"></eg-marc-editor>
+      </ng-container>
+    </ng-template>
+  </li>
+  <li role="presentation" [ngbNavItem]="'matches'">
+    <a i18n ngbNavLink role="tab">Record Matches</a>
+    <ng-template ngbNavContent>
+      <eg-queued-record-matches [recordId]="recordId" [queueType]="queueType">
+      </eg-queued-record-matches>
+    </ng-template>
+  </li>
+  <li role="presentation" [ngbNavItem]="'items'">
+    <a i18n ngbNavLink role="tab">Import Items</a>
+    <ng-template ngbNavContent>
+      <eg-queued-record-items [recordId]="recordId">
+      </eg-queued-record-items>
+    </ng-template>
+  </li>
+</ul>
+
+<div [ngbNavOutlet]="recordTabs" class="mt-2"></div>

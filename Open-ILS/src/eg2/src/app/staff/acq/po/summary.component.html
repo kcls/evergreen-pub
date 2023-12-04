@@ -89,12 +89,6 @@
                   <span i18n>One or more items have no owning lib.</span>
                 </ng-container>
               </ng-template>
-              <ng-template #noLocation>
-                <ng-container 
-                  *ngIf="evt.textcode == 'ACQ_COPY_NO_LOCATION'; else otherBlock">
-                  <span i18n>One or more items have no copy location.</span>
-                </ng-container>
-              </ng-template>
               <ng-template #otherBlock>
                 <span i18n>{{evt.textcode}} : {{evt.desc}}</span>
               </ng-template>
@@ -186,57 +180,63 @@
   <hr class="p-0 m-0 mt-1"/>
   <div class="row mt-1">
     <div class="col-lg-12">
-      <a class="" href="javascript:;" class="label-with-material-icon"
+      <button type="button" class="btn btn-link label-with-material-icon"
         (click)="showNotes=!showNotes">
-        <span class="material-icons small mr-1">event_note</span>
+        <span class="material-icons small me-1" aria-hidden="true">event_note</span>
         <span>Notes ({{po().notes().length}})</span>
-      </a>
+      </button>
+      <ng-container *ngIf="po().order_date()"> <!-- show invoice actions only if order was activated -->
       <span class="ps-2 pe-2" i18n> | </span>
       <a [queryParams]="{f: 'acqpo:id', val1: poId}" class="label-with-material-icon"
         routerLink="/staff/acq/search/invoices">
-          <span class="material-icons small mr-1">list</span>
+          <span class="material-icons small me-1" aria-hidden="true">list</span>
           <span i18n>Invoices ({{invoiceCount}})</span>
       </a>
       <span class="ps-2 pe-2" i18n> | </span>
       <a href="/eg/staff/acq/legacy/invoice/view?create=1&attach_po={{poId}}"
         class="label-with-material-icon">
-        <span class="material-icons small mr-1">receipt</span>
+        <span class="material-icons small me-1" aria-hidden="true">receipt</span>
         <span i18n>Create Invoice</span>
       </a>
       <span class="ps-2 pe-2" i18n> | </span>
+      <button (click)="linkInvoiceFromPo()"
+        class="btn btn-link label-with-material-icon">
+        <span class="material-icons small me-1" aria-hidden="true">receipt</span>
+        <span i18n>Link Invoice</span>
+      </button>
+      </ng-container> <!-- show invoice actions -->
+      <span class="ps-2 pe-2" i18n> | </span>
       <a routerLink="./edi" i18n>EDI Messages ({{ediMessageCount}})</a>
-      <ng-container *ngIf="canActivate === true">
-        <span class="ps-2 pe-2" i18n> | </span>
-        <a (click)="activatePo(true)" href="javascript:;" i18n>
-          Activate Without Loading Items
-        </a>
-      </ng-container>
       <span class="ps-2 pe-2" i18n> | </span>
       <a routerLink="./history" i18n>History</a>
-      <ng-container *ngIf="po().state() == 'on-order' || po().state() == 'pending'">
-        <span class="ps-2 pe-2" i18n> | </span>
-        <a (click)="cancelPo()" href="javascript:;" class="label-with-material-icon">
-          <span class="material-icons small mr-1">cancel</span>
-          <span i18n>Cancel Order</span>
-        </a>
-      </ng-container>
       <span class="ps-2 pe-2" i18n> | </span>
       <a routerLink="./printer" class="label-with-material-icon">
-        <span class="material-icons small mr-1">print</span>
+        <span class="material-icons small me-1" aria-hidden="true">print</span>
         <span i18n>Print</span>
       </a>
+      <ng-container *ngIf="po().state() === 'on-order'">
+        <span class="ps-2 pe-2" i18n> | </span>
+        <button class="btn btn-sm btn-danger" (click)="cancelPo()" i18n>Cancel Order</button>
+      </ng-container>
       <ng-container *ngIf="canActivate === true">
         <span class="ps-2 pe-2" i18n> | </span>
-        <a (click)="activatePo()" href="javascript:;" class="label-with-material-icon">
-          <span class="material-icons small mr-1">launch</span>
-          <span i18n>Activate Order</span>
-        </a>
+        <button class="btn btn-sm btn-primary" (click)="activatePo(true)" [disabled]="doingActivation" i18n>Activate Without Loading Items</button>
+      </ng-container>
+      <ng-container *ngIf="canActivate === true">
+        <span class="ps-2 pe-2" i18n> | </span>
+        <button class="btn btn-sm btn-success" (click)="activatePo()" [disabled]="doingActivation" i18n>Activate Order</button>
       </ng-container>
       <ng-container *ngIf="canFinalize">
         <span class="ps-2 pe-2" i18n> | </span>
-        <a (click)="finalizePo()" href="javascript:;" class="label-with-material-icon">
-          <span class="material-icons small mr-1">check_circle</span>
+        <button (click)="finalizePo()" class="btn btn-link label-with-material-icon">
+          <span class="material-icons small me-1" aria-hidden="true">check_circle</span>
           <span i18n>Finalize Blanket Order</span>
+        </button>
+      </ng-container>
+      <ng-container *ngIf="showLegacyLinks">
+        <span class="ps-2 pe-2" i18n> | </span>
+        <a href="/eg/staff/acq/legacy/po/view/{{poId}}" target="_blank">
+          Show PO in Legacy Interface
         </a>
       </ng-container>
     </div>

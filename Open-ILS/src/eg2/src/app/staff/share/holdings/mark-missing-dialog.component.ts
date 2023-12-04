@@ -1,23 +1,16 @@
-import {Component, OnInit, Input, ViewChild} from '@angular/core';
-import {of, Observable, throwError} from 'rxjs';
-import {concatMap} from 'rxjs/operators';
+import {Component, Input, ViewChild} from '@angular/core';
+import {Observable} from 'rxjs';
 import {NetService} from '@eg/core/net.service';
-import {IdlService, IdlObject} from '@eg/core/idl.service';
-import {PcrudService} from '@eg/core/pcrud.service';
 import {EventService} from '@eg/core/event.service';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {AuthService} from '@eg/core/auth.service';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {StringComponent} from '@eg/share/string/string.component';
-import {MarkItemsDialogComponent} from './mark-items-dialog.component';
-
 
 
 /**
  * Dialog for marking items missing.
- *
- * This now simply invokes the generic Mark Items Dialog.
  */
 
 @Component({
@@ -29,33 +22,63 @@ export class MarkMissingDialogComponent
     extends DialogComponent {
 
     @Input() copyIds: number[];
-    @Input() copies: IdlObject[];
 
-    @ViewChild('markItemsDialog')
-        private markItemsDialog: MarkItemsDialogComponent;
+    numSucceeded: number;
+    numFailed: number;
+
+    @ViewChild('successMsg', { static: true })
+        private successMsg: StringComponent;
+
+    @ViewChild('errorMsg', { static: true })
+        private errorMsg: StringComponent;
 
     constructor(
-        private pcrud: PcrudService,
-        private modal: NgbModal
-    ) { super(modal); }
+        private modal: NgbModal, // required for passing to parent
+        private toast: ToastService,
+        private net: NetService,
+        private evt: EventService,
+        private auth: AuthService) {
+        super(modal); // required for subclassing
+    }
 
+    open(args: NgbModalOptions): Observable<boolean> {
+        this.numSucceeded = 0;
+        this.numFailed = 0;
+        return super.open(args);
+    }
 
-    open(args?: NgbModalOptions): Observable<boolean> {
-        let obs: Observable<IdlObject[]>;
-
-        if (this.copies) {
-            obs = of(this.copies);
-        } else {
-            obs = this.pcrud.search(
-                'acp', {id: this.copyIds}, {}, {atomic: true});
+    async markOneItemMissing(ids: number[]): Promise<any> {
+        if (ids.length === 0) {
+            return Promise.resolve();
         }
 
-        return obs.pipe(concatMap(copies => {
-            this.markItemsDialog.markAs = 'missing';
-            this.markItemsDialog.copies = copies;
-            return this.markItemsDialog.open(args);
-        }));
+        const id = ids.pop();
 
+        return this.net.request(
+            'open-ils.circ',
+            'open-ils.circ.mark_item_missing',
+            this.auth.token(), id
+        ).toPromise().then(async(result) => {
+            if (Number(result) === 1) {
+                this.numSucceeded++;
+                this.toast.success(await this.successMsg.current());
+            } else {
+                this.numFailed++;
+                console.error('Mark missing failed ', this.evt.parse(result));
+                this.toast.warning(await this.errorMsg.current());
+            }
+            return this.markOneItemMissing(ids);
+        });
+    }
+
+    async markItemsMissing(): Promise<any> {
+        this.numSucceeded = 0;
+        this.numFailed = 0;
+        const ids = [].concat(this.copyIds);
+        await this.markOneItemMissing(ids);
+        this.close(this.numSucceeded > 0);
     }
 }
+
+
 

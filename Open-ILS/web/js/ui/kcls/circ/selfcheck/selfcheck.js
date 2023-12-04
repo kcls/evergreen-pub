@@ -1314,12 +1314,38 @@ SelfCheckManager.prototype.handleXactResult = function(action, item, result, isB
                     }
                 }
 
-                if(result[i].textcode == 'COPY_IN_TRANSIT') {
-                    // to override a transit, we have to abort the transit and check it in first
-                    if(this.checkin(item, true)) {
-                        return { doOver : true };
-                    } else {
+                if (result[i].textcode == 'COPY_IN_TRANSIT') {
+                    console.debug('Copy is in transit; checking for hold transit');
+
+                    var copyDetails = fieldmapper.standardRequest(
+                        ['open-ils.circ', 'open-ils.circ.copy_details.retrieve.barcode'],
+                        {params: [this.authtoken, item]}
+                    );
+
+                    var isHoldTransit = false;
+
+                    var hold = copyDetails.hold;
+
+                    if (hold) {
+                        if (hold.transit()) {
+                            if (hold.usr() != this.patron.id()) {
+                                console.warn(
+                                    'Copy ' + item + ' is in transit for a hold to a different patron');
+                                isHoldTransit = true;
+                            }
+                        }
+                    }
+
+                    if (isHoldTransit) {
+                        // Hold transits for other patrons cannot be overridden.
                         override = false;
+                    } else {
+                        // Abort the transit, checkin, the redo the checkout.
+                        if(this.checkin(item, true)) {
+                            return { doOver : true };
+                        } else {
+                            override = false;
+                        }
                     }
                 }
             }

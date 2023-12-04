@@ -4223,6 +4223,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 			<field reporter:label="User/Working Location Map" name="usr_work_ou_map" oils_persist:virtual="true" reporter:datatype="link"/>
 			<field reporter:label="Privacy Waiver Entries" name="waiver_entries" oils_persist:virtual="true" reporter:datatype="link"/>
 			<field reporter:label="Patron Preferred Language" name="locale" reporter:datatype="link"/>
+			<field reporter:label="Last Editor" name="dibs" reporter:datatype="text"/>
 		</fields>
 		<links>
 			<link field="demographic" reltype="might_have" key="id" map="" class="rud"/>
@@ -8090,7 +8091,7 @@ SELECT  usr,
 			</actions>
 		</permacrud>
 	</class>
-	<class id="aoc" controller="open-ils.cstore" oils_obj:fieldmapper="action::open_circulation" oils_persist:tablename="action.open_circulation" reporter:label="Open Circulation">
+	<class id="aoc" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="action::open_circulation" oils_persist:tablename="action.open_circulation" reporter:label="Open Circulation">
 		<fields oils_persist:primary="id" oils_persist:sequence="">
 			<field name="checkin_lib" reporter:datatype="link"/>
 			<field name="checkin_staff" reporter:datatype="link"/>
@@ -8126,7 +8127,13 @@ SELECT  usr,
 			<link field="duration_rule" reltype="has_a" key="name" map="" class="crcd"/>
 			<link field="max_fine_rule" reltype="has_a" key="name" map="" class="crmf"/>
 			<link field="recurring_fine_rule" reltype="has_a" key="name" map="" class="crrf"/>
+			<link field="target_copy" reltype="has_a" key="id" map="" class="acp"/>
 		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<retrieve permission="VIEW_CIRCULATIONS" context_field="circ_lib"/>
+			</actions>
+		</permacrud>
 	</class>
 	<class id="msfe" controller="open-ils.cstore" oils_obj:fieldmapper="metabib::subject_field_entry" oils_persist:tablename="metabib.subject_field_entry" reporter:label="Subject Field Entry">
 		<fields oils_persist:primary="id" oils_persist:sequence="metabib.subject_field_entry_id_seq">
@@ -8268,6 +8275,7 @@ SELECT  usr,
 			<field reporter:label="Has Holds" name="holds_count" oils_persist:virtual="true" reporter:datatype="link"/>
 			<field reporter:label="Copy Tags" name="tags" oils_persist:virtual="true" reporter:datatype="link"/>
 			<field reporter:label="Copy Alerts" name="copy_alerts" oils_persist:virtual="true" reporter:datatype="link"/>
+			<field reporter:label="Open Circulation" name="open_circulation" oils_persist:virtual="true" reporter:datatype="link"/>
 		</fields>
 		<links>
 			<link field="age_protect" reltype="has_a" key="id" map="" class="crahp"/>
@@ -8298,6 +8306,7 @@ SELECT  usr,
 			<link field="tags" reltype="has_many" key="copy" map="" class="acptcm"/>
 			<link field="copy_alerts" reltype="has_many" key="copy" map="" class="aca"/>
 			<link field="circ_as_type" reltype="has_a" key="code" map="" class="citm"/>
+			<link field="open_circulation" reltype="might_have" key="target_copy" map="" class="aoc"/>
 		</links>
         <permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
             <actions>
@@ -15893,34 +15902,8 @@ SELECT  usr,
 				suppress_controller="open-ils.reporter-store"  reporter:label="State"/>
 			<field name="usr_post_code" reporter:datatype="text" 
 				suppress_controller="open-ils.reporter-store"  reporter:label="Post Code"/>
+			<field name="dibs" reporter:datatype="text" reporter:label="Staff Initials"/>
 		</fields>
-	</class>
-
-	<!-- create a minimal class to model pending refundable transactions.
-			All the caller really needs is the ID and filter org unit, from 
-			there can fetch summaries, etc. -->
-	<class id="merx" controller="open-ils.cstore open-ils.pcrud"
-		oils_obj:fieldmapper="money::eligible_refundable_xact" 
-		reporter:label="Eligible Refundable Transaction"
-		oils_persist:readonly="true">
-    <oils_persist:source_definition><![CDATA[
-			SELECT id, patron_home_ou, xact FROM money.eligible_refundable_xact
-		]]></oils_persist:source_definition>
-		<fields oils_persist:primary="id">
-			<field name="id" reporter:datatype="id" reporter:label="ID"/>
-			<field name="patron_home_ou" reporter:datatype="link" 
-				reporter:label="Patron Home Library"/>
-			<field name="xact" reporter:datatype="link" reporter:label="Transaction"/>
-		</fields>
-		<links>
-			<link field="patron_home_ou" reltype="has_a" key="id" map="" class="aou"/>
-			<link field="xact" reltype="has_a" key="id" map="" class="mbt"/>
-		</links>
-		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
-			<actions>
-				<retrieve permission="MANAGE_REFUNDABLE_XACT" global_required="true"/>
-			</actions>
-		</permacrud>
 	</class>
 
 	<class id="mrxs" controller="open-ils.cstore open-ils.pcrud" 
@@ -15976,6 +15959,7 @@ SELECT  usr,
 			<field name="call_number" reporter:datatype="text" reporter:label="Call Number"/>
 			<field name="title" reporter:datatype="text" reporter:label="Title"/>
 			<field name="refundable_payments" reporter:datatype="link" oils_persist:virtual="true"/>
+			<field name="dibs" reporter:datatype="text" reporter:label="Staff Initials"/>
 		</fields>
 		<links>
 			<link field="xact" reltype="has_a" key="id" map="" class="mbt"/>
@@ -15985,7 +15969,7 @@ SELECT  usr,
 			<link field="approved_by" reltype="has_a" key="id" map="" class="au"/>
 			<link field="rejected_by" reltype="has_a" key="id" map="" class="au"/>
 			<link field="paused_by" reltype="has_a" key="id" map="" class="au"/>
-			<link name="refund_session" reltype="has_a" key="id" map="" class="mrses"/>
+			<link field="refund_session" reltype="has_a" key="id" map="" class="mrses"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
@@ -16037,6 +16021,7 @@ SELECT  usr,
 			<field name="payment_type" reporter:datatype="text" reporter:label="Payment Type"/>
 			<field name="workstation" reporter:datatype="text" reporter:label="Payment Workstation"/>
 			<field name="cc_order_number" reporter:datatype="text" reporter:label="Credit Card Transaction #"/>
+			<field name="cc_processor" reporter:datatype="text" reporter:label="Credit Card Processor"/>
 		</fields>
 		<links>
 			<link field="payment" reltype="has_a" key="id" map="" class="mp"/>
@@ -16091,6 +16076,160 @@ SELECT  usr,
 		</permacrud>
 	</class>
 
+	<!-- This is a precursor object which may branch out to different
+			points of resolution (ILL, purchase request, etc.)
+	-->
+	<class id="auir" 
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="actor::user_item_request" 
+		oils_persist:tablename="actor.usr_item_request" 
+		reporter:label="User Item Request">
+		<fields oils_persist:primary="id" oils_persist:sequence="actor.usr_item_request_id_seq">
+			<field reporter:label="Request ID" name="id" reporter:datatype="id" />
+			<field reporter:label="User" name="usr" reporter:datatype="link"/>
+			<field reporter:label="Identifier" name="identifier" reporter:datatype="text"/>
+			<field reporter:label="Format" name="format" reporter:datatype="link"/>
+			<field reporter:label="Title" name="title" reporter:datatype="text"/>
+			<field reporter:label="Author" name="author" reporter:datatype="text"/>
+			<field reporter:label="Publisher" name="publisher" reporter:datatype="text"/>
+			<field reporter:label="Pubdate" name="pubdate" reporter:datatype="int"/>
+			<field reporter:label="Language" name="language" reporter:datatype="link"/>
+			<field reporter:label="Notes" name="notes" reporter:datatype="text"/>
+			<field reporter:label="Request Date" name="create_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Route To" name="route_to" reporter:datatype="text"/>
+			<field reporter:label="Staff Notes" name="staff_notes" reporter:datatype="text"/>
+			<field reporter:label="Claim Date" name="claim_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Claimed By" name="claimed_by" reporter:datatype="link"/>
+			<field reporter:label="Vendor" name="vendor" reporter:datatype="text"/>
+			<field reporter:label="Price" name="price" reporter:datatype="money"/>
+			<field reporter:label="ILL Number" name="illno" reporter:datatype="text"/>
+			<field reporter:label="Reject Date" name="reject_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Rejected By" name="rejected_by" reporter:datatype="link"/>
+			<field reporter:label="Reject Reason" name="reject_reason" reporter:datatype="text"/>
+			<field reporter:label="Complete Date" name="complete_date" reporter:datatype="timestamp"/>
+			<field reporter:label="Cancel Date" name="cancel_date" reporter:datatype="timestamp"/>
+			<field reporter:label="ILL Opt-Out" name="ill_opt_out" reporter:datatype="bool"/>
+			<field reporter:label="ID Matched" name="id_matched" reporter:datatype="bool"/>
+			<field reporter:label="Patron Notes" name="patron_notes" reporter:datatype="bool"/>
+			<field reporter:label="Requestor" name="requestor" reporter:datatype="link"/>
+			<field reporter:label="ILL Denial" name="ill_denial" reporter:datatype="text"/>
+			<field reporter:label="Lineitem ID" name="lineitem" reporter:datatype="link"/>
+			<field reporter:label="Hold ID" name="hold" reporter:datatype="link"/>
+			<field reporter:label="Pickup Lib" name="pickup_lib" reporter:datatype="link"/>
+			<field reporter:label="Article" name="article" reporter:datatype="text"/>
+			<field reporter:label="Audience" name="audience" reporter:datatype="link"/>
+			<field reporter:label="Hold Date" name="hold_date" reporter:datatype="timestamp"/>
+		</fields>
+		<links>
+			<link field="usr" reltype="has_a" key="id" map="" class="au"/>
+			<link field="claimed_by" reltype="has_a" key="id" map="" class="au"/>
+			<link field="requestor" reltype="has_a" key="id" map="" class="au"/>
+			<link field="lineitem" reltype="has_a" key="id" map="" class="jub"/>
+			<link field="hold" reltype="has_a" key="id" map="" class="ahr"/>
+			<link field="pickup_lib" reltype="has_a" key="id" map="" class="aou"/>
+			<link field="format" reltype="has_a" key="code" map="" class="cuirf"/>
+			<link field="audience" reltype="has_a" key="code" map="" class="cuira"/>
+			<link field="language" reltype="has_a" key="code" map="" class="cuirl"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="CREATE_USER_ITEM_REQUEST">
+					<context link="usr" field="home_ou"/>
+				</create>
+				<update permission="MANAGE_USER_ITEM_REQUEST">
+					<context link="usr" field="home_ou"/>
+				</update>
+				<retrieve permission="VIEW_USER">
+					<context link="usr" field="home_ou"/>
+				</retrieve>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cuirf" 
+		oils_persist:field_safe="true"
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::user_item_request_format" 
+		oils_persist:tablename="config.usr_item_request_format" 
+		reporter:label="User Item Request Format">
+		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_format_code_seq">
+			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
+			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Position" name="position" reporter:datatype="number" oils_obj:required="true"/>
+			<field reporter:label="ILL Only" name="ill_only" reporter:datatype="bool" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<retrieve/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cuira" 
+		oils_persist:field_safe="true"
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::user_item_request_audience" 
+		oils_persist:tablename="config.usr_item_request_audience" 
+		reporter:label="User Item Request Audience">
+		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_audience_code_seq">
+			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
+			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Position" name="position" reporter:datatype="number" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<retrieve/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cuirl" 
+		oils_persist:field_safe="true"
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::user_item_request_lang" 
+		oils_persist:tablename="config.usr_item_request_lang" 
+		reporter:label="User Item Request Language">
+		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_lang_code_seq">
+			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
+			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Default" name="is_default" reporter:datatype="bool" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<retrieve/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cirr" controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::ill_reject_reason" 
+		oils_persist:tablename="config.ill_reject_reason" 
+		reporter:label="ILL Rejection Reasons">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.ill_reject_reason_id_seq">
+			<field name="id" reporter:datatype="id" reporter:selector="label"/>
+			<field name="label" reporter:datatype="text" oils_obj:required="true" oils_persist:i18n="true"/>
+			<field name="content" reporter:datatype="text" oils_obj:required="true" oils_persist:i18n="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+				<retrieve permission="STAFF_LOGIN" global_required="true"/>
+				<update permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+				<delete permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+			</actions>
+		</permacrud>
+	</class>
+
+
 	<class id="cpt" controller="open-ils.cstore open-ils.pcrud"
 		oils_obj:fieldmapper="config::print_template" 
 		oils_persist:tablename="config.print_template" 
@@ -16128,9 +16267,11 @@ SELECT  usr,
 			<field name="label" reporter:datatype="text" reporter:label="Label" oils_obj:required="true"/>
 			<field name="institution" reporter:datatype="text" reporter:label="SIP Institution" oils_obj:required="true"/>
 			<field name="settings" reporter:datatype="link" reporter:label="Settings" oils_persist:virtual="true"/>
+			<field name="filters" reporter:datatype="link" reporter:label="Filters" oils_persist:virtual="true"/>
 		</fields>
 		<links>
 			<link field="settings" reltype="has_many" key="setting_group" map="" class="sipset"/>
+			<link field="filters" reltype="has_many" key="setting_group" map="" class="sipfilter"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
@@ -16223,6 +16364,30 @@ SELECT  usr,
 				<delete permission="SIP_ADMIN" global_required="true"/>
 			</actions>
 		</permacrud>
+	</class>
+	<class id="sipfilter" controller="open-ils.cstore open-ils.pcrud"      
+			oils_obj:fieldmapper="sip::filter"                             
+			oils_persist:tablename="sip.filter"                            
+			reporter:label="SIP Filter">                                   
+		<fields oils_persist:primary="id" oils_persist:sequence="sip.filter_id_seq">
+			<field name="id" reporter:datatype="id" reporter:label="ID" reporter:selector="name"/>
+			<field name="enabled" reporter:datatype="bool" reporter:label="Enabled"/>
+			<field name="setting_group" reporter:datatype="link" reporter:label="Settings Group" oils_obj:required="true" config_field="true"/>
+			<field name="identifier" reporter:datatype="text" reporter:label="Field Identifier" oils_obj:required="true"/>
+			<field name="strip" reporter:datatype="bool" reporter:label="Strip Field" />
+			<field name="replace_with" reporter:datatype="text" reporter:label="Replacement Field Value" />
+		</fields>                                                      
+		<links>                                                        
+			<link field="setting_group" reltype="has_a" key="id" map="" class="sipsetg"/>
+		</links>                                                       
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>                                              
+				<create permission="SIP_ADMIN" global_required="true"/>
+				<retrieve permission="SIP_ADMIN" global_required="true"/>
+				<update permission="SIP_ADMIN" global_required="true"/>
+				<delete permission="SIP_ADMIN" global_required="true"/>
+			</actions>                                             
+		</permacrud>                                                   
 	</class>
 
 

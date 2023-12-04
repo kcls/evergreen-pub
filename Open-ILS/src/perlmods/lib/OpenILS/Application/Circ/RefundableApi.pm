@@ -189,6 +189,83 @@ sub update_refundable_xact {
 }
 
 __PACKAGE__->register_method(
+    method    => 'refund_summary_data',
+    api_name  => 'open-ils.circ.refundable_payment.letter.by_xact.data',
+    signature => {
+        desc   => q/
+            Collect data needed to print a refund summary.
+            Caller may provide the lost circ ID or a the ID of
+            a refund payment linked to the desired refund session.
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Billable Transaction ID', type => 'number'},
+            {desc => 'Payment ID', type => 'number'}
+        ],
+        return => {
+            desc => 'Hash of refund summary data'
+        }
+    }
+);
+
+sub refund_summary_data {
+    my ($self, $client, $auth, $xact_id, $pay_id) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+
+    my $query = {xact => $xact_id};
+
+    if ($pay_id) {
+        # Caller provided the ID of a refund payment
+        my $session = $e->search_money_refund_action({payment => $pay_id})->[0]
+            or return $e->event;
+
+        $query = {id => $session->refundable_xact};
+    }
+
+    my $ref_xact = $e->search_money_refundable_xact_summary([
+        $query,
+        {   
+            flesh => 3, 
+            flesh_fields => {
+                mrxs => ['usr', 'refundable_payments', 'xact'],
+                mbt => ['summary'],
+                mrps => ['payment'],
+                au => ['billing_address', 'mailing_address']
+            }
+        }
+    ])->[0] or return $e->event;
+
+    return OpenILS::Event->new('XACT_NOT_REFUNDED')
+        unless defined $ref_xact->refund_session;
+
+    return $e->event unless 
+        $e->allowed('VIEW_USER_TRANSACTIONS', $ref_xact->usr->home_ou);
+
+    my $ref_actions = $e->search_money_refund_action([{
+        refundable_xact => $ref_xact->id
+    }, {
+        flesh => 7, 
+        flesh_fields => {
+            mract => ['payment'],
+            mp => ['xact'],
+            mbt => ['circulation', 'summary'],
+            circ => ['target_copy'],
+            acp => ['call_number'],
+            acn => ['record'],
+            bre => ['simple_record']
+        }
+    }]);
+
+    return {
+        refundable_xact => $ref_xact,
+        refund_actions => $ref_actions,
+    };
+}
+
+
+__PACKAGE__->register_method(
     method    => 'generate_refundable_payment_receipt',
     api_name  => 'open-ils.circ.refundable_payment.receipt.html',
     signature => {
@@ -372,444 +449,6 @@ sub circ_is_refundable {
     return $e->event unless $e->allowed('STAFF_LOGIN');
     return $U->circ_is_refundable($circ_id, $e);
 }
-
-__PACKAGE__->register_method(
-    method    => 'process_refund_api',
-    api_name  => 'open-ils.circ.refundable_xact.refund',
-    stream    => 1,
-    signature => {
-        desc => q/Processes a refund and returns the created data/,
-        params => [
-            {desc => 'Authentication token', type => 'string'},
-            {desc => 'Refundable Transaction ID', type => 'number'}
-        ],
-        return => {
-            desc => 'Array of refund actions, event on error'
-        }
-    }
-);
-
-
-__PACKAGE__->register_method(
-    method    => 'process_refund_api',
-    api_name  => 'open-ils.circ.refundable_xact.refund.simulate',
-    stream    => 1,
-    signature => {
-        desc => q/Simulates a refund and returns the data that would be modified/,
-        params => [
-            {desc => 'Authentication token', type => 'string'},
-            {desc => 'Refundable Transaction ID', type => 'number'}
-        ],
-        return => {
-            desc => 'Array of refund actions, event on error'
-        }
-    }
-);
-
-sub process_refund_api {
-    my ($self, $client, $auth, $mrx_id) = @_;
-
-    my ($simulate) = ($self->api_name =~ /simulate/);
-
-    my $e = new_editor(xact => 1, authtoken => $auth);
-    return $e->die_event unless $e->checkauth;
-    return $e->die_event unless $e->allowed('MANAGE_REFUNDABLE_XACT');
-
-    # All refund actions require a session 'pon which to hang actions.
-    my $refses = Fieldmapper::money::refund_session->new;
-    $e->create_money_refund_session($refses) or return $e->die_event;
-
-    my $evt = process_refund($client, $e, $refses->id, $mrx_id, $simulate);
-
-    return $evt if $evt;
-
-    if ($simulate) { $e->rollback; } else { $e->commit; }
-
-    return undef;
-}
-
-# Applies a negative refund payment ('credit') equal to the refundable
-# amount paid on the refundable transaction.  Then distributes the
-# credited amount to positive-balance transactions in the form of
-# payment ('debits'), starting with the refundable transaction, until
-# the credit is exhausted or no positive-balance transactions remain.
-sub process_refund {
-    my ($client, $e, $ses_id, $mrx_id, $simulate) = @_;
-    my $evt;
-
-    my $mrx = $e->retrieve_money_refundable_xact($mrx_id)
-        or return $e->die_event;
-
-    return OpenILS::Event->new('REFUND_ALREADY_PROCESSED', {mrx_id => $mrx_id})
-        if $mrx->refund_session;
-
-    my $mrxs = $e->retrieve_money_refundable_xact_summary($mrx_id)
-        or return $e->die_event;
-
-    # Total amount of money we have to work with for refunds
-    # from this transaction.
-    my $refund_amount = $mrxs->refundable_paid;
-
-    my $payment = Fieldmapper::money::cash_payment->new;
-    $payment->xact($mrxs->xact);
-    $payment->amount(-$refund_amount);
-    $payment->amount_collected($payment->amount);
-    $payment->note("L/P/R Crediting Refundable Payment");
-    $payment->accepting_usr($e->requestor->id);
-
-    $e->create_money_cash_payment($payment) or return $e->die_event;
-
-    my $action = Fieldmapper::money::refund_action->new;
-    $action->session($ses_id);
-    $action->action('credit');
-    $action->payment($payment->id);
-    $action->refundable_xact($mrx_id);
-
-    $e->create_money_refund_action($action) or return $e->die_event;
-
-    my $mus = $e->retrieve_money_user_summary($mrxs->usr);
-    my $mbts = $e->retrieve_money_billable_transaction_summary($mrxs->xact);
-
-    $client->respond({
-        mrx_id => $mrx_id,
-        action_id => $action->id,
-        payment => $payment, 
-        patron_balance => $mus->balance_owed,
-        xact_balance => $mbts->balance_owed,
-        refund_remaining => $refund_amount,
-        session => $ses_id,
-        zeroing => 1
-    });
-
-    $logger->info("refund: [mrx=$mrx_id] patron has $refund_amount ".
-        "in refundable money and owes us ".  $mus->balance_owed);
-
-    # Refundable credit card payments require special handling.
-    my $is_cc = $e->search_money_refundable_payment_summary({
-        refundable_xact => $mrx_id,
-        payment_type => 'credit_card_payment'
-    })->[0];
-
-    my @xacts = $RFC->find_xacts_to_refund($e, $mrxs, $refund_amount, $is_cc);
-
-    for my $mobts (@xacts) {
-
-        if ($mobts->{balance_owed} <= 0) {
-            # The first xact in the list will always be the mobts for
-            # the mrxs we are currently processing.  If no more refunds
-            # can be applied to the transaction, because it has a non-
-            # positive balance, all that's left is to close the
-            # transaction if we can.
-            $RFC->close_xact_if_possible($e, $mrxs->xact) or return $e->die_event;
-            next;
-        }
-
-        ($refund_amount, $evt) = apply_refund_money_to_one_xact(
-            $client, $e, $ses_id, $mrxs, $mobts, $refund_amount);
-
-        return $evt if $evt;
-
-        $RFC->close_xact_if_possible($e, $mobts->{id}) or return $e->die_event;
-
-        $mus = $e->retrieve_money_user_summary($mrxs->usr);
-
-        $logger->info("refund: post-refund action state: user_balance=".
-            $mus->balance_owed."; refund_amount=$refund_amount");
-
-        last unless $refund_amount > 0;
-    }
-
-    # Stamp the final amount owed to the patron.
-    $mrx->refund_session($ses_id);
-    $mrx->refund_amount($refund_amount);
-    $e->update_money_refundable_xact($mrx) or return $e->die_event;
-
-    $client->respond({
-        mrx_id => $mrx_id,
-        session => $ses_id,
-        refund_due => $refund_amount,
-        patron_balance => $mus->balance_owed
-    });
-
-    return undef;
-}
-
-# Create payments toward a transaction using money credited
-# to the user via refundable payment.
-sub apply_refund_money_to_one_xact {
-    my ($client, $e, $ses_id, $mrxs, $mobts, $refund_amount) = @_;
-
-    my $pay_amount = $mobts->{balance_owed}; 
-    # Avoid over-recovery
-    $pay_amount = $refund_amount if $pay_amount > $refund_amount;
-
-    my $xact_id = $mobts->{id};
-
-    $logger->info("refund: applying payment ".
-        "amount of $pay_amount to transaction $xact_id for session $ses_id");
-
-    my $payment = Fieldmapper::money::cash_payment->new;
-    $payment->xact($xact_id);
-    $payment->amount($pay_amount);
-    $payment->amount_collected($payment->amount);
-    $payment->note("L/P/R Refund for Transaction #".$mrxs->xact);
-    $payment->accepting_usr($e->requestor->id);
-
-    $e->create_money_cash_payment($payment) or return (undef, $e->die_event);
-
-    my $action = Fieldmapper::money::refund_action->new;
-    $action->session($ses_id);
-    $action->action('debit');
-    $action->payment($payment->id);
-    $action->refundable_xact($mrxs->id);
-
-    $e->create_money_refund_action($action) or return (undef, $e->die_event);
-
-    $refund_amount = $U->fpdiff($refund_amount, $pay_amount);
-
-    my $mus = $e->retrieve_money_user_summary($mrxs->usr);
-    my $mbts = $e->retrieve_money_billable_transaction_summary($xact_id);
-
-    $client->respond({
-        mrx_id => $mrxs->id,
-        action_id => $action->id,
-        payment => $payment,
-        patron_balance => $mus->balance_owed,
-        xact_balance => $mbts->balance_owed,
-        refund_remaining => $refund_amount
-    });
-
-    return ($refund_amount);
-}
-
-__PACKAGE__->register_method(
-    method    => 'batch_process_refunds',
-    api_name  => 'open-ils.circ.refundable_xact.batch_process',
-    stream    => 1,
-    signature => {
-        desc => q/Processes the current batch of applicable refunds/,
-        params => [
-            {desc => 'Authentication token', type => 'string'},
-        ],
-        return => {
-            desc => q/Stream of refund action responses/
-        }
-    }
-);
-
-__PACKAGE__->register_method(
-    method    => 'batch_process_refunds',
-    api_name  => 'open-ils.circ.refundable_xact.batch_process.simulate',
-    stream    => 1,
-    signature => {desc => q/Simulation version of batch_process/}
-);
-
-# Configuration is cached per batch run.
-my $auto_days;
-my $pause_days;
-
-sub batch_process_refunds {
-    my ($self, $client, $auth) = @_;
-
-    my ($simulate) = ($self->api_name =~ /simulate/);
-
-    my $e = new_editor(xact => 1, authtoken => $auth);
-    return $e->die_event unless $e->checkauth;
-    return $e->die_event unless
-        $e->allowed('BATCH_PROCESS_REFUNDABLE_XACTS');
-
-    set_auto_date_configs($e);
-
-    my $refses = Fieldmapper::money::refund_session->new;
-    $e->create_money_refund_session($refses) or return $e->die_event;
-
-    $logger->info("refund: starting refund session ".$refses->id);
-
-    my $maybe_xacts = $e->retrieve_all_money_eligible_refundable_xact;
-
-    for my $maybe_xact (@$maybe_xacts) {
-
-        my $org_id = $maybe_xact->patron_home_ou;
-        my $mrx_id = $maybe_xact->id;
-
-        if (xact_can_be_processed($e, $org_id, $mrx_id)) {
-
-            my $evt = process_refund(
-                $client, $e, $refses->id, $mrx_id, $simulate);
-
-            return $evt if $evt;
-
-        } else {
-            $logger->info("refund: skipping mrx=$mrx_id in batch auto processing");
-        }
-    }
-
-    if ($simulate) { $e->rollback; } else { $e->commit; }
-
-    # Force config refresh after each batch run.
-    $auto_days = undef;
-    $pause_days = undef;
-
-    return undef;
-}
-
-sub set_auto_date_configs {
-    my $e = shift;
-
-    return if defined $auto_days; # cached
-
-    my $auto_cfg =
-        $e->retrieve_config_global_flag('circ.lostpaid.refund.auto.days');
-
-    my $pause_cfg =
-        $e->retrieve_config_global_flag('circ.lostpaid.refund.pause.days');
-
-    $auto_days = $auto_cfg->value
-        if $auto_cfg->enabled eq 't' && $auto_cfg->value;
-
-    $pause_days = $pause_cfg->value
-        if $pause_cfg->enabled eq 't' && $pause_cfg->value;
-}
-
-# Returns 1 if the refundable transaction is eligible for
-# automated refund processing.  Returns 0 otherwise.
-sub xact_can_be_processed {
-    my ($e, $org_id, $mrx_id) = @_;
-    
-    my $mrx = $e->retrieve_money_refundable_xact($mrx_id);
-
-    # nope
-    return 0 if $mrx->reject_date;
-
-    # manual approval supersedes other tests.
-    return 1 if $mrx->approve_date;
-
-    my $auto_date = xact_auto_process_date($e, $mrx, $org_id);
-
-    # No auto date means only manually approved xacts can be processed.
-    return 0 unless $auto_date;
-
-    # Circ auto end date is still in the future.  
-    # Not ready for processing.
-    return 0 unless DateTime->now > $auto_date;
-
-    # Xact is past the auto-refund date and is not paused.  Proceed.
-    return 1 unless $mrx->pause_date;
-
-    my $pause_date = xact_pause_process_date($e, $mrx, $org_id);
-
-    # xact is paused, but no pause interval is configured.
-    # Leave it paused until manually modified.
-    return 0 unless $pause_date;
-
-    # Pause end date is in the future -- leave paused.
-    return 0 unless DateTime->now > $pause_date;
-
-    return 1;
-}
-
-sub xact_pause_process_date {
-    my ($e, $mrx, $org_id) = @_;
-    my $mrx_id = $mrx->id;
-
-    return undef unless defined $pause_days && $mrx->pause_date;
-
-    my $scan_date = DateTime::Format::ISO8601->new
-        ->parse_datetime(clean_ISO8601($mrx->pause_date));
-
-    my $pause_date_str =
-        $U->org_unit_open_days($org_id, $pause_days, $e, $scan_date);
-
-    $logger->info(
-        "refund: pause cutoff date for mrx=$mrx_id is $pause_date_str");
-
-    my $pause_date = DateTime::Format::ISO8601->new
-        ->parse_datetime(clean_ISO8601($pause_date_str));
-
-    return $pause_date;
-}
-
-sub xact_auto_process_date {
-    my ($e, $mrx, $org_id) = @_;
-    my $mrx_id = $mrx->id;
-
-    return undef unless defined $auto_days;
-
-    my $circ = $e->retrieve_action_circulation($mrx->xact);
-
-    my $scan_date = DateTime::Format::ISO8601->new
-        ->parse_datetime(clean_ISO8601($circ->checkin_scan_time));
-
-    $logger->info("refund: circ for mrx=$mrx_id was returned ".
-        $scan_date->strftime('%FT%T%z'));
-
-    # Start with the circ scan date and count forward X days, skipping
-    # closed days for the selected org unit.  That will be the date at
-    # which this mrx is eligible for auto processing.
-    my $auto_date_str =
-        $U->org_unit_open_days($org_id, $auto_days, $e, $scan_date);
-
-    $logger->info(
-        "refund: auto cutoff date for mrx=$mrx_id is $auto_date_str");
-
-    my $auto_date = DateTime::Format::ISO8601->new
-        ->parse_datetime(clean_ISO8601($auto_date_str));
-
-    return $auto_date;
-}
-
-
-__PACKAGE__->register_method(
-    method    => 'calculated_refund_date',
-    api_name  => 'open-ils.circ.refundable_xact.refund_date',
-    signature => {
-        desc => q/Returns the date at which the transaction would be
-                    processed for refund if no further changes are made'/,
-        params => [
-            {desc => 'Authentication token', type => 'string'},
-            {desc => 'Refundable Transaction ID', type => 'number'},
-        ],
-        return => {
-            desc => q/ISO date string/
-        }
-    }
-);
-
-sub calculated_refund_date {
-    my ($self, $client, $auth, $xact_id) = @_;
-
-    my $e = new_editor(authtoken => $auth);
-    return $e->die_event unless $e->checkauth;
-
-    my $mrx = $e->retrieve_money_refundable_xact_summary([
-        $xact_id,
-        {flesh => 1, flesh_fields => {mrxs => ['usr']}}
-    ]) or return $e->event;
-
-    return $e->die_event unless $e->allowed('MANAGE_REFUNDABLE_XACT');
-
-    # Already processed
-    return undef if $mrx->refund_session || $mrx->reject_date;
-
-    set_auto_date_configs($e);
-
-    my $org_id = $mrx->usr->home_ou;
-
-    my $date;
-
-    if ($mrx->pause_date) {
-        $date = xact_pause_process_date($e, $mrx, $org_id);
-    } else {
-        $date = xact_auto_process_date($e, $mrx, $org_id);
-    }
-
-    # Force config refresh after each run.
-    $auto_days = undef;
-    $pause_days = undef;
-
-    return $date ? $date->strftime('%FT%T%z') : undef;
-}
-
 
 1;
 

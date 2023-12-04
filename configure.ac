@@ -189,11 +189,36 @@ AC_SUBST([LIBXML2_HEADERS])
 
 PKG_CHECK_MODULES([DBI], [dbi])
 
+AC_ARG_WITH([hiredis],
+[  --with-hiredis=path         location of the hiredis headers (default is /usr/include/hiredis/))],
+[HIREDIS_HEADERS=${withval}],
+[HIREDIS_HEADERS=/usr/include/hiredis/])
+AC_SUBST([HIREDIS_HEADERS])
+
+AC_ARG_WITH([dbi],
+[  --with-dbi=path             location of the libdbi driver libraries (default is /usr/lib/x86_64-linux-gnu/dbd/)],
+[DBI_LIBS=${withval}],
+[DBI_LIBS=/usr/lib/x86_64-linux-gnu/dbd/])
+
 AC_ARG_WITH([perlbase],
 [  --with-perlbase=path        base location to install Perl modules (default based on Config.pm)],
 [PERL_BASE=${withval}],
 [PERL_BASE=x])
 AC_SUBST([PERL_BASE])
+
+AC_ARG_WITH([redis-accounts],
+[  --with-redis-accounts=path  location of the redis accounts file (default is $sysconfdir/redis-accounts.txt)],
+[REDIS_ACCOUNTS=${withval}],
+[REDIS_ACCOUNTS=$sysconfdir/redis-accounts.txt])
+AC_SUBST([REDIS_ACCOUNTS])
+
+OPENSRF_BUS_PASSWORD=$(grep 'ACL SETUSER opensrf on >' ${REDIS_ACCOUNTS} | cut -d'>' -f2)
+GATEWAY_BUS_PASSWORD=$(grep 'ACL SETUSER gateway on >' ${REDIS_ACCOUNTS} | cut -d'>' -f2)
+ROUTER_BUS_PASSWORD=$(grep 'ACL SETUSER router on >' ${REDIS_ACCOUNTS} | cut -d'>' -f2)
+
+AC_SUBST([OPENSRF_BUS_PASSWORD])
+AC_SUBST([GATEWAY_BUS_PASSWORD])
+AC_SUBST([ROUTER_BUS_PASSWORD])
 
 AM_CONDITIONAL(CHECK_TESTS, test x$enable_tests = xyes)
 
@@ -276,6 +301,7 @@ if test "x$openils_core" = "xtrue"; then
     AC_CHECK_LIB([opensrf], [osrfMessageFree], [], AC_MSG_ERROR(*** OpenILS requires libopensrf))
     AC_CHECK_LIB([readline], [main], [], AC_MSG_ERROR(*** OpenILS requires libreadline))
     AC_CHECK_LIB([xml2], [main], [], AC_MSG_ERROR(*** OpenILS requires libxml2))
+    AC_CHECK_LIB([hiredis], [redisConnect], [], AC_MSG_ERROR(***OpenSRF requires libhiredis))
     AC_CHECK_LIB([xslt], [main], [], AC_MSG_ERROR(*** OpenILS requires libxslt))
     AC_CHECK_LIB([pq], [main], [], AC_MSG_ERROR(*** OpenILS requires libpq))
     PKG_CHECK_MODULES(pcre, libpcre >= 3.0.0)
@@ -401,6 +427,8 @@ AC_MSG_RESULT(libxml2 headers location:                 ${LIBXML2_HEADERS})
 AC_MSG_RESULT(libdbi location:                          ${DBI_LIBS})
 AC_MSG_RESULT(OpenSRF headers location:                 ${OPENSRF_HEADERS})
 AC_MSG_RESULT(OpenSRF libraries location:               ${OPENSRF_LIBS})
+AC_MSG_RESULT(libhiredis headers location:              ${HIREDIS_HEADERS})
+AC_MSG_RESULT(Redis Accounts: ${REDIS_ACCOUNTS})
 
 AC_MSG_RESULT([----------------------------------------------------------------------])
 

@@ -1,0 +1,307 @@
+<eg-staff-banner *ngIf="!reprinting"
+  bannerStyle="alert-secondary border border-warning"
+  i18n-bannerText bannerText="Checkin Lost &amp; Paid Item">
+</eg-staff-banner>
+
+<eg-staff-banner *ngIf="reprinting"
+  bannerStyle="alert-secondary border border-warning"
+  i18n-bannerText bannerText="Lost &amp; Paid Item Letter">
+</eg-staff-banner>
+
+<eg-confirm-dialog #noPrintDialog
+  i18n-dialogTitle dialogTitle="Refund Letter Has Not Been Printed"
+  i18n-dialogBoby  dialogBody="Continue navigation without printing?">
+</eg-confirm-dialog>
+
+
+<eg-worklog-strings-components></eg-worklog-strings-components>
+<eg-circ-components></eg-circ-components>
+
+<div *ngIf="invalidCheckin" class="alert alert-warning" i18n>
+  Information on this page is out of date.
+</div>
+
+<div *ngIf="checkinResult" class="d-flex">
+  <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
+    <div class="row p-2 mt-1 border-bottom" *ngIf="checkinResult.patron">
+      <div class="col-lg-1">
+        <label for="patron-name" i18n>Patron:</label>
+      </div>
+      <div class="col-lg-8">
+        <span id="patron-name">
+          {{checkinResult.patron.family_name()}},
+          {{checkinResult.patron.first_given_name()}}
+          {{checkinResult.patron.second_given_name()}}
+        </span>
+      </div>
+      <div class="col-lg-3 d-flex">
+        <div class="flex-1"></div>
+        <a target="_blank"
+          routerLink="/staff/circ/patron/{{patronId}}/bills">
+          <button class="btn btn-sm btn-primary label-with-material-icon" i18n>
+            <span class="pe-2">Open Patron</span>
+            <span class="material-icons">north_east</span>
+          </button>
+        </a>
+      </div>
+    </div>
+    <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
+      <div class="col-lg-1" i18n>Item:</div>
+      <div class="col-lg-2">
+        <a target="_blank" 
+          routerLink="/staff/cat/item/{{checkinResult.copy.id()}}/summary">
+          {{checkinResult.copy.barcode()}}
+        </a>
+      </div>
+      <div class="col-lg-1" i18n>Title:</div>
+      <div class="col-lg-8"  ng-container *ngIf="checkinResult && !checkinComplete" i18n>
+        <a target="_blank" 
+          routerLink="/staff/catalog/record/{{checkinResult.record.doc_id()}}">
+          {{checkinResult.record.title()}}
+        </a>
+      </div>
+    </div>
+    <ng-container *ngIf="checkinResult && checkinResult.circ && !checkinComplete">
+    <div class="row p-2 mt-2">
+      <div class="col-lg-2" i18n>Checked Out:</div>
+      <div class="col-lg-2">{{checkinResult.circ.xact_start() | egDate}}</div>
+      <div class="col-lg-2" i18n>Due Date:</div>
+      <div class="col-lg-2">{{checkinResult.circ.due_date() | egDate}}</div>
+      <div class="col-lg-2" i18n>Item Type:</div>
+      <div class="col-lg-2">{{checkinResult.firstEvent.payload.circ_modifier.name()}}</div>
+    </div>
+    <div class="row p-2 mt-1">
+      <div class="col-lg-2" i18n>Marked Lost:</div>
+      <div class="col-lg-2">{{checkinResult.circ.stop_fines_time() | egDate}}</div>
+      <div class="col-lg-2" i18n>Last Payment:</div>
+      <div class="col-lg-2">{{moneySummary().last_payment_ts() | egDate}}</div>
+      <div class="col-lg-2" i18n>Last Payment Type:</div>
+      <div class="col-lg-2">
+        <ng-container [ngSwitch]="moneySummary().last_payment_type()">
+          <ng-container *ngSwitchCase="'cash_payment'" i18n>Cash</ng-container>
+          <ng-container *ngSwitchCase="'check_payment'" i18n>Check</ng-container>
+          <ng-container *ngSwitchCase="'credit_card_payment'" i18n>Credit Card</ng-container>
+          <ng-container *ngSwitchCase="'forgive_payment'" i18n>Forgive</ng-container>
+          <ng-container *ngSwitchDefault>{{moneySummary().last_payment_type()}}</ng-container>
+        </ng-container>
+      </div>
+    </div>
+
+    <ng-container *ngIf="refundable()">
+      <div class="row p-2 mt-1">
+        <div class="col-12 d-flex fw-bold text-success">
+          <div class="flex-1"></div>
+          <div i18n>This item is refundable.</div>
+          <div class="flex-1"></div>
+        </div>
+      </div>
+
+      <ng-container *ngIf="openBillsSummary.length !== 0">
+        <div class="row p-1 mt-1">
+          <div class="col-12">
+            <p i18n>The following charges may be affected by this refund:</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-12" style="max-height:400px; overflow-y:auto">
+            <table>
+              <tr>
+                <th class="p-2" i18n>Charge Type</th>
+                <th class="p-2" i18n>Amount Owed</th>
+                <th class="p-2" i18n>Circ Modifier</th>
+                <th class="p-2" i18n>Title/Note</th>
+              </tr>
+              <tr [ngClass]="{'border-bottom': idx < openBillsSummary.length - 1}"
+                *ngFor="let xact of openBillsSummary; index as idx">
+                <td class="p-2">{{xact.last_billing_type()}}</td>
+                <td class="p-2">{{xact.balance_owed() | currency}}</td>
+                <td class="p-2">
+                  <span *ngIf="xact.circulation()">
+                    {{xact.circulation().target_copy().circ_modifier().name()}}
+                    <ng-container *ngIf="xact._non_cat_item">*</ng-container>
+                  </span>
+                </td>
+                <td class="p-2">{{xact._title}}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </ng-container>
+      <div class="row p-2 mt-2">
+        <div class="col-lg-4">
+          <label for="condition-select" i18n>
+            Is item in circulating condition?
+          </label>
+        </div>
+        <div class="col-lg-3">
+          <select id="condition-select" name="condition-select" 
+            class="form-select" [required]="true" [(ngModel)]="itemCondition">
+            <option value="good" i18n>Yes</option>
+            <option value="bad" i18n>No</option>
+          </select>
+        </div>
+        <div class="col-lg-5" i18n>
+          If condition is result of normal wear and tear, select YES.
+        </div>
+      </div>
+      <div class="row p-2 mt-1" *ngIf="refundable() && itemCondition === 'good'">
+        <div class="col-lg-4">
+          <label for="note-dibs" i18n>Staff Initials</label>
+        </div>
+        <div class="col-lg-3">
+          <input type="text" class="form-control" [(ngModel)]="initials" id="dibs-input"
+            [required]="true"
+            i18n-placeholder placeholder="Initials..."/>
+        </div>
+      </div>
+    </ng-container><!-- refundable() -->
+
+    <div class="row p-2 mt-1" *ngIf="!refundable()">
+      <div class="col-lg-12">
+        <div class="alert alert-warning">
+          <span i18n>
+            This item is <u>not</u> eligible for refund:
+          </span>
+          <span *ngIf="notRefundableReason() === 'no_payments'" i18n>
+            No refundable payments were made for this transaction.
+          </span>
+          <span *ngIf="notRefundableReason() === 'item_type'" i18n>
+            The item type is not refundable.
+          </span>
+          <span *ngIf="notRefundableReason() === 'return_date'" i18n>
+            This item was not returned in time to qualify.
+          </span>
+          <span *ngIf="notRefundableReason() === 'payment_type'" i18n>
+            The payment type is not refundable.
+          </span>
+          <div class="mt-2" i18n>
+            If checking the item in results in a negative transaction
+            balance, the balance will be automatically zeroed.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row p-2 mt-1" *ngIf="itemCondition === 'bad'">
+      <div class="col-lg-12">
+        <div class="alert alert-warning">
+          <ng-container 
+            *ngIf="refundable() && itemCondition !== 'good'">
+            <div class="mb-2" i18n>
+              This item will <u>not</u> be refunded because it is not
+              in circulating condition.  
+            </div>
+            <div i18n>
+              If checking the item in results in a negative transaction
+              balance, the balance will be automatically zeroed.
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+    </ng-container>
+
+    <div class="row p-2 mt-1" *ngIf="processing">
+      <eg-progress-inline></eg-progress-inline>
+    </div>
+
+    <div class="row" *ngIf="!checkinComplete">
+      <div class="col-6">
+        <button type="button" class="btn btn-danger" (click)="checkin(true)" i18n>
+            Standard Checkin / No Extra Processing
+        </button>
+      </div>
+
+      <div class="col-6 position-relative">
+        <div class="position-absolute end-0">
+          <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
+
+          <ng-container *ngIf="refundable()">
+            <ng-container *ngIf="itemCondition !== 'bad'">
+              <button type="button" class="btn btn-success ms-2" (click)="checkin()" 
+                [disabled]="!initials" i18n>
+                Checkin &amp; Process Refund
+              </button>
+            </ng-container>
+            <ng-container *ngIf="itemCondition === 'bad'">
+            <button type="button" class="btn btn-success ms-2" (click)="checkin()" i18n>
+              Checkin &amp; Mark Item Discard/Weed
+            </button>
+            </ng-container>
+          </ng-container>
+
+          <ng-container *ngIf="!refundable()">
+            <button type="button" class="btn btn-success ms-2" (click)="checkin()" i18n>
+              Checkin &amp; Zero Transaction
+            </button>
+          </ng-container>
+
+        </div>
+      </div>
+    </div>
+    <div class="row" *ngIf="!checkinComplete">
+      <div class="col-12" class="text-danger" i18n>(Requires Supervisor)</div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-2 mb-2" *ngIf="checkinComplete">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-info">
+      <div *ngIf="printPreviewHtml" class="mt-2" i18n>Item was checked in and the refund was successfully processed</div>
+      <div *ngIf="skipRefund" class="mt-2" i18n>Item was checked in without processing any refunds or zeroing any transactions</div>
+      <div *ngIf="xactWasZeroed" class="mt-2" i18n>Item was checked in and the transaction was Zeroed</div>
+      <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was set to Discard/Weed status</div>
+      <div *ngIf="circWasNotRefunded" class="mt-2" i18n>No refund was applied to the circulation</div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-2 mb-2" *ngIf="circWasNotRefunded">
+  <div class="col-lg-6 offset-lg-3" i18n>
+    No refund was processed for the provided payment/transacion data.
+  </div>
+</div>
+
+
+<div class="row mt-2 mb-2" *ngIf="makingPrintPreview">
+  <div class="col-lg-6 offset-lg-3">
+    <eg-progress-inline></eg-progress-inline>
+  </div>
+</div>
+
+<div>
+  <hr class="mt-3 mb-3"/>
+  <div class="row" *ngIf="printPreviewHtml">
+    <div class="col">
+      <button 
+        (click)="printLetter()" 
+        class="btn btn-outline-success label-with-material-icon ms-3">
+        <span i18n>Print Letter</span>
+        <span class="material-icons">print</span>
+      </button>
+      <a target="_blank" class="ms-3"
+        routerLink="/staff/circ/patron/{{patronId}}/bills">
+        <button class="btn btn-primary label-with-material-icon" i18n>
+          <span class="pe-2">Open Patron</span>
+          <span class="material-icons">north_east</span>
+        </button>
+      </a>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12 mt-3">
+      <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
+      <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
+        id="print-preview-pane"></div> 
+    </div>
+  </div>
+</div>
+
+<div class="row mt-2 mb-2" *ngIf="checkinComplete || reprinting">
+  <div class="col-lg-2">
+    <button type="button" class="btn btn-outline-dark" (click)="close()" i18n>Close</button>
+  </div>
+</div>
+
+

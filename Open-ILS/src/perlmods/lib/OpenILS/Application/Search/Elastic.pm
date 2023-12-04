@@ -27,6 +27,11 @@ use List::Util qw/min/;
 use OpenILS::Application::AppUtils;
 my $U = "OpenILS::Application::AppUtils";
 
+# ES 7 or 8 started limiting the total hits scanned to 10k.
+# We want everything, everywhere, all the time.
+# NOTE this could be an open-ils.search setting.
+my $track_total_hits = 2000000;
+
 # avoid repetitive calls to DB for org info.
 my %org_data_cache = (ancestors_at => {});
 
@@ -190,6 +195,10 @@ sub bib_search {
     # the response object, since that's all we need.
     $query->{_source} = [$meta ? 'metarecord' : 'id'];
 
+    # ES 7 or 8 started limiting the total hits scanned to 10k.
+    # We want everything all the time.
+    $query->{track_total_hits} = $track_total_hits;
+
     my $elastic_query = compile_elastic_query($query, $options, $staff);
 
     my $from = $elastic_query->{from} || 0;
@@ -247,7 +256,7 @@ sub bib_search {
 
     return {
         ids => $ids,
-        count => $results->{hits}->{total},
+        count => $results->{hits}->{total}->{value},
         suggest => $results->{suggest},
         facets => format_facets($results->{aggregations}),
         cache_key => $cache_key,

@@ -32,6 +32,14 @@ const routes: Routes = [{
     path: 'config/print_template',
     component: PrintTemplateComponent
 }, {
+    path: 'config/rule_max_fine',
+    component: BasicAdminPageComponent,
+    data: [{
+        schema: 'config',
+        table: 'rule_max_fine',
+        fieldOrder: 'name,amount,is_percent,id'
+    }]
+}, {
     path: 'config/rule_recurring_fine',
     component: BasicAdminPageComponent,
     data: [{
@@ -39,6 +47,14 @@ const routes: Routes = [{
         table: 'rule_recurring_fine',
         fieldOrder: 'name,low,normal,high,recurrence_interval,grace_period'
     }]
+}, {
+    path: 'config/rule_circ_duration',
+    component: BasicAdminPageComponent,
+    data: [{
+        schema: 'config',
+        table: 'rule_circ_duration',
+        fieldOrder: 'name,shrt,normal,extended,max_renewals,max_auto_renewals'
+    }]
 }, {
     path: 'config/z3950_source',
     component: BasicAdminPageComponent,
@@ -69,15 +85,6 @@ const routes: Routes = [{
     component: BasicAdminPageComponent,
     data: [{schema: 'asset',
         table: 'call_number_suffix', readonlyFields: 'label_sortkey'}]
-}, {
-    path: 'sip/account',
-    loadChildren: () =>
-      import('./sip/account.module').then(m => m.SipAccountModule)
-}, {
-    path: 'sip/screen_message',
-    component: BasicAdminPageComponent,
-    data: [{schema: 'sip',
-        table: 'screen_message', readonlyFields: 'key'}]
 }, {
     path: ':schema/:table',
     component: BasicAdminPageComponent

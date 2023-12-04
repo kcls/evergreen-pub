@@ -1,0 +1,120 @@
+
+<eg-string key="catalog.record.toast.conjoined"
+  i18n-text text="Conjoined Record Target Set"></eg-string>
+<eg-string key="catalog.record.toast.overlay"
+  i18n-text text="Record Overlay Target Set"></eg-string>
+<eg-string key="catalog.record.toast.holdTransfer"
+  i18n-text text="Hold Transfer Target Set"></eg-string>
+<eg-string key="catalog.record.toast.holdingTransfer"
+  i18n-text text="Holding Transfer Target Set"></eg-string>
+<eg-string key="catalog.record.toast.lineitemTransfer" 
+  i18n-text text="Lineitem Transfer Target Set"></eg-string>
+<eg-string key="catalog.record.toast.cleared"
+  text="Record Marks Cleared"></eg-string>
+
+<eg-bucket-dialog #recordBucketDialog bucketClass="biblio" [itemIds]="[recId]">
+</eg-bucket-dialog>
+
+<eg-add-to-carousel-dialog #recordCarouselDialog [recordIds]="[recId]">
+</eg-add-to-carousel-dialog>
+
+<eg-upload-jacket-image-dialog #jacketImageDialog [recordId]="recId">
+</eg-upload-jacket-image-dialog>
+
+<div class="row gx-0 row-cols-auto ms-0 me-0">
+
+  <button class="btn btn-sm btn-outline-primary ml-1" (click)="openPatronView()" i18n>
+    Patron View
+  </button>
+
+  <a routerLink="/staff/catalog/hold/T" [queryParams]="{target: recId}">
+    <button class="btn btn-sm btn-outline-primary ml-1" i18n>Place Hold</button>
+  </a>
+  <button class="btn btn-outline-secondary ms-1" *ngIf="!isHoldable" disabled i18n>
+    Place Hold
+  </button>
+
+  <button class="btn btn-sm btn-outline-primary ml-1" (click)="addHoldings()" i18n>
+    Add Holdings
+  </button>
+
+  <div ngbDropdown placement="bottom-right" class="ml-1">
+    <button class="btn btn-sm btn-outline-primary" id="actionsForSerials"
+      ngbDropdownToggle i18n>Serials</button>
+    <div ngbDropdownMenu aria-labelledby="actionsForSerials">
+      <a ngbDropdownItem class="dropdown-item" href="/eg/staff/serials/{{recId}}" i18n>
+        Manage Subscriptions
+      </a>
+      <a ngbDropdownItem class="dropdown-item" href="/eg/staff/serials/{{recId}}/manage-mfhds" i18n>
+        Manage MFHDs
+      </a>
+    </div>
+  </div>
+
+  <div ngbDropdown placement="bottom-right" class="ml-1">
+    <button class="btn btn-sm btn-outline-primary" id="actionsForDd"
+      ngbDropdownToggle i18n>Mark For...</button>
+    <div ngbDropdownMenu aria-labelledby="actionsForDd">
+      <!-- KCLS
+      <button class="dropdown-item" (click)="mark('conjoined')">
+        <span i18n>
+          Conjoined Items<ng-container *ngIf="targets.conjoined.current">
+            (Currently {{targets.conjoined.current}})</ng-container>
+        </span>
+      </button>
+      -->
+      <button ngbDropdownItem class="dropdown-item" (click)="mark('overlay')">
+        <span i18n>
+          Overlay Target<ng-container *ngIf="targets.overlay.current">
+            (Currently {{targets.overlay.current}})</ng-container>
+        </span>
+      </button>
+      <button ngbDropdownItem class="dropdown-item" (click)="mark('holdTransfer')">
+        <span i18n>
+          Title Hold Transfer<ng-container *ngIf="targets.holdTransfer.current">
+            (Currently {{targets.holdTransfer.current}})</ng-container>
+        </span>
+      </button>
+      <button ngbDropdownItem class="dropdown-item" (click)="mark('holdingTransfer')">
+        <span i18n>
+          Holding Transfer<ng-container *ngIf="targets.holdingTransfer.current">
+            (Currently {{targets.holdingTransfer.current}})</ng-container>
+        </span>
+      </button>
+      <button ngbDropdownItem class="dropdown-item" (click)="mark('lineitemTransfer')">
+        <span i18n>
+          Lineitem Transfer<ng-container *ngIf="targets.lineitemTransfer.current">
+            (Currently {{targets.lineitemTransfer.current}})</ng-container>
+        </span>
+      </button>
+      <button class="dropdown-item" (click)="clearMarks()">
+        <span i18n>Reset Record Marks</span>
+      </button>
+    </div>
+  </div>
+
+  <div ngbDropdown placement="bottom-right" class="ms-1">
+    <button class="btn btn-sm btn-outline-primary" id="otherActionsForDd"
+      ngbDropdownToggle i18n>Other Actions</button>
+    <div ngbDropdownMenu aria-labelledby="otherActionsForDd">
+      <button ngbDropdownItem class="dropdown-item" (click)="recordBucketDialog.open({size: 'lg'})">
+        <span i18n>Add To Bucket</span>
+      </button>
+      <button ngbDropdownItem class="dropdown-item" (click)="recordCarouselDialog.open({size: 'lg'})">
+        <span i18n>Add To Carousel</span>
+      </button>
+      <a class="dropdown-item" target="_blank" routerLink="/staff/acq/related/{{recId}}">
+        <span i18n>View/Place Orders</span>
+      </a>
+      <a class="dropdown-item" target="_blank"
+        routerLink="/staff/acq/update-items/{{recId}}">
+        <span i18n>Update Items</span>
+      </a>
+      <a class="dropdown-item" target="_blank"
+        href="/elastic/bib-search/_doc/{{recId}}">
+        <span i18n>View Indexed Data</span>
+      </a>
+    </div>
+  </div>
+</div>
+

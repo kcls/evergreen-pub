@@ -1,0 +1,128 @@
+import {Component, OnInit} from '@angular/core';
+import {Router, Event, NavigationEnd} from '@angular/router';
+import {Title, Meta}  from '@angular/platform-browser';
+import {AppService} from '../app.service';
+import {FormControl} from '@angular/forms';
+import {RequestsService} from './requests.service';
+import {Gateway} from '../gateway.service';
+
+const META_DESC = $localize`Request an item you would like to borrow from our library or through interlibrary loan. Use a form to make requests or check request status.`;
+
+@Component({
+  templateUrl: './requests.component.html',
+  styleUrls: ['./requests.component.scss']
+})
+export class RequestsComponent implements OnInit {
+    tab = 'create';
+
+    controls: {[field: string]: FormControl} = {
+        format: new FormControl(''),
+        ill_opt_out: new FormControl(false),
+    };
+
+    constructor(
+        private router: Router,
+        private title: Title,
+        private meta: Meta,
+        private gateway: Gateway,
+        public app: AppService,
+        public requests: RequestsService,
+    ) {}
+
+    ngOnInit() {
+        this.title.setTitle($localize`Request an Item`);
+        this.meta.addTag({description: META_DESC});
+
+        this.requests.loadOptions();
+
+        this.tab = this.router.url.split("/").pop() || 'requests';
+
+        if (this.tab === 'requests') {
+            this.router.navigate(['/requests/create'])
+                .then(() => window.location.reload());
+            return;
+        }
+
+        this.router.events.subscribe((event: Event) => {
+            if (event instanceof NavigationEnd) {
+                this.tab = event.url.split("/").pop() || 'create';
+                if (this.tab === 'list') {
+                    this.requests.requestSubmitted = false;
+                    this.title.setTitle($localize`My Requests`);
+                } else {
+                    this.title.setTitle($localize`Request an Item`);
+                    this.tab = 'create';
+
+                    // Always clear the selected format when navigating
+                    // back to the create page.
+                    if (this.requests.selectedFormat) {
+                        this.requests.selectedFormat = null;
+                        this.controls.format.reset();
+                        this.resetForm();
+                        this.requests.formatChanged.emit();
+                    }
+                }
+            }
+        });
+
+        this.controls.format.valueChanges.subscribe(format => {
+            this.requests.selectedFormat = format;
+            this.requests.formatChanged.emit();
+            // Changing the format means starting a new request.
+            // Route to the create page.
+            if (this.tab !== 'create') {
+                this.router.navigate(['/requests/create']);
+            }
+        });
+
+        this.controls.ill_opt_out.valueChanges.subscribe(opt => this.requests.illOptOut = opt);
+
+        this.gateway.authSessionEnded.subscribe(() => this.reset());
+        this.requests.formResetRequested.subscribe(() => this.resetForm());
+
+        // Patrons out of service area are not permitted to create ILL requests.
+        this.requests.patronChecked.subscribe(() => {
+            if (!this.requests.illRequestsAllowed || this.requests.hasOverdueIll) {
+                this.controls.ill_opt_out.setValue(true);
+                this.controls.ill_opt_out.disable();
+            }
+        });
+
+        // Not all actions require an auth session up front, but if we
+        // have a local auth token, we need to know so we can let the
+        // user know they are already authenticated.
+        this.app.fetchAuthSession();
+    }
+
+    resetForm() {
+        for (const field in this.controls) {
+
+            if (field === 'ill_opt_out' && (
+                !this.requests.illRequestsAllowed || this.requests.hasOverdueIll)) {
+                // This option remains disabled for the duration of the
+                // patron session.
+                continue;
+            }
+
+            this.controls[field].reset();
+            this.controls[field].markAsPristine();
+            this.controls[field].markAsUntouched();
+        }
+    }
+
+    reset() {
+        this.tab = 'create';
+        this.requests.reset();
+        this.resetForm();
+        this.controls.ill_opt_out.enable();
+        this.router.navigate(['/requests/create']); // in case
+    }
+
+    typeCanBeRequested(): boolean {
+        return (
+            this.controls.format.value !== '' &&
+            this.controls.format.value !== null &&
+            this.controls.format.value !== 'ebook-eaudio'
+        );
+    }
+}

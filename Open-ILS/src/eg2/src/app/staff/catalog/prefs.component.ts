@@ -13,7 +13,7 @@ const CATALOG_PREFS = [
     'eg.search.pref_lib',
     'eg.search.adv_pane',
     'eg.catalog.results.count',
-    'eg.catalog.hide_facets'
+    'eg.staffcat.exclude_electronic'
 ];
 
 @Component({
@@ -88,13 +88,6 @@ export class PreferencesComponent implements OnInit {
 
     goBack() {
         history.back();
-    }
-
-    facetChanged(name, node) {
-        const bool = node.returnValue;
-        const value = (name === 'show' && !bool) || (name === 'hide' && bool);
-        this.updateValue('eg.catalog.hide_facets', value)
-        .then(_ => this.staffCat.hideFacets = value);
     }
 }
 

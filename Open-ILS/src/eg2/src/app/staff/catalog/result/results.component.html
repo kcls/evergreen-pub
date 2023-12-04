@@ -25,16 +25,6 @@
       <div class="alert alert-warning">
         <span i18n>No Matching Items Were Found</span>
       </div>
-      <ul>
-        <li class="mb-2" *ngFor="let sug of suggestions(); trackBy:trackByIdx">
-          <span i18n>Other Suggestions: </span>
-          <a routerLink="/staff/catalog/search"
-            [queryParams]="{fieldClass: sug.fieldClass, query: sug.value, ridx: sug.ridx}"
-            queryParamsHandling="merge">
-            {{sug.value}}
-          </a>
-        </li>
-      </ul>
     </div>
   </div>
 </div>
@@ -46,16 +36,16 @@
   </eg-catalog-browse-pager>
 
   <div class="row">
-    <div class="col-lg-2" *ngIf="!searchContext.showBasket">
+    <div class="col-lg-2" *ngIf="!searchContext.basket">
       <ng-container *ngIf="!searchContext.termSearch.browseEntry">
         <h2 i18n>Search Results ({{searchContext.result.count}})</h2>
       </ng-container>
     </div>
-    <div class="col-lg-2" *ngIf="searchContext.showBasket">
+    <div class="col-lg-2" *ngIf="searchContext.basket">
       <h3 i18n>Basket View</h3>
     </div>
     <div class="col-lg-3">
-      <label class="form-label checkbox" *ngIf="!searchContext.showBasket">
+      <label class="form-label checkbox" *ngIf="!searchContext.basket">
         <input type='checkbox' [(ngModel)]="allRecsSelected" 
             (change)="toggleAllRecsSelected()"/>
         <span class="ps-1" i18n>Select {{searchContext.pager.rowNumber(0)}} - 
@@ -74,10 +64,8 @@
   </div>
   <div>
     <div class="row mt-2">
-      <div class="col-lg-2" *ngIf="showFacets()">
-        <eg-catalog-result-facets></eg-catalog-result-facets>
-      </div>
-      <div [ngClass]="{'col-lg-10': showFacets(), 'col-lg-12': !showFacets()}">
+      <div id="eg-catalog-result-records"
+        [ngClass]="{'col-lg-10': !searchContext.basket, 'col-lg-12': searchContext.basket}">
         <div *ngFor="let summary of searchContext.result.records; let idx = index">
           <div *ngIf="summary">
             <eg-catalog-result-record [summary]="summary" [index]="idx">

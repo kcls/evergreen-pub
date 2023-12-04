@@ -157,6 +157,9 @@ sub pick_winning_change {
     }
 
     if ($dist_formula) {
+        # Formulas have no cn_label
+        return if $field eq 'cn_label';
+
         my $hit;
 
         my $count_over_entries = 0;
@@ -199,10 +202,10 @@ sub adjust_lineitem_copy_counts {
 
         if ($counts{$jub->id} > $item_count) {
             # Take care of excess lineitem details.
-
-            for (my $i = $item_count; $i < $counts{$jub->id}; $i++) {
-                $jub->lineitem_details->[$i]->isdeleted(1);
-            }
+            return OpenILS::Event->new('ACQ_COPY_COUNT_TOO_LOW');
+            #for (my $i = $item_count; $i < $counts{$jub->id}; $i++) {
+            #    $jub->lineitem_details->[$i]->isdeleted(1);
+            #}
         } elsif ($counts{$jub->id} < $item_count) {
             # Add missing lineitem details.
 
@@ -215,6 +218,8 @@ sub adjust_lineitem_copy_counts {
             }
         }
     }
+
+    undef;
 }
 
 
@@ -277,7 +282,14 @@ sub lineitem_batch_update_impl {
     );
 
     my $item_count = pick_winning_item_count($changes, $dist_formula);
-    adjust_lineitem_copy_counts($lineitems, $item_count) if defined $item_count;
+
+    if (defined $item_count) {
+        my $evt = adjust_lineitem_copy_counts($lineitems, $item_count);
+        if ($evt) {
+            $e->rollback;
+            return $evt;
+        }
+    }
 
     # Now, going through all our lineitem details, make the updates
     # called for in $changes, other than the 'item_count' field (handled above).

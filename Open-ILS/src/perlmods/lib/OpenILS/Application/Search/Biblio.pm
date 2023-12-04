@@ -3369,10 +3369,13 @@ sub catalog_record_summary {
             get_one_metarecord_summary($self, $e, $org_id, $rec_id, $options) :
             get_one_record_summary($self, $e, $org_id, $rec_id, $options);
 
+
+=head CODE NOT NEEDED FOR KCLS AND IT'S SLOW W/ MANY METABIBS
+
         # Let's get Formats & Editions data FIXME: consider peer bibs?
         unless ($is_meta) {
             my $meta_search = $e->search_metabib_metarecord_source_map({source => $rec_id});
-            if ($meta_search) {
+            if (@$meta_search) {
                 $response->{staff_view_metabib_id} = $meta_search->[0]->metarecord;
                 my $maps = $e->search_metabib_metarecord_source_map({metarecord => $response->{staff_view_metabib_id}});
                 my @metabib_records = map { $_->source } @$maps;
@@ -3408,6 +3411,8 @@ sub catalog_record_summary {
                 $response->{staff_view_metabib_attributes} = $metabib_attr;
             }
         }
+
+=cut
 
         ($response->{copy_counts}) = $copy_method->run($org_id, $rec_id);
 

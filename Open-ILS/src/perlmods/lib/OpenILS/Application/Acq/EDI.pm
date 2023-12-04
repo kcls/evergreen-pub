@@ -4,6 +4,7 @@ use base qw/OpenILS::Application/;
 use strict; use warnings;
 
 use IO::Scalar;
+use File::Basename;
 
 use OpenSRF::AppSession;
 use OpenSRF::EX qw/:try/;
@@ -24,6 +25,9 @@ use OpenILS::Utils::EDIReader;
 use Data::Dumper;
 $Data::Dumper::Indent = 0;
 our $verbose = 0;
+
+my $MAX_EDI_FILE_SIZE = 10485760; #10mb
+
 
 sub new {
     my($class, %args) = @_;
@@ -57,27 +61,6 @@ my $VENDOR_KLUDGE_MAP = {
     }
 };
 
-
-__PACKAGE__->register_method(
-    method    => 'retrieve',
-    api_name  => 'open-ils.acq.edi.retrieve',
-    authoritative => 1,
-    signature => {
-        desc   => 'Fetch incoming message(s) from EDI accounts.  ' .
-                  'Optional arguments to restrict to one vendor and/or a max number of messages.  ' .
-                  'Note that messages are not parsed or processed here, just fetched and translated.',
-        params => [
-            {desc => 'Authentication token',        type => 'string'},
-            {desc => 'Vendor ID (undef for "all")', type => 'number'},
-            {desc => 'Date Inactive Since',         type => 'string'},
-            {desc => 'Max Messages Retrieved',      type => 'number'}
-        ],
-        return => {
-            desc => 'List of new message IDs (empty if none)',
-            type => 'array'
-        }
-    }
-);
 
 sub retrieve_core {
     my ($self, $set, $max, $e, $test) = @_;    # $e is a working editor
@@ -194,6 +177,56 @@ sub retrieve_core {
     return \@return;
 }
 
+__PACKAGE__->register_method(
+    method    => 'process_edi_file',
+    api_name  => 'open-ils.acq.edi.file.process',
+    signature => {
+        desc   => 'Process a single EDI file',
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'EDI Account ID', type => 'number'},
+            {desc => 'Full path to local EDI file', type => 'string'},
+        ],
+        return => {
+            desc => 'ID of the created acq.edi_message or undef if none is created',
+            type => 'number'
+        }
+    }
+);
+
+sub process_edi_file {
+    my ($self, $client, $auth, $account_id, $local_file) = @_;
+    my $e = new_editor(authtoken => $auth);
+
+    return $e->event unless $e->checkauth;
+    return $e->event unless $e->allowed('PROCESS_EDI_FILE');
+
+    my $filesize = -s $local_file;
+    if (!$filesize || $filesize > $MAX_EDI_FILE_SIZE) {
+        return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Too big");
+    }
+
+    my $content = do {
+        local $/ = undef;
+
+        my $fh;
+        unless (open $fh, "<", $local_file) {
+            $logger->error("Cannot open EDI file $local_file: $!");
+            return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Could not open: $!");
+        }
+
+        <$fh>;
+    };
+
+    $logger->info("EDI processing file $local_file [characters=" . length($content) . "]");
+
+    my $file_name = fileparse($local_file);
+
+    my $replies = __PACKAGE__->process_retrieval($content, $file_name, undef, $account_id);
+
+    return $replies ? $replies->[0] : undef;
+}
+
 
 # procses_retrieval() returns a reference to a list of acq.edi_message IDs
 sub process_retrieval {
@@ -206,6 +239,7 @@ sub process_retrieval {
     # a single EDI blob can contain multiple messages
     # create one edi_message per included message
 
+    my $seen_container_codes = {};
     my $messages = OpenILS::Utils::EDIReader->new->read($content);
     my @return;
 
@@ -254,7 +288,7 @@ sub process_retrieval {
 
         # since there's a fair chance of unhandled problems 
         # cropping up, particularly with new vendors, wrap w/ eval.
-        eval { $class->process_parsed_msg($account, $incoming, $msg_hash) };
+        eval { $class->process_parsed_msg($account, $incoming, $msg_hash, $seen_container_codes) };
 
         $e->xact_begin;
         if ($@) {
@@ -633,7 +667,7 @@ sub process_message_buyer {
 # thing failing.  If a catastrophic error occurs,
 # it will occur via die.
 sub process_parsed_msg {
-    my ($class, $account, $incoming, $msg_hash) = @_;
+    my ($class, $account, $incoming, $msg_hash, $seen_container_codes) = @_;
 
     # INVOIC
     if ($incoming->message_type eq 'INVOIC') {
@@ -642,7 +676,7 @@ sub process_parsed_msg {
 
     } elsif ($incoming->message_type eq 'DESADV') {
         return $class->create_shipment_notification_from_edi(
-            $msg_hash, $account->provider, $incoming);
+            $msg_hash, $account->provider, $incoming, $seen_container_codes);
     }
 
     # ORDRSP
@@ -1154,7 +1188,7 @@ sub create_acq_invoice_from_edi {
 }
 
 sub create_shipment_notification_from_edi {
-    my ($class, $msg_data, $provider_id, $edi_message) = @_;
+    my ($class, $msg_data, $provider_id, $edi_message, $seen_container_codes) = @_;
     # $msg_data is O::U::EDIReader hash
 
     $logger->info("ASN: " . Dumper($msg_data));
@@ -1170,46 +1204,72 @@ sub create_shipment_notification_from_edi {
 
         $logger->info("ACQ processing container: $container_code");
 
-        my $eg_asn = Fieldmapper::acq::shipment_notification->new;
-        $eg_asn->isnew(1);
+        my $eg_asn;
+        if ($seen_container_codes->{$container_code}) {
+            # Appending to a container we created earlier in this EDI file
 
-        # Some troubleshooting aids.  Yeah we should have made appropriate links
-        # for this in the schema, but this is better than nothing.  Probably
-        # *don't* try to i18n this.
-        $eg_asn->note("Generated from acq.edi_message #" . $edi_message->id . ".");
+            $logger->info("ACQ appending to existing container $container_code");
 
-        $eg_asn->provider($provider_id);
-        $eg_asn->shipper($provider_id);
-        $eg_asn->recv_method('EDI');
+            # This is coming through as an object?
+            $provider_id = $provider_id->id if ref $provider_id;
 
-        $eg_asn->recv_date( # invoice_date is a misnomer; should be message date.
-            $class->edi_date_to_iso($msg_data->{invoice_date}));
+            $eg_asn = $e->search_acq_shipment_notification({
+                container_code => $container_code,
+                provider => $provider_id
+            })->[0] or return $e->event;
 
-        $class->process_message_buyer($e, $msg_data, $edi_message, "ASN" , $eg_asn);
+            # The else branch below starts its own transaction so it
+            # can create a new shipment_nofication, which we don't need.
+            # But we do need a xact to add the entries past the if()
+            $e->xact_begin;
 
-        if (!$eg_asn->receiver) {
-            die(sprintf(
-                "Unable to determine buyer (org unit) in shipment notification; ".
-                "buyer_san=%s; buyer_acct=%s",
-                ($msg_data->{buyer_san} || ''), 
-                ($msg_data->{buyer_acct} || '')
-            ));
+        } else {
+            # New container code.  Create a new shipment notification
+            # and update the edi_message accordingly.
+            $logger->info("ACQ creating new shipment noficiation for $container_code");
+
+            $eg_asn = Fieldmapper::acq::shipment_notification->new;
+            $eg_asn->isnew(1);
+
+            # Some troubleshooting aids.  Yeah we should have made appropriate links
+            # for this in the schema, but this is better than nothing.  Probably
+            # *don't* try to i18n this.
+            $eg_asn->note("Generated from acq.edi_message #" . $edi_message->id . ".");
+
+            $eg_asn->provider($provider_id);
+            $eg_asn->shipper($provider_id);
+            $eg_asn->recv_method('EDI');
+
+            $eg_asn->recv_date( # invoice_date is a misnomer; should be message date.
+                $class->edi_date_to_iso($msg_data->{invoice_date}));
+
+            $class->process_message_buyer($e, $msg_data, $edi_message, "ASN" , $eg_asn);
+
+            if (!$eg_asn->receiver) {
+                die(sprintf(
+                    "Unable to determine buyer (org unit) in shipment notification; ".
+                    "buyer_san=%s; buyer_acct=%s",
+                    ($msg_data->{buyer_san} || ''), 
+                    ($msg_data->{buyer_acct} || '')
+                ));
+            }
+
+            $eg_asn->container_code($container_code);
+
+            die("No container code in DESADV message") unless $eg_asn->container_code;
+
+            $e->xact_begin;
+
+            die "Error updating EDI message: " . $e->die_event
+                unless $e->update_acq_edi_message($edi_message);
+
+            die "Error creating shipment notification: " . $e->die_event
+                unless $e->create_acq_shipment_notification($eg_asn);
+
         }
-
-        $eg_asn->container_code($container_code);
-
-        die("No container code in DESADV message") unless $eg_asn->container_code;
 
         my $entries = extract_shipment_notification_entries([
             grep {$_->{container_code} eq $container_code} @{$msg_data->{lineitems}}]);
-
-        $e->xact_begin;
-
-        die "Error updating EDI message: " . $e->die_event
-            unless $e->update_acq_edi_message($edi_message);
-
-        die "Error creating shipment notification: " . $e->die_event
-            unless $e->create_acq_shipment_notification($eg_asn);
 
         for my $entry (@$entries) {
             $entry->shipment_notification($eg_asn->id);
@@ -1218,6 +1278,8 @@ sub create_shipment_notification_from_edi {
         }
 
         $e->xact_commit;
+
+        $seen_container_codes->{$container_code} = 1;
     }
 
     return 1;

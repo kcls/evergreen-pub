@@ -1,0 +1,37 @@
+<eg-staff-banner bannerText="#{{authId}} {{authMeta ? authMeta.heading : ''}}" i18n-bannerText>
+</eg-staff-banner>
+
+<div class="row mb-2">
+  <div class="col-lg-3">
+    <a routerLink="/staff/cat/authority/browse">
+      <button class="btn btn-outline-dark">
+        <span class="material-icons material-mat-icon-shrunk-in-button" aria-hidden="true">arrow_back</span>
+        <span class="ps-1" i18n>Return to Browse</span>
+      </button>
+    </a>
+  </div>
+</div>
+
+<ul ngbNav #authTabs="ngbNav" [(activeId)]="authTab" 
+  (navChange)="beforeNavChange($event)" [keyboard]="true" [roles]="false" role="tablist" class="nav-tabs">
+  <li role="presentation" [ngbNavItem]="'bibs'">
+    <a i18n ngbNavLink role="tab">Linked Bibs</a>
+    <ng-template ngbNavContent>
+      <div class="mt-3" *ngIf="authMeta">
+        <eg-bib-list #bibList [bibIdSource]="linkedBibIdSource"
+          gridPersistKey="cat.authority.manage.bibs"></eg-bib-list>
+      </div>
+    </ng-template>
+  </li>
+  <li role="presentation" [ngbNavItem]="'edit'">
+    <a i18n ngbNavLink role="tab">Edit</a>
+    <ng-template ngbNavContent>
+      <div class="mt-3">
+        <eg-marc-editor #marcEditor recordType="authority" [recordId]="authId">
+        </eg-marc-editor>
+      </div>
+    </ng-template>
+  </li>
+</ul>
+
+<div [ngbNavOutlet]="authTabs" class="mt-2"></div>

@@ -1,0 +1,413 @@
+[% USE Dumper %]
+[%- # This is the bib and authority combined record browser.
+
+    PROCESS "opac/parts/header.tt2";
+    PROCESS "opac/parts/misc_util.tt2";
+    WRAPPER "opac/parts/base.tt2";
+    INCLUDE "opac/parts/topnav.tt2";
+
+    ctx.page_title = l("Browse the Catalog");
+    blimit = CGI.param('blimit') || ctx.opac_hits_per_page || 11;
+    sort = CGI.param('sort') || CGI.param('defaultsort') ||"pubdate.descending";
+
+    depart_list = ['blimit', 'bterm', 'bpivot'];
+%]
+
+<script>
+    [% # This function replaces &gt; like codes with the characters they represent. %]
+    function replaceContentInContainer(matchClass){
+        var elems = document.getElementsByTagName('*'),i;
+        for (i in elems){
+            [% # Gets all html elements that have the class name that is sent to this function. %]
+            if((" "+elems[i].className+" ").indexOf(" "+matchClass+" ") > -1){
+                var old_content = elems[i].innerHTML;
+                var div = document.createElement('div');
+                div.innerHTML = old_content;
+                var decoded = div.firstChild.nodeValue;
+                elems[i].innerHTML = decoded;
+            }
+        }
+    }
+</script>
+
+[% IF ctx.is_staff %] 
+<script type="text/javascript">
+    [%
+        # Catalyst IT Services
+        # New tab function, which opens a fresh tab with item detail view. Called when user clicks on a result.
+        #
+    %]
+    function new_tab( element ) {
+        [% IF ctx.is_browser_staff %]
+            // For now open browse title results in the same tab.
+            location.href = element.getAttribute( 'url' );
+        [% ELSE %]
+        var tabName = element.getAttribute( 'tabname' );
+        var url = "oils://remote" + element.getAttribute( 'url' );
+        var content_params = { 
+            'override_tab_lock' : true, 
+            'no_xulG' : false, 
+            'opac_url' : xulG.url_prefix( url ) 
+        };
+        element.setAttribute( 'href', url );
+        var success = xulG.new_tab( 
+            xulG.url_prefix( 'chrome://open_ils_staff_client/content/cat/opac.xul' ), 
+            {}, 
+            content_params
+        );  
+        if ( success ) {
+            element.removeAttribute( "href" );
+        }
+        [% END %] // XUL staff
+    }     
+</script>
+[% END %]
+
+
+    <div id="search-wrapper">
+        [% INCLUDE "opac/parts/searchbar_browse.tt2" %]
+    </div>
+
+    <div id="content-wrapper">
+        <div id="main-content">
+            [% # Main browse search area, includes paging and search results %]
+            <div id="browse-the-catalog">
+                [% # Code for defining "browse_pager", so it may be called twice below %]
+                [% BLOCK browse_pager %]
+                    [% current_qtype = CGI.param('qtype'); %]
+                    [% SWITCH current_qtype %]
+                    [% CASE "title" %]
+                        [% formatted_qtype = "Title"; %]
+                    [% CASE "author" %]
+                        [% formatted_qtype = "Author"; %]
+                    [% CASE "subject" %]
+                        [% formatted_qtype = "Subject"; %]
+                    [% CASE "series" %]
+                        [% formatted_qtype = "Series Title"; %]
+                    [% CASE "identifier" %]
+                        [% formatted_qtype = "Bib Call Number"; %]
+                    [% END %]
+                    <div class="browse-pager">
+                        <div class="browse-query-title">
+                            Browsing [% formatted_qtype %]s that begin with <span class="bold">[% CGI.param('bterm') %]</span>
+                        </div>
+                        <div class="browse-pager-items">
+                            <div class="browse-pager-item">
+                                [% IF ctx.back_pivot %]
+                                    <a class="opac-button" href="[% mkurl('', {bpivot => ctx.back_pivot}) %]" onclick="$('browse-pager-spinner-[% id %]').className = '';">
+                                        &larr; [%l ('Prev') %] [% blimit %] [% formatted_qtype %]s
+                                    </a>
+                                [% END %]
+                            </div>
+
+                            [% IF ctx.pager_shortcuts; %]
+                                <div class="browse-pager-item">
+                                    <span class="browse-shortcuts">
+                                        [% FOR shortcut IN ctx.pager_shortcuts %]
+                                            <a href="[% mkurl('', {qtype => current_qtype, bterm => shortcut.0}, ['bpivot','query']) %]">
+                                                [% shortcut.1 %]
+                                            </a>
+                                        [% END %]
+                                    </span>
+                                </div>
+                            [% END %]
+
+                            <div class="browse-pager-item">
+                                [% IF ctx.forward_pivot %]
+                                    <a class="opac-button" href="[% mkurl('', {bpivot => ctx.forward_pivot}) %]" onclick="$('browse-pager-spinner-[% id %]').className = '';">
+                                        [%l ('Next') %] [% blimit %] [% formatted_qtype %]s &rarr;
+                                    </a>
+                                [% END %]
+                            </div>
+                            
+                            <div class="browse-pager-item">
+                                <img id="browse-pager-spinner-[% id %]" src="[% ctx.media_prefix %]/opac/images/progressbar_green.gif" class="hidden" style="width: 16px; height: 16px;" alt="" />
+                            </div>
+                        </div> [% # end of browse-pager-items %]
+                    </div>
+                [% END  # end of browse_pager code %]
+
+                [% # Top "browse_pager", (Navigation) %]
+                [% PROCESS browse_pager id=0 %]
+
+                <div id="browse-results">
+                    [% IF ctx.browse_error %]
+                        <span class="browse-error">
+                            [% l("An error occurred browsing records. Please try again in a moment or report the issue to library staff.") %]
+                        </span>
+                    [% ELSE %]
+                    [% # NOTE: If statement to handle filing indicator %]
+                    [% IF ctx.browse_leading_article_warning %]
+                        <div class="browse-leading-article-warning">
+                            [% l("Your browse term seems to begin with an article (a, an, the). You might get better results by omitting the article.") %]
+                            [% IF ctx.browse_leading_article_alternative %]
+                            <p>
+                                [% alternative_link = BLOCK %]
+                                "<a href="[% mkurl('', {bterm => ctx.browse_leading_article_alternative}, ['bpivot']) %]"><span class="bold">[% ctx.browse_leading_article_alternative | html %]</span></a>"
+                                [%-  END; # alternative_link BLOCK
+                                    l("Did you mean [_1]?", alternative_link);
+                                END # IF %]
+                            </p>
+                        </div>
+                    [% END %]
+
+                    <ol class="browse-result-list">
+                        [% counter = 1; %]
+                        [% FOR result IN ctx.browse_results %]
+
+                            [% # The following IF statement determines the background color of the result item %]
+                            [% IF (counter % 2) != 0 %]
+                                <li class="browse-result odd">
+                            [% ELSE %]
+                                <li class="browse-result even">
+                            [% END %]
+                            [% counter = counter + 1; %]
+
+                                <span class="browse-result-value[% result.row_number == 0 && !CGI.param('bpivot') ? ' browse-result-best-match' : '' %]">
+                                    [% IF result.sources > 0 %] [% # bib-linked browse value %]
+                                        [% IF ctx.is_browser_staff %] 
+                                          <!-- note the replace is required because the angjs client
+                                              does not honor ';' as a parameter separater -->
+                                          <a class="staff-client-link" 
+                                            target="_blank"
+                                            href="[% mkurl(
+                                            '/eg/staff/cat/catalog/browse_items', {
+                                            'fi:has_browse_entry' => (result.browse_entry _ ',' _ result.fields)
+                                            }) | replace(';', '&') %]" 
+                                          >
+                                          [% result.value %]
+                                          </a>  
+                                        [% ELSIF ctx.is_staff %] 
+                                            <a class="staff-client-link" url="[% mkurl(
+                                                ctx.opac_root _ '/browse_items', {
+                                                    'fi:has_browse_entry' => (result.browse_entry _ ',' _ result.fields)
+                                                }) %]" 
+                                                onclick = "new_tab( this )" 
+                                                >
+                                                [% result.value %]
+                                              </a>  
+                                        [% ELSE %]
+                                            <a href="[% mkurl(
+                                                ctx.opac_root _ '/browse_items', {
+                                                    'fi:has_browse_entry' => (result.browse_entry _ ',' _ result.fields)
+                                                }) %]">
+                                                [% result.value %]
+                                            </a>
+                                        [% END %]
+
+                                        <span class="browse-result-sources">([%
+                                            IF result.accurate == 'f';
+                                                l("At least"); " ";
+                                            END;
+                                        result.sources %])</span>
+                                    [% ELSE %] [% # only authority links %]
+                                        <span class="see-reference-no-link">[% result.value %]</span>
+                                    [% END %]
+                                </span>
+								<div> [% result.history_reference | html %]  </div>
+								[% FOR note IN result.notes %]
+									<div class="browse-public-general-note">
+										<span class="browse-public-general-note-label">
+											[% l("Note:") %]
+										</span>
+										<span class="browse-public-general-note-body">
+											[% FOR piece IN note; piece | html; END %]
+										</span>
+									</div>
+								[% END %]
+								<div> [% result.complex_see_also | html %]  </div>
+								
+                                <ul class="browse-result-authority-headings">
+                                    [% # Code for See Functionality %]
+                                        [% seenit = {}; # for headings we've rendered
+                                        FOR a IN result.sees;
+                                            PROCESS authority_notes authority=a;
+
+                                            # Other than displaying public general notes, we can go no further sans control_set.
+                                            NEXT UNLESS a.control_set;
+
+                                            # get_authority_fields is fast and cache-y.
+                                            acs = ctx.get_authority_fields(a.control_set);
+                                            FOR field_group IN a.headings.sort('field_group.values.0.headings.heading');
+                                                field_id = field_group.keys.0;
+                                                field = acs.$field_id;
+                                                headings = field_group.values.0;
+                                                FOR h IN headings;
+                                                    # We could display headings without links here when h.target is
+                                                    # undef, if we wanted to, but note that h.target_count is only defined when h.target is.
+
+                                                    IF h.target AND h.target_count AND result.list_authorities.grep('^' _ h.target _ '$').size == 0;
+                                                        id = h.target; NEXT IF seenit.$id; seenit.$id = 1; %]
+															[% target = h.target; %]
+															[% IF result.ref_headings.$target.show == 1; %]
+																<li>
+																		<div style="display:block; width:99%;" class="browse-result-authority-field-name">[% result.ref_headings.$target.display %]
+                                    [% IF ctx.is_browser_staff %] 
+                                      <!-- note the replace is required because the angjs client
+                                          does not honor ';' as a parameter separater -->
+                                      <a class="staff-client-link" 
+																				see_also="[% h.heading | html %]" 
+                                        target="_blank"
+                                        href="[% 
+                                          mkurl('/eg/staff/cat/catalog/see_also', 
+                                            {query => 'identifier|authority_id[' _ h.target _ ']'}
+                                          ) | replace(';', '&') %]&see_also=[% h.heading | html %]" 
+                                        >
+																				[% h.heading | html %]
+                                      </a>  
+                                    [% ELSE %]
+																			<a class="staff-client-link" 
+																				see_also="[% h.heading | html %]" 
+																				url="[% mkurl(ctx.opac_root _ '/see_also', {query => 'identifier|authority_id[' _ h.target _ ']'}
+																							) %];see_also=[% h.heading | html %]" 
+																				onclick = "new_tab( this )" >
+																				[% h.heading | html %]
+																			</a>
+                                    [% END %]
+																			
+																			<!-- This was pretty much the only way to do this, sets allows the a tag to wrap while maintaining vertical alignment of the sees number -->
+																			<span style="float:right; position:relative; left: 1%;" class="browse-result-authority-bib-links browse-result-sources">([% h.target_count %])</span>
+																		</div>
+
+																	<div>
+																		[% FOR note IN result.ref_headings.$target.notes %]
+																			<div class="browse-public-general-note">
+																				<span class="browse-public-general-note-label">
+																					[% l("Note:") %]
+																				</span>
+																				<span class="browse-public-general-note-body">
+																					[% FOR piece IN note; piece | html; END %]
+																				</span>
+																			</div>
+																		[% END %]
+																	</div>
+																</li>
+																<br>
+															[% END %]
+                                                    [% END %]
+                                                [% END %]
+                                            [% END %]
+                                        [% END %]
+                                    [% # End of Code for See Functionality %]
+                                    [% # Code for See Also Functionality %]
+                                        [% FOR a IN result.authorities;
+                                            PROCESS authority_notes authority=a IF !sees.grep(a.id);
+
+                                            # Other than displaying public general notes, we can go no further sans control_set.
+                                            NEXT UNLESS a.control_set;
+
+                                            # get_authority_fields is fast and cache-y.
+                                            acs = ctx.get_authority_fields(a.control_set);
+                                            FOR field_group IN a.headings.sort;
+                                                field_id = field_group.keys.0;
+                                                field = acs.$field_id;
+                                                headings = field_group.values.0;
+                                                FOR h IN headings;
+                                                    # We could display headings without links here when h.target is
+                                                    # undef, if we wanted to, but note that h.target_count is only defined when h.target is.
+
+                                                    IF h.target AND h.target_count AND result.list_sees.grep('^' _ h.target _ '$').size == 0 AND !h.main_entry;
+                                                        id = h.target; NEXT IF seenit.$id; seenit.$id = 1; %]
+                                                        [% target = h.target; %]
+                                                        [% IF result.ref_headings.$target.show == 1; %]
+															<li>
+																<span class="browse-result-authority-field-name">[% result.ref_headings.$target.display %]</span>
+																[% # See Also link generated here %]
+																<a class="staff-client-link"
+																	url="[% mkurl(ctx.opac_root _ '/see_also', {query => 'identifier|authority_id[' _ h.target _ ']'}) %];see_also=[% h.heading | html %]"
+																	onclick = "new_tab( this )"
+																>
+																	[% h.heading | html %]
+																</a>
+																<span class="browse-result-authority-bib-links browse-result-sources">([% h.target_count %])</span>
+																<div>
+																	[% FOR note IN result.ref_headings.$target.notes %]
+																		<div class="browse-public-general-note">
+																			<span class="browse-public-general-note-label">
+																				[% l("Note:") %]
+																			</span>
+																			<span class="browse-public-general-note-body">
+																				[% FOR piece IN note; piece | html; END %]
+																			</span>
+																		</div>
+																	[% END %]
+																</div>
+															</li>
+                                                        [% END %]
+                                                    [% END %]
+                                                [% END %]
+                                            [% END %]
+                                        [% END %]
+                                    [% # End of Code for See Also Functionality %]
+                                </ul>
+                            </li>
+                        [% END %]
+                    </ol> [% # End of browse-result-list %]
+                [% END %]
+                </div>
+
+                [% # Bottom "browse_pager", (Navigation) %]
+                [% PROCESS browse_pager id=1 %]
+            </div>
+
+            <div class="common-full-pad">
+            </div>
+            [% # Display a link to do a contains phrase search for the same bib call number browse search term. %]
+            [% IF current_qtype == "identifier" %]
+                <div class="contains-phrase-container">
+                    [% IF ctx.is_staff %]
+                        <a class="staff-client-link" url="/eg/opac/results?qtype=identifier&query=[% CGI.param('bterm') %]&page=0&x=0&y=0&fi%3Amattype=&loc=1" onclick = "new_tab( this )">
+                            * Perform a Bib Call Number contains "[% CGI.param('bterm') %]" search.
+                        </a>
+                    [% ELSE %]
+                        <a href="results?qtype=identifier&query=[% CGI.param('bterm') %]&page=0&x=0&y=0&fi%3Amattype=&loc=1">
+                            * Perform a Bib Call Number contains <span class="bold">[% CGI.param('bterm') %]</span> search.
+                        </a>
+                     [% END %]
+                </div>
+            [% END %]
+        </div>
+    </div>
+
+    [% BLOCK authority_notes;
+        # Displays public general notes (sometimes called "scope notes" ?)
+        FOR note IN authority.notes %]
+            <div class="browse-public-general-note">
+                <span class="browse-public-general-note-label">
+                    [% l("Note:") %]
+                </span>
+                <span class="browse-public-general-note-body">
+                [% FOR piece IN note; piece | html; END %]
+                </span>
+            </div>
+        [% END;
+    END;    # end of BLOCK authority_notes %]
+    <script>
+		function sortList(ul){
+			var new_ul = ul.cloneNode(false);
+
+			// Add all lis to an array
+			var lis = [];
+			for(var i = ul.childNodes.length; i--;){
+				if(ul.childNodes[i].nodeName === 'LI')
+					lis.push(ul.childNodes[i]);
+			}
+			// Sort the lis in descending order
+			lis.sort(function(a, b){
+			   return ((b.textContent.trim()) < (a.textContent.trim())) ? 1 : -1;
+			});
+
+			// Add them into the ul in order
+			for(var i = 0; i < lis.length; i++)
+				new_ul.appendChild(lis[i]);
+			ul.parentNode.replaceChild(new_ul, ul);
+		}
+		for (var i = 0; i < document.getElementsByClassName('browse-result-authority-headings').length; i++) {
+			sortList(document.getElementsByClassName('browse-result-authority-headings')[i]);
+		}
+	</script>
+    <script>
+        replaceContentInContainer('staff-client-link');
+        replaceContentInContainer('see-reference-no-link');
+    </script>
+[% END %]

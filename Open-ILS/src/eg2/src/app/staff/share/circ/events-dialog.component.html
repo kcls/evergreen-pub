@@ -4,14 +4,12 @@
 <eg-string key="circ.events.mode.checkin" i18n-text text="Checkin"></eg-string> 
 
 <ng-template #dialogContent>
-  <div class="modal-header bg-info">
+  <div class="modal-header">
     <h4 class="modal-title">
       <span i18n>Action Blocked</span>
     </h4>
-    <button type="button" class="close"
-      i18n-aria-label aria-label="Close" (click)="close()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close btn-close-white"
+      i18n-aria-label aria-label="Close" (click)="close()"></button>
   </div>
   <div class="modal-body">
     <h5 i18n>Exceptions occurred during {{modeLabel}}.</h5>
@@ -19,16 +17,16 @@
       <div class="card mb-2">
         <div class="card-header text-danger">{{evt.textcode}}</div>
         <div class="card-body">
-          <div class="font-weight-bold">{{copyBarcode}}</div>
+          <div class="fw-bold">{{copyBarcode}}</div>
           <div>{{evt.desc}}</div>
-          <ng-container *ngIf="evt.textcode == 'COPY_ALERT_MESSAGE'">
+          <ng-container *ngIf="evt.textcode === 'COPY_ALERT_MESSAGE'">
             <ng-container *ngIf="!isArray(evt.payload)">
               <!-- Traditional copy.alert_message value in payload -->
-              <div class="mt-2 font-weight-bold">{{evt.payload}}</div>
+              <div class="mt-2 fw-bold">{{evt.payload}}</div>
             </ng-container>
             <ng-container *ngIf="isArray(evt.payload)">
               <!-- Array of new-style copy alerts in payload -->
-              <div class="mt-2 font-weight-bold" *ngFor="let alert of evt.payload">
+              <div class="mt-2 fw-bold" *ngFor="let alert of evt.payload">
                 <div>{{alert.alert_type().name()}}</div>
                 <div>{{alert.note()}}</div>
               </div>
@@ -54,7 +52,6 @@
     </ng-container>
   </div>
   <div class="modal-footer">
-    <span i18n class="text-dark font-weight-bold mr-2">Override: </span>
     <button type="button" class="btn btn-info"
       (click)="close({override: true, clearHold: clearHold})" i18n>
       Force Action?</button>

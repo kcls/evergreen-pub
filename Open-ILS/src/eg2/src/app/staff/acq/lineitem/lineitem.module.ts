@@ -78,8 +78,7 @@ import {AcqCommonModule} from '../acq-common.module';
   ],
   providers: [
     LineitemService,
-    PoService,
-    MarcEditModule
+    PoService
   ]
 })
 

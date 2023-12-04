@@ -4,6 +4,11 @@ set -euo pipefail
 NOW_TIME=$(date +'%FT%T%z');
 PREV_TIME="";
 
+# This only needs to run while staff are adding bib records.
+START_HOUR="06"
+STOP_HOUR="18"
+HOW_HOUR="";
+
 while true; do
 
     if [ -z "$PREV_TIME" ]; then
@@ -16,9 +21,14 @@ while true; do
 
     NOW_TIME=$(date +'%FT%T%z');
 
-    # Pipe to /dev/null to avoid loop of Elastic deprecation warnings
-    ./elastic-index.pl --created-since "$PREV_TIME" --populate > /dev/null 2>&1;
+    NOW_HOUR=$(date +'%H');
 
-    sleep 2;  # avoid a tight loop
+    if [ "$NOW_HOUR" -lt "$START_HOUR" -o "$NOW_HOUR" -gt "$STOP_HOUR" ]; then
+        sleep 60;
 
+    else 
+        ./elastic-index.pl --created-since "$PREV_TIME" --populate > /dev/null;
+    
+        sleep 2;  # avoid a tight loop
+    fi;
 done;

@@ -313,19 +313,7 @@ export class PoSummaryComponent implements OnInit, OnDestroy {
         this.progressDialog.open();
         this.progressDialog.update({max: this.po().lineitem_count() * 3});
 
-         // Bypass any Vandelay choices and force-load all records.
-         // TODO: Add intermediate Vandelay options.
-        const vandelay = {
-            import_no_match: true,
-            queue_name: `ACQ ${new Date().toISOString()}`
-        };
-
-        const options = {
-            zero_copy_activate: this.zeroCopyActivate,
-            no_assets: noAssets
-        };
-
-        this.net.request(
+         this.net.request(
             'open-ils.acq',
             'open-ils.acq.purchase_order.activate',
             this.auth.token(), this.poId, vandelay, options

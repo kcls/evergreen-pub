@@ -17,9 +17,6 @@ export class HoldManageDialogComponent
 
     @Input() holdIds: number[];
 
-    // Display the record title when modifying a single hold.
-    @Input() title = '';
-
     constructor(
         private modal: NgbModal) { // required for passing to parent
         super(modal); // required for subclassing
