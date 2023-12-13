@@ -19,7 +19,7 @@
   </div>
 </div>
 
-<div class="row" *ngIf="loading">
+<div class="row" [ngClass]="{visible: loading, invisible: !loading}">
   <div class="col-lg-6 offset-lg-3">
     <eg-progress-inline #loadProgress></eg-progress-inline>            
   </div>
