@@ -2,6 +2,8 @@
   "name": "eg",
   "version": "0.0.0",
   "scripts": {
+    "watch": "NODE_OPTIONS='--openssl-legacy-provider' npx ng build --watch",
+    "build-prod": "NODE_OPTIONS='--openssl-legacy-provider' npx ng build --configuration=production",
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
