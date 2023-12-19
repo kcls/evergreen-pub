@@ -9,6 +9,12 @@
   i18n-dialogBody dialogBody="Reason(s) include: {{deleteEventDesc}}">
 </eg-confirm-dialog>
 
+<eg-alert-dialog #checkOutAlert
+  i18n-dialogTitle dialogTitle="One or more items could not be deleted"
+  i18n-dialogBody dialogBody="These items are currently checked out: {{checkedOutItemsStr}}">
+</eg-alert-dialog>
+ 
+
 <ng-template #dialogContent>
   <div class="modal-header">
     <h4 class="modal-title">
@@ -25,7 +31,7 @@
   <div class="modal-footer">
     <ng-container>
       <button type="button" class="btn btn-success" 
-        (click)="deleteHoldings()" i18n>
+        (click)="maybeDeleteHoldings()" i18n>
         Delete Holdings
       </button>
       <button type="button" class="btn btn-warning" 

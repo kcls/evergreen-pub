@@ -504,6 +504,18 @@ sub delete_copy {
     $override = { all => 0 } if(!ref $override);
 
     my $stat = $U->copy_status($copy->status);
+
+    # KCLS JBAS-3162
+    # Hard-Stop on deleting a checked out item.
+    # This is accompanied by a UI-side check for friendlier display.
+    if ($stat->id == OILS_COPY_STATUS_CHECKED_OUT) {
+        return OpenILS::Event->new(
+            'COPY_DELETE_CHECKED_OUT', 
+            payload => $copy,
+            desc => 'Copy ' . $copy->barcode . ' is currently checked out'
+        );
+    }
+
     if ($U->is_true($stat->restrict_copy_delete)) {
         if ($override->{all} || grep { $_ eq 'COPY_DELETE_WARNING' } @{$override->{events}}) {
             return $editor->event unless $editor->allowed('COPY_DELETE_WARNING.override', $class->copy_perm_org($vol, $copy))
