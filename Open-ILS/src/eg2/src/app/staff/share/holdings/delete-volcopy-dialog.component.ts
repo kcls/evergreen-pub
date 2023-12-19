@@ -10,6 +10,7 @@ import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {StringComponent} from '@eg/share/string/string.component';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
+import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
 
 
 /**
@@ -41,6 +42,8 @@ export class DeleteHoldingDialogComponent
     numFailed: number;
     deleteEventDesc: string;
 
+    checkedOutItemsStr = '';
+
     @ViewChild('successMsg', { static: true })
         private successMsg: StringComponent;
 
@@ -49,6 +52,9 @@ export class DeleteHoldingDialogComponent
 
     @ViewChild('confirmOverride', {static: false})
         private confirmOverride: ConfirmDialogComponent;
+
+    @ViewChild('checkOutAlert', {static: false})
+        private checkOutAlert: AlertDialogComponent;
 
     constructor(
         private modal: NgbModal, // required for passing to parent
@@ -94,8 +100,37 @@ export class DeleteHoldingDialogComponent
         return super.open(args);
     }
 
-    deleteHoldings(override?: boolean) {
+    maybeDeleteHoldings() {
+        this.lookForCheckedOutItems()
+        .then(stop => {
+            if (stop) { return; }
+            this.deleteHoldings();
+        });
+    }
 
+    lookForCheckedOutItems(): Promise<boolean> {
+        let checked: string[] = [];
+        this.callNums.forEach(cn => {
+            cn.copies().forEach(copy => {
+                let stat = typeof copy.status() === 'object' ? copy.status().id() : copy.status();
+                if (Number(stat) === 1) { // Checked Out
+                    checked.push(copy.barcode());
+                }
+            });
+        });
+
+        if (checked.length === 0) {
+            return Promise.resolve(false);
+        }
+
+        this.checkedOutItemsStr = checked.join(' ');
+
+        this.close(false);
+
+        return this.checkOutAlert.open().toPromise().then(_ => true);
+    }
+
+    deleteHoldings(override?: boolean) {
         this.deleteEventDesc = '';
 
         const flags: any = {
@@ -130,6 +165,12 @@ export class DeleteHoldingDialogComponent
     }
 
     handleDeleteEvent(evt: EgEvent, override?: boolean): Promise<any> {
+
+        if (evt.textcode === 'COPY_DELETE_CHECKED_OUT') {
+            this.deleteEventDesc = evt.desc;
+            alert('' + evt);
+            return Promise.reject();
+        }
 
         if (override) { // override failed
             console.warn(evt);
