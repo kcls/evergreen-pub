@@ -1998,6 +1998,10 @@ sub sru_search {
             #$search_string = "($search_string) site:$shortname";
         }
 
+        # This is now appearing in the search logs for unqualfied 
+        # keyword searches.  Makes it hard to test.
+        $search_string =~ s/srw.serverchoice://g;
+
         my $offset = $req->startRecord;
         $offset-- if ($offset);
         $offset ||= 0;
@@ -2071,6 +2075,15 @@ sub sru_search {
                                 $copy->getChildrenByTagName('location')->[0]->getAttribute('opac_visible') eq 'false' ||
                                 $copy->getChildrenByTagName('circ_lib')->[0]->getAttribute('opac_visible') eq 'false'
                             );
+
+                            my $loc_id = $copy->getChildrenByTagName('location')->[0]->getAttribute('ident');
+
+                            # Fetch the copy location via cstore to leverage i18n
+                            my $location = $cstore->request(
+                                'open-ils.cstore.direct.asset.copy_location.retrieve', 
+                                $loc_id
+                            )->gather(1);
+
                             push @copies, {
                                 a => $copy->getChildrenByTagName('location')->[0]->textContent,
                                 b => $owning_lib,
@@ -2079,7 +2092,10 @@ sub sru_search {
                                 g => $copy->getAttribute('barcode'),
                                 k => $prefix,
                                 m => $suffix,
-                                n => $copy->getChildrenByTagName('status')->[0]->textContent
+                                n => $copy->getChildrenByTagName('status')->[0]->textContent,
+                                # KCLS collect some additional info for Z39.50
+                                circ_lib_name => $copy->getChildrenByTagName('circ_lib')->[0]->getAttribute('name'),
+                                acpl_name => $location->name,
                             };
                         }
                     }
@@ -2116,7 +2132,9 @@ sub sru_search {
                             g => $copy->{g},
                             ($copy->{k} ? (k => $copy->{k}) : ()),
                             ($copy->{m} ? (m => $copy->{m}) : ()),
-                            n => $copy->{n}
+                            n => $copy->{n},
+                            q => $copy->{circ_lib_name},
+                            r => $copy->{acpl_name},
                         )
                     );
                 }
