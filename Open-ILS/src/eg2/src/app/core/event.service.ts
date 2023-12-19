@@ -11,8 +11,6 @@ export class EgEvent {
     ilsperm: string;
     ilspermloc: number;
     success: Boolean = false;
-    // The original hash this event was created from.
-    source: any | null = null;
 
     toString(): string {
         let s = `Event: ${this.code}:${this.textcode} -> ${this.desc}`;
@@ -46,7 +44,6 @@ export class EventService {
             evt.code = +(thing.ilsevent || -1);
             evt.ilspermloc = +(thing.ilspermloc || -1);
             evt.success = thing.textcode === 'SUCCESS';
-            evt.source = thing;
 
             return evt;
         }
