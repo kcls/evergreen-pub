@@ -100,20 +100,21 @@ export class HoldManageComponent implements OnInit {
     }
 
     applyDateValue(field: string, ymd: string) {
-
-        if (field === 'shelf_expire_time') {
-            // Always bump shelf expire time to the end of the requested day.
-            const d: Date = DateUtil.localDateFromYmd(ymd);
-            d.setHours(23, 59, 59);
-            ymd = d.toISOString();
-        }
-
         this.hold[field](ymd);
         setTimeout(() => this.checkInvalidValues());
     }
 
     save() {
         if (this.hasInvalidValues) { return; }
+
+        let ymd = this.hold.shelf_expire_time();
+        if (ymd && ymd.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            // Date locally changed.  Append a time component so we can
+            // bump the expire time out to the end of the day.
+            const d: Date = DateUtil.localDateFromYmd(ymd);
+            d.setHours(23, 59, 59);
+            this.hold.shelf_expire_time(d.toISOString());
+        }
 
         if (this.isBatch()) {
 
