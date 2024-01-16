@@ -51,6 +51,7 @@ const CHECKIN_MODIFIERS = [
     'noop',
     'auto_print_holds_transits',
     'auto_print_ill_receipt',
+    'auto_print_transits',
     'do_inventory_update'
 ];
 
