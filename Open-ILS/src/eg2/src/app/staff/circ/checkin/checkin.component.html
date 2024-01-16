@@ -54,7 +54,13 @@
       <span *ngIf="modifiers.auto_print_holds_transits"
         class="me-3 pe-3 border-right border-info label-with-material-icon">
         <span class="material-icons">print</span>
-        <span class="ps-2" i18n>Auto-Print Hold and Transit Slips</span>
+        <span class="ps-2" i18n>Auto-Print Hold Shelf Slips</span>
+      </span>
+
+      <span *ngIf="modifiers.auto_print_transits"
+        class="me-3 pr-3 border-right border-info label-with-material-icon">
+        <span class="material-icons">article</span>
+        <span class="ps-2" i18n>Auto-Print Transit Slips</span>
       </span>
 
       <span class="me-3 pe-3 border-right border-info" 
@@ -364,7 +370,14 @@
               class="badge rounded-pill bg-success me-2">&#x2713;</span>
             <span *ngIf="!modifiers.auto_print_holds_transits"
               class="badge rounded-pill bg-warning me-2">&#x2717;</span>
-            <span>Auto-Print Hold and Transit Slips</span>
+            <span>Auto-Print Hold Shelf Slips</span>
+          </a>
+          <a ngbDropdownItem (click)="toggleMod('auto_print_transits')">
+            <span *ngIf="modifiers.auto_print_transits" 
+              class="badge rounded-pill bg-success me-2">&#x2713;</span>
+            <span *ngIf="!modifiers.auto_print_transits"
+              class="badge rounded-pill bg-warning me-2">&#x2717;</span>
+            <span i18n>Auto-Print Transit Slips</span>
           </a>
           <a ngbDropdownItem (click)="toggleMod('clear_expired')">
             <span *ngIf="modifiers.clear_expired" 
