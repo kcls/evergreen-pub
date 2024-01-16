@@ -134,6 +134,16 @@ export class RouteDialogComponent extends DialogComponent {
             }
         }
 
+        if (this.slip == 'transit_slip') {
+            if (this.checkin.params.auto_print_transits) {
+                console.debug("Printing transit slip");
+                return this.print().then(_ => true); // exit
+            } else {
+                console.debug("NOT printing transit slip auto=false");
+            }
+        }
+
+
         return Promise.resolve(true); // Never show popups.
 
         /*

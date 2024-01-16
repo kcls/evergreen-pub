@@ -191,6 +191,7 @@ export interface CheckinParams {
     claims_never_checked_out?: boolean;
     void_overdues?: boolean;
     auto_print_holds_transits?: boolean;
+    auto_print_transits?: boolean;
     auto_print_ill_receipt?: boolean;
     backdate?: string;
     capture?: string;
@@ -429,6 +430,7 @@ export class CircService {
         // Should be _-prefixed, but we already have a workstation setting,
         // etc. for this one.  Just manually remove it from the API params.
         delete apiParams['auto_print_holds_transits'];
+        delete apiParams['auto_print_transits'];
         delete apiParams['auto_print_ill_receipt'];
 
         return apiParams;
