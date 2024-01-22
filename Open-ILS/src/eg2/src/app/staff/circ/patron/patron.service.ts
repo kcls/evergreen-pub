@@ -10,6 +10,7 @@ import {StoreService} from '@eg/core/store.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {CircService, CircDisplayInfo} from '@eg/staff/share/circ/circ.service';
 import {PrintService} from '@eg/share/print/print.service';
+import {Router} from '@angular/router';
 
 export interface BillGridEntry extends CircDisplayInfo {
     xact: IdlObject; // mbt
@@ -67,6 +68,7 @@ export class PatronContextService {
     settingsCache: {[key: string]: any} = {};
 
     constructor(
+        private router: Router,
         private store: StoreService,
         private serverStore: ServerStoreService,
         private org: OrgService,
@@ -145,6 +147,11 @@ export class PatronContextService {
 
     patronAlertsShown(): boolean {
         if (!this.summary) { return false; }
+
+        // Skip the alerts on the Bill statement page so staff
+        // can jump directly here from the Refunds summary page.
+        if (this.router.url.includes('/statement')) { return true; }
+
         this.store.addLoginSessionKey('eg.circ.last_alerted_patron');
         const shown = this.store.getLoginSessionItem('eg.circ.last_alerted_patron');
         if (shown === this.summary.patron.id()) { return true; }
