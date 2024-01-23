@@ -288,18 +288,32 @@ a:hover {
     </h1>
 
     <div>
-      <p>
-        Get access to all the 
-        [% IF kiosk %]
-        services
+      [% IF ctx.register.success %]
+        [% IF ctx.register.user.delivery_method == 'MAIL' %]
+          <p>
+            You have chosen to have your library card mailed to you.
+            It will arrive within 3-5 business days.
+          </p>
         [% ELSE %]
-        <a href="https://kcls.org/library-cards/#allaccess">services</a> 
+          <p>
+            You have chosen to pick up your library card at your selected
+            home library: [% ctx.get_aou(ctx.register.user.home_ou).name | html -%].
+          </p>
         [% END %]
-        that are available from the King County Library System. 
-      </p>
-      <p>
-        Fill out the application below to apply for your All-Access Library Card.
-      </p>
+      [% ELSE %]
+        <p>
+          Get access to all the 
+          [% IF kiosk %]
+          services
+          [% ELSE %]
+          <a href="https://kcls.org/library-cards/#allaccess">services</a> 
+          [% END %]
+          that are available from the King County Library System. 
+        </p>
+        <p>
+          Fill out the application below to apply for your All-Access Library Card.
+        </p>
+      [% END %]
       <p>
         You’ll need to 
         [% IF kiosk %]
