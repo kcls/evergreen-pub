@@ -102,6 +102,7 @@ sub load_patron_reg {
 
         $logger->info("Patron self-reg success; usrname $resp");
         $ctx->{register}{success} = 1;
+        $ctx->{register}{user} = $user;
     }
 
     return Apache2::Const::OK;
