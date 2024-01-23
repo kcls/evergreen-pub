@@ -363,7 +363,8 @@ a:hover {
             <button id="exit">Exit and Return</button></a>
         [% ELSE %]
           You will be automatically redirected to 
-          <a href="[% complete_url | html %]">[% complete_url | html %]</a>...
+          <a href="[% complete_url | html %]">[% complete_url | html %]</a>
+          in <b id='logout_redirect_remaining'></b> seconds...
         [% END %]
       </div>
       <hr/>
