@@ -192,8 +192,11 @@ sub bib_search {
 
     my $elastic_query = compile_elastic_query($query, $options, $staff);
 
-    my $from = $elastic_query->{from} || 0;
-    my $size = $elastic_query->{size} || 20;
+    my $from = int($elastic_query->{from});
+    my $size = int($elastic_query->{size});
+
+    # ES gets annoyed when values are nonsensical.
+    $size = 20 if $size < 1 || $size > 1000;
 
     if ($meta) {
         $elastic_query->{collapse} = {field => 'metarecord'};
@@ -329,12 +332,19 @@ sub add_elastic_holdings_filter {
     # in non-staff mode, ensure at least one copy in scope is visible
     my $visible = !$staff;
 
-    if ($org_id) {
+    $org_id = int($org_id);
+
+    if ($org_id > 0) {
         my ($org) = $U->fetch_org_unit($org_id);
-        my $types = $U->get_org_types; # pulls from cache
-        my ($type) = grep {$_->id == $org->ou_type} @$types;
-        $depth = defined $depth ? min($depth, $type->depth) : $type->depth;
+        if ($org) {
+            my $types = $U->get_org_types; # pulls from cache
+            my ($type) = grep {$_->id == $org->ou_type} @$types;
+            $depth = defined $depth ? min($depth, $type->depth) : $type->depth;
+        }
     }
+
+    # Set here so as not to impact the 'defined' test above.
+    $depth = int($depth);
 
     my $visible_filters = {
         query => {
