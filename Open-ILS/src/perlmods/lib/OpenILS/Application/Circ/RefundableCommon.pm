@@ -314,7 +314,7 @@ sub find_xacts_to_refund {
                 from => 'mb',
                 where => {
                     '+mb' => {
-                        xact => $mrxs->xact,
+                        xact => {'=' => {'+mobts' => 'id'}},
                         btype => 3, # Lost Materials
                         voided => 'f'
                     }
