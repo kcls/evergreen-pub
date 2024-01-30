@@ -290,15 +290,15 @@ a:hover {
     <div>
       [% IF ctx.register.success %]
         [% IF ctx.register.user.delivery_method == 'MAIL' %]
-          <p>
+          <h2>
             You have chosen to have your library card mailed to you.
             It will arrive within 3-5 business days.
-          </p>
+          </h2>
         [% ELSE %]
-          <p>
+          <h2>
             You have chosen to pick up your library card at your selected
             home library: [% ctx.get_aou(ctx.register.user.home_ou).name | html -%].
-          </p>
+          </h2>
         [% END %]
       [% ELSE %]
         <p>
@@ -357,7 +357,7 @@ a:hover {
       <br/>
       [% END %]
       <br/>
-      <div class='success-minus-2'>
+      <h2>
         [% IF kiosk %]
           <a href="[% complete_url | html %]">
             <button id="exit">Exit and Return</button></a>
@@ -366,7 +366,7 @@ a:hover {
           <a href="[% complete_url | html %]">[% complete_url | html %]</a>
           in <b id='logout_redirect_remaining'></b> seconds...
         [% END %]
-      </div>
+      </h2>
       <hr/>
       <input type='hidden' id='register-success' value='yep'/>
       <!-- experiment always showing requirement docs -->
