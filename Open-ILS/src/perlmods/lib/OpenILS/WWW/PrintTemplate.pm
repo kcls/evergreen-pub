@@ -276,6 +276,12 @@ $helpers = {
         $params ||= {};
         my $code128 = SVG::Barcode::Code128->new(%$params);
         return $code128->plot($barcode);
+    },
+
+    get_user_stat_cats => sub {
+        my $user_id = shift;
+        return [] unless $user_id;
+        return new_editor()->search_actor_stat_cat_entry_user_map({target_usr => $user_id});
     }
 
 };
