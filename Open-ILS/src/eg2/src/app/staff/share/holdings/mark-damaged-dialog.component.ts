@@ -157,20 +157,27 @@ export class MarkDamagedDialogComponent
             'open-ils.circ', 'open-ils.circ.mark_item_damaged.details',
             this.auth.token(), this.copyId, args
         ).subscribe(
-            result => {
+            (result: any) => {
                 console.debug('Mark damaged returned', result);
 
                 const evt = this.evt.parse(result);
 
-                if (result && !evt) {
+                // Refund pausing will now happen in a separate UI.
+                if (result && (!evt || evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING')) {
                     // Result is a hash of detail info.
                     this.successMsg.current().then(msg => this.toast.success(msg));
-                    this.close(true);
-                    this.printLetter(result);
+
+                    // Propagate some values out to the caller.
+                    result.dibs = this.dibs;
+                    result.copy =  this.copy;
+                    result.title =  this.bibSummary.display.title;
+
+                    this.close(result);
                     return;
                 }
 
 
+                /*
                 if (evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING') {
                     if (this.autoRefundsActive) {
                         this.pauseRefundDialog.refundableXact = evt.payload.mrx;
@@ -184,6 +191,7 @@ export class MarkDamagedDialogComponent
                     }
                     return;
                 }
+                */
 
                 if (evt.textcode === 'DAMAGE_CHARGE') {
                     // More info needed from staff on how to handle charges.
@@ -206,6 +214,7 @@ export class MarkDamagedDialogComponent
         return this.amountChangeRequested && (!this.newBtype || !this.newCharge);
     }
 
+    // moved to damaged page.
     printLetter(details: any) {
         if (!details || !details.circ) { return; } // No one to notify.
 

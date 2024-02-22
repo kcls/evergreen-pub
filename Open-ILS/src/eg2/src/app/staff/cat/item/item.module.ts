@@ -21,10 +21,12 @@ import {HoldsModule} from '@eg/staff/share/holds/holds.module';
 import {TriggeredEventsModule
   } from '@eg/staff/share/triggered-events/triggered-events.module';
 import {RepairCostDialogComponent} from './repair-cost-dialog.component';
+import {MarkDamagedComponent} from './mark-damaged.component';
 
 @NgModule({
   declarations: [
     MarkItemMissingPiecesComponent,
+    MarkDamagedComponent,
     ItemSummaryComponent,
     ItemStatusComponent,
     ItemRecentHistoryComponent,

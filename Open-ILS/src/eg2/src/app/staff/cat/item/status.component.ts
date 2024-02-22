@@ -806,6 +806,15 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
 
         if (copyIds.length === 0) { return; }
 
+        let copyId = copyIds[0];
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/cat/item/damaged/${copyId}/`);
+
+        window.open(url);
+
+
+        /*
         let modified = false;
 
         from(copyIds).pipe(concatMap(copyId => {
@@ -815,6 +824,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
             .pipe(tap(ok => { if (ok) { modified = true; } }));
 
         })).toPromise().then(_ => this.refreshSelectCopies(copies));
+        */
     }
 
 
