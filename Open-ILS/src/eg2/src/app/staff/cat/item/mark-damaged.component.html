@@ -29,6 +29,10 @@
     </div>
   </div>
 
+  <div class="alert alert-danger p-2 m-3 " *ngIf="alreadyDamaged">
+    <span i18n>Item Is Already Marked Damaged</span>
+  </div>
+
   <hr class="mt-2 mb-2"/>
 
   <div class="row" *ngIf="chargeResponse && !printDetails">

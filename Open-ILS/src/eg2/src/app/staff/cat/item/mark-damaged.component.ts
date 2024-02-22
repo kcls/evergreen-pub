@@ -35,6 +35,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     newBtype: number;
     pauseArgs: any = {};
     dibs = '';
+    alreadyDamaged = false;
 
     // If the item is checked out, ask the API to check it in first.
     @Input() handleCheckin = false;
@@ -114,11 +115,15 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     */
 
     getCopyData(): Promise<any> {
+        this.alreadyDamaged = false;
         return this.pcrud.retrieve('acp', this.copyId,
             {flesh: 1, flesh_fields: {acp: ['call_number']}}).toPromise()
         .then(copy => {
             this.copy = copy;
             this.itemBarcode = copy.barcode();
+
+            this.alreadyDamaged = Number(copy.status()) === 14; /* Damged */
+
             return this.bib.getBibSummary(
                 copy.call_number().record()).toPromise();
         }).then(summary => {
