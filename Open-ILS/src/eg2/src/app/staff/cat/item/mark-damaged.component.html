@@ -1,50 +1,138 @@
 <eg-staff-banner i18n-bannerText bannerText="Mark Item Damaged">
 </eg-staff-banner>
 
-<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
-
 <div class="row m-1" *ngIf="processing">
   <div class="col-lg-6 offset-lg-3">
     <eg-progress-inline></eg-progress-inline>
   </div>
 </div>
 
-<div *ngIf="item && circ">
-  <hr class="mb-2"/>
-  <div class="row mb-2">
-    <div class="col-lg-3">
-      <div class="form-group form-validated">
-        <label for="alert-message" i18n>Item Alert Message:</label>
-        <textarea id="alert-message" [(ngModel)]="itemAlert" 
-          required rows="3" class="form-control"></textarea>
-      </div>
-      <button class="btn btn-info" (click)="updateAlertMessage()" i18n>
-        Update Alert Message
-      </button>
+<div class="mt-3 mb-3 p-2 form-validated" *ngIf="copy && bibSummary">
+  <div class="row">
+      <div class="col-lg-1" i18n>Barcode:</div>
+      <div class="col-lg-11 fw-bold">{{copy.barcode()}}</div>
+  </div>
+  <div class="row mt-1">
+    <div class="col-lg-1" i18n>Title:</div>
+    <div class="col-lg-11">{{bibSummary.display.title}}</div>
+  </div>
+  <div class="row mt-1">
+      <div class="col-lg-1" i18n>Author:</div>
+      <div class="col-lg-11">{{bibSummary.display.author}}</div>
+  </div>
+  <div class="row mt-2" *ngIf="!chargeResponse && !printDetails">
+    <div class="col-lg-12">
+      <button type="button" class="btn btn-warning" 
+        (click)="close(false)" i18n>Cancel</button>
+      <button type="button" class="btn btn-success ms-2" 
+        (click)="markDamaged({})" i18n>Mark Damaged</button>
     </div>
   </div>
-  <div class="row" *ngIf="!alertMsgUpdated">
-    <div class="col-lg-12">
-      <div class="alert alert-info" *ngIf="!alertMsgUpdated" i18n>
-        The letter may not be printed until the item alert message 
-        has been updated.
+
+  <hr class="mt-2 mb-2"/>
+
+  <div class="row" *ngIf="chargeResponse && !printDetails">
+    <div class="col-lg-8 offset-lg-2">
+      <div class="card mt-3 ms-10 me-10">
+        <div class="card-header" i18n>
+          Item was previously checked out
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item" i18n>
+              Item was last checked out by patron
+              <a routerLink="/staff/circ/patron/{{chargeResponse.circ.usr().id()}}/checkout">
+                {{chargeResponse.circ.usr().family_name()}},
+                {{chargeResponse.circ.usr().first_given_name()}} 
+                ({{chargeResponse.circ.usr().usrname()}})
+              </a>.
+            </li>
+            <li class="list-group-item" i18n>
+              Item was due
+              {{chargeResponse.circ.due_date() | formatValue:'timestamp'}} 
+              and returned 
+              {{chargeResponse.circ.checkin_time() | date:'MM/dd/yy H:mm a'}}.
+            </li>
+            <li class="list-group-item">
+              <span i18n>
+                Calculated fine amount is 
+                <span class="fw-bold text-danger">
+                  {{chargeResponse.charge | currency}}
+                </span>
+              </span>
+            </li>
+            <ng-container *ngIf="amountChangeRequested">
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-3" i18n>Billing Type</div>
+                  <div class="col-lg-6">
+                    <eg-combobox 
+                      placeholder="Billing Type..." i18n-placeholder
+                      [startId]="newBtype" [required]="true"
+                      (onChange)="newBtype = $event ? $event.id : null"
+                      [entries]="billingTypes"></eg-combobox>
+                  </div>
+                </div>  
+              </li>
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-3" i18n>Charge Amount</div>
+                  <div class="col-lg-6">
+                    <input class="form-control" type="number" step="0.01" min="0"
+                    [required]="true" [(ngModel)]="newCharge"/>
+                  </div>
+                </div>  
+              </li>
+              <li class="list-group-item">
+                <div class="row">
+                  <div class="col-lg-3" i8n>Damage to Item</div>
+                  <div class="col-lg-6">
+                    <textarea class="form-control" rows="3"
+                      [required]="true" [(ngModel)]="newNote"></textarea>
+                  </div>
+                </div>  
+              </li>
+            </ng-container><!-- amount change requested -->
+            <li class="list-group-item">
+              <div class="row">
+                <div class="col-lg-3" i18n>Staff Initials</div>
+                <div class="col-lg-3">
+                  <input type="text" i18n-placeholder placeholder="Initials" size="6"    
+                    [(ngModel)]="dibs" class="form-control" [required]="true"/>          
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-2 mb-2">
+        <ng-container *ngIf="chargeResponse">
+          <button type="button" class="btn btn-warning" 
+            (click)="close(false)" i18n>Cancel</button>
+          <button class="btn btn-secondary ms-2" 
+            (click)="markDamaged({apply_fines:'noapply'})" i18n>No Charge</button>
+          <button class="btn btn-success ms-2" 
+            [disabled]="disableOk()"
+            (click)="markDamaged({apply_fines:'apply'})" i18n>OK</button>
+        </ng-container>
       </div>
     </div>
   </div>
 </div>
 
-<div>
-  <hr class="mb-2"/>
-  <div class="row">
-    <div class="col-lg-12">
-      <button *ngIf="printPreviewHtml" (click)="printLetter()" 
-        class="btn btn-outline-success label-with-material-icon ms-3" i18n>
-        <span>Print Letter</span>
-        <span class="material-icons">print</span>
-      </button>
+<ng-container *ngIf="printPreviewHtml">
+  <div>
+    <div class="row">
+      <div class="col-lg-12">
+        <button (click)="printLetter()" 
+          class="btn btn-outline-success label-with-material-icon ms-3" i18n>
+          <span>Print Letter</span>
+          <span class="material-icons">print</span>
+        </button>
+      </div>
     </div>
   </div>
-</div>
+</ng-container>
 
 <div class="row">
   <div class="col-lg-12 mt-5">
@@ -53,5 +141,3 @@
       id="print-preview-pane"></div> 
   </div>
 </div>
-
-
