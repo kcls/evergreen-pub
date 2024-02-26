@@ -3496,12 +3496,38 @@ BEGIN
             CONTINUE WHEN ind_data.sort_value IS NULL;
 
             value_prepped := metabib.browse_normalize(ind_data.value, ind_data.field);
+
+            /*
             IF ind_data.browse_nocase THEN -- for "nocase" browse definions, look for a preexisting row that matches case-insensitively on value and use that
                 SELECT INTO mbe_row * FROM metabib.browse_entry
                     WHERE evergreen.lowercase(value) = evergreen.lowercase(value_prepped) AND sort_value = ind_data.sort_value
                     ORDER BY sort_value, value LIMIT 1; -- gotta pick something, I guess
             END IF;
+            */
 
+            -- KCLS
+            SELECT INTO mbe_row * FROM metabib.browse_entry
+                WHERE
+                    MD5(value) = MD5(value_prepped) AND
+                    MD5(sort_value) = MD5(ind_data.sort_value);
+
+            -- KCLS
+            IF FOUND THEN
+                mbe_id := mbe_row.id;
+            ELSE
+                INSERT INTO metabib.browse_entry
+                    ( value, sort_value, truncated_sort_value, metabib_fields_cache)
+                    VALUES (
+                        value_prepped,
+                        ind_data.sort_value,
+                        SUBSTR(ind_data.sort_value, 1, 2048),
+                        '{}'
+                    );
+                mbe_id := CURRVAL('metabib.browse_entry_id_seq'::REGCLASS);
+            END IF;
+
+
+            /*
             IF mbe_row.id IS NOT NULL THEN -- asked to check for, and found, a "nocase" version to use
                 mbe_id := mbe_row.id;
             ELSE -- otherwise, an UPSERT-protected variant
@@ -3511,6 +3537,7 @@ BEGIN
                   ON CONFLICT (sort_value, value) DO UPDATE SET sort_value = EXCLUDED.sort_value -- must update a row to return an existing id
                   RETURNING id INTO mbe_id;
             END IF;
+            */
 
             INSERT INTO metabib.browse_entry_def_map (entry, def, source, authority)
                 VALUES (mbe_id, ind_data.field, ind_data.source, ind_data.authority);
