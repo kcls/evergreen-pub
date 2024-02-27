@@ -3,16 +3,12 @@
 
 BEGIN;
 
-/*
-Break evergreen.can_float() up into 2 functions, an underlying one which
-returns the list of org units in the group on success and refactor
-evergreen.can_float() to see if that list has any values.
-*/
-
--- Policies are linked directly to org units, not floating policies,
--- on the assumption that an org unit wants, say, X items per location
--- regardless of the floating policy at play.
-CREATE TABLE config.floating_group_policy (
+-- Policies are linked directly to org units, not
+-- config.floating_group_member entries, on the assumption that an org
+-- unit wants "X items per copy location" or "X max copies per bib per
+-- copy location" regardless of the floating group at play.
+-- TODO verify max bibs makes sense or if it should be org unit global.
+CREATE TABLE config.org_unit_float_policy (
     id              SERIAL PRIMARY KEY,
     active          BOOL NOT NULL DEFAULT FALSE,
     org_unit        INT NOT NULL REFERENCE actor.org_unit(id)
@@ -39,10 +35,9 @@ DECLARE
     to_ou_depth INT;
 BEGIN
     -- Returns the set of org units that are covered by the 
-    -- floating group member configuration
+    -- floating group member configuration.
     -- 
     -- MOST OF THIS IS LIFTED DIRECTLY (minus formatting) FROM evergreen.can_float()	
-
 
     -- Grab the shared OU depth. 
     -- If this is less than the stop depth later we ignore the entry.
@@ -57,7 +52,7 @@ BEGIN
     JOIN actor.org_unit_type aout ON aou.ou_type = aout.id 
     WHERE aou.id = to_ou;
 
-    -- Grab float members that apply. We don't care what we get beyond wanting excluded ones first.
+    -- Grab float members that apply and exit early if we hit an EXCLUDE entry.
     FOR float_member IN SELECT *
         FROM
             config.floating_group_member cfgm
