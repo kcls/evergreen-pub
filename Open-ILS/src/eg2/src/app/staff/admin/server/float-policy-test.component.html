@@ -1,0 +1,38 @@
+<eg-staff-banner bannerText="Test Org Unit Float Policies" i18n-bannerText></eg-staff-banner>
+<div class="row mt-3 mb-3">
+  <div class="input-group mb-3 col">
+    <span class="input-group-text" i18n>Item Barcode</span>
+    <input type="text" id="barcode-input" (keyup.enter)="test()" 
+      class="form-control" [(ngModel)]="itemBarcode"/>
+  </div>
+  <div class="input-group mb-3 col">
+    <span class="input-group-text" i18n>Checkin Library</span>
+    <eg-org-select [initialOrgId]="checkinOrg" 
+      (onChange)="checkinOrg = $event ? $event.id() : null"></eg-org-select>
+  </div>
+  <div class="col">
+    <button class="btn btn-outline-dark" (click)="test()" i18n>Test</button>
+    <span class="ms-2" *ngIf="destOrgName" i18n>Float Destintion: </span>
+    <span>{{destOrgName}}</span>
+  </div>
+</div>
+
+<div class="row" *ngIf="loading">
+  <div class="col-3"></div>
+  <div class="col-6">
+    <eg-progress-inline></eg-progress-inline>
+  </div>
+  <div class="col-3"></div>
+</div>
+
+<eg-grid #grid [disablePaging]="true" [dataSource]="dataSource" [sortable]="true" [useLocalSort]="true">
+  <eg-grid-column label="Branch" [index]="true" name="circ_lib"></eg-grid-column>
+  <eg-grid-column label="Location Code" name="copy_location_code"></eg-grid-column>
+  <eg-grid-column label="Available Slots" name="avail_slots"></eg-grid-column>
+  <eg-grid-column label="Slots Taken" name="location_slots_filled"></eg-grid-column>
+  <eg-grid-column label="Total Slots" name="location_slots"></eg-grid-column>
+  <eg-grid-column label="Max Per Bib" name="max_per_bib"></eg-grid-column>
+</eg-grid>
+
+
+

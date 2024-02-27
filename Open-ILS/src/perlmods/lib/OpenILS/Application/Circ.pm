@@ -2410,93 +2410,54 @@ sub objectify {
 }
 
 __PACKAGE__->register_method(
-    method    => 'get_offline_data',
-    api_name  => 'open-ils.circ.offline.data.retrieve',
+    method    => 'test_float_policy',
+    api_name  => 'open-ils.circ.float_policy.test',
     stream    => 1,
     signature => {
-        desc => q/Returns a stream of data needed by clients to 
-            support an offline interface. /,
+        desc => q/Returns the destination org unit where an item 
+            would float were it to be checked in at the specified org unit/,
         params => [
-            {desc => 'Authentication token', type => 'string'}
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Copy Barcode', type => 'string'},
+            {desc => 'Checkin Org Unit', type => 'number'},
         ],
         return => {desc => q/
         /}
     }
 );
 
-sub get_offline_data {
-    my ($self, $client, $auth) = @_;
+sub test_float_policy {
+    my ($self, $client, $auth, $item_barcode, $checkin_lib) = @_;
 
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
     return $e->event unless $e->allowed('STAFF_LOGIN');
 
-    my $org_ids = $U->get_org_ancestors($e->requestor->ws_ou);
+    my $copy = $e->search_asset_copy({barcode => $item_barcode, deleted => 'f'})->[0]
+        or return $e->event;
 
-    $client->respond({
-        idl_class => 'cnct',
-        data => $e->search_config_non_cataloged_type({owning_lib => $org_ids})
+    my $dest = $e->json_query({
+        from => [
+            'kcls.float_destination', 
+            $copy->id, 
+            $checkin_lib,
+        ]
+    })->[0]->{'kcls.float_destination'};
+
+   my $stats = $e->json_query({
+        from => [
+            'kcls.float_copy_slots',
+            $copy->id,
+            $checkin_lib,
+        ]
     });
 
-    my $surveys = $e->search_action_survey([{
-            owner => $org_ids,
-            start_date => {'<=' => 'now'},
-            end_date => {'>=' => 'now'}
-        }, {
-            flesh => 2,
-            flesh_fields => {
-                asv => ['questions'],
-                asvq => ['answers']
-            }
-        }
-    ]);
-
-    $client->respond({idl_class => 'asv', data => $surveys});
-
-    $client->respond({idl_class => 'cit', 
-        data => $e->retrieve_all_config_identification_type});
-
-    $client->respond({idl_class => 'cnal', 
-        data => $e->retrieve_all_config_net_access_level});
-
-    $client->respond({idl_class => 'fdoc', 
-        data => $e->retrieve_all_config_idl_field_doc});
-
-    $client->respond({idl_class => 'pgt', 
-        data => $e->retrieve_all_permission_grp_tree});
-    
-    my $stat_cats = $U->simplereq(
-        'open-ils.circ', 
-        'open-ils.circ.stat_cat.actor.retrieve.all', 
-        $auth, $e->requestor->ws_ou);
-
-    $client->respond({idl_class => 'actsc', data => $stat_cats});
-
-    my $settings = $e->search_config_usr_setting_type({
-        '-or' => [{
-            name => [qw/
-                circ.holds_behind_desk 
-                circ.collections.exempt 
-                opac.hold_notify 
-                opac.default_phone 
-                opac.default_pickup_location 
-                opac.default_sms_carrier 
-                opac.default_sms_notify/]
-        }, {
-            name => {
-                in => {
-                    select => {atevdef => ['opt_in_setting']},
-                    from => 'atevdef',
-                    where => {'+atevdef' => {owner => $org_ids}}
-                }
-            }
-        }]
-    });
-
-    $client->respond({idl_class => 'cust', data => $settings});
-
-    return undef;
+    return {
+        dest => $dest,
+        stats => $stats
+    };
 }
+
 
 __PACKAGE__->register_method(
     method    => 'get_offline_data',

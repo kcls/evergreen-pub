@@ -3124,9 +3124,32 @@ sub do_checkin {
             } else {
                 # copy needs to transit "home", or stick here if it's a floating copy
                 if ($can_float && ($self->manual_float || !$U->is_true($self->copy->floating->manual)) && !$self->remote_hold) { # Yep, floating, stick here
+
+                    # Our shelves may be full.  We'll see.
+                    # Where should this copy float to?
+                    my $float_destination = $self->editor->json_query({
+                        from => [
+                            'kcls.float_destination', 
+                            $self->copy_id, 
+                            $self->circ_lib
+                        ]
+                    })->[0]->{'kcls.float_destination'};
+
+                    my $bc = $self->copy->barcode;
+
+                    $logger->info("circulator: copy $bc will float to $float_destination");
+
                     $self->checkin_changed(1);
-                    $self->copy->circ_lib( $self->circ_lib );
+                    $self->copy->circ_lib($float_destination);
                     $self->update_copy;
+
+                    if ($float_destination != $self->circ_lib) {
+                        $logger->info("circulator: floating $bc to remote lib $float_destination");
+                        $self->checkin_build_copy_transit($float_destination);
+                        return if $self->bail_out;
+                        $self->push_events(OpenILS::Event->new('ROUTE_ITEM', org => $float_destination));
+                    }
+
                 } else {
                     my $bc = $self->copy->barcode;
                     $logger->info("circulator: copy $bc at the wrong location, sending to $circ_lib");

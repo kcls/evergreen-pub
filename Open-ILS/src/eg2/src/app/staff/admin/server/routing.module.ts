@@ -5,6 +5,7 @@ import {BasicAdminPageComponent} from '@eg/staff/admin/basic-admin-page.componen
 import {OrgUnitTypeComponent} from './org-unit-type.component';
 import {PrintTemplateComponent} from './print-template.component';
 import {PermGroupTreeComponent} from './perm-group-tree.component';
+import {FloatPolicyTestComponent} from './float-policy-test.component';
 
 const routes: Routes = [{
     path: 'splash',
@@ -12,6 +13,9 @@ const routes: Routes = [{
 }, {
     path: 'actor/org_unit_type',
     component: OrgUnitTypeComponent
+}, {
+    path: 'config/float-policy-test',
+    component: FloatPolicyTestComponent
 }, {
     path: 'config/coded_value_map',
     loadChildren: () =>
