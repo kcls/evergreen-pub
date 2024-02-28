@@ -120,24 +120,32 @@ CREATE OR REPLACE FUNCTION evergreen.float_target_has_bib_slot(
     target_location_code TEXT,
     target_bib INTEGER
 ) RETURNS BOOLEAN AS $FUNK$
+DECLARE
+    bib_slots_taken INTEGER;
+    bib_slots INTEGER;
+BEGIN
     -- Returns true if the shelf location in question has room for an
     -- additional copy of the specific bib record.
-    WITH bib_count AS (
-        SELECT 
-            COUNT(acn.record) AS bib_slots_taken,
-            policy.max_per_bib AS bib_slots
+    SELECT INTO bib_slots_taken, bib_slots
+        COUNT(items.id) AS bib_slots_taken,
+        policy.max_per_bib AS bib_slots
         FROM evergreen.on_shelf_float_balanced_items items
         JOIN asset.call_number acn ON acn.id = items.call_number
         JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
         WHERE 
-            items.circ_lib = $1 -- target_ou
-            AND items.copy_location_code = $2 -- target_location_code
-            AND acn.record = $3 -- target_bib
-        GROUP BY 2
-    ) SELECT EXISTS (
-        SELECT (bib_slots IS NULL OR bib_slots_taken < bib_slots) FROM bib_count
-    )
-$FUNK$ LANGUAGE SQL;
+            items.circ_lib = target_ou
+            AND items.copy_location_code = target_location_code
+            AND acn.record = target_bib
+        GROUP BY 2;
+
+    IF NOT FOUND THEN
+        -- Bib record in question has no copies at the specified location.
+        RETURN TRUE;
+    END IF;
+
+    RETURN bib_slots_taken < bib_slots;
+END;
+$FUNK$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION evergreen.float_destination(
     copy_id INTEGER,
@@ -146,13 +154,8 @@ CREATE OR REPLACE FUNCTION evergreen.float_destination(
 DECLARE
     copy asset.copy%ROWTYPE;
 
-    --- Float policy at the destination/checkin org unit.
-    policy config.org_unit_float_policy%ROWTYPE;
-
     -- Org units within this copy's float member group.
     member_orgs INTEGER[];
-
-    tmp_org_unit INTEGER;
 
     target_bib INTEGER;
 
@@ -165,7 +168,6 @@ DECLARE
     -- i.e. locations are not shared by the consortium.
     copy_location_code TEXT;
 BEGIN
-
     SELECT INTO copy * FROM asset.copy WHERE id = copy_id;
 
     IF copy.floating IS NULL OR copy.call_number < 0 THEN
