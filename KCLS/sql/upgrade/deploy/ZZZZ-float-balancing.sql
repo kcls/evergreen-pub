@@ -3,6 +3,8 @@
 
 BEGIN;
 
+CREATE SCHEMA IF NOT EXISTS kcls;
+
 CREATE TABLE config.org_unit_float_policy (
     -- Policies are linked directly to org units, not
     -- config.floating_group_member entries, on the assumption that an org
@@ -20,7 +22,7 @@ CREATE TABLE config.org_unit_float_policy (
                         (max_per_bib IS NOT NULL OR max_items IS NOT NULL)
 );
 
-CREATE OR REPLACE FUNCTION evergreen.float_members(
+CREATE OR REPLACE FUNCTION kcls.float_members(
 	float_member INTEGER,
 	from_ou INTEGER,
 	to_ou INTEGER
@@ -77,7 +79,7 @@ BEGIN
 END
 $FUNK$ LANGUAGE PLPGSQL;
 
-CREATE VIEW evergreen.on_shelf_float_balanced_items AS 
+CREATE VIEW kcls.on_shelf_float_balanced_items AS 
     -- All copies which live at a float-balanced shelf location and are
     -- in a status that suggests they are in fact on or en route to the
     -- shelf.
@@ -100,10 +102,12 @@ CREATE VIEW evergreen.on_shelf_float_balanced_items AS
         -- Items that are on or en route to a shelf.  This may change.
         AND ccs.is_available -- esp. not in transit (see below)
         AND coufp.active
-  UNION
-        -- Include viable shelf-balanced items that are in transit to
-        -- an org unit which has a matching shelf configured for
-        -- balancing.
+;
+
+CREATE VIEW kcls.in_transit_float_balanced_items AS 
+    -- Viable shelf-balanced items that are in transit to
+    -- an org unit which has a matching shelf configured for
+    -- balancing.
     SELECT 
         acp.id,
         acp.call_number,
@@ -135,9 +139,16 @@ CREATE VIEW evergreen.on_shelf_float_balanced_items AS
         AND acp.status = 6
 ;
 
+
+CREATE VIEW kcls.float_balanced_items AS 
+    SELECT * FROM kcls.on_shelf_float_balanced_items
+    UNION
+    SELECT * FROM kcls.in_transit_float_balanced_items
+;
+
 -- We need a view for this data so we can sort on the slot
 -- availability across the spectrum of branches.
-CREATE MATERIALIZED VIEW evergreen.float_target_counts AS 
+CREATE MATERIALIZED VIEW kcls.float_target_counts AS 
     -- Count of float-balanced items by circ lib and copy location.
     SELECT 
         COUNT(items.id) AS location_slots_filled,
@@ -145,15 +156,15 @@ CREATE MATERIALIZED VIEW evergreen.float_target_counts AS
         items.copy_location_code,
         policy.max_items AS location_slots,
         policy.max_per_bib
-    FROM evergreen.on_shelf_float_balanced_items items
+    FROM kcls.on_shelf_float_balanced_items items
     JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
     GROUP BY 2, 3, 4, 5
 ;
 
-CREATE UNIQUE INDEX ON evergreen.float_target_counts (circ_lib, copy_location_code);
-CREATE INDEX ON evergreen.float_target_counts (copy_location_code);
+CREATE UNIQUE INDEX ON kcls.float_target_counts (circ_lib, copy_location_code);
+CREATE INDEX ON kcls.float_target_counts (copy_location_code);
 
-CREATE OR REPLACE FUNCTION evergreen.float_target_has_bib_slot(
+CREATE OR REPLACE FUNCTION kcls.float_target_has_bib_slot(
     target_ou INTEGER,
     target_location_code TEXT,
     target_bib INTEGER
@@ -167,7 +178,7 @@ BEGIN
     SELECT INTO bib_slots_taken, bib_slots
         COUNT(items.id) AS bib_slots_taken,
         policy.max_per_bib AS bib_slots
-        FROM evergreen.on_shelf_float_balanced_items items
+        FROM kcls.on_shelf_float_balanced_items items
         JOIN asset.call_number acn ON acn.id = items.call_number
         JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
         WHERE 
@@ -187,7 +198,7 @@ BEGIN
 END;
 $FUNK$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION evergreen.float_destination(
+CREATE OR REPLACE FUNCTION kcls.float_destination(
     copy_id INTEGER,
 	target_ou INTEGER
 ) RETURNS INTEGER AS $FUNK$
@@ -201,7 +212,7 @@ DECLARE
 
     has_bib_slots BOOLEAN;
 
-    target_counts evergreen.float_target_counts%ROWTYPE;
+    target_counts kcls.float_target_counts%ROWTYPE;
 
     -- KCLS matches copy location by their code names since each branch
     -- maintains its own version of (practically) every copy location, 
@@ -217,7 +228,7 @@ BEGIN
     END IF;
 
     SELECT INTO member_orgs ARRAY(
-        SELECT * FROM evergreen.float_members(copy.floating, copy.circ_lib, target_ou));
+        SELECT * FROM kcls.float_members(copy.floating, copy.circ_lib, target_ou));
 
     IF ARRAY_LENGTH(member_orgs, 1) = 0 THEN
         -- Likely excluded from floating in this group.
@@ -236,7 +247,7 @@ BEGIN
 
     -- Do we have space on the target shelf?
     PERFORM TRUE
-        FROM evergreen.float_target_counts ftc
+        FROM kcls.float_target_counts ftc
         WHERE ftc.circ_lib = target_ou
             AND ftc.copy_location_code = location_code
             AND ftc.location_slots_filled < ftc.location_slots;
@@ -248,7 +259,7 @@ BEGIN
         -- We have space on the target shelf.
         -- Do have space for this specific bib record?
         SELECT INTO has_bib_slots * FROM 
-            evergreen.float_target_has_bib_slot(target_ou, location_code, target_bib);
+            kcls.float_target_has_bib_slot(target_ou, location_code, target_bib);
     
         IF has_bib_slots THEN
             RAISE NOTICE 'Copy % has room on shelf %s for bib % at target branch %', 
@@ -268,7 +279,7 @@ BEGIN
     -- NO room at the inn... Find the best float target.
 
     FOR target_counts IN 
-        SELECT ftc.* FROM evergreen.float_target_counts ftc
+        SELECT ftc.* FROM kcls.float_target_counts ftc
         WHERE 
             ftc.copy_location_code = location_code
             AND ftc.circ_lib = ANY (member_orgs)
@@ -281,7 +292,7 @@ BEGIN
         -- This branch has room at the desire copy location.
         -- Make sure it doesn't have too many copies of the same bib.
         SELECT INTO has_bib_slots * FROM 
-            evergreen.float_target_has_bib_slot(target_counts.circ_lib, location_code, target_bib);
+            kcls.float_target_has_bib_slot(target_counts.circ_lib, location_code, target_bib);
     
         IF has_bib_slots THEN
             RAISE NOTICE 'Copy % has room on shelf %s for bib % at branch %', 
@@ -312,16 +323,16 @@ JOIN asset.copy_location acpl ON acpl.owning_lib = aou.id;
 UPDATE asset.copy SET floating = 1;
 ------------------------------------------------------------------------------
 
-REFRESH MATERIALIZED VIEW evergreen.float_target_counts;
+REFRESH MATERIALIZED VIEW kcls.float_target_counts;
 
-SELECT * FROM evergreen.float_destination(7618495, 1492);
-SELECT * FROM evergreen.float_destination(7618495, 1516);
+SELECT * FROM kcls.float_destination(7618495, 1492);
+SELECT * FROM kcls.float_destination(7618495, 1516);
 /*
 
 SELECT                                                                     
 COUNT(items.id) AS bib_slots_taken,                                    
 policy.max_per_bib AS bib_slots                                        
-FROM evergreen.on_shelf_float_balanced_items items                     
+FROM kcls.on_shelf_float_balanced_items items                     
 JOIN asset.call_number acn ON acn.id = items.call_number               
 JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
 WHERE                                                                  

@@ -3129,11 +3129,11 @@ sub do_checkin {
                     # Where should this copy float to?
                     my $float_destination = $self->editor->json_query({
                         from => [
-                            'evergreen.float_destination', 
+                            'kcls.float_destination', 
                             $self->copy_id, 
                             $self->circ_lib
                         ]
-                    })->[0]->{'evergreen.float_destination'};
+                    })->[0]->{'kcls.float_destination'};
 
                     my $bc = $self->copy->barcode;
 
