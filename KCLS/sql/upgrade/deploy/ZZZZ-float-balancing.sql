@@ -21,7 +21,7 @@ CREATE TABLE config.org_unit_float_policy (
 );
 
 CREATE OR REPLACE FUNCTION evergreen.float_members(
-	floating_group INTEGER,
+	float_member INTEGER,
 	from_ou INTEGER,
 	to_ou INTEGER
 ) RETURNS SETOF INTEGER AS $FUNK$
@@ -29,6 +29,7 @@ DECLARE
     float_member config.floating_group_member%ROWTYPE;
     shared_ou_depth INT;
     to_ou_depth INT;
+    tmp_ou INT;
 BEGIN
     -- Returns the set of org units that are covered by the 
     -- floating group member configuration.
@@ -68,7 +69,10 @@ BEGIN
             RETURN;
         END IF;
 
-        RETURN NEXT floating_member.org_unit;
+        FOR tmp_ou IN (
+            SELECT id FROM actor.org_unit_descendants(float_member.org_unit)) LOOP
+            RETURN NEXT tmp_ou;
+        END LOOP;
     END LOOP;
 END
 $FUNK$ LANGUAGE PLPGSQL;
@@ -102,11 +106,11 @@ CREATE VIEW evergreen.on_shelf_float_balanced_items AS
 CREATE MATERIALIZED VIEW evergreen.float_target_counts AS 
     -- Count of float-balanced items by circ lib and copy location.
     SELECT 
-        COUNT(items.id) AS slots_filled,
+        COUNT(items.id) AS location_slots_filled,
         items.circ_lib,
         items.location,
         items.copy_location_code,
-        policy.max_items,
+        policy.max_items AS location_slots,
         policy.max_per_bib
     FROM evergreen.on_shelf_float_balanced_items items
     JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
@@ -114,6 +118,7 @@ CREATE MATERIALIZED VIEW evergreen.float_target_counts AS
 ;
 
 CREATE UNIQUE INDEX ON evergreen.float_target_counts (circ_lib, copy_location_code);
+CREATE INDEX ON evergreen.float_target_counts (copy_location_code);
 
 CREATE OR REPLACE FUNCTION evergreen.float_target_has_bib_slot(
     target_ou INTEGER,
@@ -139,6 +144,8 @@ BEGIN
         GROUP BY 2;
 
     IF NOT FOUND THEN
+        RAISE NOTICE 'Branch %s has zero floatable copies for bib % on shelf %s',
+            target_ou, target_bib, target_location_code;
         -- Bib record in question has no copies at the specified location.
         RETURN TRUE;
     END IF;
@@ -166,28 +173,30 @@ DECLARE
     -- KCLS matches copy location by their code names since each branch
     -- maintains its own version of (practically) every copy location, 
     -- i.e. locations are not shared by the consortium.
-    copy_location_code TEXT;
+    location_code TEXT;
 BEGIN
     SELECT INTO copy * FROM asset.copy WHERE id = copy_id;
 
-    IF copy.floating IS NULL OR copy.call_number < 0 THEN
-        -- This copy doesn't float and/or it's a precat copy.
+    IF copy.floating IS NULL OR copy.call_number < 0 OR copy.circ_lib = target_ou THEN
+        -- This copy doesn't float, is at home, or it's a precat.
+        -- Send it back to the circ lib.
         RETURN copy.circ_lib;
     END IF;
 
     SELECT INTO member_orgs ARRAY(
         SELECT * FROM evergreen.float_members(copy.floating, copy.circ_lib, target_ou));
 
-    IF ARRAY_LENGTH(member_orgs) = 0 THEN
+    IF ARRAY_LENGTH(member_orgs, 1) = 0 THEN
         -- Likely excluded from floating in this group.
+        RAISE NOTICE 'Copy % is excluded from floating', copy_id;
         RETURN copy.circ_lib;
     END IF;
 
-    SELECT INTO copy_location_code name FROM asset.copy_location WHERE id = copy.location;
+    SELECT INTO location_code name FROM asset.copy_location WHERE id = copy.location;
 
     SELECT INTO target_bib acn.record 
         FROM asset.copy acp
-        JOIN asset.call_number acn ON acn.id = acp.location
+        JOIN asset.call_number acn ON acn.id = acp.call_number
         WHERE acp.id = copy_id;
 
     -- Float to the destination (checkin) branch if possible.
@@ -196,43 +205,63 @@ BEGIN
     PERFORM TRUE
         FROM evergreen.float_target_counts ftc
         WHERE ftc.circ_lib = target_ou
-            AND ftc.copy_location_code = copy_location_code -- KCLS
+            AND ftc.copy_location_code = location_code
             AND ftc.location_slots_filled < ftc.location_slots;
 
     IF FOUND THEN
+        RAISE NOTICE 'Copy % has room on shelf %s at target branch %', 
+            copy_id, location_code, target_ou;
+
         -- We have space on the target shelf.
         -- Do have space for this specific bib record?
-        SELECT INTO has_bib_slots FROM 
-            evergreen.float_target_has_bib_slot(target_ou, copy_location_code, target_bib);
+        SELECT INTO has_bib_slots * FROM 
+            evergreen.float_target_has_bib_slot(target_ou, location_code, target_bib);
     
         IF has_bib_slots THEN
+            RAISE NOTICE 'Copy % has room on shelf %s for bib % at target branch %', 
+                copy_id, location_code, target_bib, target_ou;
+
             -- All clear to float to the checkin branch.
             RETURN target_ou;
+        ELSE
+            RAISE NOTICE 'Copy % has NO room on shelf %s for bib % at target branch %',
+                copy_id, location_code, target_bib, target_ou;
         END IF;
+    ELSE
+        RAISE NOTICE 'Copy % has NO room on shelf %s at target branch %',
+            copy_id, location_code, target_ou;
     END IF;
 
-    -- No room at the inn... Find the best float target.
+    -- NO room at the inn... Find the best float target.
 
     FOR target_counts IN 
-        SELECT ftc.* FROM evergreen.float_target_counts
+        SELECT ftc.* FROM evergreen.float_target_counts ftc
         WHERE 
-            ftc.copy_location_code = copy_location_code
+            ftc.copy_location_code = location_code
             AND ftc.circ_lib = ANY (member_orgs)
             AND ftc.circ_lib NOT IN (copy.circ_lib, target_ou)
         ORDER BY (ftc.location_slots - ftc.location_slots_filled) DESC
     LOOP
+        RAISE NOTICE 'Copy % has room on shelf %s at branch %', 
+            copy_id, location_code, target_counts.circ_lib;
+
         -- This branch has room at the desire copy location.
         -- Make sure it doesn't have too many copies of the same bib.
-        SELECT INTO has_bib_slots FROM 
-            evergreen.float_target_has_bib_slot(ftc.circ_lib, copy_location_code, target_bib);
+        SELECT INTO has_bib_slots * FROM 
+            evergreen.float_target_has_bib_slot(target_counts.circ_lib, location_code, target_bib);
     
         IF has_bib_slots THEN
+            RAISE NOTICE 'Copy % has room on shelf %s for bib %s at branch %', 
+                copy_id, location_code, target_bib, target_counts.circ_lib;
+
             -- All clear to float to this branch.
-            RETURN ftc.circ_lib;
+            RETURN target_counts.circ_lib;
         END IF;
 
         -- Bib record count exceeded.  Loop and try the next best location.
     END LOOP;
+
+    RAISE NOTICE 'Copy % has NO room on any shelves, floating here', copy_id;
 
     RETURN target_ou;
 END;
@@ -241,13 +270,38 @@ $FUNK$ LANGUAGE PLPGSQL;
 
 ------------------------------------------------------------------------------
 -- make some sample data
+/*
 INSERT INTO config.org_unit_float_policy 
     (active, org_unit, max_per_bib, copy_location, max_items)
 SELECT TRUE, aou.id, 2, acpl.id, 10
 FROM actor.org_unit aou
 JOIN asset.copy_location acpl ON acpl.owning_lib = aou.id;
 
+UPDATE asset.copy SET floating = 1;
+
+UPDATE config.org_unit_float_policy SET max_items = 1000 WHERE org_unit = 1501;
+*/
+------------------------------------------------------------------------------
+
 REFRESH MATERIALIZED VIEW evergreen.float_target_counts;
 
+/*
+SELECT * FROM evergreen.float_destination(7618495, 1492);
+SELECT * FROM evergreen.float_destination(7618495, 1516);
+
+SELECT                                                                     
+COUNT(items.id) AS bib_slots_taken,                                    
+policy.max_per_bib AS bib_slots                                        
+FROM evergreen.on_shelf_float_balanced_items items                     
+JOIN asset.call_number acn ON acn.id = items.call_number               
+JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
+WHERE                                                                  
+items.circ_lib = 1516
+AND items.copy_location_code = 'erd'
+AND acn.record = 627503
+GROUP BY 2;    
+*/
+
 COMMIT;
+--ROLLBACK;
 
