@@ -82,8 +82,10 @@ CREATE VIEW evergreen.on_shelf_float_balanced_items AS
     -- in a status that suggests they are in fact on or en route to the
     -- shelf.
     SELECT 
-        acp.*,
-        acpl.name AS copy_location_code, -- KCLS
+        acp.id,
+        acp.call_number,
+        acp.circ_lib,
+        acpl.name AS copy_location_code,
         coufp.id AS float_policy
     FROM asset.copy acp
     JOIN config.copy_status ccs ON ccs.id = acp.status
@@ -94,11 +96,43 @@ CREATE VIEW evergreen.on_shelf_float_balanced_items AS
     )
     WHERE 
         NOT acp.deleted
-        -- No pre-cats
         AND acp.call_number > 0
         -- Items that are on or en route to a shelf.  This may change.
+        AND ccs.is_available -- esp. not in transit (see below)
+        AND coufp.active
+  UNION
+        -- Include viable shelf-balanced items that are in transit to
+        -- an org unit which has a matching shelf configured for
+        -- balancing.
+    SELECT 
+        acp.id,
+        acp.call_number,
+        -- Transit destionation branch.
+        atc.dest AS circ_lib,
+        dest_acpl.name AS copy_location_code,
+        -- Float policy at the transit destination branch
+        coufp.id AS float_policy
+    FROM action.transit_copy atc
+    JOIN asset.copy acp ON acp.id = atc.target_copy
+    JOIN config.copy_status ccs ON ccs.id = atc.copy_status
+    JOIN asset.copy_location copy_acpl ON copy_acpl.id = acp.location
+    JOIN asset.copy_location dest_acpl ON dest_acpl.name = copy_acpl.name
+    JOIN config.org_unit_float_policy coufp ON (
+        coufp.org_unit = atc.dest
+        AND coufp.copy_location = dest_acpl.id
+    )
+    WHERE 
+        NOT acp.deleted
+        AND acp.call_number > 0
+        -- Arrival status of item.
+        -- E.g. don't count items going to the holds shelf.
         AND ccs.is_available
         AND coufp.active
+        -- Active transits only.
+        AND atc.dest_recv_time IS NULL
+        AND atc.cancel_time IS NULL
+        -- Current status of item; in-transit
+        AND acp.status = 6
 ;
 
 -- We need a view for this data so we can sort on the slot
@@ -108,13 +142,12 @@ CREATE MATERIALIZED VIEW evergreen.float_target_counts AS
     SELECT 
         COUNT(items.id) AS location_slots_filled,
         items.circ_lib,
-        items.location,
         items.copy_location_code,
         policy.max_items AS location_slots,
         policy.max_per_bib
     FROM evergreen.on_shelf_float_balanced_items items
     JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
-    GROUP BY 2, 3, 4, 5, 6
+    GROUP BY 2, 3, 4, 5
 ;
 
 CREATE UNIQUE INDEX ON evergreen.float_target_counts (circ_lib, copy_location_code);
@@ -251,7 +284,7 @@ BEGIN
             evergreen.float_target_has_bib_slot(target_counts.circ_lib, location_code, target_bib);
     
         IF has_bib_slots THEN
-            RAISE NOTICE 'Copy % has room on shelf %s for bib %s at branch %', 
+            RAISE NOTICE 'Copy % has room on shelf %s for bib % at branch %', 
                 copy_id, location_code, target_bib, target_counts.circ_lib;
 
             -- All clear to float to this branch.
@@ -270,7 +303,6 @@ $FUNK$ LANGUAGE PLPGSQL;
 
 ------------------------------------------------------------------------------
 -- make some sample data
-/*
 INSERT INTO config.org_unit_float_policy 
     (active, org_unit, max_per_bib, copy_location, max_items)
 SELECT TRUE, aou.id, 2, acpl.id, 10
@@ -278,16 +310,13 @@ FROM actor.org_unit aou
 JOIN asset.copy_location acpl ON acpl.owning_lib = aou.id;
 
 UPDATE asset.copy SET floating = 1;
-
-UPDATE config.org_unit_float_policy SET max_items = 1000 WHERE org_unit = 1501;
-*/
 ------------------------------------------------------------------------------
 
 REFRESH MATERIALIZED VIEW evergreen.float_target_counts;
 
-/*
 SELECT * FROM evergreen.float_destination(7618495, 1492);
 SELECT * FROM evergreen.float_destination(7618495, 1516);
+/*
 
 SELECT                                                                     
 COUNT(items.id) AS bib_slots_taken,                                    
