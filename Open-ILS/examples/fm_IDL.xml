@@ -14103,6 +14103,31 @@ SELECT  usr,
 			</actions>
 		</permacrud>
 	</class>
+  <class id="coufp" 
+    controller="open-ils.cstore open-ils.pcrud" 
+    oils_obj:fieldmapper="config::org_unit_float_policy"
+    oils_persist:tablename="config.org_unit_float_policy" reporter:label="Floating Policy">
+    <fields oils_persist:primary="id" oils_persist:sequence="config.org_unit_float_policy_id_seq">
+      <field reporter:label="ID" name="id" reporter:selector="name" reporter:datatype="id"/>
+      <field reporter:label="Org Unit" name="org_unit" reporter:datatype="link"/>
+      <field reporter:label="Active" name="active" reporter:datatype="bool"/>
+      <field reporter:label="Copy Location" name="copy_location" reporter:datatype="link"/>
+      <field reporter:label="Max Per Bib" name="max_per_bib" reporter:datatype="int"/>
+      <field reporter:label="Max Items" name="max_items" reporter:datatype="int"/>
+    </fields>
+    <links>
+      <link field="org_unit" reltype="has_a" key="id" map="" class="aou"/>
+      <link field="copy_location" reltype="has_a" key="id" map="" class="acpl"/>
+    </links>
+    <permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+      <actions>
+        <create permission="ADMIN_FLOAT_POLICY" context_field="org_unit"/>
+        <retrieve/>
+        <update permission="ADMIN_FLOAT_POLICY" context_field="org_unit"/>
+        <delete permission="ADMIN_FLOAT_POLICY" context_field="org_unit"/>
+      </actions>
+    </permacrud>
+  </class>
 	<class id="cctt" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="config::copy_tag_type" oils_persist:tablename="config.copy_tag_type" reporter:label="Copy Tag Types" oils_persist:field_safe="true">
 		<fields oils_persist:primary="code">
 			<field reporter:label="Code" name="code" reporter:selector="label" reporter:datatype="id" oils_obj:required="true"/>

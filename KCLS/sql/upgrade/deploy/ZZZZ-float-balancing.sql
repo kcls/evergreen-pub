@@ -3,6 +3,8 @@
 
 BEGIN;
 
+SET STATEMENT_TIMEOUT = 0;
+
 CREATE SCHEMA IF NOT EXISTS kcls;
 
 CREATE TABLE config.org_unit_float_policy (
@@ -156,7 +158,7 @@ CREATE MATERIALIZED VIEW kcls.float_target_counts AS
         items.copy_location_code,
         policy.max_items AS location_slots,
         policy.max_per_bib
-    FROM kcls.on_shelf_float_balanced_items items
+    FROM kcls.float_balanced_items items
     JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
     GROUP BY 2, 3, 4, 5
 ;
