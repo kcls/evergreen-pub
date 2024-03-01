@@ -200,6 +200,47 @@ BEGIN
 END;
 $FUNK$ LANGUAGE PLPGSQL;
 
+CREATE OR REPLACE FUNCTION kcls.float_copy_slots(
+    copy_id INTEGER,
+    target_ou INTEGER
+) RETURNS SETOF kcls.float_target_counts AS $FUNK$
+DECLARE
+    copy asset.copy%ROWTYPE;
+    location_code TEXT;
+    target_counts kcls.float_target_counts%ROWTYPE;
+    -- Org units within this copy's float member group.
+    member_orgs INTEGER[];
+BEGIN
+    -- Generates a float destinatino branches + copy locations
+    -- sorted by those sites with most availability.
+    SELECT INTO copy * FROM asset.copy WHERE id = copy_id;
+
+    IF copy.floating IS NULL OR copy.call_number < 0 OR copy.circ_lib = target_ou THEN
+        RETURN;
+    END IF;
+
+    SELECT INTO member_orgs ARRAY(
+        SELECT * FROM kcls.float_members(copy.floating, copy.circ_lib, target_ou));
+
+    IF ARRAY_LENGTH(member_orgs, 1) = 0 THEN
+        RETURN;
+    END IF;
+
+    SELECT INTO location_code name FROM asset.copy_location WHERE id = copy.location;
+
+    FOR target_counts IN 
+        SELECT ftc.* FROM kcls.float_target_counts ftc
+        WHERE 
+            ftc.copy_location_code = location_code
+            AND ftc.circ_lib = ANY (member_orgs)
+        ORDER BY (ftc.location_slots - ftc.location_slots_filled) DESC
+    LOOP
+        RETURN NEXT target_counts;
+    END LOOP;
+END;
+$FUNK$ LANGUAGE PLPGSQL;
+
+
 CREATE OR REPLACE FUNCTION kcls.float_destination(
     copy_id INTEGER,
 	target_ou INTEGER
