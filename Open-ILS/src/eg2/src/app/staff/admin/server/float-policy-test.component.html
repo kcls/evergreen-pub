@@ -1,24 +1,28 @@
 <eg-staff-banner bannerText="Test Org Unit Float Policies" i18n-bannerText></eg-staff-banner>
-
 <div class="row mt-3 mb-3">
-  <div class="col" i18n>
-    Item Barcode:
+  <div class="input-group mb-3 col">
+    <span class="input-group-text" i18n>Item Barcode</span>
+    <input type="text" id="barcode-input" (keyup.enter)="test()" 
+      class="form-control" [(ngModel)]="itemBarcode"/>
   </div>
-  <div class="col">
-    <input type="text" class="form-control" [(ngModel)]="itemBarcode"/>
-  </div>
-  <div class="col" i18n>
-    Checkin Library:
-  </div>
-  <div class="col">
+  <div class="input-group mb-3 col">
+    <span class="input-group-text" i18n>Checkin Library</span>
     <eg-org-select [initialOrgId]="checkinOrg" 
       (onChange)="checkinOrg = $event ? $event.id() : null"></eg-org-select>
   </div>
   <div class="col">
     <button class="btn btn-outline-dark" (click)="test()" i18n>Test</button>
+    <span class="ms-2" *ngIf="destOrgName" i18n>Float Destintion: </span>
+    <span>{{destOrgName}}</span>
   </div>
-  <div class="col" i18n>Float Destintion:</div>
-  <div class="col">{{destOrgName}}</div>
+</div>
+
+<div class="row" *ngIf="loading">
+  <div class="col-3"></div>
+  <div class="col-6">
+    <eg-progress-inline></eg-progress-inline>
+  </div>
+  <div class="col-3"></div>
 </div>
 
 <eg-grid #grid [disablePaging]="true" [dataSource]="dataSource" [sortable]="true" [useLocalSort]="true">

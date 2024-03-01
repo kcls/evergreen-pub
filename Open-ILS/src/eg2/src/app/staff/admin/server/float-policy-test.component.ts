@@ -18,6 +18,8 @@ export class FloatPolicyTestComponent implements OnInit {
     destOrgName = '';
     dataSource: GridDataSource = new GridDataSource();
     copyStats: any = [];
+    loading = false;
+
     @ViewChild('grid') grid: GridComponent;
 
     constructor(
@@ -31,6 +33,9 @@ export class FloatPolicyTestComponent implements OnInit {
         this.dataSource.getRows = (pager: Pager, sort: any[]) => {
             return from(this.copyStats);
         };
+
+        const node = document.getElementById('barcode-input');
+        node.focus();
     }
 
     test() {
@@ -41,6 +46,7 @@ export class FloatPolicyTestComponent implements OnInit {
             return;
         }
 
+        this.loading = true;
         this.net.request(
             'open-ils.circ',
             'open-ils.circ.float_policy.test',
@@ -48,6 +54,7 @@ export class FloatPolicyTestComponent implements OnInit {
             this.itemBarcode,
             this.checkinOrg
         ).subscribe(info => {
+            this.loading = false;
             info.stats.forEach(i => {
                 i.circ_lib = this.org.get(i.circ_lib).shortname();
                 i.avail_slots = i.location_slots - i.location_slots_filled;
