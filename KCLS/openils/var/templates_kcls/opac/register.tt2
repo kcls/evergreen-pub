@@ -941,6 +941,9 @@ a:hover {
             label => 'ښتو / Pashto',
             pdf => 'PASHTO%20KCLS%20600%20Library%20Card%20Application.pdf',
           }, { 
+            label => 'Português / Portuguese',
+            pdf => 'PORTUGUESE%20KCLS%20Library%20Card%20Application.pdf'
+          }, { 
             label => 'ਪੰਜਾਬੀ / Punjabi',
             pdf => 'Punjabi%20KCLS%20600%20Library%20Card%20Application.pdf',
           }, { 
