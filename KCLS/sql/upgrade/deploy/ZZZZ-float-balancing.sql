@@ -81,7 +81,7 @@ BEGIN
 END
 $FUNK$ LANGUAGE PLPGSQL;
 
-CREATE VIEW kcls.on_shelf_float_balanced_items AS 
+CREATE OR REPLACE VIEW kcls.on_shelf_items AS 
     -- All copies which live at a float-balanced shelf location and are
     -- in a status that suggests they are in fact on or en route to the
     -- shelf.
@@ -90,23 +90,19 @@ CREATE VIEW kcls.on_shelf_float_balanced_items AS
         acp.call_number,
         acp.circ_lib,
         acpl.name AS copy_location_code,
-        coufp.id AS float_policy
+        acpl.id AS copy_location
     FROM asset.copy acp
     JOIN config.copy_status ccs ON ccs.id = acp.status
     JOIN asset.copy_location acpl ON acpl.id = acp.location
-    JOIN config.org_unit_float_policy coufp ON (
-        coufp.org_unit = acp.circ_lib 
-        AND coufp.copy_location = acp.location
-    )
     WHERE 
         NOT acp.deleted
         AND acp.call_number > 0
         -- Items that are on or en route to a shelf.  This may change.
         AND ccs.is_available -- esp. not in transit (see below)
-        AND coufp.active
+        AND acpl.circulate
 ;
 
-CREATE VIEW kcls.in_transit_float_balanced_items AS 
+CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS 
     -- Viable shelf-balanced items that are in transit to
     -- an org unit which has a matching shelf configured for
     -- balancing.
@@ -116,16 +112,14 @@ CREATE VIEW kcls.in_transit_float_balanced_items AS
         -- Transit destionation branch.
         atc.dest AS circ_lib,
         dest_acpl.name AS copy_location_code,
-        -- Float policy at the transit destination branch
-        coufp.id AS float_policy
+        dest_acpl.id AS copy_location
     FROM action.transit_copy atc
     JOIN asset.copy acp ON acp.id = atc.target_copy
     JOIN config.copy_status ccs ON ccs.id = atc.copy_status
     JOIN asset.copy_location copy_acpl ON copy_acpl.id = acp.location
-    JOIN asset.copy_location dest_acpl ON dest_acpl.name = copy_acpl.name
-    JOIN config.org_unit_float_policy coufp ON (
-        coufp.org_unit = atc.dest
-        AND coufp.copy_location = dest_acpl.id
+    JOIN asset.copy_location dest_acpl ON (
+        dest_acpl.owning_lib = atc.dest
+        AND dest_acpl.name = copy_acpl.name
     )
     WHERE 
         NOT acp.deleted
@@ -133,33 +127,37 @@ CREATE VIEW kcls.in_transit_float_balanced_items AS
         -- Arrival status of item.
         -- E.g. don't count items going to the holds shelf.
         AND ccs.is_available
-        AND coufp.active
         -- Active transits only.
         AND atc.dest_recv_time IS NULL
         AND atc.cancel_time IS NULL
         -- Current status of item; in-transit
         AND acp.status = 6
+        AND dest_acpl.circulate
 ;
 
 
-CREATE VIEW kcls.float_balanced_items AS 
-    SELECT * FROM kcls.on_shelf_float_balanced_items
+CREATE OR REPLACE VIEW kcls.all_shelf_items AS
+    -- Copies that are on a shelf or in-transit to the shelf.
+    SELECT * FROM kcls.on_shelf_items
     UNION
-    SELECT * FROM kcls.in_transit_float_balanced_items
+    SELECT * FROM kcls.in_transit_to_shelf_items
 ;
 
 -- We need a view for this data so we can sort on the slot
 -- availability across the spectrum of branches.
 CREATE MATERIALIZED VIEW kcls.float_target_counts AS 
-    -- Count of float-balanced items by circ lib and copy location.
+    -- Count of on/to-shelf items by circ lib and copy location.
     SELECT 
         COUNT(items.id) AS location_slots_filled,
         items.circ_lib,
         items.copy_location_code,
         policy.max_items AS location_slots,
         policy.max_per_bib
-    FROM kcls.float_balanced_items items
-    JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
+    FROM kcls.all_shelf_items items
+    JOIN config.org_unit_float_policy policy ON (
+        policy.copy_location = items.copy_location
+        AND policy.org_unit = items.circ_lib
+    )
     GROUP BY 2, 3, 4, 5
 ;
 
@@ -180,9 +178,12 @@ BEGIN
     SELECT INTO bib_slots_taken, bib_slots
         COUNT(items.id) AS bib_slots_taken,
         policy.max_per_bib AS bib_slots
-        FROM kcls.on_shelf_float_balanced_items items
+        FROM kcls.all_shelf_items items
         JOIN asset.call_number acn ON acn.id = items.call_number
-        JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
+        JOIN config.org_unit_float_policy policy ON (
+            policy.copy_location = items.copy_location
+            AND policy.org_unit = items.circ_lib
+        )
         WHERE 
             items.circ_lib = target_ou
             AND items.copy_location_code = target_location_code
@@ -355,6 +356,62 @@ END;
 $FUNK$ LANGUAGE PLPGSQL;
 
 
+-- DATA TIME
+DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN
+
+RAISE NOTICE '% Creating seed data', CLOCK_TIMESTAMP();
+
+-- Create a new separate floating group so we can avoid modifying
+-- existing copy float setups, of which there are some.
+INSERT INTO config.floating_group (name, manual) VALUES ('Everywhere Balanced', FALSE);
+
+INSERT INTO config.floating_group_member 
+    (floating_group, org_unit, stop_depth, max_depth, exclude)
+VALUES (
+    (SELECT id FROM config.floating_group WHERE name = 'Everywhere Balanced'),
+    1, 0, NULL, FALSE
+);
+
+
+RAISE NOTICE '% Apply copy floats', CLOCK_TIMESTAMP();
+
+UPDATE asset.copy 
+SET floating = (SELECT id FROM config.floating_group WHERE name = 'Everywhere Balanced')
+WHERE 
+    floating IS NULL 
+    AND NOT deleted 
+    AND circulate
+    AND call_number > 0;
+
+
+RAISE NOTICE '% Creating float policies', CLOCK_TIMESTAMP();
+
+INSERT INTO config.org_unit_float_policy
+    (active, org_unit, max_per_bib, copy_location, max_items)
+WITH counts AS (
+    SELECT 
+        COUNT(item.id) copy_count,
+        item.circ_lib,
+        item.copy_location
+    FROM kcls.on_shelf_items item
+    GROUP BY 2, 3
+)
+SELECT 
+    TRUE,
+    c.circ_lib, 
+    2, -- ?
+    c.copy_location,
+    c.copy_count + c.copy_count / 2 -- 2/3 + (2/3)/2 == 1/1
+FROM counts c
+;
+
+
+RAISE NOTICE '% Applying float target counts', CLOCK_TIMESTAMP();
+
+REFRESH MATERIALIZED VIEW kcls.float_target_counts;
+
+
+/*
 ------------------------------------------------------------------------------
 -- make some sample data
 INSERT INTO config.org_unit_float_policy 
@@ -370,12 +427,11 @@ REFRESH MATERIALIZED VIEW kcls.float_target_counts;
 
 SELECT * FROM kcls.float_destination(7618495, 1492);
 SELECT * FROM kcls.float_destination(7618495, 1516);
-/*
 
 SELECT                                                                     
 COUNT(items.id) AS bib_slots_taken,                                    
 policy.max_per_bib AS bib_slots                                        
-FROM kcls.on_shelf_float_balanced_items items                     
+FROM kcls.on_shelf_items items                     
 JOIN asset.call_number acn ON acn.id = items.call_number               
 JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
 WHERE                                                                  
@@ -385,6 +441,7 @@ AND acn.record = 627503
 GROUP BY 2;    
 */
 
+END IF; END $INSERT$;
+
 COMMIT;
---ROLLBACK;
 
