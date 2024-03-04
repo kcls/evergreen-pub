@@ -8,7 +8,7 @@ SET STATEMENT_TIMEOUT = 0;
 CREATE SCHEMA IF NOT EXISTS kcls;
 
 CREATE TABLE config.org_unit_float_policy (
-    -- Policies are linked directly to org units, not
+    -- Policies are linked directly to org units + copy locations, not
     -- config.floating_group_member entries, on the assumption that an org
     -- unit wants a set number of items at a location regardless of
     -- the floating group at play.
@@ -82,8 +82,7 @@ END
 $FUNK$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE VIEW kcls.on_shelf_items AS 
-    -- All circulable copies in a "shelf occupying" status across
-    -- all branches and shelf locations.
+    -- All copies in a "shelf occupying" status across all branches and shelf locations.
     SELECT 
         acp.id,
         acp.call_number,
@@ -96,13 +95,12 @@ CREATE OR REPLACE VIEW kcls.on_shelf_items AS
     WHERE 
         NOT acp.deleted
         AND acp.call_number > 0
-        -- Items that are on or en route to a shelf.  This may change.
         AND ccs.is_available -- esp. not in transit (see below)
         AND NOT acpl.deleted
 ;
 
 CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS 
-    -- All in-transit copies copies that will end up with a "shelf occupying" 
+    -- All in-transit copies that will end up with a "shelf occupying" 
     -- status across all branches and shelf locations.
     SELECT 
         acp.id,
@@ -137,10 +135,11 @@ CREATE OR REPLACE VIEW kcls.all_shelf_items AS
     SELECT * FROM kcls.in_transit_to_shelf_items
 ;
 
--- We need a view for this data so we can sort on the slot
--- availability across the spectrum of branches.
 CREATE MATERIALIZED VIEW kcls.float_target_counts AS 
-    -- Count of on/to-shelf items by circ lib and copy location.
+    -- Count of on/to-shelf items by circ lib and copy location.  We
+    -- need a view for this data so we can sort on slot availability
+    -- across all branches and copy locations.  This query in realtime
+    -- takes ~4 seconds on the test cluster, which is too long for checkin.
     SELECT 
         COUNT(items.id) AS location_slots_filled,
         items.circ_lib,
@@ -321,7 +320,7 @@ BEGIN
         WHERE 
             ftc.copy_location_code = location_code
             AND ftc.circ_lib = ANY (member_orgs)
-            AND ftc.circ_lib NOT IN (copy.circ_lib, target_ou)
+            AND ftc.circ_lib != target_ou
         ORDER BY (ftc.location_slots - ftc.location_slots_filled) DESC
     LOOP
         RAISE NOTICE 'Copy % has room on shelf %s at branch %', 
