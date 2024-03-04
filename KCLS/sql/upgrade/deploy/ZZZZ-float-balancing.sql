@@ -82,9 +82,8 @@ END
 $FUNK$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE VIEW kcls.on_shelf_items AS 
-    -- All copies which live at a float-balanced shelf location and are
-    -- in a status that suggests they are in fact on or en route to the
-    -- shelf.
+    -- All circulable copies in a "shelf occupying" status across
+    -- all branches and shelf locations.
     SELECT 
         acp.id,
         acp.call_number,
@@ -99,13 +98,12 @@ CREATE OR REPLACE VIEW kcls.on_shelf_items AS
         AND acp.call_number > 0
         -- Items that are on or en route to a shelf.  This may change.
         AND ccs.is_available -- esp. not in transit (see below)
-        AND acpl.circulate
+        AND NOT acpl.deleted
 ;
 
 CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS 
-    -- Viable shelf-balanced items that are in transit to
-    -- an org unit which has a matching shelf configured for
-    -- balancing.
+    -- All in-transit copies copies that will end up with a "shelf occupying" 
+    -- status across all branches and shelf locations.
     SELECT 
         acp.id,
         acp.call_number,
@@ -123,16 +121,12 @@ CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS
     )
     WHERE 
         NOT acp.deleted
+        AND acp.status = 6
         AND acp.call_number > 0
-        -- Arrival status of item.
-        -- E.g. don't count items going to the holds shelf.
-        AND ccs.is_available
-        -- Active transits only.
+        AND ccs.is_available -- destination status
         AND atc.dest_recv_time IS NULL
         AND atc.cancel_time IS NULL
-        -- Current status of item; in-transit
-        AND acp.status = 6
-        AND dest_acpl.circulate
+        AND NOT dest_acpl.deleted
 ;
 
 
