@@ -46,7 +46,7 @@ BEGIN
     FROM actor.org_unit_common_ancestors(from_ou, to_ou) aou 
     JOIN actor.org_unit_type aout ON aou.ou_type = aout.id;
 
-    -- Grab the to ou depth. 
+    -- Grab the to_ou depth. 
     -- If this is greater than max depth we ignore the entry.
     SELECT INTO to_ou_depth depth 
     FROM actor.org_unit aou 
@@ -95,7 +95,9 @@ CREATE OR REPLACE VIEW kcls.on_shelf_items AS
     WHERE 
         NOT acp.deleted
         AND acp.call_number > 0
-        AND ccs.is_available -- esp. not in transit (see below)
+        -- This status check may change, but should not include
+        -- in-transit items (see kcls.in_transit_to_shelf_items)
+        AND ccs.is_available
         AND NOT acpl.deleted
 ;
 
@@ -111,7 +113,7 @@ CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS
         dest_acpl.id AS copy_location
     FROM action.transit_copy atc
     JOIN asset.copy acp ON acp.id = atc.target_copy
-    JOIN config.copy_status ccs ON ccs.id = atc.copy_status
+    JOIN config.copy_status dest_ccs ON dest_ccs.id = atc.copy_status
     JOIN asset.copy_location copy_acpl ON copy_acpl.id = acp.location
     JOIN asset.copy_location dest_acpl ON (
         dest_acpl.owning_lib = atc.dest
@@ -121,7 +123,7 @@ CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS
         NOT acp.deleted
         AND acp.status = 6
         AND acp.call_number > 0
-        AND ccs.is_available -- destination status
+        AND dest_ccs.is_available
         AND atc.dest_recv_time IS NULL
         AND atc.cancel_time IS NULL
         AND NOT dest_acpl.deleted
@@ -313,8 +315,9 @@ BEGIN
             copy_id, location_code, target_ou;
     END IF;
 
-    -- NO room at the inn... Find the best float target.
-
+    -- NO room at the checkin branch.  Find the best float target.
+    -- Start with locations that have the most open slots then verify
+    -- we're not exceeding the max-items-per-bib limit.
     FOR target_counts IN 
         SELECT ftc.* FROM kcls.float_target_counts ftc
         WHERE 
@@ -326,7 +329,7 @@ BEGIN
         RAISE NOTICE 'Copy % has room on shelf %s at branch %', 
             copy_id, location_code, target_counts.circ_lib;
 
-        -- This branch has room at the desire copy location.
+        -- This branch has room at the desired copy location.
         -- Make sure it doesn't have too many copies of the same bib.
         SELECT INTO has_bib_slots * FROM 
             kcls.float_target_has_bib_slot(target_counts.circ_lib, location_code, target_bib);
@@ -349,6 +352,7 @@ END;
 $FUNK$ LANGUAGE PLPGSQL;
 
 
+------------------------------------------------------------------------------
 -- DATA TIME
 DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN
 
@@ -368,6 +372,9 @@ VALUES (
 
 RAISE NOTICE '% Apply copy floats', CLOCK_TIMESTAMP();
 
+
+-- Put all items into the new float group that aren't already part 
+-- of a floating group (so it's easier to undo all of this).
 UPDATE asset.copy 
 SET floating = (SELECT id FROM config.floating_group WHERE name = 'Everywhere Balanced')
 WHERE 
@@ -376,9 +383,10 @@ WHERE
     AND circulate
     AND call_number > 0;
 
-
 RAISE NOTICE '% Creating float policies', CLOCK_TIMESTAMP();
 
+-- Policy generation is based on the assumption that shelves
+-- are generally about 2/3 full.
 INSERT INTO config.org_unit_float_policy
     (active, org_unit, max_per_bib, copy_location, max_items)
 WITH counts AS (
@@ -386,55 +394,25 @@ WITH counts AS (
         COUNT(item.id) copy_count,
         item.circ_lib,
         item.copy_location
+    -- Ingore in-transit items for this calc.
     FROM kcls.on_shelf_items item
     GROUP BY 2, 3
 )
 SELECT 
     TRUE,
     c.circ_lib, 
-    2, -- ?
+    2, -- TODO max per bib per location.  Can we just pick a number?
     c.copy_location,
     c.copy_count + c.copy_count / 2 -- 2/3 + (2/3)/2 == 1/1
 FROM counts c
 ;
 
-
 RAISE NOTICE '% Applying float target counts', CLOCK_TIMESTAMP();
 
 REFRESH MATERIALIZED VIEW kcls.float_target_counts;
 
-
-/*
-------------------------------------------------------------------------------
--- make some sample data
-INSERT INTO config.org_unit_float_policy 
-    (active, org_unit, max_per_bib, copy_location, max_items)
-SELECT TRUE, aou.id, 2, acpl.id, 10
-FROM actor.org_unit aou
-JOIN asset.copy_location acpl ON acpl.owning_lib = aou.id;
-
-UPDATE asset.copy SET floating = 1;
-------------------------------------------------------------------------------
-
-REFRESH MATERIALIZED VIEW kcls.float_target_counts;
-
-SELECT * FROM kcls.float_destination(7618495, 1492);
-SELECT * FROM kcls.float_destination(7618495, 1516);
-
-SELECT                                                                     
-COUNT(items.id) AS bib_slots_taken,                                    
-policy.max_per_bib AS bib_slots                                        
-FROM kcls.on_shelf_items items                     
-JOIN asset.call_number acn ON acn.id = items.call_number               
-JOIN config.org_unit_float_policy policy ON policy.id = items.float_policy
-WHERE                                                                  
-items.circ_lib = 1516
-AND items.copy_location_code = 'erd'
-AND acn.record = 627503
-GROUP BY 2;    
-*/
-
 END IF; END $INSERT$;
+------------------------------------------------------------------------------
 
 COMMIT;
 
