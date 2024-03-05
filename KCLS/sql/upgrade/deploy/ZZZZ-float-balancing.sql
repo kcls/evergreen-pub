@@ -90,14 +90,12 @@ CREATE OR REPLACE VIEW kcls.on_shelf_items AS
         acpl.name AS copy_location_code,
         acpl.id AS copy_location
     FROM asset.copy acp
-    JOIN config.copy_status ccs ON ccs.id = acp.status
     JOIN asset.copy_location acpl ON acpl.id = acp.location
     WHERE 
         NOT acp.deleted
         AND acp.call_number > 0
-        -- This status check may change, but should not include
-        -- in-transit items (see kcls.in_transit_to_shelf_items)
-        AND ccs.is_available
+        -- Available, Reshelving, Display
+        AND acp.status IN (0, 7, 107)
         AND NOT acpl.deleted
 ;
 
@@ -113,7 +111,6 @@ CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS
         dest_acpl.id AS copy_location
     FROM action.transit_copy atc
     JOIN asset.copy acp ON acp.id = atc.target_copy
-    JOIN config.copy_status dest_ccs ON dest_ccs.id = atc.copy_status
     JOIN asset.copy_location copy_acpl ON copy_acpl.id = acp.location
     JOIN asset.copy_location dest_acpl ON (
         dest_acpl.owning_lib = atc.dest
@@ -123,7 +120,8 @@ CREATE OR REPLACE VIEW kcls.in_transit_to_shelf_items AS
         NOT acp.deleted
         AND acp.status = 6
         AND acp.call_number > 0
-        AND dest_ccs.is_available
+        -- Available, Reshelving, Display
+        AND atc.copy_status IN (0, 7, 107)
         AND atc.dest_recv_time IS NULL
         AND atc.cancel_time IS NULL
         AND NOT dest_acpl.deleted
