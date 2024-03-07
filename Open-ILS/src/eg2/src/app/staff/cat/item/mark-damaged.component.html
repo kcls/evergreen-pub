@@ -1,6 +1,8 @@
 <eg-staff-banner i18n-bannerText bannerText="Mark Item Damaged">
 </eg-staff-banner>
 
+<eg-patron-penalty-dialog #penaltyDialog></eg-patron-penalty-dialog>
+
 <!--
 <div class="row m-1" *ngIf="processing">
   <div class="col-lg-6 offset-lg-3">
@@ -9,10 +11,10 @@
 </div>
 -->
 
-<div class="mt-3 mb-3 p-2 form-validated" *ngIf="copy && bibSummary">
+<div class="mt-3 mb-3 p-2 form-validated" *ngIf="item && bibSummary">
   <div class="row">
       <div class="col-lg-1" i18n>Barcode:</div>
-      <div class="col-lg-11 fw-bold">{{copy.barcode()}}</div>
+      <div class="col-lg-11 fw-bold">{{item.barcode()}}</div>
   </div>
   <div class="row mt-1">
     <div class="col-lg-1" i18n>Title:</div>
@@ -94,7 +96,7 @@
                   <div class="col-lg-3" i8n>Damage to Item</div>
                   <div class="col-lg-6">
                     <textarea class="form-control" rows="3"
-                      [required]="true" [(ngModel)]="newNote"></textarea>
+                      [required]="true" [(ngModel)]="damageNote"></textarea>
                   </div>
                 </div>  
               </li>
@@ -126,6 +128,67 @@
   </div>
 </div>
 
+<div *ngIf="item && circ">
+  <hr class="mb-2"/>
+  <div class="row mb-2 form-validated">
+    <div class="col-lg-4">
+      <div class="form-group">
+        <label for="alert-message" i18n>Item Alert Message</label>
+        <textarea id="alert-message" [(ngModel)]="itemAlert" 
+          required rows="3" class="form-control mt-2"></textarea>
+      </div>
+      <button class="btn btn-info mt-2" (click)="updateAlertMessage()" i18n>
+        Update Alert Message
+      </button>
+    </div>
+    <div class="col-lg-4">
+      <div i18n>Damage Description for Letter</div> 
+      <textarea class="form-control mt-2" (ngModelChange)="refreshPrintDetails()"
+        [(ngModel)]="damageNote" required rows="3"></textarea>
+    </div>
+  </div>
+  <!--
+  <div class="row" *ngIf="!alertMsgUpdated">
+    <div class="col-lg-12">
+      <div class="alert alert-info" *ngIf="!alertMsgUpdated" i18n>
+        The letter may not be printed until the item alert message 
+        has been updated.
+      </div>
+    </div>
+  </div>
+  -->
+</div>
+
+<div *ngIf="circ">
+  <hr class="mb-2"/>
+  <div class="row">
+    <div class="col-lg-12">
+      <!-- avoid link underline since it's inside a button -->
+      <a style="text-decoration: none;"
+        routerLink="/staff/circ/patron/{{circ.usr().id()}}/checkout" target="_blank">
+        <button class="btn btn-outline-primary label-with-material-icon" i18n>
+          <span>Retrieve Patron</span>
+          <span class="material-icons">person</span>
+        </button>
+      </a>
+      <!--
+      <button class="btn btn-outline-primary label-with-material-icon ms-3" (click)="prepareLetter()" i18n>
+        <span>Update Letter</span>
+        <span class="material-icons">refresh</span>
+      </button>
+      -->
+      <button [disabled]="!alertMsgUpdated" *ngIf="printPreviewHtml" 
+        (click)="printLetter()" 
+        class="btn btn-outline-success label-with-material-icon ms-3" i18n>
+        <span>Print Letter</span>
+        <span class="material-icons">print</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!--
 <ng-container *ngIf="printPreviewHtml">
   <div>
     <div class="row">
@@ -139,6 +202,7 @@
     </div>
   </div>
 </ng-container>
+-->
 
 <div class="row">
   <div class="col-lg-12 mt-5">

@@ -1737,17 +1737,18 @@ sub handle_mark_damaged {
         return $evt2 if $evt2;
 
         # Create a patron alert penalty to also track the damaged note.
-        my $pen_type = 20; # Alert Note
-        my $sp = $U->create_penalty_message(
-            $e, 
-            20, # Alert Note
-            $circ->usr, 
-            $e->requestor->ws_ou,
-            'Damaged Item',
-            $new_note
-        );
-
-        return $U->is_event($sp) ? $sp : undef;
+        # Rolling this back in lieu of manual penalty creation.
+#        my $pen_type = 20; # Alert Note
+#        my $sp = $U->create_penalty_message(
+#            $e, 
+#            20, # Alert Note
+#            $circ->usr, 
+#            $e->requestor->ws_ou,
+#            'Damaged Item',
+#            $new_note
+#        );
+#
+#        return $U->is_event($sp) ? $sp : undef;
 
     } else {
         return OpenILS::Event->new('DAMAGE_CHARGE', 

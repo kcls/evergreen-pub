@@ -15,8 +15,8 @@
         Apply penalty to patron <b>{{patron.family_name()}}, {{patron.first_given_name()}}</b>
       </span>
     </div>
-    <div class="row d-flex p-3">
-      <div>
+    <div class="row p-3">
+      <div class="col-lg-4">
         <button class="btn me-1 {{buttonClass(SILENT_NOTE)}}" 
           (click)="penaltyTypeFromButton=SILENT_NOTE" i18n>Note</button> 
         <button class="btn me-1 {{buttonClass(ALERT_NOTE)}}" 
@@ -24,8 +24,7 @@
         <button class="btn me-1 {{buttonClass(STAFF_CHR)}}" 
           (click)="penaltyTypeFromButton=STAFF_CHR" i18n>Block</button> 
       </div>
-      <div class="flex-1"></div>
-      <div>
+      <div class="col-lg-4">
         <select class="form-select" 
           [(ngModel)]="penaltyTypeFromSelect">
           <option value='' i18n disabled>Other Penalty Types...</option>
@@ -38,7 +37,7 @@
           </ng-container>
         </select>
       </div>
-      <div>
+      <div class="col-lg-4">
         <select class="form-control ml-2" style="max-width:150px" 
           [(ngModel)]="patronMessage" (ngModelChange)="noteText = $event.message()">
           <option value='0' i18n>Messages</option>

@@ -12,29 +12,35 @@ import {ServerStoreService} from '@eg/core/server-store.service';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {BillingService} from '@eg/staff/share/billing/billing.service';
+import {PatronPenaltyDialogComponent} from '@eg/staff/share/patron/penalty-dialog.component';
 
 @Component({
   templateUrl: 'mark-damaged.component.html'
 })
 export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
-    copyId: number;
-    copy: IdlObject;
+    itemId: number;
+    item: IdlObject = null;
+    circ: IdlObject = null;
+    dibs = '';
     bibSummary: BibRecordSummary;
     printPreviewHtml = '';
     printDetails: any = null;
     noSuchItem = false;
     itemBarcode = '';
+    updatingItemAlert = false;
+    alertMsgUpdated = false;
+    itemAlert = '';
+    billAmount: number = null;
 
     billingTypes: ComboboxEntry[];
 
     // Overide the API suggested charge amount
     amountChangeRequested = true; // KCLS JBAS-3129
     newCharge: number;
-    newNote: string;
+    damageNote: string;
     newBtype: number;
     pauseArgs: any = {};
-    dibs = '';
     alreadyDamaged = false;
 
     // If the item is checked out, ask the API to check it in first.
@@ -42,6 +48,9 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
     // Charge data returned from the server requesting additional charge info.
     chargeResponse: any;
+
+    @ViewChild('penaltyDialog')
+    private penaltyDialog: PatronPenaltyDialogComponent;
 
     constructor(
         private route: ActivatedRoute,
@@ -58,12 +67,12 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     ) {}
 
     ngOnInit() {
-        this.copyId = +this.route.snapshot.paramMap.get('id');
+        this.itemId = +this.route.snapshot.paramMap.get('id');
     }
 
     ngAfterViewInit() {
-        if (this.copyId) {
-            this.getCopyData().then(_ => this.getBillingTypes());
+        if (this.itemId) {
+            this.getItemData().then(_ => this.getBillingTypes());
             //this.selectInput();
         }
     }
@@ -77,19 +86,19 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         });
     }
 
-    setPrintDetails(details: any) {
-        if (details && details.circ) {
+    refreshPrintDetails() {
+        if (this.circ) {
             this.printDetails = {
                 printContext: 'default',
                 templateName: 'damaged_item_letter',
                 contextData: {
-                    circulation: details.circ,
-                    copy: this.copy,
-                    patron: details.circ.usr(),
-                    note: details.note,
-                    cost: parseFloat(details.bill_amount).toFixed(2),
+                    circulation: this.circ,
+                    copy: this.item,
+                    patron: this.circ.usr(),
+                    note: this.damageNote,
+                    cost: this.billAmount.toFixed(2),
                     title: this.bibSummary.display.title,
-                    dibs: details.dibs
+                    dibs: this.dibs
                 }
             };
 
@@ -114,13 +123,14 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     }
     */
 
-    getCopyData(): Promise<any> {
+    getItemData(): Promise<any> {
         this.alreadyDamaged = false;
-        return this.pcrud.retrieve('acp', this.copyId,
+        return this.pcrud.retrieve('acp', this.itemId,
             {flesh: 1, flesh_fields: {acp: ['call_number']}}).toPromise()
         .then(copy => {
-            this.copy = copy;
+            this.item = copy;
             this.itemBarcode = copy.barcode();
+            this.itemAlert = copy.alert_message();
 
             this.alreadyDamaged = Number(copy.status()) === 14; /* Damged */
 
@@ -133,6 +143,8 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
     markDamaged(args: any) {
         this.chargeResponse = null;
+        this.billAmount = null;
+        this.circ = null;
 
         if (!args) { args = {}; }
 
@@ -143,7 +155,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         if (args.apply_fines === 'apply') {
             args.override_amount = this.newCharge;
             args.override_btype = this.newBtype;
-            args.override_note = this.newNote;
+            args.override_note = this.damageNote;
         }
 
 
@@ -157,7 +169,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
         this.net.request(
             'open-ils.circ', 'open-ils.circ.mark_item_damaged.details',
-            this.auth.token(), this.copyId, args
+            this.auth.token(), this.itemId, args
         ).subscribe(
             result => {
                 console.debug('Mark damaged returned', result);
@@ -166,7 +178,18 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
                 if (result && (!evt || evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING')) {
                     // Result is a hash of detail info.
                     this.toast.success($localize`Successfully Marked Item Damaged`);
-                    this.setPrintDetails(result);
+                    this.circ = result.circ;
+                    this.billAmount = parseFloat(result.bill_amount);
+
+                    this.penaltyDialog.defaultType = this.penaltyDialog.ALERT_NOTE;
+                    this.penaltyDialog.patronId = this.circ.usr().id();
+                    this.penaltyDialog.startPatronMessage = 53;
+                    this.penaltyDialog.appendToPatronMessage = this.damageNote;
+                    this.penaltyDialog.startInitials = this.dibs;
+
+                    this.penaltyDialog.open({size: 'lg'}).toPromise()
+                    .finally(() => this.refreshPrintDetails());
+
                     return;
                 }
 
@@ -202,5 +225,36 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
             this.printer.print(this.printDetails);
         }
     }
+
+    updateAlertMessage() {
+        if (!this.itemAlert) { return; }
+
+        this.updatingItemAlert = true;
+
+        const msg = this.itemAlert; // clobbered in getItemById
+
+        this.getItemData().then(_ => {
+
+            this.item.alert_message(this.itemAlert = msg);
+
+            if (!msg || msg.match(/^\s*$/)) {
+                this.item.alert_message(null);
+            }
+
+            return this.pcrud.update(this.item).toPromise()
+            .then(
+                ok => {
+                    this.alertMsgUpdated = true;
+                    this.toast.success($localize`Alert Message Updated`);
+                    this.refreshPrintDetails();
+                },
+                err => {
+                    this.toast.danger($localize`Alert Message Update Failed`);
+                }
+            );
+        })
+        .finally(() => this.updatingItemAlert = false);
+    }
+
 }
 
