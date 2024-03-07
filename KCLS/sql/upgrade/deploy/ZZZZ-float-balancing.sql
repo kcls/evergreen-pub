@@ -181,12 +181,15 @@ BEGIN
             items.circ_lib = target_ou
             AND items.copy_location_code = target_location_code
             AND acn.record = target_bib
+            AND policy.max_per_bib IS NOT NULL
         GROUP BY 2;
 
     IF NOT FOUND THEN
-        RAISE NOTICE 'Branch %s has zero floatable copies for bib % on shelf %s',
+        RAISE NOTICE 'Branch %s has 0 copies for bib % on shelf %s or has no bib policy',
             target_ou, target_bib, target_location_code;
         -- Bib record in question has no copies at the specified location.
+        -- or there is no policy in place limiting the number of items
+        -- per bib on this location.
         RETURN TRUE;
     END IF;
 
@@ -399,7 +402,7 @@ WITH counts AS (
 SELECT 
     TRUE,
     c.circ_lib, 
-    2, -- TODO max per bib per location.  Can we just pick a number?
+    NULL, -- max per bib per location
     c.copy_location,
     c.copy_count + c.copy_count / 2 -- 2/3 + (2/3)/2 == 1/1
 FROM counts c
