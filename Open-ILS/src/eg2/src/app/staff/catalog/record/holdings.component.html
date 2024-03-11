@@ -75,7 +75,6 @@
 </ng-template>
 
 
-<eg-mark-damaged-dialog #markDamagedDialog [handleCheckin]="true"></eg-mark-damaged-dialog>
 <eg-mark-missing-dialog #markMissingDialog></eg-mark-missing-dialog>
 <eg-copy-alerts-dialog #copyAlertsDialog></eg-copy-alerts-dialog>
 <eg-copy-tags-dialog #copyTagsDialog></eg-copy-tags-dialog>
@@ -265,7 +264,7 @@
 
     <eg-grid-toolbar-action
       group="Mark" i18n-group i18n-label label="Mark Item Damaged"
-      (onClick)="showMarkDamagedDialog($event)"></eg-grid-toolbar-action>
+      (onClick)="showMarkDamaged($event)"></eg-grid-toolbar-action>
 
     <eg-grid-toolbar-action
       i18n-group group="Mark" i18n-label label="Mark Item Missing"

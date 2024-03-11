@@ -13,6 +13,7 @@ import {ToastService} from '@eg/share/toast/toast.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {BillingService} from '@eg/staff/share/billing/billing.service';
 import {PatronPenaltyDialogComponent} from '@eg/staff/share/patron/penalty-dialog.component';
+import {BroadcastService} from '@eg/share/util/broadcast.service';
 
 @Component({
   templateUrl: 'mark-damaged.component.html'
@@ -42,9 +43,10 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     newBtype: number;
     pauseArgs: any = {};
     alreadyDamaged = false;
+    noPatronToNotify = false;
 
     // If the item is checked out, ask the API to check it in first.
-    @Input() handleCheckin = false;
+    handleCheckin = true;
 
     // Charge data returned from the server requesting additional charge info.
     chargeResponse: any;
@@ -63,6 +65,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         private store: ServerStoreService,
         private bib: BibRecordService,
         private billing: BillingService,
+        private broadcaster: BroadcastService,
         private holdings: HoldingsService
     ) {}
 
@@ -145,6 +148,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         this.chargeResponse = null;
         this.billAmount = null;
         this.circ = null;
+        this.noPatronToNotify = false;
 
         if (!args) { args = {}; }
 
@@ -178,9 +182,21 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
                 if (result && (!evt || evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING')) {
                     // Result is a hash of detail info.
                     this.toast.success($localize`Successfully Marked Item Damaged`);
+
+                    // Tell it on the mountain we modified some copy data.
+                    this.broadcaster.broadcast('eg.holdings.update', {
+                        copies: [this.item.id()],
+                        records: [this.item.call_number().record()]
+                    });
+
+                    if (!result.circ) {
+                        // No related circulation.  Nothing left to do.
+                        this.noPatronToNotify = true;
+                        return;
+                    }
+
                     this.circ = result.circ;
                     this.billAmount = parseFloat(result.bill_amount);
-
                     this.penaltyDialog.defaultType = this.penaltyDialog.ALERT_NOTE;
                     this.penaltyDialog.patronId = this.circ.usr().id();
                     this.penaltyDialog.startPatronMessage = 53;

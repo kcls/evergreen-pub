@@ -26,13 +26,12 @@ import {ArrayUtil} from '@eg/share/util/array';
 import {PrintService} from '@eg/share/print/print.service';
 import {StringComponent} from '@eg/share/string/string.component';
 import {DueDateDialogComponent} from './due-date-dialog.component';
-import {MarkDamagedDialogComponent
-    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
     } from '@eg/staff/share/holdings/mark-missing-dialog.component';
 import {ClaimsReturnedDialogComponent} from './claims-returned-dialog.component';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {AddBillingDialogComponent} from '@eg/staff/share/billing/billing-dialog.component';
+import {BroadcastService} from '@eg/share/util/broadcast.service';
 
 export interface CircGridEntry extends CircDisplayInfo {
     index: string; // class + id -- row index
@@ -101,8 +100,6 @@ export class CircGridComponent implements OnInit {
     @ViewChild('copyAlertsDialog')
         private copyAlertsDialog: CopyAlertsDialogComponent;
     @ViewChild('dueDateDialog') private dueDateDialog: DueDateDialogComponent;
-    @ViewChild('markDamagedDialog')
-        private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('markMissingDialog')
         private markMissingDialog: MarkMissingDialogComponent;
     @ViewChild('itemsOutConfirm')
@@ -129,6 +126,7 @@ export class CircGridComponent implements OnInit {
         private store: StoreService,
         private printer: PrintService,
         private toast: ToastService,
+        private broadcaster: BroadcastService,
         private serverStore: ServerStoreService
     ) {}
 
@@ -370,27 +368,23 @@ export class CircGridComponent implements OnInit {
 
         if (copyIds.length === 0) { return; }
 
-        let rowsModified = false;
+        let copyId = copyIds[0];
 
-        const markNext = (ids: number[]): Promise<any> => {
-            if (ids.length === 0) {
-                return Promise.resolve();
-            }
-
-            this.markDamagedDialog.copyId = ids.pop();
-
-            return this.markDamagedDialog.open({size: 'lg'})
-            .toPromise().then(ok => {
-                if (ok) { rowsModified = true; }
-                return markNext(ids);
-            });
-        };
-
-        markNext(copyIds).then(_ => {
-            if (rowsModified) {
+        // Limit the broadcast sub to this action for now to be conservative/safe.
+        let sub;
+        sub = this.broadcaster.listen('eg.holdings.update').subscribe(data => {
+            if (data && data.copies && data.copies.includes(copyId)) {
                 this.emitReloadRequest();
+                if (sub) {
+                    sub.unsubscribe();
+                }
             }
         });
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/cat/item/damaged/${copyId}/`);
+
+        window.open(url);
     }
 
     markMissing(rows: CircGridEntry[]) {
