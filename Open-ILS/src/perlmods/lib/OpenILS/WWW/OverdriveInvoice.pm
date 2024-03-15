@@ -69,7 +69,8 @@ sub handler {
         return Apache2::Const::HTTP_BAD_REQUEST;
     }
 
-    binmode($post_file, ":utf8");
+    # sysread() in utf8 is deprecated / encoding as utf8 is unnecessary.
+    #binmode($post_file, ":utf8");
 
     my ($buf, $csv_content) = ('', '');
     while (sysread($post_file, $buf, 1024)) {
@@ -94,7 +95,10 @@ sub process_invoice_csv {
     my $results = {invoices => []};
     my $csv = Text::CSV->new;
 
-    $csv_content =~ s/\R/\n/gm; # dos2unix as needed
+    $csv_content =~ s/\R/\n/gm; # dos2unix
+    $csv_content =~ s/\r/\n/gm; # dos2unix
+    $csv_content =~ s/[^[:ascii:]]//gm; # remove binary cruft, etc.
+
     my $fh = IO::Scalar->new(\$csv_content);
 
     my $header = $fh->getline;
