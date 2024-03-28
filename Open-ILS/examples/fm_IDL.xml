@@ -16124,13 +16124,26 @@ SELECT  usr,
 			<field reporter:label="Reject Reason" name="reject_reason" reporter:datatype="text"/>
 			<field reporter:label="Complete Date" name="complete_date" reporter:datatype="timestamp"/>
 			<field reporter:label="Cancel Date" name="cancel_date" reporter:datatype="timestamp"/>
+			<field reporter:label="ILL Opt-Out" name="ill_opt_out" reporter:datatype="bool"/>
+			<field reporter:label="ID Matched" name="id_matched" reporter:datatype="bool"/>
+			<field reporter:label="Patron Notes" name="patron_notes" reporter:datatype="bool"/>
+			<field reporter:label="Requestor" name="requestor" reporter:datatype="link"/>
+			<field reporter:label="ILL Denial" name="ill_denial" reporter:datatype="text"/>
+			<field reporter:label="Lineitem ID" name="lineitem" reporter:datatype="link"/>
+			<field reporter:label="Hold ID" name="hold" reporter:datatype="link"/>
 		</fields>
 		<links>
 			<link field="usr" reltype="has_a" key="id" map="" class="au"/>
 			<link field="claimed_by" reltype="has_a" key="id" map="" class="au"/>
+			<link field="requestor" reltype="has_a" key="id" map="" class="au"/>
+			<link field="lineitem" reltype="has_a" key="id" map="" class="jub"/>
+			<link field="hold" reltype="has_a" key="id" map="" class="ahr"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
+				<create permission="CREATE_USER_ITEM_REQUEST">
+					<context link="usr" field="home_ou"/>
+				</create>
 				<update permission="MANAGE_USER_ITEM_REQUEST">
 					<context link="usr" field="home_ou"/>
 				</update>
@@ -16140,6 +16153,26 @@ SELECT  usr,
 			</actions>
 		</permacrud>
 	</class>
+
+	<class id="cirr" controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::ill_reject_reason" 
+		oils_persist:tablename="config.ill_reject_reason" 
+		reporter:label="ILL Rejection Reasons">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.ill_reject_reason_id_seq">
+			<field name="id" reporter:datatype="id" reporter:selector="label"/>
+			<field name="label" reporter:datatype="text" oils_obj:required="true" oils_persist:i18n="true"/>
+			<field name="content" reporter:datatype="text" oils_obj:required="true" oils_persist:i18n="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+				<retrieve permission="STAFF_LOGIN" global_required="true"/>
+				<update permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+				<delete permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+			</actions>
+		</permacrud>
+	</class>
+
 
 	<class id="cpt" controller="open-ils.cstore open-ils.pcrud"
 		oils_obj:fieldmapper="config::print_template" 

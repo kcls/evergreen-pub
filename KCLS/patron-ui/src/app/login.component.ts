@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, Input} from '@angular/core';
 import {FormControl, Validators} from '@angular/forms';
 import {Gateway, Hash} from './gateway.service';
 import {AppService} from './app.service';
@@ -8,9 +8,12 @@ import {AppService} from './app.service';
   templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit {
+    @Input() barcodeOnly = false;
+
     loginFailed = false;
     session: Hash | null = null;
     initDone = false;
+    barcodeLabel = $localize`Username or Barcode`;
 
     controls: {[field: string]: FormControl} = {
         identifier: new FormControl('', [Validators.required]),
@@ -23,6 +26,10 @@ export class LoginComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        if (this.barcodeOnly) {
+            this.barcodeLabel = $localize`Barcode`;
+        }
+
         // Fetch the session if we can.
         this.gateway.authSessionEnded.subscribe(() => this.resetForm());
         this.app.fetchAuthSession().then(() => this.initDone = true)

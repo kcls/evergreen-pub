@@ -1,0 +1,21 @@
+<ng-template #dialogContent>
+  <div class="modal-header">
+    <h4 class="modal-title">{{dialogTitle}}</h4>
+    <button type="button" class="btn-close btn-close-white" 
+      i18n-aria-label aria-label="Close" (click)="close()"></button>
+  </div>
+  <div class="modal-body">
+    <p>{{dialogBody}}</p>
+    <div class="text-center">
+      <select class="form-select" [(ngModel)]="selectValue">
+        <option *ngFor="let op of options" [value]="op.value">{{op.label}}</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-success" 
+      (click)="closeAndClear(selectValue)" i18n>Select</button>
+    <button type="button" class="btn btn-warning" 
+      (click)="closeAndClear()" i18n>Cancel</button>
+  </div>
+</ng-template>

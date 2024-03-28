@@ -13,7 +13,8 @@ export class RequestsComponent implements OnInit {
     tab = 'create';
 
     controls: {[field: string]: FormControl} = {
-        format: new FormControl('')
+        format: new FormControl(''),
+        ill_opt_out: new FormControl(false),
     };
 
     constructor(
@@ -24,16 +25,35 @@ export class RequestsComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.tab = this.router.url.split("/").pop() || 'create';
+        this.tab = this.router.url.split("/").pop() || 'requests';
+
+        if (this.tab === 'requests') {
+            this.router.navigate(['/requests/create'])
+                .then(() => window.location.reload());
+            return;
+        }
 
         this.router.events.subscribe((event: Event) => {
             if (event instanceof NavigationEnd) {
                 this.tab = event.url.split("/").pop() || 'create';
+                if (this.tab !== 'list') {
+                    this.tab = 'create';
+
+                    // Always clear the selected format when navigating
+                    // back to the create page.
+                    if (this.requests.selectedFormat) {
+                        this.requests.selectedFormat = null;
+                        this.controls.format.reset();
+                        this.resetForm();
+                        this.requests.formatChanged.emit();
+                    }
+                }
             }
         });
 
         this.controls.format.valueChanges.subscribe(format => {
             this.requests.selectedFormat = format;
+            this.requests.formatChanged.emit();
             // Changing the format means starting a new request.
             // Route to the create page.
             if (this.tab !== 'create') {
@@ -41,21 +61,37 @@ export class RequestsComponent implements OnInit {
             }
         });
 
+        this.controls.ill_opt_out.valueChanges.subscribe(opt => this.requests.illOptOut = opt);
+
         this.gateway.authSessionEnded.subscribe(() => this.reset());
+        this.requests.formResetRequested.subscribe(() => this.resetForm());
+
+        // Not all actions require an auth session up front, but if we
+        // have a local auth token, we need to know so we can let the
+        // user know they are already authenticated.
+        this.app.fetchAuthSession();
+    }
+
+    resetForm() {
+        for (const field in this.controls) {
+            this.controls[field].reset();
+            this.controls[field].markAsPristine();
+            this.controls[field].markAsUntouched();
+        }
     }
 
     reset() {
         this.tab = 'create';
         this.requests.reset();
         this.controls.format.reset();
+        this.router.navigate(['/requests/create']); // in case
     }
 
     typeCanBeRequested(): boolean {
         return (
             this.controls.format.value !== '' &&
             this.controls.format.value !== null &&
-            this.controls.format.value !== 'ebook' &&
-            this.controls.format.value !== 'audiobook-download'
+            this.controls.format.value !== 'ebook-eaudio'
         );
     }
 }

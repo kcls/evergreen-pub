@@ -18,6 +18,8 @@ import {MatTabsModule} from '@angular/material/tabs';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatSelectModule} from '@angular/material/select';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatStepperModule} from '@angular/material/stepper';
+import {CdkStepperModule} from '@angular/cdk/stepper';
 
 /*
 import {MatTableModule} from '@angular/material/table';
@@ -27,14 +29,12 @@ import {DragDropModule} from '@angular/cdk/drag-drop';
 import {CdkListboxModule} from '@angular/cdk/listbox';
 import {PortalModule} from '@angular/cdk/portal';
 import {ScrollingModule} from '@angular/cdk/scrolling';
-import {CdkStepperModule} from '@angular/cdk/stepper';
 import {CdkTableModule} from '@angular/cdk/table';
 import {CdkTreeModule} from '@angular/cdk/tree';
 import {MatBadgeModule} from '@angular/material/badge';
 import {MatBottomSheetModule} from '@angular/material/bottom-sheet';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatChipsModule} from '@angular/material/chips';
-import {MatStepperModule} from '@angular/material/stepper';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatDividerModule} from '@angular/material/divider';
 import {MatGridListModule} from '@angular/material/grid-list';
@@ -73,13 +73,14 @@ import {DialogModule} from '@angular/cdk/dialog';
     MatSnackBarModule,
     MatSelectModule,
     MatProgressSpinnerModule,
+    MatStepperModule,
+    CdkStepperModule,
     /*
     MatTableModule,
     CdkAccordionModule,
     ClipboardModule,
     CdkListboxModule,
     CdkMenuModule,
-    CdkStepperModule,
     CdkTableModule,
     CdkTreeModule,
     DragDropModule,
@@ -87,7 +88,6 @@ import {DialogModule} from '@angular/cdk/dialog';
     MatBottomSheetModule,
     MatButtonToggleModule,
     MatChipsModule,
-    MatStepperModule,
     MatDialogModule,
     MatDividerModule,
     MatGridListModule,
