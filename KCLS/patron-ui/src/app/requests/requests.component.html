@@ -20,40 +20,61 @@
       </a>
     </div>
 
-    <div *ngIf="tab === 'create'" class="flex p-2 mt-10">
+    <div *ngIf="tab === 'create'" class="flex justify-center p-2 mt-4">
+      <div>
+        <p i18n>
+          Thank you for suggesting an item not owned by the King County
+          Library System (KCLS). Due to the large number of requests KCLS
+          receives, we cannot fulfill every request. We appreciate your
+          understanding. 
+        </p>
+        <p class="mt-3" i18n>
+          Holds will be placed for items we are able to
+          purchase or borrow through Interlibrary Loan (ILL) for pick up at
+          your preferred library location. The status of item requests is 
+          available under <a routerLink="/requests/list">View My Requests</a>.
+        </p>
+        <p class="mt-3" i18n>
+          Need to update your notification preferences? 
+          <a target="_blank" href="https://kcls.org/ask/">Contact Ask KCLS</a>
+          or visit your local community library.
+        </p>
+        <p class="mt-3">
+          <mat-checkbox [formControl]="controls.ill_opt_out" i18n>
+            Opt out: I would like this item considered only for purchase. 
+            Please do not attempt to borrow through Interlibrary Loan if 
+            not available for purchase.
+          </mat-checkbox>
+        </p>
+      </div>
+    </div>
+
+    <div *ngIf="tab === 'create'" class="flex p-2 mt-4">
       <mat-form-field class="flex-1">
         <mat-label i18n>Select a Format</mat-label>
         <mat-select [formControl]="controls.format">
           <mat-option value="book" i18n>Book</mat-option>
+          <mat-option value="large-print" i18n>Large Print</mat-option>
           <mat-option value="audiobook" i18n>Audiobook</mat-option>
-          <mat-option value="cd" i18n>CD</mat-option>
+          <mat-option value="cd" i18n>Music CD</mat-option>
           <mat-option value="dvd" i18n>DVD</mat-option>
-          <mat-option value="audiobook-download" i18n>Downloadable Audiobook</mat-option>
-          <mat-option value="ebook" i18n>eBook</mat-option>
-          <mat-option value="journal" i18n>Journal Articles</mat-option>
-          <mat-option value="microfilm" i18n>Microfilm</mat-option>
-          <mat-option value="article" i18n>Magazine / Newspaper Article</mat-option>
+          <mat-option value="ebook-eaudio" i18n>eBook / eAudio</mat-option>
+          <mat-option value="article" i18n>Magazine / Newspaper / Journal Article</mat-option>
           <mat-option value="subscription" i18n>Magazine / Newspaper Subscription</mat-option>
+          <mat-option value="microfilm" i18n>Microfilm</mat-option>
         </mat-select>
       </mat-form-field>
     </div>
 
-    <div *ngIf="controls.format.value === 'ebook'" 
+    <div *ngIf="controls.format.value === 'ebook-eaudio'" 
       class="mt-5 flex justify-center border rounded border-orange-400 p-4">
       <p i18n>
         Log into 
         <a href="http://ebooks.kcls.org/">OverDrive</a>
-        to suggest an eBook purchase. Need help? 
+        to suggest an eBook / eAudio purchase. Need help? 
         <a href="https://kcls.org/faqs/how-do-i-suggest-an-ebook-for-purchase/">
           See our FAQ
         </a>.
-      </p>
-    </div>
-
-    <div *ngIf="controls.format.value === 'audiobook-download'" 
-      class="mt-5 flex justify-center border rounded border-orange-400 p-4">
-      <p i18n>
-        Something, something Libby app.
       </p>
     </div>
 
@@ -65,14 +86,14 @@
       </p>
     </div>
 
-    <ng-container *ngIf="typeCanBeRequested() || tab === 'list'">
+    <ng-container *ngIf="typeCanBeRequested() || tab === 'list' || app.getAuthSession()">
       <div class="flex justify-center mt-4 mb-4 border rounded p-3"
         *ngIf="!app.getAuthSession()">
         <h3 i18n>Start by Verifying Your Library Account</h3>
       </div>
 
-      <div class="mt-10">
-        <app-login></app-login>
+      <div class="mt-4">
+        <app-login [barcodeOnly]="true"></app-login>
       </div>
     </ng-container>
 
@@ -80,7 +101,12 @@
       <ng-container *ngIf="app.getAuthSession()">
         <ng-container *ngIf="!requests.requestsAllowed">
           <div class="mt-5 flex justify-center border rounded border-orange-400 p-4">
-            <p i18n>This account does not have permission to create new requests.</p>
+            <ng-container *ngIf="requests.tooManyActiveRequests()">
+              <p i18n>Patrons are allowed to have at most {{requests.maxRequestCount}} active requests.</p>
+            </ng-container>
+            <ng-container *ngIf="!requests.tooManyActiveRequests()">
+              <p i18n>This account does not have permission to create new requests.</p>
+            </ng-container>
           </div>
         </ng-container>
         <ng-container *ngIf="requests.requestsAllowed">
@@ -100,6 +126,14 @@
         </ng-container>
       </ng-container>
     </ng-container>
+
+    <div class="mt-5 flex justify-center border rounded border-grey-400 p-4" i18n>
+      Need help?
+      <a class="ml-2" target="_blank"
+        href="https://kcls.org/faq/interlibrary-loan-suggest-a-purchase/">
+        See our FAQ (https://kcls.org/faq/interlibrary-loan-suggest-a-purchase/)
+      </a>
+    </div>
   </div>
 
   <div class="flex-1"></div>

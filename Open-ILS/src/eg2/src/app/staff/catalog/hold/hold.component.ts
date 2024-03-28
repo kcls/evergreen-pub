@@ -100,6 +100,8 @@ export class HoldComponent implements OnInit {
     successCount = 0;
     failCount = 0;
 
+    patronRequestId: string | null = null;
+
     @ViewChild('patronSearch', {static: false})
       patronSearch: PatronSearchDialogComponent;
 
@@ -142,6 +144,7 @@ export class HoldComponent implements OnInit {
         this.holdTargets = this.route.snapshot.queryParams['target'];
         this.holdFor = this.route.snapshot.queryParams['holdFor'] || 'patron';
         this.userBarcode = this.route.snapshot.queryParams['holdForBarcode'];
+        this.patronRequestId = this.route.snapshot.queryParams['patronRequestId'];
 
         if (this.userBarcode) {
             this.holdFor = 'patron';
@@ -676,6 +679,21 @@ export class HoldComponent implements OnInit {
                     // logic will have to be adjusted avoid callling
                     // afterPlaceHolds in batch mode.
                     if (override) { this.afterPlaceHolds(true); }
+
+                    // Link the newly created hold to the originating
+                    // patron request.
+                    if (this.patronRequestId) {
+                        let holdId = request.result.holdId;
+
+                        console.log('Linking patron request ' +
+                            this.patronRequestId + ' to hold ' + holdId);
+
+                        return this.net.request(
+                            'open-ils.actor',
+                            'open-ils.actor.patron-request.hold.apply',
+                            this.auth.token(), this.patronRequestId, holdId)
+                        .toPromise();
+                    }
 
                 } else {
                     console.debug('hold failed with: ', request);

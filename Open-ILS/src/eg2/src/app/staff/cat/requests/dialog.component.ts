@@ -24,6 +24,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
     requestId: number | null = null;
     // Clone of in-database request for comparison.
     sourceRequest: IdlObject = null;
+    // For creating mediated requests
+    patronBarcode = '';
+    patronNotFound = false;
 
     statuses: ComboboxEntry[]  = [
         {id: 'pending',    label: $localize`Pending`},
@@ -33,15 +36,37 @@ export class ItemRequestDialogComponent extends DialogComponent {
         {id: 'rejected',   label: $localize`Rejected`},
     ]
 
-    /* Do we need to list these for staff?
     languages = [
         $localize`English`,
+        $localize`አማርኛ / Amharic`,
+        $localize`عربي / Arabic`,
+        $localize`中文 / Chinese`,
+        $localize`Deutsch / German`,
+        $localize`ગુજરાતી / Gujarati`,
+        $localize`עִברִית / Hebrew`,
+        $localize`हिंदी  / indi`,
+        $localize`italiano / Italian`,
+        $localize`日本語 / Japanese`,
+        $localize`한국어 / Korean`,
+        $localize`मराठी  / Marathi`,
+        $localize`Kajin M̧ajeļ / Marshallese`,
+        $localize`ਪੰਜਾਬੀ  / Punjabi/Panjabi`,
+        $localize`فارسی / Persian`,
+        $localize`Português / Portuguese`,
+        $localize`Pусский / Russian`,
+        $localize`Soomaali / Somali`,
         $localize`Español / Spanish`,
-        $localize`Français / French`,
+        $localize`Tagalog`,
+        $localize`தமிழ்  / Tamil`,
+        $localize`తెలుగు  / Telugu`,
+        $localize`Українська / Ukrainian`,
+        $localize`Tiếng Việt / Vietnamese`,
     ];
-    */
 
-    languageEntries: ComboboxEntry[] = [];
+    illDenialSelectorVal = '';
+    illDenialOptions: IdlObject[] = [];
+
+    @Input() mode: 'edit' | 'create' = 'edit';
 
     constructor(
         private modal: NgbModal,
@@ -59,6 +84,15 @@ export class ItemRequestDialogComponent extends DialogComponent {
     open(args: NgbModalOptions): Observable<boolean> {
         this.request = null;
         this.sourceRequest = null;
+        this.patronBarcode = null;
+
+        console.log(this.idl.classes['auir']);
+
+        if (this.mode === 'create') {
+            this.request = this.idl.create('auir');
+            this.sourceRequest = this.idl.clone(this.request);
+            return super.open(args);
+        }
 
         if (!this.requestId) {
             return throwError('request ID required');
@@ -67,6 +101,33 @@ export class ItemRequestDialogComponent extends DialogComponent {
         // Fire data loading observable and replace results with
         // dialog opener observable.
         return from(this.loadRequest()).pipe(switchMap(_ => super.open(args)));
+    }
+
+    findPatron() {
+        this.patronNotFound = false;
+
+        if (!this.patronBarcode) {
+            return;
+        }
+
+        this.pcrud.search(
+            'ac',
+            {'barcode': this.patronBarcode},
+            {'flesh': 1, 'flesh_fields': {'ac': ['usr']}}
+        ).toPromise().then(card => {
+            if (!card) {
+                this.patronNotFound = true;
+                this.request.usr(null);
+                return;
+            }
+
+            // Swap the fleshing
+            let patron = card.usr();
+            card.usr(patron.id());
+            patron.card(card);
+
+            this.request.usr(patron);
+        })
     }
 
     loadRequest(): Promise<void> {
@@ -94,12 +155,14 @@ export class ItemRequestDialogComponent extends DialogComponent {
         // Various changes to the request require we update the
         // routing info.  However, we don't want to override any
         // routing info manually applied by staff
-        if (this.request.route_to() === this.sourceRequest.route_to()) {
-            if (this.request.pubdate() !== this.sourceRequest.pubdate() ||
-                this.request.format() !== this.sourceRequest.format()) {
+        if (this.mode !== 'create') {
+            if (this.request.route_to() === this.sourceRequest.route_to()) {
+                if (this.request.pubdate() !== this.sourceRequest.pubdate() ||
+                    this.request.format() !== this.sourceRequest.format()) {
 
-                // Clear the value to force an update.
-                this.request.route_to(null);
+                    // Clear the value to force an update.
+                    this.request.route_to(null);
+                }
             }
         }
 
@@ -116,9 +179,49 @@ export class ItemRequestDialogComponent extends DialogComponent {
             });
         }
 
-        return promise.then(_ => {
-            this.pcrud.update(this.request).toPromise()
-            .then(_ => this.close(true))
+        let lineitem = null;
+        if (this.request.lineitem() !== this.sourceRequest.lineitem()) {
+            // Applying a line item value requires special care.
+            // Save + remove the value so we can update it separately.
+            lineitem = this.request.lineitem();
+            this.request.lineitem(null);
+        }
+
+        if (this.mode !== 'create') {
+            return promise.then(_ => {
+                this.pcrud.update(this.request).toPromise()
+                .then(_ => this.applyLineitem(lineitem))
+                .then(_ => this.close(true))
+            });
+        } else {
+            return promise.then(_ => {
+                this.request.usr(this.request.usr().id());
+                this.request.requestor(this.auth.user().id());
+
+                return this.pcrud.create(this.request).toPromise()
+                .then(_ => this.close(true))
+            });
+        }
+    }
+
+    applyLineitem(lineitem: number | null): Promise<any> {
+        if (!lineitem) { return Promise.resolve(); }
+
+        return this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.patron-request.lineitem.apply',
+            this.auth.token(), this.requestId, lineitem)
+        .toPromise()
+        .then(resp => {
+            console.log('Applying lineitem returned: ', resp);
+
+            const evt = this.evt.parse(resp);
+            if (evt) {
+                alert($localize`Error applying lineitem ${evt}`);
+                return;
+            }
+
+            this.toast.success($localize`Hold successfully placed`);
         });
     }
 
@@ -162,6 +265,13 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 this.request.rejected_by(this.auth.user().id());
                 this.request.complete_date(null);
                 break;
+
+            case 'active':
+                this.request.cancel_date(null);
+                this.request.reject_date(null);
+                this.request.rejected_by(null);
+                this.request.complete_date(null);
+                break;
         }
     }
 
@@ -174,6 +284,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         let url = '/staff/cat/ill/track?';
         url += `title=${encodeURIComponent(req.title())}`;
+        url += `&patronRequestId=${this.requestId}`;
         url += `&patronBarcode=${encodeURIComponent(req.usr().card().barcode())}`;
         url += `&illno=${encodeURIComponent(req.illno())}`;
 
@@ -182,6 +293,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
         window.open(url);
     }
 
+    illDenialChanged(content) {
+        this.request.ill_denial(content);
+    }
 }
 
 

@@ -14,6 +14,7 @@ import {debounceTime} from 'rxjs/operators';
 const BC_URL = 'https://kcls.bibliocommons.com/item/show/';
 const BC_CODE = '082';
 const MIN_ID_LENGTH = 6;
+const MAX_TEXT_LENGTH = 256;
 
 interface SuggestedRecord {
     id: number,
@@ -36,14 +37,37 @@ export class CreateRequestComponent implements OnInit {
     searchingRecords = false;
     previousSearch = '';
     holdRequestUrl = '';
+    maxTextLength = MAX_TEXT_LENGTH;
+    dupeTitleFound = false;
+    dupeIdentFound = false;
+    checkingDupes = false;
 
     languages = [
         $localize`English`,
+        $localize`አማርኛ / Amharic`,
+        $localize`عربي / Arabic`,
+        $localize`中文 / Chinese`,
+        $localize`Deutsch / German`,
+        $localize`ગુજરાતી / Gujarati`,
+        $localize`עִברִית / Hebrew`,
+        $localize`हिंदी  / indi`,
+        $localize`italiano / Italian`,
+        $localize`日本語 / Japanese`,
+        $localize`한국어 / Korean`,
+        $localize`मराठी  / Marathi`,
+        $localize`Kajin M̧ajeļ / Marshallese`,
+        $localize`ਪੰਜਾਬੀ  / Punjabi/Panjabi`,
+        $localize`فارسی / Persian`,
+        $localize`Português / Portuguese`,
+        $localize`Pусский / Russian`,
+        $localize`Soomaali / Somali`,
         $localize`Español / Spanish`,
-        $localize`Français / French`,
+        $localize`Tagalog`,
+        $localize`தமிழ்  / Tamil`,
+        $localize`తెలుగు  / Telugu`,
+        $localize`Українська / Ukrainian`,
+        $localize`Tiếng Việt / Vietnamese`,
     ];
-
-    filteredLangs: Observable<string[]> = new Observable<string[]>();
 
     controls: {[field: string]: FormControl} = {
         title: new FormControl({value: '', disabled: true}, [Validators.required]),
@@ -73,12 +97,46 @@ export class CreateRequestComponent implements OnInit {
         this.activateForm();
 
         this.controls.identifier.valueChanges.pipe(debounceTime(500))
-        .subscribe(ident => this.identLookup(ident));
+        .subscribe(ident => {
+            this.identLookup(ident);
+            this.dupesLookup();
+        });
 
-        this.filteredLangs = this.controls.language.valueChanges.pipe(
-            startWith(''),
-            map(value => this.filterLangs(value || '')),
-        );
+        this.controls.title.valueChanges.pipe(debounceTime(500))
+        .subscribe(title => this.dupesLookup());
+
+        this.requests.formatChanged.subscribe(_ => this.dupesLookup());
+    }
+
+    dupesLookup() {
+        let title = this.controls.title.value;
+        let ident = this.controls.identifier.value;
+        let format = this.requests.selectedFormat;
+
+        this.dupeTitleFound = false;
+        this.dupeIdentFound = false;
+
+        if (!format || !(title || ident)) {
+            return;
+        }
+
+        this.checkingDupes = true;
+
+        this.gateway.requestOne(
+            'open-ils.actor',
+            'open-ils.actor.patron-request.dupes.search',
+            this.app.getAuthtoken(), null, format, title, ident)
+        .then((found: unknown) => {
+            if (Boolean(Number(found))) {
+                if (ident) {
+                    this.dupeIdentFound = true;
+                } else {
+                    this.dupeTitleFound = true;
+                }
+            }
+
+            this.checkingDupes = false;
+        });
     }
 
     filterLangs(value: string): string[] {
@@ -90,7 +148,7 @@ export class CreateRequestComponent implements OnInit {
         if (!ident
             || ident.length < MIN_ID_LENGTH
             || ident === this.previousSearch
-            || this.requests.selectedFormat === 'journal') {
+            || this.requests.selectedFormat === 'article') {
             return Promise.resolve();
         }
 
@@ -159,6 +217,9 @@ export class CreateRequestComponent implements OnInit {
     }
 
     canSubmit(): boolean {
+        if (this.checkingDupes || this.dupeTitleFound || this.dupeIdentFound) {
+            return false;
+        }
         if (!this.requests.requestsAllowed) {
             return false;
         }
@@ -185,6 +246,8 @@ export class CreateRequestComponent implements OnInit {
         }
 
         values.format = this.requests.selectedFormat;
+        values.ill_opt_out = this.requests.illOptOut;
+        values.id_matched = this.suggestedRecords.length > 0;
 
         this.requestSubmitted = false;
         this.requestSubmitError = false;
@@ -220,6 +283,9 @@ export class CreateRequestComponent implements OnInit {
         return false;
     }
 
+    // keepIdent is used when toggling between records matched via
+    // ISBN, etc. search.  In those cases, we want to clear most
+    // of the form, but not the identifier or the format/ill-opt-out.
     resetForm(keepIdent?: boolean) {
         setTimeout(() => {
             for (const field in this.controls) {
@@ -229,6 +295,9 @@ export class CreateRequestComponent implements OnInit {
                 this.controls[field].reset();
                 this.controls[field].markAsPristine();
                 this.controls[field].markAsUntouched();
+                if (!keepIdent) {
+                    this.requests.formResetRequested.emit();
+                }
             }
         });
     }

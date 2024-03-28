@@ -1,18 +1,10 @@
 <ng-container *ngIf="app.getAuthSession() && requests.requestsAllowed">
-  <div class="flex justify-center mt-5" i18n>
-    <div>
-      <p>Text goes here for the patron...</p>
-      <p>Text goes here for the patron...</p>
-      <p>Text goes here for the patron...</p>
-    </div>
-  </div>
 
   <form role="form" class="mt-4">
-
-    <div class="flex p-2" *ngIf="requests.selectedFormat !== 'journal'">
+    <div class="flex p-2" *ngIf="requests.selectedFormat !== 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>ISBN, ISSN, UPC, OCLC Number</mat-label>
-        <input type="text" matInput [formControl]="controls.identifier"
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.identifier"
         />
           <!--
           (keyup.enter)="identLookup()" (blur)="identLookup()"/>
@@ -22,10 +14,10 @@
       </mat-form-field>
     </div>
 
-    <div class="flex p-2" *ngIf="requests.selectedFormat === 'journal'">
+    <div class="flex p-2" *ngIf="requests.selectedFormat === 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>Journal DOI</mat-label>
-        <input type="text" matInput [formControl]="controls.identifier"
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.identifier"
           placeholder="E.g. http://dx.doi.org/10.1093/ajae/aaq063"/>
       </mat-form-field>
     </div>
@@ -52,20 +44,28 @@
       </p>
     </div>
 
+    <div class="p-4 border rounded borderr-slate-400 mt-0 mb-4 mat-mdc-form-field-error" *ngIf="dupeIdentFound">
+      <p i18n>A request for this item is already active on this account.</p>
+    </div>
+
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Title</mat-label>
-        <input type="text" matInput [formControl]="controls.title"/>
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.title"/>
         <mat-error *ngIf="controls.title.hasError('required')" i18n>
             Title <strong>required</strong>
         </mat-error>
       </mat-form-field>
     </div>
 
+    <div class="p-4 border rounded borderr-slate-400 mt-0 mb-4 mat-mdc-form-field-error" *ngIf="dupeTitleFound">
+      <p i18n>A request for this item is already active on this account.</p>
+    </div>
+
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Author, Creator, Performer</mat-label>
-        <input type="text" matInput [formControl]="controls.author"/>
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.author"/>
       </mat-form-field>
     </div>
 
@@ -89,29 +89,18 @@
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Select a Language</mat-label>
-        <input type="text" matInput [formControl]="controls.language" [matAutocomplete]="auto">
-        <mat-autocomplete #auto="matAutocomplete">
-          @for (option of filteredLangs | async; track option) {
-            <mat-option [value]="option">{{option}}</mat-option>
-          }
-        </mat-autocomplete>
+        <mat-select [formControl]="controls.language">
+          <mat-option *ngFor="let lang of languages" value="{{lang}}">{{lang}}</mat-option>
+        </mat-select>
       </mat-form-field>
     </div>
 
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Other Notes &amp; Comments</mat-label>
-        <textarea rows="3" matInput [formControl]="controls.notes">
+        <textarea rows="3" [maxlength]="maxTextLength" matInput [formControl]="controls.notes">
         </textarea>
       </mat-form-field>
-    </div>
-
-    <div class="flex justify-center mt-4" i18n>
-      <div>
-        <p>Text goes here for the patron...</p>
-        <p>Text goes here for the patron...</p>
-        <p>Text goes here for the patron...</p>
-      </div>
     </div>
 
     <div class="flex justify-center p-2 mt-4">

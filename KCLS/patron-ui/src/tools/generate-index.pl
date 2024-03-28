@@ -78,4 +78,4 @@ sub generate_index {
 }
 
 
-generate_index();
+generate_index(1);

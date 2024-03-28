@@ -38,7 +38,7 @@
           <label class="form-label" for="{{idPrefix}}-{{field.name}}">{{field.label}}</label>
           <eg-help-popover [placement]="'right'" *ngIf="field.helpText" helpText="{{field.helpTextValue}}"></eg-help-popover>
         </div>
-        <div class="col-lg-9">
+        <div class="col-lg-8">
 
           <ng-container [ngSwitch]="inputType(field)">
 

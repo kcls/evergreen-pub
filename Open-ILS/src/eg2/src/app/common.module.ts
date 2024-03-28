@@ -23,6 +23,7 @@ import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {PromptDialogComponent} from '@eg/share/dialog/prompt.component';
+import {SelectDialogComponent} from '@eg/share/dialog/select.component';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
 import {ProgressDialogComponent} from '@eg/share/dialog/progress.component';
 import {BoolDisplayComponent} from '@eg/share/util/bool.component';
@@ -38,6 +39,7 @@ import {StringModule} from '@eg/share/string/string.module';
     AlertDialogComponent,
     ConfirmDialogComponent,
     PromptDialogComponent,
+    SelectDialogComponent,
     ProgressInlineComponent,
     ProgressDialogComponent,
     ToastComponent,
@@ -65,6 +67,7 @@ import {StringModule} from '@eg/share/string/string.module';
     AlertDialogComponent,
     ConfirmDialogComponent,
     PromptDialogComponent,
+    SelectDialogComponent,
     ProgressInlineComponent,
     ProgressDialogComponent,
     BoolDisplayComponent,
