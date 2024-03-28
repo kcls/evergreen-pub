@@ -7,7 +7,7 @@
     <table>
       <tbody>
         <tr>
-          <td class="pr-2 label" i18n>Previous:</td>
+          <td class="pe-2 label" i18n>Previous:</td>
           <td>
             <span i18n>
               <span *ngIf="heading.prev_bib_record()">B: </span>
@@ -15,24 +15,24 @@
               {{heading.prev_entry_value()}}
             </span>
             <ng-container *ngIf="heading.prev_auth_tag()">
-              <span class="pl-2" i18n>(From {{heading.prev_auth_tag()}})</span>
+              <span class="ps-2" i18n>(From {{heading.prev_auth_tag()}})</span>
             </ng-container>
           </td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>New:</td>
+          <td class="pe-2 label" i18n>New:</td>
           <td>
             <a target="_blank" routerLink="/staff/catalog/browse"
               [queryParams]="{browseTerm: heading.entry_value(), browseClass: axis}">
               {{heading.entry_value()}}
             </a>
-            <a href="javascript:;" class="pl-3" (click)="openDetailDialog(heading)">
+            <a href="javascript:;" class="ps-3" (click)="openDetailDialog(heading)">
               (details)
             </a>
           </td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>Next:</td>
+          <td class="pe-2 label" i18n>Next:</td>
           <td>
             <span i18n>
               <span *ngIf="heading.next_bib_record()">B: </span>
@@ -40,38 +40,38 @@
               {{heading.next_entry_value()}}
             </span>
             <ng-container *ngIf="heading.next_auth_tag()">
-              <span class="pl-2" i18n>(From {{heading.next_auth_tag()}})</span>
+              <span class="ps-2" i18n>(From {{heading.next_auth_tag()}})</span>
             </ng-container>
           </td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>From TCN:</td>
+          <td class="pe-2 label" i18n>From TCN:</td>
           <td>
             <a target="_blank" routerLink="/staff/catalog/record/{{heading.bib_record()}}">
               {{heading.bib_record()}}
             </a>
-            <span class="pl-2 label" i18n>Indexed As:</span>
+            <span class="ps-2 label" i18n>Indexed As:</span>
             <span>{{heading.field_label()}}</span>
           </td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>Edited By:</td>
+          <td class="pe-2 label" i18n>Edited By:</td>
           <td>
             <span>{{heading.bib_editor_usrname()}}</span>
-            <span class="pl-2 label" i18n>Heading Date:</span>
+            <span class="ps-2 label" i18n>Heading Date:</span>
             <span>{{heading.heading_date() | date:'shortDate'}}</span>
           </td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>From 1XX:</td>
+          <td class="pe-2 label" i18n>From 1XX:</td>
           <td>{{heading.bib_marc_1xx()}}</td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>From 245:</td>
+          <td class="pe-2 label" i18n>From 245:</td>
           <td>{{heading.bib_marc_245()}}</td>
         </tr>
         <tr>
-          <td class="pr-2 label" i18n>Format:</td>
+          <td class="pe-2 label" i18n>Format:</td>
           <td>{{mattypeLabel(heading.mattype())}}</td>
         </tr>
       </tbody>
@@ -79,27 +79,42 @@
   </div>
 </ng-template>
 
-<div class="row d-flex">
-  <div class="flex-1">
+<div class="row">
+  <div class="col-lg-10">
 
-    <div class="row form-inline border border-primary p-2 pr-3 mr-3 sticky-top-with-nav bg-white">
-      <label class="mr-2" i18n>Start Date: </label>
-      <eg-date-select #startDateSelect [(ngModel)]="startDate"></eg-date-select> 
+    <div class="row p-1 border border-primary pe-3 mr-3 sticky-top-with-nav bg-white">
 
-      <label class="ml-2 mr-2" i18n>End Date: </label>
-      <eg-date-select #endDateSelect [(ngModel)]="endDate"></eg-date-select> 
+      <div class="col-3">
+        <div class="input-group">
+          <span class="input-group-text" i18n>Start Date: </span>
+          <eg-date-select #startDateSelect [(ngModel)]="startDate"></eg-date-select> 
+        </div>
+      </div>
 
-      <button class="ml-2 btn btn-outline-dark" (click)="getHeadings(true)" i18n>Go</button>
+      <div class="col-3">
+        <div class="input-group">
+          <span class="input-group-text" i18n>End Date: </span>
+          <eg-date-select #endDateSelect [(ngModel)]="endDate"></eg-date-select> 
+        </div>
+      </div>
 
-      <span class="border-left border-dark pl-3 ml-3">
+      <div class="col-1">
+        <button class="btn btn-outline-dark" (click)="getHeadings(true)" i18n>Go</button>
+      </div>
+
+      <div class="col-2 border-start border-dark">
         <button class="btn btn-outline-dark" (click)="prevPage()" 
           [disabled]="pager.isFirstPage()" i18n>Previous Page</button>
-      </span>
+      </div>
 
-      <label class="ml-3 mr-3" i18n>Page {{pager.currentPage()}}</label>
+      <div class="col-1">
+        <label class="" i18n>Page {{pager.currentPage()}}</label>
+      </div>
 
-      <button class="btn btn-outline-dark" (click)="nextPage()" 
-        [disabled]="pager.isLastPage()" i18n>Next Page</button>
+      <div class="col-2">
+        <button class="btn btn-outline-dark" (click)="nextPage()" 
+          [disabled]="pager.isLastPage()" i18n>Next Page</button>
+      </div>
     </div>
 
     <div class="row mt-3" *ngIf="loading">
@@ -147,7 +162,7 @@
     </div>
   </div>
 
-  <div>
+  <div class="col-lg-2">
     <div class="sticky-top-with-nav bg-white">
     <div class="mt-2 p-2 border border-info rounded">
       <h3 i18n>Exclude These Editors</h3>
