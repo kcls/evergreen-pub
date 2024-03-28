@@ -4145,7 +4145,7 @@ PERFORM evergreen.upgrade_deps_block_check('1398', '3.11-upgrade');
 
 PERFORM evergreen.upgrade_deps_block_check('1329', '3.11-upgrade');
 -- already have this one
-PERFORM evergreen.upgrade_deps_block_check('1330', '3.11-upgrade');
+--PERFORM evergreen.upgrade_deps_block_check('1330', '3.11-upgrade');
 -- don't need this one
 PERFORM evergreen.upgrade_deps_block_check('1331', '3.11-upgrade');
 PERFORM evergreen.upgrade_deps_block_check('1332', '3.11-upgrade');
