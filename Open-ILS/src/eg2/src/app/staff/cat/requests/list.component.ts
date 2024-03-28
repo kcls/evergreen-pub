@@ -2,7 +2,7 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {Router} from '@angular/router';
 import {Location} from '@angular/common';
 import {from, EMPTY} from 'rxjs';
-import {concatMap} from 'rxjs/operators';
+import {tap, map, concatMap} from 'rxjs/operators';
 import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
@@ -13,7 +13,10 @@ import {GridDataSource, GridColumn, GridCellTextGenerator,
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {Pager} from '@eg/share/util/pager';
 import {PromptDialogComponent} from '@eg/share/dialog/prompt.component';
+import {SelectDialogComponent} from '@eg/share/dialog/select.component';
 import {ItemRequestDialogComponent} from './dialog.component';
+
+const LIB_RESIDENCE_STAT_CAT = 12;
 
 @Component({
   templateUrl: 'list.component.html'
@@ -24,12 +27,21 @@ export class ItemRequestComponent implements OnInit {
     showRouteToAcq = true;
     showRouteToNull = true;
     showRejected = false;
+    showCompleted = false;
     showClaimedByMe = false;
     cellTextGenerator: GridCellTextGenerator;
+    routeToOptions = [
+        {label: $localize`ILL`, value: 'ill'},
+        {label: $localize`Acquisitions`, value: 'acq'}
+    ];
+
+    illDenialOptions: IdlObject[] = [];
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('vendorPrompt') private vendorPrompt: PromptDialogComponent;
+    @ViewChild('notePrompt') private notePrompt: PromptDialogComponent;
     @ViewChild('requestDialog') private requestDialog: ItemRequestDialogComponent;
+    @ViewChild('routeToDialog') private routeToDialog: SelectDialogComponent;
 
     constructor(
         private router: Router,
@@ -46,11 +58,27 @@ export class ItemRequestComponent implements OnInit {
             route_to: r => r.route_to(),
         };
 
+        // Pre-cache these
+        this.pcrud.retrieveAll('cirr', {order_by: {cirr: 'label'}}).subscribe(
+            reason => this.illDenialOptions.push(reason));
+
         this.gridDataSource.getRows = (pager: Pager, sort: GridColumnSort[]) => {
-            const orderBy: any = {ausp: 'create_date'};
+            let orderBy: any = {ausp: 'create_date'};
 
             if (sort.length) {
-                orderBy.auir = sort[0].name + ' ' + sort[0].dir;
+                const field = this.idl.classes.auir.field_map[sort[0].name];
+                if (field && field.datatype === 'text') {
+                    // When sorting on TEXT fields pass the value through the
+                    // lowercase transform.
+                    orderBy = [{
+                        class: "auir",
+                        field: field.name,
+                        transform: "evergreen.lowercase",
+                        direction: sort[0].dir
+                    }];
+                } else {
+                    orderBy.auir = sort[0].name + ' ' + sort[0].dir
+                }
             }
 
             // base query to grab everything
@@ -62,6 +90,9 @@ export class ItemRequestComponent implements OnInit {
 
             if (!this.showRejected) {
                 base.reject_date = null;
+            }
+            if (!this.showCompleted) {
+                base.complete_date = null;
             }
             if (this.showClaimedByMe) {
                 base.claimed_by = this.auth.user().id();
@@ -94,37 +125,56 @@ export class ItemRequestComponent implements OnInit {
                 flesh: 2,
                 flesh_fields: {
                     auir: ['usr', 'claimed_by'],
-                    au: ['card']
+                    au: ['card', 'profile', 'stat_cat_entries']
                 },
                 order_by: orderBy
             };
 
-            return this.pcrud.search('auir', query, flesh);
+            return this.pcrud.search('auir', query, flesh)
+            .pipe(tap(req => {
+                req.usr()._residence =
+                    req.usr().stat_cat_entries()
+                    .filter(entry => Number(entry.stat_cat()) === LIB_RESIDENCE_STAT_CAT)
+                    .map(entry => entry.stat_cat_entry())[0];
+            }))
+            .pipe(concatMap(req => {
+                return this.net.request(
+                    'open-ils.actor',
+                    'open-ils.actor.patron-request.status',
+                    this.auth.token(), req.id())
+                .pipe(tap(stat => req._status = stat.status))
+                .pipe(map(_ => req));
+            }));
         };
     }
 
-    toggleClaimedByMe(action: boolean) {
-        this.showClaimedByMe = action;
+    toggleClaimedByMe() {
+        this.showClaimedByMe = !this.showClaimedByMe;
         this.grid.reload();
     }
 
-    toggleShowRejected(action: boolean) {
-        this.showRejected = action;
+    toggleShowRejected() {
+        this.showRejected = !this.showRejected;
         this.grid.reload();
     }
 
-    toggleRouteToIll(action: boolean) {
-        this.showRouteToIll = action;
+    toggleShowCompleted() {
+        this.showCompleted = !this.showCompleted;
         this.grid.reload();
     }
 
-    toggleRouteToAcq(action: boolean) {
-        this.showRouteToAcq = action;
+    toggleRouteToIll() {
+        this.showRouteToIll = !this.showRouteToIll;
         this.grid.reload();
     }
 
-    toggleRouteToNull(action: boolean) {
-        this.showRouteToNull = action;
+    toggleRouteToAcq() {
+        this.showRouteToAcq = !this.showRouteToAcq;
+        this.grid.reload();
+    }
+
+    toggleRouteToNull() {
+        this.showRouteToNull = !this.showRouteToNull;
         this.grid.reload();
     }
 
@@ -148,6 +198,57 @@ export class ItemRequestComponent implements OnInit {
         });
     }
 
+    applyRouteTo(reqs: IdlObject[]) {
+        this.routeToDialog.open().subscribe(value => {
+            if (!value) { return; }
+
+            reqs.forEach(r => r.route_to(value));
+            this.updateReqs(reqs);
+        });
+    }
+
+    addStaffNote(reqs: IdlObject[]) {
+        this.notePrompt.promptValue = '';
+        this.notePrompt.dialogTitle = $localize`Add Staff-Only Note`;
+
+        this.notePrompt.open().toPromise().then(value => {
+            if (!value) { return; }
+
+            reqs.forEach(req => {
+                let note = req.staff_notes();
+                if (note) {
+                    req.staff_notes(note + '\n' + value);
+                } else {
+                    req.staff_notes(value);
+                }
+            });
+
+            this.updateReqs(reqs);
+
+        });
+    }
+
+    addPatronVisibleNote(reqs: IdlObject[]) {
+        this.notePrompt.promptValue = '';
+        this.notePrompt.dialogTitle = $localize`Add Patron-Visible Note`;
+
+        this.notePrompt.open().toPromise().then(value => {
+            if (!value) { return; }
+
+            reqs.forEach(req => {
+                let note = req.patron_notes();
+                if (note) {
+                    req.patron_notes(note + '\n' + value);
+                } else {
+                    req.patron_notes(value);
+                }
+            });
+
+            this.updateReqs(reqs);
+
+        });
+    }
+
     updateReqs(reqs: IdlObject[]) {
         from(reqs).pipe(concatMap(req => {
             return this.pcrud.update(req);
@@ -158,10 +259,10 @@ export class ItemRequestComponent implements OnInit {
         );
     }
 
-    // may not need this.
-    showRequestDialog(req: IdlObject) {
-        this.requestDialog.requestId = req.id();
-        this.requestDialog.open({size: 'lg'})
+    newRequest() {
+        this.requestDialog.illDenialOptions = this.illDenialOptions;
+        this.requestDialog.mode = 'create';
+        this.requestDialog.open({size: 'xl'})
         .subscribe(changesMade => {
             if (changesMade) {
                 this.grid.context.reloadSync();
@@ -169,21 +270,16 @@ export class ItemRequestComponent implements OnInit {
         });
     }
 
-
-    /*
-    createIllRequest(reqs: IdlObject[]) {
-        reqs = [].concat(reqs);
-        let req = reqs[0];
-        if (!req) { return; }
-
-        let url = '/staff/cat/ill/track?';
-        url += `title=${encodeURIComponent(req.title())}`;
-        url += `&patronBarcode=${encodeURIComponent(req.usr().card().barcode())}`;
-
-        url = this.ngLocation.prepareExternalUrl(url);
-
-        window.open(url);
+    // may not need this.
+    showRequestDialog(req: IdlObject) {
+        this.requestDialog.illDenialOptions = this.illDenialOptions;
+        this.requestDialog.requestId = req.id();
+        this.requestDialog.open({size: 'xl'})
+        .subscribe(changesMade => {
+            if (changesMade) {
+                this.grid.context.reloadSync();
+            }
+        });
     }
-    */
 }
 

@@ -1,0 +1,22 @@
+.step-icon {
+  border-radius: 100%;
+  width: 24px;
+  height: 24px;
+}
+
+/*
+.step-icon.done {
+  background-color: rgb(22 163 74);
+  color: white;
+}
+
+.step-icon.skipped {
+  background-color: rgb(68, 71, 78);
+  color: white;
+}
+
+.step-icon.pending {
+  background-color: rgb(68, 71, 78);
+  color: white;
+}
+*/

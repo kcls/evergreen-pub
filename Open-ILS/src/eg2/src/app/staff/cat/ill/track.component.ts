@@ -37,6 +37,7 @@ export class TrackIllComponent implements OnInit {
     patronBarcode = '';
     creating = false;
     lenderAddress = '';
+    patronRequestId: string | null = null;
 
     noPatron = '';
     marcDoc: XMLDocument;
@@ -73,6 +74,8 @@ export class TrackIllComponent implements OnInit {
             if (params.get('illno')) {
                 this.callnumber = 'IL' + params.get('illno');
             }
+
+            this.patronRequestId = params.get('patronRequestId');
         });
 
         this.marcDoc = new DOMParser().parseFromString(STUB_MARC, "text/xml");
@@ -183,7 +186,8 @@ export class TrackIllComponent implements OnInit {
                 ['staff', 'catalog', 'hold', 'T'],
                 {queryParams: {
                     target: this.newRecordId,
-                    holdForBarcode: this.patronBarcode
+                    holdForBarcode: this.patronBarcode,
+                    patronRequestId: this.patronRequestId
                 }}
             );
         });
