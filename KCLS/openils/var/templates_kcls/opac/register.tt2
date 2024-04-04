@@ -407,7 +407,7 @@ a:hover {
         <p>
         If residence address differs from mailing address, the residence address determines patron eligibility.
         You may get a library card today without address verification, but you will be limited to checking
-        out 2 items. If you do not bring address verification, the card will expire after 90 days.
+        out 2 items. If you do not bring address verification, the card will expire after 6 months.
         </p>
         </div>
       [% END %]
