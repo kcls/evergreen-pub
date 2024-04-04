@@ -1,8 +1,9 @@
-import {Component, Input, ViewChild} from '@angular/core';
+import {Component, OnInit, Input, ViewChild} from '@angular/core';
 import {Observable, throwError, from, empty} from 'rxjs';
-import {switchMap} from 'rxjs/operators';
+import {tap, map, switchMap} from 'rxjs/operators';
 import {NetService} from '@eg/core/net.service';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
+import {EventService} from '@eg/core/event.service';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -22,7 +23,7 @@ import {StaffService} from '@eg/staff/share/staff.service';
 })
 
 export class CopyNotesDialogComponent
-    extends DialogComponent {
+    extends DialogComponent implements OnInit {
 
     @Input() copyId: number = null;
 
@@ -34,8 +35,6 @@ export class CopyNotesDialogComponent
     curNotePublic = false;
     curDibs: string;
     newNote: IdlObject;
-
-    idToEdit: number;
 
     @ViewChild('successMsg', { static: true }) private successMsg: StringComponent;
     @ViewChild('errorMsg', { static: true }) private errorMsg: StringComponent;
@@ -50,6 +49,9 @@ export class CopyNotesDialogComponent
         private org: OrgService,
         private auth: AuthService) {
         super(modal); // required for subclassing
+    }
+
+    ngOnInit() {
     }
 
     /**
