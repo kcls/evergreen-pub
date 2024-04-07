@@ -633,6 +633,8 @@ export class EditComponent implements OnInit {
             cats.forEach(cat => {
                 cat.id(Number(cat.id()));
                 cat.entries().forEach(entry => entry.id(Number(entry.id())));
+                cat.required(Number(cat.required())); // ===
+                cat.allow_freetext(Number(cat.allow_freetext())); // ===
 
                 const entries = cat.entries().map(entry =>
                     ({id: entry.id(), label: entry.value()}));
@@ -1022,11 +1024,11 @@ export class EditComponent implements OnInit {
                     map.isdeleted(true);
                 }
             }
-        } else {
+        } else if (entry) {
             map = this.idl.create('actscecm');
             map.isnew(true);
             map.stat_cat(cat.id());
-            map.stat_cat_entry(entry.label);
+            map.stat_cat_entry(entry.label || entry.id);
             map.target_usr(this.patronId);
             this.patron.stat_cat_entries().push(map);
         }
