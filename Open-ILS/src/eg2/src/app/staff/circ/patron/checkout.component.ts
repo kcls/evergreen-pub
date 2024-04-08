@@ -116,8 +116,12 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
     }
 
     focusInput() {
-        const input = document.getElementById('barcode-input');
-        if (input) { input.focus(); }
+        // Somehow the body steals the focus after this call, hence
+        // the setTimeout.
+        setTimeout(() => {
+            const input = document.getElementById('barcode-input');
+            if (input) { input.focus(); }
+        });
     }
 
     collectParams(): Promise<CheckoutParams> {
