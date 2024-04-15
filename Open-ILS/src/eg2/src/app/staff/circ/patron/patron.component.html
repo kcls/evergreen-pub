@@ -85,6 +85,8 @@
 
         <li role="presentation" ngbNavItem="checkout" [disabled]="!context.summary">
           <a role="tab" ngbNavLink (click)="navItemClick('checkout', $event)"
+            egAccessKey keyCtx="patron" i18n-keySpec i18n-keyDesc
+            keySpec="alt+x" keyDesc="Checkout"
             routerLink="/staff/circ/patron/{{patronId}}/checkout" i18n>Check Out</a>
           <ng-template ngbNavContent>
             <div class="">
