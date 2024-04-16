@@ -126,7 +126,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     }
     */
 
-    getItemData(): Promise<any> {
+    getItemData(ignoreAlreadyDamaged?: boolean): Promise<any> {
         this.alreadyDamaged = false;
         return this.pcrud.retrieve('acp', this.itemId,
             {flesh: 1, flesh_fields: {acp: ['call_number']}}).toPromise()
@@ -135,7 +135,9 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
             this.itemBarcode = copy.barcode();
             this.itemAlert = copy.alert_message();
 
-            this.alreadyDamaged = Number(copy.status()) === 14; /* Damged */
+            if (!ignoreAlreadyDamaged) {
+                this.alreadyDamaged = Number(copy.status()) === 14; /* Damged */
+            }
 
             return this.bib.getBibSummary(
                 copy.call_number().record()).toPromise();
@@ -203,9 +205,9 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
                     this.penaltyDialog.startInitials = this.dibs;
 
                     this.penaltyDialog.appendToPatronMessage =
-                        this.damageNote + '\n' +
-                        this.itemBarcode + '\n' +
-                        this.bibSummary.display.title;
+                        this.bibSummary.display.title + ', ' +
+                        this.itemBarcode + ', ' +
+                        this.damageNote;
 
                     this.penaltyDialog.open({size: 'lg'}).toPromise()
                     .finally(() => this.refreshPrintDetails());
@@ -253,7 +255,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
         const msg = this.itemAlert; // clobbered in getItemById
 
-        this.getItemData().then(_ => {
+        this.getItemData(true).then(_ => {
 
             this.item.alert_message(this.itemAlert = msg);
 
