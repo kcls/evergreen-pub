@@ -191,6 +191,7 @@ sub retrieve_lineitem_impl {
 
     if($$options{flesh_li_details}) {
         push(@{$fields->{jub}   }, 'lineitem_details');
+        push(@{$fields->{jub}   }, 'eg_bib_id') if $$options{flesh_bib}; 
         push(@{$fields->{acqlid}}, 'fund'         ) if $$options{flesh_fund};
         push(@{$fields->{acqlid}}, 'fund_debit'   ) if $$options{flesh_fund_debit};
         push(@{$fields->{acqlid}}, 'cancel_reason') if $$options{flesh_cancel_reason};

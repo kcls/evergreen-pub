@@ -57,6 +57,7 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
         this.net.request(
             'open-ils.acq', 'open-ils.acq.lineitem.retrieve',
             this.auth.token(), this.lineitemId, {
+                flesh_bib: true, // MARC fun in the template
                 flesh_provider: true,
                 flesh_attrs: true,
                 flesh_notes: true,
@@ -84,6 +85,9 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
     }
 
     getRemainingData(): Promise<any> {
+        if (!this.lineitem.eg_bib_id()) {
+            return Promise.resolve();
+        }
 
         // Flesh owning lib
         this.lineitem.lineitem_details().forEach(lid => {
@@ -92,9 +96,8 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
 
         return this.net.request(
             'open-ils.circ',
-            'open-ils.circ.bre.holds.count', this.lineitem.eg_bib_id()
+            'open-ils.circ.bre.holds.count', this.lineitem.eg_bib_id().id()
         ).toPromise().then(count => this.holdCount = count);
-
     }
 
     populatePreview(): Promise<any> {
