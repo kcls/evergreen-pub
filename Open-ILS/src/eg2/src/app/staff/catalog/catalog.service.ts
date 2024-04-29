@@ -121,6 +121,8 @@ export class StaffCatalogService {
     }
 
     onBeforeUnload(): void {
+        return;
+        /* KCLS HD 10644
         const closedTarget = this.holdForBarcode;
         if (closedTarget) {
             this.clearHoldPatron(false);
@@ -128,6 +130,7 @@ export class StaffCatalogService {
                 { closedTarget }
             );
         }
+        */
     }
 
     onChangeHoldPatron(): Observable<any> {
