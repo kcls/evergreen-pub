@@ -38,7 +38,7 @@
         </select>
       </div>
       <div class="col-lg-4">
-        <select class="form-control ml-2" style="max-width:150px" 
+        <select class="form-select ml-2" style="max-width:150px" 
           [(ngModel)]="patronMessage" (ngModelChange)="noteText = $event.message()">
           <option value='0' i18n>Messages</option>
           <option *ngFor="let msg of patronMessages" [ngValue]="msg">

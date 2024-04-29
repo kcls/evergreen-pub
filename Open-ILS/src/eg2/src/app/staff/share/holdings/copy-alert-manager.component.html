@@ -81,7 +81,7 @@
           {{nextStatuses[0].name()}}
         </ng-container>
         <ng-container *ngIf="nextStatuses.length > 1">
-          <select class="form-control" [(ngModel)]="nextStatus">
+          <select class="form-select" [(ngModel)]="nextStatus">
             <option [value]="stat.id()" *ngFor="let stat of nextStatuses">
               {{stat.name()}}
             </option>

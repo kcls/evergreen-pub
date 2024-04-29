@@ -29,7 +29,7 @@
         <ng-container *ngIf="selectorLabel">{{selectorLabel}}</ng-container>
       </label>
       <div class="col-lg-5">
-        <select id='value-selector' class="form-control" 
+        <select id='value-selector' class="form-select" 
           [(ngModel)]="selectorValue" (change)="selectorChanged()">
           <option value=" " i18n>&lt;Unset&gt;</option>
           <option *ngFor="let entry of selectorOptions" 
