@@ -147,8 +147,11 @@
       <eg-help-popover placement="right" 
         i18n-helpText helpText="Modify the message which displays in the printed letter">
       </eg-help-popover>
-      <textarea class="form-control mt-2" (ngModelChange)="refreshPrintDetails()"
+      <textarea class="form-control mt-2"
         [(ngModel)]="damageNote" required rows="3"></textarea>
+      <button class="btn btn-info mt-2" (click)="refreshPrintDetails()" i18n>
+        Update Damage Description
+      </button>
     </div>
   </div>
 </div>
