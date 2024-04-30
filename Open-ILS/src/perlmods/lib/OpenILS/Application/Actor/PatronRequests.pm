@@ -28,7 +28,7 @@ sub apply_route_to {
 
     my $route_to = 'acq';
 
-    if ($request->format eq 'book') {
+    if ($request->format eq 'book' || $request->format eq 'large-print') {
         if ( (my $pubyear = $request->pubdate) ) {
             if ($pubyear =~ /^\d{4}$/) {
                 if ($pubyear < (DateTime->now->year - $ILL_ROUTE_AGE_YEARS)) {
