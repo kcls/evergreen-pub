@@ -94,7 +94,7 @@ export class ItemRequestComponent implements OnInit {
                 flesh: 2,
                 flesh_fields: {
                     auir: ['usr', 'claimed_by'],
-                    au: ['card']
+                    au: ['card', 'profile']
                 },
                 order_by: orderBy
             };
