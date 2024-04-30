@@ -54,8 +54,7 @@ export class RequestsComponent implements OnInit {
         return (
             this.controls.format.value !== '' &&
             this.controls.format.value !== null &&
-            this.controls.format.value !== 'ebook' &&
-            this.controls.format.value !== 'audiobook-download'
+            this.controls.format.value !== 'ebook-eaudio'
         );
     }
 }
