@@ -140,8 +140,8 @@
     </div>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-info me-auto" 
-      (click)="createIll()" i18n>Save &amp; Create ILL</button>
+    <button type="button" class="btn btn-info me-auto" (click)="createIll()"
+      *ngIf="request.route_to() === 'ill'" i18n>Save &amp; Create ILL</button>
 
     <button type="button" class="btn btn-warning" 
       (click)="close(false)" i18n>Cancel</button>
