@@ -28,8 +28,7 @@
           <mat-option value="audiobook" i18n>Audiobook</mat-option>
           <mat-option value="cd" i18n>CD</mat-option>
           <mat-option value="dvd" i18n>DVD</mat-option>
-          <mat-option value="audiobook-download" i18n>Downloadable Audiobook</mat-option>
-          <mat-option value="ebook" i18n>eBook</mat-option>
+          <mat-option value="ebook-eaudio" i18n>eBook / eAudio</mat-option>
           <mat-option value="microfilm" i18n>Microfilm</mat-option>
           <mat-option value="article" i18n>Magazine / Newspaper / Journal Article</mat-option>
           <mat-option value="subscription" i18n>Magazine / Newspaper Subscription</mat-option>
@@ -37,22 +36,15 @@
       </mat-form-field>
     </div>
 
-    <div *ngIf="controls.format.value === 'ebook'" 
+    <div *ngIf="controls.format.value === 'ebook-eaudio'" 
       class="mt-5 flex justify-center border rounded border-orange-400 p-4">
       <p i18n>
         Log into 
         <a href="http://ebooks.kcls.org/">OverDrive</a>
-        to suggest an eBook purchase. Need help? 
+        to suggest an eBook / eAudio purchase. Need help? 
         <a href="https://kcls.org/faqs/how-do-i-suggest-an-ebook-for-purchase/">
           See our FAQ
         </a>.
-      </p>
-    </div>
-
-    <div *ngIf="controls.format.value === 'audiobook-download'" 
-      class="mt-5 flex justify-center border rounded border-orange-400 p-4">
-      <p i18n>
-        Something, something Libby app.
       </p>
     </div>
 
