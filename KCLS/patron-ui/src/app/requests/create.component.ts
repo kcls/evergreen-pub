@@ -111,7 +111,7 @@ export class CreateRequestComponent implements OnInit {
         if (!ident
             || ident.length < MIN_ID_LENGTH
             || ident === this.previousSearch
-            || this.requests.selectedFormat === 'journal') {
+            || this.requests.selectedFormat === 'article') {
             return Promise.resolve();
         }
 

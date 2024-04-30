@@ -9,7 +9,7 @@
 
   <form role="form" class="mt-4">
 
-    <div class="flex p-2" *ngIf="requests.selectedFormat !== 'journal'">
+    <div class="flex p-2" *ngIf="requests.selectedFormat !== 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>ISBN, ISSN, UPC, OCLC Number</mat-label>
         <input type="text" matInput [formControl]="controls.identifier"
@@ -22,7 +22,7 @@
       </mat-form-field>
     </div>
 
-    <div class="flex p-2" *ngIf="requests.selectedFormat === 'journal'">
+    <div class="flex p-2" *ngIf="requests.selectedFormat === 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>Journal DOI</mat-label>
         <input type="text" matInput [formControl]="controls.identifier"
