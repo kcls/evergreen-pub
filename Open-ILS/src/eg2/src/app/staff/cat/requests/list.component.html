@@ -66,6 +66,8 @@
   </eg-grid-column>
   <eg-grid-column name="patron_barcode" [cellTemplate]="patronBarcodeTemplate" label="Patron Card" i18n-label>
   </eg-grid-column>
+  <eg-grid-column path="usr.profile.name" label="Patron Profile" i18n-label>
+  </eg-grid-column>
   <eg-grid-column i18n-label [cellTemplate]="routeToTemplate" label="Route To" name="route_to" [sortable]="true">
   </eg-grid-column>
   <eg-grid-column i18n-label label="Format" name="format" [sortable]="true">
