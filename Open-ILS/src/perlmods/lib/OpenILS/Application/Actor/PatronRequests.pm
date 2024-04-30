@@ -17,7 +17,7 @@ my @REQ_FIELDS = qw/identifier format language title author pubdate publisher no
 my $ILL_ROUTE_AGE_YEARS = 2;
 
 # These format salways go to ILL.                                                     
-my @ILL_FORMATS = ['journal', 'microfilm', 'article'];
+my @ILL_FORMATS = ['microfilm', 'article'];
 
 sub apply_route_to {
     my ($request) = @_;
