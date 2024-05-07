@@ -58,6 +58,7 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
             'open-ils.acq', 'open-ils.acq.lineitem.retrieve',
             this.auth.token(), this.lineitemId, {
                 flesh_bib: true, // MARC fun in the template
+                flesh_display_entries: true, // bre flat display entries
                 flesh_provider: true,
                 flesh_attrs: true,
                 flesh_notes: true,

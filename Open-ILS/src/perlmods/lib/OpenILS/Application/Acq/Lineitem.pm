@@ -212,6 +212,10 @@ sub retrieve_lineitem_impl {
         push(@{$fields->{acp}}, 'location') if $$options{flesh_li_details_location};
     }
 
+    if ($$options{flesh_display_entries}) {
+        $fields->{bre} = ['flat_display_entries'];
+    }
+
     if($$options{clear_marc}) { # avoid fetching marc blob
         my @fields = grep { $_ ne 'marc' } Fieldmapper::acq::lineitem->new->real_fields;
         $flesh->{select} = {jub => [@fields]};
