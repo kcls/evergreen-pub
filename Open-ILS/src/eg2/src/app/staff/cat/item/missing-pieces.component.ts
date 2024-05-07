@@ -27,6 +27,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
     processing = false;
     noSuchItem = false;
     itemProcessed = false;
+    itemIsLost = false;
     itemAlert = '';
     updatingItemAlert = false;
     circ: IdlObject;
@@ -74,6 +75,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
         this.itemId = null;
         this.item = null;
         this.itemAlert = '';
+        this.itemIsLost = false;
 
         if (!this.itemBarcode) { return Promise.resolve(); }
 
@@ -124,6 +126,10 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
             this.itemBarcode = item.barcode();
             this.itemAlert = item.alert_message() || '';
             this.selectInput();
+
+            if (item.status() === 3 /* Lost */) {
+                this.itemIsLost = true;
+            }
         });
     }
 

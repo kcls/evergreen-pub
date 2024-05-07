@@ -43,6 +43,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     newBtype: number;
     pauseArgs: any = {};
     alreadyDamaged = false;
+    itemIsLost = false;
     noPatronToNotify = false;
 
     // If the item is checked out, ask the API to check it in first.
@@ -128,6 +129,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
     getItemData(ignoreAlreadyDamaged?: boolean): Promise<any> {
         this.alreadyDamaged = false;
+        this.itemIsLost = false;
         return this.pcrud.retrieve('acp', this.itemId,
             {flesh: 1, flesh_fields: {acp: ['call_number']}}).toPromise()
         .then(copy => {
@@ -137,6 +139,10 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
             if (!ignoreAlreadyDamaged) {
                 this.alreadyDamaged = Number(copy.status()) === 14; /* Damged */
+            }
+
+            if (Number(copy.status()) === 3 /* Lost */) {
+                this.itemIsLost = true;
             }
 
             return this.bib.getBibSummary(

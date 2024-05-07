@@ -44,7 +44,8 @@
   </div>
   <div class="row mt-2">
     <div class="col-lg-12">
-      <button class="btn btn-success" (click)="processItem()" i18n>
+      <button class="btn btn-success" (click)="processItem()" i18n
+        [disabled]="itemIsLost">
         Mark Item as Missing Pieces?
       </button>
       <button class="btn btn-warning ms-2" (click)="reset()">
@@ -71,6 +72,15 @@
     </div>
   </div>
 </div>
+
+<div class="row m-1" *ngIf="itemIsLost">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-danger" i18n>
+      Item Is Marked LOST and Must First be Checked In.
+    </div>
+  </div>
+</div>
+
 
 <div class="row m-1" *ngIf="processing">
   <div class="col-lg-6 offset-lg-3">

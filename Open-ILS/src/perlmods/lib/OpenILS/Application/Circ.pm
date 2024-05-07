@@ -1471,6 +1471,11 @@ sub mark_item {
     # caller may proceed if either perm is allowed
     return $e->die_event unless $e->allowed([$perm, 'UPDATE_COPY'], $owning_lib);
 
+    if ($copy->status->id() == OILS_COPY_STATUS_LOST && ($self->api_name =~ /damaged/)) {
+        $e->rollback;
+        return OpenILS::Event->new('ITEM_TO_MARK_IS_LOST');
+    }
+
     my $missing_pieces_stat = $U->ou_ancestor_setting_value(
         $owning_lib, 'circ.missing_pieces.copy_status', $e);
 
@@ -1787,6 +1792,10 @@ sub mark_item_missing_pieces {
         $copy_id,
         {flesh => 1, flesh_fields => {'acp' => ['call_number']}}])
             or return $e2->event;
+
+    if ($copy->status == OILS_COPY_STATUS_LOST) {
+        return OpenILS::Event->new('ITEM_TO_MARK_IS_LOST');
+    }
 
     my $owning_lib = 
         ($copy->call_number->id == OILS_PRECAT_CALL_NUMBER) ? 

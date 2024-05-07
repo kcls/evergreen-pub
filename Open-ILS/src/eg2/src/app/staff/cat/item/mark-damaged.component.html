@@ -20,7 +20,7 @@
     <div class="col-lg-12">
       <button [disabled]="noPatronToNotify || circ" type="button" 
         class="btn btn-warning" (click)="cancel()" i18n>Cancel</button>
-      <button [disabled]="noPatronToNotify || circ || alreadyDamaged" type="button" 
+      <button [disabled]="noPatronToNotify || circ || alreadyDamaged || itemIsLost" type="button" 
         class="btn btn-success ms-2" (click)="markDamaged({})" i18n>Mark Damaged</button>
       <button *ngIf="noPatronToNotify || circ" type="button" 
         class="btn btn-outline-dark ms-2" (click)="cancel()" i18n>Close</button>
@@ -29,6 +29,10 @@
 
   <div class="alert alert-danger p-2 m-3 " *ngIf="alreadyDamaged">
     <span i18n>Item Is Already Marked Damaged</span>
+  </div>
+
+  <div class="alert alert-danger p-2 m-3 " *ngIf="itemIsLost">
+    <span i18n>Item Is Marked LOST and Must First be Checked In</span>
   </div>
 
   <div class="alert alert-info p-2 m-3 " *ngIf="noPatronToNotify">
