@@ -158,6 +158,9 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         // Skip that bit of logic here.
         args.no_pause_refund = true;
 
+        // If the item is in transit, let the API cancel it.
+        args.handle_transit = true;
+
         if (args.apply_fines === 'apply') {
             args.override_amount = this.newCharge;
             args.override_btype = this.newBtype;
