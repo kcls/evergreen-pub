@@ -1,8 +1,8 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {Location} from '@angular/common';
-import {empty, Observable, Observer, of, from} from 'rxjs';
-import {tap} from 'rxjs/operators';
+import {mergeMap, first, empty, Observable, Observer, of, from} from 'rxjs';
+import {map, tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {NetService} from '@eg/core/net.service';
@@ -49,11 +49,17 @@ export class AsnReportComponent implements OnInit {
                 //id: 1
             };
 
-            return this.flatData.getRows(
-                this.grid.context, query, pager, sort)
-            .pipe(tap(row => {
+            return this.flatData.getRows(this.grid.context, query, pager, sort)
+            .pipe(mergeMap(row => {
                 // No specific unique identifier for each row.
                 row._index = this.index++;
+
+                return this.pcrud.search('mfde', {
+                    source: row['lineitem.eg_bib_id'],
+                    name: 'bibcn'
+                })
+                .pipe(tap((entry: IdlObject) => row._bib_call_number = entry.value()))
+                .pipe(map(_ => row));
             }));
         };
 
