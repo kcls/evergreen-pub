@@ -54,6 +54,13 @@
       <eg-grid-column path="container_code" label="Container Code" i18n-label>
       </eg-grid-column>
 
+      <eg-grid-column name="_bib_call_number" label="Call Number" i18n-label>
+      </eg-grid-column>
+
+      <eg-grid-column path="lineitem.eg_bib_id" [required]="true" 
+        [hidden]="true" label="Bib Record ID" i18n-label>
+      </eg-grid-column>
+
       <eg-grid-column path="shipment_notification.recv_date" label="ASN Receive Date" 
         [datePlusTime]="true" i18n-label>
       </eg-grid-column>
