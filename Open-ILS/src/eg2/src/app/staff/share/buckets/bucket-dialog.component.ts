@@ -202,7 +202,7 @@ export class BucketDialogComponent extends DialogComponent implements OnInit {
                 this.toast.danger(evt.toString());
             } else {
                 this.toast.success(this.successString.text);
-                this.close();
+                this.postAdd(bucketId);
             }
         });
     }
