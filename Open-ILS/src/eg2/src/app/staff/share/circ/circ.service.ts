@@ -13,10 +13,12 @@ import {CircEventsComponent} from './events-dialog.component';
 import {CircComponentsComponent} from './components.component';
 import {StringService} from '@eg/share/string/string.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
+import {StoreService} from '@eg/core/store.service';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {WorkLogService, WorkLogEntry} from '@eg/staff/share/worklog/worklog.service';
 import {PermService} from '@eg/core/perm.service';
 import {PrintService} from '@eg/share/print/print.service';
+import {Location} from '@angular/common';
 
 export interface CircDisplayInfo {
     title?: string;
@@ -245,12 +247,14 @@ export class CircService {
     orgAddrCache: {[addrId: number]: IdlObject} = {};
 
     constructor(
+        private ngLocation: Location,
         private audio: AudioService,
         private evt: EventService,
         private org: OrgService,
         private net: NetService,
         private pcrud: PcrudService,
         private serverStore: ServerStoreService,
+        private store: StoreService,
         private strings: StringService,
         private printer: PrintService,
         private auth: AuthService,
@@ -1066,15 +1070,17 @@ export class CircService {
 
     // Checkin resulted in a requirement to confirm a lost/paid checkin.
     handleLostPaidCheckin(result: CheckinResult): Promise<CheckinResult> {
-        // try/catch here because errors within components don't always
-        // bubble up to the console, which makes debugging difficult.
-        this.components.lostPaidConfirmDialog.checkinResult = result;
-        try {
-            return this.components.lostPaidConfirmDialog.open({size: 'lg'}).toPromise();
-        } catch(E) {
-            console.error('lostpaid dialog error', E);
-            throw(E);
-        }
+        // Track the original checkin params in local storage so the
+        // newly opened browser tab will be able to execute the checkin
+        // with the same params.
+        this.store.setLocalItem('circ.lostpaid.params', result.params);
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/circ/checkin/lostpaid/${result.copy.id()}`);
+
+        window.open(url);
+
+        return Promise.resolve(result);
     }
 
     addWorkLog(action: string, result: CircResultCommon) {
