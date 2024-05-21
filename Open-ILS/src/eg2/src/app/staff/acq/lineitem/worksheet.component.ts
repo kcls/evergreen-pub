@@ -86,14 +86,14 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
     }
 
     getRemainingData(): Promise<any> {
-        if (!this.lineitem.eg_bib_id()) {
-            return Promise.resolve();
-        }
-
         // Flesh owning lib
         this.lineitem.lineitem_details().forEach(lid => {
             lid.owning_lib(this.org.get(lid.owning_lib()));
         });
+
+        if (!this.lineitem.eg_bib_id()) {
+            return Promise.resolve();
+        }
 
         return this.net.request(
             'open-ils.circ',
