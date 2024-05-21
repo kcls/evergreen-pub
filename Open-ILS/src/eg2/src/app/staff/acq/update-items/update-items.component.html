@@ -15,14 +15,14 @@
           [allowFreeText]="true" placeholder="Call Number..." >
         </eg-combobox>
       </div>
-      <div class="col-lg-2 pr-0">
+      <div class="col-lg-2 pe-0">
         <div class="font-weight-bold" i18n>Batch</div>
         <div>
           <button class="btn btn-sm btn-outline-dark" 
             (click)="applyCallNumber()" i18n>Apply</button>
         </div>
       </div>
-      <div class="col-lg-3 pl-0">
+      <div class="col-lg-3 ps-0">
         <div class="font-weight-bold" i18n>Lineitem</div>
         <div>
           <eg-combobox #lineitemCbox (onChange)="lineitemChanged($event)">
@@ -44,10 +44,10 @@
       <div class="col-lg-3">
         <div class="font-weight-bold" i18n>Call Number</div>
       </div>
-      <div class="col-lg-2 pr-0">
+      <div class="col-lg-2 pe-0">
         <div class="font-weight-bold" i18n>Copies</div>
       </div>
-      <div class="col-lg-3 pl-0">
+      <div class="col-lg-3 ps-0">
         <div class="font-weight-bold" i18n>Barcode</div>
       </div>
       <div class="col-lg-2">
@@ -83,12 +83,12 @@
                   (ngModelChange)="callNumberChanged(volSet.volume, $event)"/>
               </ng-container>
             </div>
-            <div class="col-lg-2 pr-0">
+            <div class="col-lg-2 pe-0">
               <ng-container *ngIf="itemIndex == 0">
                 {{volSet.items.length}}
               </ng-container>
             </div>
-            <div class="col-lg-3 pl-0">
+            <div class="col-lg-3 ps-0">
               <input type="text" class="form-control form-control-sm"
                 [disabled]="!barcodeCanChange(item)"
                 [ngClass]="{'text-danger': item._dupe_barcode}"
@@ -192,7 +192,7 @@
         </div>
         <ul class="mt-2">
           <li *ngFor="let note of lineitem.lineitem_notes()">
-            <span class="pr-2">{{note.create_time() | date:'shortDate'}}</span>
+            <span class="pe-2">{{note.create_time() | date:'shortDate'}}</span>
             <span>{{note.value()}}</span>
           </li>
         </ul>
@@ -205,28 +205,28 @@
 
 <hr class="mt-2 mb-2"/>
 
-<div class="row mt-4 mb-5 pl-0 pr-0">
+<div class="row mt-4 mb-5 ps-0 pe-0">
   <div class="col-lg-12 d-flex form-inline">
 
     <button class="btn btn-sm btn-outline-dark" (click)="autogenBarcodes()" i18n>
       Generate Barcodes
     </button>
 
-    <div class="form-check form-check-inline ml-2">
+    <div class="form-check form-check-inline ms-2">
       <input class="form-check-input" id='use-checkdigit-cbox' type="checkbox" 
         [(ngModel)]="useCheckdigit" (change)="savePref('checkdigit')"/>
       <label class="form-check-label" for='use-checkdigit-cbox' 
         i18n>Use Checkdigit?</label>
     </div>
 
-    <div class="form-check form-check-inline ml-2">
+    <div class="form-check form-check-inline ms-2">
       <input class="form-check-input" id='use-labels-cbox' type="checkbox" 
         [(ngModel)]="printLabels" (change)="savePref('labels')"/>
       <label class="form-check-label" for='use-labels-cbox' 
         i18n>Print Labels?</label>
     </div>
 
-    <div class="form-check form-check-inline ml-1">
+    <div class="form-check form-check-inline ms-1">
       <input class="form-check-input" id='use-add-note-cbox' 
         (change)="savePref('notes')"
         type="checkbox" [(ngModel)]="addNotes"/>
@@ -235,10 +235,10 @@
     </div>
     <input type="text" class="form-control form-control-sm" 
       style="width:10em" [(ngModel)]="note"/>
-    <input type="text" class="form-control  form-control-sm ml-2" style="width:10em" 
+    <input type="text" class="form-control  form-control-sm ms-2" style="width:10em" 
       [(ngModel)]="anotherNote" placeholder="Additional Note..." i18n-placeholder/>
 
-    <a target="_blank" class="ml-1" *ngIf="lineitem"
+    <a target="_blank" class="ms-1" *ngIf="lineitem"
       routerLink="/staff/acq/po/{{lineitem.purchase_order().id()}}/lineitem/{{lineitemId}}/worksheet">
       <button class="btn btn-sm btn-outline-dark" i18n>View Worksheet</button>
     </a>
@@ -248,10 +248,10 @@
     <button class="btn btn-sm btn-outline-dark" 
       [disabled]="!canSave()" (click)="save()" i18n>Save</button>
 
-    <button class="btn btn-sm btn-outline-dark ml-2" 
+    <button class="btn btn-sm btn-outline-dark ms-2" 
       [disabled]="!canSave()" (click)="save(true)" i18n>Save &amp; Close</button>
 
-    <button class="btn btn-sm btn-outline-dark ml-2" 
+    <button class="btn btn-sm btn-outline-dark ms-2" 
       (click)="editItems()" i18n>Edit Item Attributes</button>
 
   </div>
