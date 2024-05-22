@@ -8,8 +8,8 @@
   Information on this page is out of date.
 </div>
 
-<div *ngIf="checkinResult">
-  <div class="form-validated">
+<div *ngIf="checkinResult" class="d-flex">
+  <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
     <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
       <div class="col-lg-4 font-weight-bold" i18n>Item Barcode:</div>
       <div class="col-lg-8">
@@ -124,34 +124,53 @@
       <eg-progress-inline></eg-progress-inline>
     </div>
 
-  </div>
-  <div class="modal-footer d-flex">
-    <button *ngIf="hasCheckinBypassPerms" type="button" class="btn btn-danger" 
-      (click)="checkin(true)" i18n>Standard Checkin / No Extra Processing</button>
+    <div class="row">
+      <div class="col-6">
+        <button *ngIf="hasCheckinBypassPerms" type="button" class="btn btn-danger" 
+          (click)="checkin(true)" [disabled]="!initials" i18n>
+            Standard Checkin / No Extra Processing
+        </button>
+      </div>
 
-    <div class="flex-1"></div>
-
-    <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
-    <button type="button" class="btn btn-success" (click)="checkin()" 
-      [disabled]="!initials || itemCondition === null">
-      <ng-container *ngIf="itemCondition === null" i18n>
-        Checkin
-      </ng-container>
-      <ng-container *ngIf="refundable() && itemCondition === 'good'" i18n>
-        Checkin &amp; Process Refund
-      </ng-container>
-      <ng-container *ngIf="!refundable() || itemCondition === 'bad'" i18n>
-        Checkin &amp; Mark Item Discard/Weed
-      </ng-container>
-    </button>
+      <div class="col-6 position-relative">
+        <div class="position-absolute end-0">
+          <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
+          <button type="button" class="btn btn-success ms-2" (click)="checkin()" 
+            [disabled]="!initials || itemCondition === null">
+            <ng-container *ngIf="itemCondition === null" i18n>
+              Checkin
+            </ng-container>
+            <ng-container *ngIf="refundable() && itemCondition === 'good'" i18n>
+              Checkin &amp; Process Refund
+            </ng-container>
+            <ng-container *ngIf="!refundable() || itemCondition === 'bad'" i18n>
+              Checkin &amp; Mark Item Discard/Weed
+            </ng-container>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="row">
-  <div class="col-lg-12 mt-5">
-    <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
-    <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
-      id="print-preview-pane"></div> 
+<div *ngIf="printPreviewHtml">
+  <hr class="mt-3 mb-3"/>
+  <div class="row">
+    <div class="col">
+      <button 
+        (click)="printLetter()" 
+        class="btn btn-outline-success label-with-material-icon ms-3" i18n>
+        <span>Print Letter</span>
+        <span class="material-icons">print</span>
+      </button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12 mt-3">
+      <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
+      <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
+        id="print-preview-pane"></div> 
+    </div>
   </div>
 </div>
 
