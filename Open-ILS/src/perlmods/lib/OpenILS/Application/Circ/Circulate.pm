@@ -3197,6 +3197,11 @@ sub do_checkin {
 }
 
 
+# At this point, the item has been checked in within the lost-return
+# interval and the caller has confirmed we should proceed with resolving
+# the transaction (processing the refund / discarding the item / zeroing
+# the negative balance transaction).
+#
 # Item is in circulating condition
 #   Item is refundable?
 #       Process refund
