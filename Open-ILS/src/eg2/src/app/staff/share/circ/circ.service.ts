@@ -208,10 +208,15 @@ export interface CheckinParams {
     lostpaid_item_condition_ok?: boolean;
     lostpaid_checkin_skip_processing?: boolean;
 
+
     // internal / local values that are moved from the API request.
     _override?: boolean;
     _worklog?: WorkLogEntry;
     _checkbarcode?: boolean;
+
+    // If set, avoid opening a new window to process the
+    // checkin, becuase we're already on said window.
+    _lostpaid_checkin_in_progress?: boolean;
 }
 
 export interface CheckinResult extends CircResultCommon {
@@ -1070,15 +1075,18 @@ export class CircService {
 
     // Checkin resulted in a requirement to confirm a lost/paid checkin.
     handleLostPaidCheckin(result: CheckinResult): Promise<CheckinResult> {
-        // Track the original checkin params in local storage so the
-        // newly opened browser tab will be able to execute the checkin
-        // with the same params.
-        this.store.setLocalItem('circ.lostpaid.params', result.params);
 
-        const url = this.ngLocation.prepareExternalUrl(
-            `/staff/circ/checkin/lostpaid/${result.copy.id()}`);
+        if (!result.params._lostpaid_checkin_in_progress) {
+            // Track the original checkin params in local storage so the
+            // newly opened browser tab will be able to execute the checkin
+            // with the same params.
+            this.store.setLocalItem('circ.lostpaid.params', result.params);
 
-        window.open(url);
+            const url = this.ngLocation.prepareExternalUrl(
+                `/staff/circ/checkin/lostpaid/${result.copy.id()}`);
+
+            window.open(url);
+        }
 
         return Promise.resolve(result);
     }

@@ -9,16 +9,7 @@
 </div>
 
 <div *ngIf="checkinResult">
-  <div class="modal-header bg-info">
-    <h4>
-      <strong i18n>Confirm Checkin of Lost &amp; Paid Item</strong>
-    </h4>
-    <button type="button" class="close"
-      i18n-aria-label aria-label="Close" (click)="close()">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  <div class="modal-body form-validated">
+  <div class="form-validated">
     <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
       <div class="col-lg-4 font-weight-bold" i18n>Item Barcode:</div>
       <div class="col-lg-8">
@@ -82,8 +73,7 @@
       </div>
       <div class="col-lg-3">
         <select id="condition-select" name="condition-select" 
-          class="form-control" [required]="true" [(ngModel)]="itemCondition">
-          <option value="" disabled i18n>Select...</option>
+          class="form-select" [required]="true" [(ngModel)]="itemCondition">
           <option value="good" i18n>Yes</option>
           <option value="bad" i18n>No</option>
         </select>
@@ -156,5 +146,14 @@
     </button>
   </div>
 </div>
+
+<div class="row">
+  <div class="col-lg-12 mt-5">
+    <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
+    <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
+      id="print-preview-pane"></div> 
+  </div>
+</div>
+
 
 

@@ -13,6 +13,7 @@ import {CircService, CheckinParams, CheckinResult} from '../../share/circ/circ.s
 import {StoreService} from '@eg/core/store.service';
 import {PermService} from '@eg/core/perm.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
+import {EventService} from '@eg/core/event.service';
 
 
 @Component({
@@ -24,11 +25,13 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     checkinParams: CheckinParams = null;
     checkinResult: CheckinResult = null;
     invalidCheckin = false;
+    printPreviewHtml = '';
 
     itemCondition: string | null = null;
     initials = '';
     processing = false;
     hasCheckinBypassPerms: boolean | null = null;
+    refundedCircId: number | null = null;
 
     constructor(
         private router: Router,
@@ -41,6 +44,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         private auth: AuthService,
         private circ: CircService,
         private store: StoreService,
+        private evt: EventService,
         public patronService: PatronService,
         private printer: PrintService,
     ) {}
@@ -59,6 +63,9 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         this.itemCondition = null;
         this.initials = '';
         this.processing = false;
+
+        // Let the circ service know we're on top of things.
+        this.checkinParams._lostpaid_checkin_in_progress = true;
 
         if (this.hasCheckinBypassPerms === null) {
             this.perms.hasWorkPermHere('CHECKIN_BYPASS_REFUND')
@@ -107,11 +114,11 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
             console.debug('Lost/Paid result', lpr);
 
+            this.refundedCircId = lpr.refunded_xact;
+
             if (lpr.refund_actions) {
-                // TODO give printRefundSummary() the needed params so
-                // staff can modify certain details in the final printout.
-                // Refund succeeded.  Print the summary.
-                return this.patronService.printRefundSummary(lpr.refunded_xact);
+                this.printLetter(true);
+
             } else {
 
                 if (lpr.item_discarded) {
@@ -124,47 +131,42 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                     console.debug('Transaction was zeroed');
                 }
             }
-
-        }).then(_ => this.refreshPrintDetails());
+        });
     }
 
-    refreshPrintDetails() {
-        /*
-        if (this.circ) {
-            this.printDetails = {
-                printContext: 'default',
-                templateName: 'damaged_item_letter',
-                contextData: {
-                    circulation: this.circ,
-                    copy: this.item,
-                    patron: this.circ.usr(),
-                    note: this.damageNote,
-                    cost: this.billAmount.toFixed(2),
-                    title: this.bibSummary.display.title,
-                    dibs: this.dibs
-                }
+    printLetter(previewOnly?: boolean): Promise<any> {
+        return this.net.request(
+            'open-ils.circ',
+            'open-ils.circ.refundable_payment.letter.by_xact.data',
+            this.auth.token(), this.refundedCircId
+        ).toPromise().then(data => {
+            let evt = this.evt.parse(data);
+
+            if (evt) {
+                alert(evt);
+                return;
+            }
+
+            const printDetails = {
+                templateName: 'refund_summary',
+                contextData: data,
+                contentType: 'text/html',
+                printContext: 'default'
             };
 
-            // generate the preview.
-            this.printLetter(true);
-        } else {
-            this.printDetails = null;
-        }
-        */
+            if (previewOnly) {
+                this.printer.compileRemoteTemplate(printDetails)
+                .then(response => {
+                    this.printPreviewHtml = response.content;
+                    document.getElementById('print-preview-pane').innerHTML = response.content;
+                });
+            } else {
+                this.printer.print(printDetails);
+            }
+        });
     }
 
-
-    printLetter(previewOnly?: boolean) {
-        /*
-        if (previewOnly) {
-            this.printer.compileRemoteTemplate(this.printDetails)
-            .then(response => {
-                this.printPreviewHtml = response.content;
-                document.getElementById('print-preview-pane').innerHTML = response.content;
-            });
-        } else {
-            this.printer.print(this.printDetails);
-        }
-        */
+    close() {
+        window.close();
     }
 }
