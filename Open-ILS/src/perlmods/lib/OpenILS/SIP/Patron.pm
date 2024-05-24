@@ -858,7 +858,7 @@ sub __circ_to_title {
 }
 
 sub charged_items {
-    my ($self, $start, $end, $ids_only) = shift;
+    my ($self, $start, $end, $ids_only) = @_;
     return $self->charged_items_impl($start, $end, undef, $ids_only);
 }
 
