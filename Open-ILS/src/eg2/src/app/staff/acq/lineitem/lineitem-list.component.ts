@@ -1,6 +1,7 @@
 import {Component, OnInit, Input, Output, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {Observable, from} from 'rxjs';
+import {Location} from '@angular/common';
 import {tap, concatMap} from 'rxjs/operators';
 import {Pager} from '@eg/share/util/pager';
 import {EgEvent, EventService} from '@eg/core/event.service';
@@ -94,6 +95,7 @@ export class LineitemListComponent implements OnInit {
     constructor(
         private router: Router,
         private route: ActivatedRoute,
+        private ngLocation: Location,
         private evt: EventService,
         private net: NetService,
         private auth: AuthService,
@@ -748,6 +750,35 @@ export class LineitemListComponent implements OnInit {
                 }
             );
         });
+    }
+
+    printSelectedWorksheets() {
+        let ids = Object.keys(this.selected)
+            .filter(id => this.selected[id]).map(i => Number(i));
+
+        if (ids.length > 50) {
+            const msg = $localize`Are you sure you wish to print ${ids.length} worksheets?`;
+            if (!confirm(msg)) { return; }
+        }
+
+        this.printNextWorksheet(ids);
+    }
+
+    // Print one worksheet then set a timeout to print the next one.
+    //
+    // The timeout here gives the browser a slice of breathing room
+    // between opening the new table, queueing up the data, and printing
+    // each workstation.
+    printNextWorksheet(ids: number[]) {
+        let id = ids.shift();
+        if (!id) { return; }
+
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/acq/po/${this.poId}/lineitem/${id}/worksheet/print/close`);
+
+        window.open(url);
+
+        setTimeout(() => this.printNextWorksheet(ids), 500);
     }
 }
 

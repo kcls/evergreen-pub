@@ -36,6 +36,8 @@
           [disabled]="!picklistId" i18n>Create Purchase Order from All Lineitems</button>
         <div class="dropdown-divider"></div>
         <h6 class="dropdown-header" i18n>Purchase Order Actions</h6>
+        <button ngbDropdownItem (click)="printSelectedWorksheets()" 
+          [disabled]="!poId" i18n>Print Worksheets for Selecteced Lineitems</button>
         <button ngbDropdownItem (click)="receiveSelected()" 
           [disabled]="!poId" i18n>Mark Selected Lineitems as Received</button>
         <button ngbDropdownItem (click)="unReceiveSelected()" 
