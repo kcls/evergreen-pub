@@ -761,7 +761,15 @@ export class LineitemListComponent implements OnInit {
             if (!confirm(msg)) { return; }
         }
 
-        this.printNextWorksheet(ids);
+        // Print worksheets in the same order we display line items.
+        let sorted = [];
+        this.lineitemIds.forEach(id => {
+            if (ids.includes(id)) {
+                sorted.push(id);
+            }
+        });
+
+        this.printNextWorksheet(sorted);
     }
 
     // Print one worksheet then set a timeout to print the next one.
