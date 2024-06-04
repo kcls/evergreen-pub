@@ -45,8 +45,7 @@ export class AsnReportComponent implements OnInit {
             if (!this.invoiceIdent) { return empty(); }
 
             const query: any = {
-                inv_ident:  this.invoiceIdent
-                //id: 1
+                inv_ident: this.invoiceIdent
             };
 
             return this.flatData.getRows(this.grid.context, query, pager, sort)
@@ -54,11 +53,18 @@ export class AsnReportComponent implements OnInit {
                 // No specific unique identifier for each row.
                 row._index = this.index++;
 
-                return this.pcrud.search('mfde', {
-                    source: row['lineitem.eg_bib_id'],
-                    name: 'bibcn'
-                })
-                .pipe(tap((entry: IdlObject) => row._bib_call_number = entry.value()))
+                return from(
+                    this.pcrud.search('mfde', {
+                        source: row['lineitem.eg_bib_id'],
+                        name: 'bibcn'
+                    })
+                    .toPromise()
+                    .then(entry => {
+                        if (entry) {
+                            row._bib_call_number = entry.value();
+                        }
+                    })
+                )
                 .pipe(map(_ => row));
             }));
         };
