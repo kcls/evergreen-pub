@@ -260,6 +260,14 @@ $helpers = {
         return $U->ou_ancestor_setting_value($org_id, $setting);
     },
 
+    get_user_setting => sub {
+        my ($user_id, $name) = @_;
+        my $setting = new_editor()->search_actor_user_setting(
+            {usr => $user_id, name => $name}
+        )->[0];
+        return $setting ? OpenSRF::Utils::JSON->JSON2perl($setting->value) : undef;
+    },
+
     # Useful for accessing hash values whose key contains dots (.), 
     # which TT interprets as levels within a nested hash.
     #
