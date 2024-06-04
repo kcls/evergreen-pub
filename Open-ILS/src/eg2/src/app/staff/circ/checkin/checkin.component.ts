@@ -18,8 +18,6 @@ import {CircService, CircDisplayInfo, CheckinParams, CheckinResult
 import {BarcodeSelectComponent
     } from '@eg/staff/share/barcodes/barcode-select.component';
 import {PrintService} from '@eg/share/print/print.service';
-import {MarkDamagedDialogComponent
-    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {CopyAlertsDialogComponent
     } from '@eg/staff/share/holdings/copy-alerts-dialog.component';
 import {BucketDialogComponent
@@ -89,7 +87,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('barcodeSelect') private barcodeSelect: BarcodeSelectComponent;
-    @ViewChild('markDamagedDialog') private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('copyAlertsDialog') private copyAlertsDialog: CopyAlertsDialogComponent;
     @ViewChild('bucketDialog') private bucketDialog: BucketDialogComponent;
     @ViewChild('itemNeverCircedStr') private itemNeverCircedStr: StringComponent;
@@ -297,13 +294,13 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
 
     markDamaged(rows: CheckinGridEntry[]) {
-        const copyIds = this.getCopyIds(rows, 14 /* ignore damaged */);
-        if (copyIds.length === 0) { return; }
+        const copyId = this.getCopyIds(rows)[0];
+        if (!copyId) { return; }
 
-        from(copyIds).pipe(concatMap(id => {
-            this.markDamagedDialog.copyId = id;
-            return this.markDamagedDialog.open({size: 'lg'});
-        })).subscribe();
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/cat/item/damaged/${copyId}/`);
+
+        window.open(url);
     }
 
     addItemAlerts(rows: CheckinGridEntry[]) {

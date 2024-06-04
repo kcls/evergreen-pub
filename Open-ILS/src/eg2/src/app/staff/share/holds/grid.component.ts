@@ -14,8 +14,6 @@ import {GridComponent} from '@eg/share/grid/grid.component';
 import {ProgressDialogComponent} from '@eg/share/dialog/progress.component';
 import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
-import {MarkDamagedDialogComponent
-    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
     } from '@eg/staff/share/holdings/mark-missing-dialog.component';
 import {MarkDiscardDialogComponent
@@ -121,8 +119,6 @@ export class HoldsGridComponent implements OnInit {
         private progressDialog: ProgressDialogComponent;
     @ViewChild('transferDialog', { static: true })
         private transferDialog: HoldTransferDialogComponent;
-    @ViewChild('markDamagedDialog', { static: true })
-        private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('markMissingDialog', { static: true })
         private markMissingDialog: MarkMissingDialogComponent;
     @ViewChild('markDiscardDialog')
@@ -694,30 +690,14 @@ export class HoldsGridComponent implements OnInit {
     }
 
     async showMarkDamagedDialog(rows: any[]) {
-        const copyIds = rows.map(r => r.cp_id).filter(id => Boolean(id));
-        if (copyIds.length === 0) { return; }
+        const copyId = rows.map(r => r.cp_id).filter(id => Boolean(id))[0];
 
-        let rowsModified = false;
+		if (!copyId) { return; }
 
-        const markNext = async(ids: number[]) => {
-            if (ids.length === 0) {
-                return Promise.resolve();
-            }
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/cat/item/damaged/${copyId}/`);
 
-            this.markDamagedDialog.copyId = ids.pop();
-            return this.markDamagedDialog.open({size: 'lg'}).subscribe(
-                ok => {
-                    if (ok) { rowsModified = true; }
-                    return markNext(ids);
-                },
-                dismiss => markNext(ids)
-            );
-        };
-
-        await markNext(copyIds);
-        if (rowsModified) {
-            this.holdsGrid.reload();
-        }
+        window.open(url);
     }
 
     showMarkMissingDialog(rows: any[]) {
