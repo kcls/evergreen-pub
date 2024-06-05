@@ -71,6 +71,7 @@ indexterm:[Linux, Ubuntu]
   * `debian-bullseye` for Debian Bullseye (11.0)
   * `ubuntu-focal` for Ubuntu Focal Fossa (20.04)
   * `ubuntu-jammy` for Ubuntu Jammy Jellyfish (22.04)
+  * `ubuntu-noble` for Ubuntu Noble Numbat (24.04)
 
 +
 [source, bash]
