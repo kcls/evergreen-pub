@@ -53,8 +53,8 @@ autoreconf -i
   * **Linux**: Evergreen has been tested on
     Debian Bullseye (11),
     Debian Buster (10), 
-    Ubuntu Jammy Jellyfish (22.04),
-    and Ubuntu Focal Fossa (20.04).
+    Ubuntu Noble Numbat (24.04),
+    and Ubuntu Jammy Jellyfish (22.04).
     If you are running an older version of these distributions, you may want 
     to upgrade before upgrading Evergreen. For instructions on upgrading these
     distributions, visit the Debian or Ubuntu websites.
@@ -501,8 +501,8 @@ version and the version recommended for production use of Evergreen:
 ------------------------------------------------------------------------------
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-bullseye-10
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-buster-10
-make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-focal-10
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-jammy-10
+make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-noble-10
 ------------------------------------------------------------------------------
 
 [WARNING]
@@ -521,8 +521,8 @@ system:
 ------------------------------------------------------------------------------
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-bullseye-11
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-buster-11
-make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-focal-11
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-jammy-11
+make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-noble-11
 ------------------------------------------------------------------------------
 
 To install PostgreSQL version 12, use the following command for your operating
@@ -532,8 +532,8 @@ system:
 ------------------------------------------------------------------------------
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-bullseye-12
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-buster-12
-make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-focal-12
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-jammy-12
+make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-noble-12
 ------------------------------------------------------------------------------
 
 To install PostgreSQL version 13, use the following command for your operating
@@ -543,8 +543,8 @@ system:
 ------------------------------------------------------------------------------
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-bullseye-13
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-buster-13
-make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-focal-13
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-jammy-13
+make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-noble-13
 ------------------------------------------------------------------------------
 
 To install PostgreSQL version 14, use the following command for your operating
@@ -554,8 +554,8 @@ system:
 ------------------------------------------------------------------------------
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-bullseye-14
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-buster-14
-make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-focal-14
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-jammy-14
+make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-noble-14
 ------------------------------------------------------------------------------
 
 To install PostgreSQL version 15, use the following command for your operating
@@ -565,8 +565,8 @@ system:
 ------------------------------------------------------------------------------
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-bullseye-15
 make -f Open-ILS/src/extras/Makefile.install postgres-server-debian-buster-15
-make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-focal-15
 make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-jammy-15
+make -f Open-ILS/src/extras/Makefile.install postgres-server-ubuntu-noble-15
 ------------------------------------------------------------------------------
 
 .Create the Evergreen PostgreSQL user
