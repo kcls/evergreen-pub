@@ -16,7 +16,7 @@
     <div ngbDropdown>
       <button class="btn btn-info btn-sm" ngbDropdownToggle i18n>Actions</button>
       <div ngbDropdownMenu>
-        <a ngbDropdownItem routerLink="../brief-record"
+        <a ngbDropdownItem routerLink="brief-record"
           queryParamsHandling="merge" i18n>Add Brief Record</a>
         <button ngbDropdownItem (click)="deleteLineitems()" 
           [disabled]="!canDeleteLis()" i18n>Delete Selected Lineitems</button>
