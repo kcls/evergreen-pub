@@ -241,7 +241,9 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         if (this.trimList && this.checkins.length >= TRIM_LIST_TO) {
             this.checkins.length = TRIM_LIST_TO;
         }
-        this.grid.reload();
+
+        this.grid.context.reloadSync()
+            .then(_ => this.grid.context.toggleSelectOneRow(entry.index));
     }
 
     toggleMod(mod: string) {
@@ -263,12 +265,14 @@ export class CheckinComponent implements OnInit, AfterViewInit {
     }
 
     printReceipt() {
-        if (this.checkins.length === 0) { return; }
+        if (this.grid.context.getSelectedRows().length == 0) {
+            return;
+        }
 
         this.printer.print({
             printContext: 'default',
             templateName: 'checkin',
-            contextData: {checkins: this.checkins}
+            contextData: {checkins: this.grid.context.getSelectedRows()}
         });
     }
 
