@@ -1,6 +1,8 @@
 import {Component, Input, ViewChild} from '@angular/core';
-import {Observable, throwError} from 'rxjs';
+import {Observable, throwError, from} from 'rxjs';
+import {mergeMap} from 'rxjs/operators';
 import {NetService} from '@eg/core/net.service';
+import {PcrudService} from '@eg/core/pcrud.service';
 import {StoreService} from '@eg/core/store.service';
 import {EventService} from '@eg/core/event.service';
 import {ToastService} from '@eg/share/toast/toast.service';
@@ -32,12 +34,14 @@ export class HoldTransferDialogComponent
     changesApplied: boolean;
     numSucceeded: number;
     numFailed: number;
+    targetTitle = '';
 
     constructor(
         private modal: NgbModal, // required for passing to parent
         private toast: ToastService,
         private store: StoreService,
         private net: NetService,
+        private pcrud: PcrudService,
         private evt: EventService,
         private auth: AuthService) {
         super(modal); // required for subclassing
@@ -58,7 +62,14 @@ export class HoldTransferDialogComponent
             return throwError('Transfer Target Required');
         }
 
-        return super.open(args);
+        return from(
+            this.pcrud.search('mfde', {
+                source: this.transferTarget,
+                name: 'title_proper'
+            })
+            .toPromise()
+            .then(title => this.targetTitle = title ? title.value() : '')
+        ).pipe(mergeMap(_ => super.open(args)));
     }
 
     async transferHolds(): Promise<any> {
