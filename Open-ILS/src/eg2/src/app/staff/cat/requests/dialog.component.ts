@@ -82,26 +82,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
         .toPromise().then(req => {
             this.request = req;
             this.sourceRequest = this.idl.clone(req);
-            /*
-            this.languageEntries = [];
-            if (this.hasCustomLang()) {
-                this.languageEntries.push({id: req.language(), label: req.language()});
-            }
-            this.languages.forEach(l => this.languageEntries.push({id: l, label: l}));
-            */
         });
     }
-
-    /*
-    hasCustomLang(): boolean {
-        if (this.request) {
-            let lang = this.request.language();
-            return lang !== null && !this.languages.includes(lang);
-        }
-
-        return false;
-    }
-    */
 
     save(claim?: boolean): Promise<void> {
         if (claim) {
