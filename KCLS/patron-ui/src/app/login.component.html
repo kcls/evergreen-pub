@@ -11,10 +11,10 @@
       </mat-expansion-panel-header>
       <div class="flex p-2">
         <mat-form-field class="flex-1">
-          <mat-label i18n>Username or Barcode</mat-label>
+          <mat-label>{{barcodeLabel}}</mat-label>
           <input type="text" matInput [formControl]="controls.identifier"/>
-          <mat-error *ngIf="controls.identifier.hasError('required')" i18n>
-              Username or Barcode <strong>required</strong>
+          <mat-error *ngIf="controls.identifier.hasError('required')">
+              {{barcodeLabel}}<strong>required</strong>
           </mat-error>
         </mat-form-field>
       </div>
