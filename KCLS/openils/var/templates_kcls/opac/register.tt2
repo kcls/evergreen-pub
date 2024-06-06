@@ -904,69 +904,69 @@ a:hover {
          text_img_url = 'https://w3.kcls.org/cardimages';
          langs = [{
             label => 'አማርኛ | Amharic',
-            pdf => 'KCLS%20Library%20Card%20Application%20AMH.pdf',
+            pdf => 'amharic.pdf',
           }, { 
             label => 'اللغة العربية / Arabic',
-            pdf => 'ARABIC%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'arabic.pdf',
           }, { 
             label => '中文 / Chinese',
             label2 => 'Mandarin'
-            pdf => 'CHINESE%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'chinese.pdf',
           }, { 
             label => 'رى / Dari',
-            pdf => 'DARI%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'dari.pdf',
           }, { 
             label => 'English', 
             #pdf => 'ENG%20KCLS%20600%20Library%20Card%20Application.pdf'
-            pdf => '04-2023%20KCLS%20600%20Library%20Card%20Application%20ENG.pdf'
+            pdf => 'english.pdf'
           }, { 
             label => 'English Large Print',
-            pdf => '062211%20KCLS%20600%20LP.pdf',
+            pdf => 'english-large-print.pdf',
           }, { 
             label => 'فارسی / Farsi',
-            pdf => 'FARSI%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'farsi.pdf',
           }, { 
             label => 'Français / French',
-            pdf => 'FRENCH%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'french.pdf',
           }, { 
             label => 'हिंदू / Hindi',
-            pdf => 'KCLS%20Library%20Card%20Application%20HIN.pdf',
+            pdf => 'hindi.pdf',
           }, { 
             label => '한국어 / Korean',
-            pdf => 'KOREAN%20KCLS%20600%20Library%20Card%20Application.pdf'
+            pdf => 'korean.pdf'
           }, { 
             label => 'kajin ṃajeḷ / Marshallese',
-            pdf => 'MARSHALLESE%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'marshallese.pdf',
           }, { 
             label => 'ښتو / Pashto',
-            pdf => 'PASHTO%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'pashto.pdf',
           }, { 
             label => 'Português / Portuguese',
-            pdf => 'PORTUGUESE%20KCLS%20Library%20Card%20Application.pdf'
+            pdf => 'portuguese.pdf'
           }, { 
             label => 'ਪੰਜਾਬੀ / Punjabi',
-            pdf => 'Punjabi%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'punjabi.pdf',
           }, { 
             label => 'Pусский / Russian',
-            pdf => 'RUSSIAN%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'russian.pdf',
           }, { 
             label => 'afka soomaaliga / Somali',
-            pdf => 'SOMALI%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'somali.pdf',
           }, { 
             label => 'Español / Spanish',
-            pdf => '04-2023%20Library%20Card%20Application_SPL.pdf',
+            pdf => 'spanish.pdf',
           }, { 
             label => 'tagalog / Tagalog',
-            pdf => 'TAGALOG%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'tagalog.pdf',
           }, { 
             label => 'ትግርኛ / Tigrinya',
-            pdf => 'TIGRINYA%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'tigrinya.pdf',
           }, { 
             label => 'мова українська / Ukranian',
-            pdf => 'UKRANIAN%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'ukranian.pdf',
           }, { 
             label => 'tiếng Việt / Vietnamese',
-            pdf => 'VIETNAMESE%20KCLS%20600%20Library%20Card%20Application.pdf',
+            pdf => 'vietnamese.pdf',
         }];
       %]
       <ul id='download-forms-list'>
