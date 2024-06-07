@@ -378,7 +378,7 @@ sub collect_user_and_targets {
 
     my $user;
     if ($core_type eq 'stgu') {
-        my $stage = $e->retrieve_staging_user_stage($user_id);
+        my $stage = $e->retrieve_staging_user_stage($user_id) or return 0;
 
         # Create a standard user from our staged user so we can minimize
         # template changes for field name variations.

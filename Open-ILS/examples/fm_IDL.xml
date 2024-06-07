@@ -11890,9 +11890,6 @@ SELECT  usr,
             <field reporter:label="Parent/Guardian" name="ident_value2" reporter:datatype="text"/>
             <field reporter:label="Delivery" name="delivery_method" reporter:datatype="text"/>
 						<field reporter:label="Internet Access Level" name="net_access_level" reporter:datatype="link"/>
-						<!-- staging tables are joined by username instead of ID -->
-						<field reporter:label="Residential Address" name="billing_address" oils_persist:virtual="true"/>
-						<field reporter:label="Mailing Address" name="mailing_address" oils_persist:virtual="true"/>
         </fields>
         <links>
             <link field="requesting_usr" reltype="has_a" key="id" map="" class="au"/>
