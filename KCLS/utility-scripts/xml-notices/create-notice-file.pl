@@ -357,6 +357,20 @@ sub process_events {
         "Processed ".scalar(@$events)." events across $usr_count users");
 }
 
+# $source will be a staging table
+# $target will be the analogous actor.* table.
+sub map_staged_values {
+    my ($source, $target) = @_;
+    return unless $source && $target;
+
+    $target->id($source->row_id);
+
+    for my $field ($target->all_fields) {
+        # Only some fields are shared between stgu and au and related objects.
+        eval { $target->$field($source->$field) };
+    }
+}
+
 # Returns 1 if the script should continue processing the current user
 # Returns 0 to skip this user.
 sub collect_user_and_targets {
@@ -364,7 +378,13 @@ sub collect_user_and_targets {
 
     my $user;
     if ($core_type eq 'stgu') {
-        $user = $ctx->{user} = $e->retrieve_staging_user_stage($user_id);
+        my $stage = $e->retrieve_staging_user_stage($user_id);
+
+        # Create a standard user from our staged user so we can minimize
+        # template changes for field name variations.
+        $user = $ctx->{user} = Fieldmapper::actor::user->new;
+        map_staged_values($stage, $user);
+
     } else {
         $user = $ctx->{user} = $e->retrieve_actor_user([$user_id, $user_flesh]);
     }
@@ -474,17 +494,19 @@ sub collect_user_and_targets {
 
     } elsif ($core_type eq 'stgu') {
 
+        my $stage_addr = $e->search_staging_billing_address_stage({usrname => $user->usrname})->[0];
+
+        return 0 unless $stage_addr; # required in the form.
+
+        my $billing_address = Fieldmapper::actor::user_address->new;
+        map_staged_values($stage_addr, $billing_address);
+
+        $billing_address->valid('t');
+        $user->billing_address($billing_address);
+
+        $user->home_ou($e->retrieve_actor_org_unit($user->home_ou));
+
         $ctx->{context_org} = $user->home_ou;
-
-        # Staging user addresses are not presently fleshable.
-        my $components = $U->simplereq(
-            'open-ils.actor',
-            'open-ils.actor.user.stage.retrieve.by_username',
-            $user->usrname
-        );
-
-        $user->billing_address($components->{billing_address});
-        $user->mailing_address($components->{mailing_address});
 
     } else {
 

@@ -16,7 +16,7 @@ SET org_addr = context_org.mailing_address || context_org.billing_address;
       <profile_id>[% user.profile %]</profile_id>
       <first_given_name>[% escape_xml(user.first_given_name) %]</first_given_name>
       <family_name>[% escape_xml(user.family_name) %]</family_name>
-      [%- IF !for_email -%]
+      [%- IF !for_email || notice_type == 'pending patron' -%]
       [%- IF !user_addr OR user_addr.valid == 'f' %]
       <addr_valid>false</addr_valid>
       [%- ELSE %]
@@ -33,7 +33,7 @@ SET org_addr = context_org.mailing_address || context_org.billing_address;
       <text_number>[% text_number %]</text_number>
       [%- END %]
       <email>[% escape_xml(user.email) %]</email>
-      <sys_id>[% user.id || user.row_id %]</sys_id>
+      <sys_id>[% user.id %]</sys_id>
       <total_balance_owed>[% user.money_summary.balance_owed | format('%.02f') %]</total_balance_owed>
     </patron>
     <location>
