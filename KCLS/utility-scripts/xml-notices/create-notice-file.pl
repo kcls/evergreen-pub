@@ -383,6 +383,7 @@ sub collect_user_and_targets {
         # Create a standard user from our staged user so we can minimize
         # template changes for field name variations.
         $user = $ctx->{user} = Fieldmapper::actor::user->new;
+        $ctx->{staged_delivery_method} = $stage->delivery_method;
         map_staged_values($stage, $user);
 
     } else {

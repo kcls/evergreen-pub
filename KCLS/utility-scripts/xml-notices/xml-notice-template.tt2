@@ -13,6 +13,9 @@ SET org_addr = context_org.mailing_address || context_org.billing_address;
       [%- IF notice_type == 'ecard' %]
       <verification_code>[% escape_xml(user.ident_value) %]</verification_code>
       [%- END %]
+      [%- IF notice_type == 'pending patron' %]
+      <delivery_method>[% escape_xml(staged_delivery_method) %]</delivery_method>
+      [%- END %]
       <profile_id>[% user.profile %]</profile_id>
       <first_given_name>[% escape_xml(user.first_given_name) %]</first_given_name>
       <family_name>[% escape_xml(user.family_name) %]</family_name>
