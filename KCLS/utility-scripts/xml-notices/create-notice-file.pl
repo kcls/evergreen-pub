@@ -331,7 +331,8 @@ sub process_events {
     my @cur_events;
 
     for my $event (@$events) {
-        my $user_id = $event->{$usr_field};
+        # stgu: where a user is not a user.
+        my $user_id = $core_type eq 'stgu' ? $event->row_id : $event->{$usr_field};
 
         if ($user_id != $cur_usr) {
             print_one_user($xml_file, $cur_usr, \@cur_events) if @cur_events;
@@ -358,7 +359,12 @@ sub process_events {
 sub collect_user_and_targets {
     my ($ctx, $user_id, $target_ids) = @_;
 
-    my $user = $ctx->{user} = $e->retrieve_actor_user([$user_id, $user_flesh]);
+    my $user;
+    if ($core_type eq 'stgu') {
+        $user = $ctx->{user} = $e->retrieve_actor_user([$user_id, $user_flesh]);
+    } else {
+        $user = $ctx->{user} = $e->retrieve_actor_user([$user_id, $user_flesh]);
+    }
 
     if ($event_tag && $event_tag =~ /print/) {
         my $addr = $user->mailing_address || $user->billing_address;
@@ -462,6 +468,20 @@ sub collect_user_and_targets {
     } elsif ($core_type eq 'au') {
 
         $ctx->{context_org} = $user->home_ou;
+
+    } elsif ($core_type eq 'stgu') {
+
+        $ctx->{context_org} = $user->home_ou;
+
+        # Staging user addresses are not presently fleshable.
+        my $components = $U->simplereq(
+            'open-ils.actor',
+            'open-ils.actor.user.stage.retrieve.by_username',
+            $user->usrname
+        );
+
+        $user->billing_address($components->{billing_address});
+        $user->mailing_address($components->{mailing_address});
 
     } else {
 
