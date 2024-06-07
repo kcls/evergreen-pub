@@ -268,18 +268,21 @@ sub get_copy_price {
 }
 
 sub collect_events {
-
     my $start_date = get_start_date();
     announce('info', "Collecting events between dates $start_date and $end_date");
+
+    my %user_select = $core_type eq 'stgu' ? () : ($core_type => [$usr_field]);
+    my $order_field = $core_type eq 'stgu' ? 'row_id' : $usr_field;
+    my $target_id_field = $core_type eq 'stgu' ? 'row_id' : 'id';
 
     my $results = $e->json_query({
         select => {
             atev => ['target', 'user_data'],
-            $core_type => [$usr_field]
+            %user_select
         },
         from => {
             atev => {
-                $core_type => {field => 'id', fkey => 'target'}
+                $core_type => {field => $target_id_field, fkey => 'target'}
             }
         },
         where => {
@@ -290,7 +293,7 @@ sub collect_events {
             }
         },
         order_by => [
-            {class => $core_type, field => $usr_field}
+            {class => $core_type, field => $order_field}
         ]
     }, {timeout => 10800}) 
         or announce('error', 'XML Notice query timed out', 1);
@@ -332,7 +335,7 @@ sub process_events {
 
     for my $event (@$events) {
         # stgu: where a user is not a user.
-        my $user_id = $core_type eq 'stgu' ? $event->row_id : $event->{$usr_field};
+        my $user_id = $core_type eq 'stgu' ? $event->{target} : $event->{$usr_field};
 
         if ($user_id != $cur_usr) {
             print_one_user($xml_file, $cur_usr, \@cur_events) if @cur_events;
@@ -361,7 +364,7 @@ sub collect_user_and_targets {
 
     my $user;
     if ($core_type eq 'stgu') {
-        $user = $ctx->{user} = $e->retrieve_actor_user([$user_id, $user_flesh]);
+        $user = $ctx->{user} = $e->retrieve_staging_user_stage($user_id);
     } else {
         $user = $ctx->{user} = $e->retrieve_actor_user([$user_id, $user_flesh]);
     }
