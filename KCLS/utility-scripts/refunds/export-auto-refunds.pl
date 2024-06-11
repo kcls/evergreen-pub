@@ -25,7 +25,7 @@ my $username = 'admin';
 my $help;
 my $simulate;
 my $mrx_id;
-my $export_session;
+my $force_create_csv = 0;
 my @refund_responses;
 
 sub help {
@@ -53,6 +53,9 @@ Options:
         Process a single money.refundable_transaction by ID instead of
         running in batch mode.
 
+    --force-create-csv
+        Overrite existing CSV files with the same name.
+
     --help
         Show this message
 HELP
@@ -77,49 +80,6 @@ sub announce {
         } else {
             print "$msg\n";
         }
-    }
-}
-
-
-sub process_refunds {
-
-    my @params;
-    my $method;
-
-    if ($mrx_id) {
-        # Process only a single transaction.
-        @params = ($mrx_id);
-        $method = 'open-ils.circ.refundable_xact.refund';
-    } else {
-        $method = 'open-ils.circ.refundable_xact.batch_process';
-    }
-
-    $method .= ".simulate" if $simulate;
-
-    my $ses = OpenSRF::AppSession->create('open-ils.circ');
-    my $req = $ses->request($method, $authtoken, @params);
-
-    # Create and track a summary response per refundable transaction.
-    my $response;
-    while (my $resp = $req->recv(timeout => 3600)) {
-        announce('error', $req->failed, 1) if $req->failed;                       
-        my $content = $resp->content;
-
-
-        if ($content->{zeroing}) {
-            # Capture the first response per xact.
-            $response = $content;
-
-        } elsif (exists $content->{refund_due}) {
-            # Capture refund_due from the final per-xact response.
-            $response->{refund_due} = $content->{refund_due};
-            push(@refund_responses, $response);
-        }
-
-        print OpenSRF::Utils::JSON->perl2JSON($content) . "\n\n";
-
-        # session values will be the same across the batch.
-        $export_session = $content->{session} if $content->{session};
     }
 }
 
@@ -204,6 +164,10 @@ sub export_one_mrxs {
         return;
     }
 
+    if (-e $csv_file && !$force_create_csv) {
+        announce('error', "File exists: $csv_file; use --force-create-csv to overwrite", 1);
+    }
+
     open(CSV, ">$csv_file") or
         announce('error', "Cannot open CSV file for writing: $csv_file: $!");
 
@@ -211,9 +175,21 @@ sub export_one_mrxs {
 
     close(CSV);
 
-    if (!$simulate) {
-        # TODO set erp_export_date
+    return if $simulate;
+
+    # Apply the erp export date.
+
+    my $mrx = $editor->retrieve_money_refundable_xact($mrxs->id);
+
+    $mrx->erp_export_date('now');
+
+    $editor->xact_begin;
+
+    unless ($editor->update_money_refundable_xact($mrx)) {
+        announce('error', "Failed updating transaction " . $mrx->id, 1);
     }
+
+    $editor->commit;
 }
 
 sub generate_csv {
@@ -224,7 +200,6 @@ sub generate_csv {
         {refund_amount => {'>' => 0}, erp_export_date => undef},
         {idlist => 1}
     ]);
-
 
     for my $mrx (@$mrx_list) {
         announce('info', "Processing refundable transaction ".$mrx->id);
@@ -248,6 +223,7 @@ sub generate_csv {
 GetOptions(
     'simulate' => \$simulate,
     'mrx-id=s' => \$mrx_id,
+    'force-create-csv' => \$force_create_csv,
     'help' => \$help
 ) || help();
 
