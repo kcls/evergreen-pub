@@ -107,12 +107,24 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
         this.circ.checkin(params)
         .then(result => {
+            this.processing = false;
 
             console.debug('Lost/Paid checkin returned: ', result);
 
             const lpr = result.firstEvent.payload.lostpaid_checkin_result;
 
             console.debug('Lost/Paid result', lpr);
+
+            if (!lpr) {
+                // Will happen when we skip processing, but there's also
+                // potential edge cases where this occurs.
+                if (!params.lostpaid_checkin_skip_processing) {
+                    console.error("No lost/paid result data was returned!");
+                    return;
+                } else {
+                    // Close the window or display some info to staff?
+                }
+            }
 
             this.refundedCircId = lpr.refunded_xact;
 
