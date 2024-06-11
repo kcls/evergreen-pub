@@ -3183,7 +3183,7 @@ sub do_checkin {
 
     $self->finish_fines_and_voiding;
 
-    if ($self->confirmed_lostpaid_checkin && $self->lostpaid_checkin_skip_processing) {
+    if ($self->confirmed_lostpaid_checkin && !$self->lostpaid_checkin_skip_processing) {
         # Lost/Paid checkin and the user has confirmed we should continue.
         my $evt = $self->process_lostpaid_checkin;
         $self->bail_on_events($evt) if $evt;
@@ -3218,6 +3218,9 @@ sub process_lostpaid_checkin {
     my $self = shift;
     my $e = $self->editor;
     return undef unless my $circ = $self->circ;
+    my $circ_id = $circ->id;
+
+    $logger->info("circulator: processing lostpaid checkin for circ $circ_id");
 
     my $mrx = $e->search_money_refundable_xact({
         xact => $circ->id,
@@ -3229,7 +3232,10 @@ sub process_lostpaid_checkin {
     my $zero_note = 'Item is not eligible for refund';
 
     if ($self->lostpaid_item_condition_ok) {
+        $logger->info("circulator: circ $circ_id is in good condition");
+
         if ($mrx) {
+            $logger->info("circulator: circ $circ_id is eligible for refund");
 
             my $results = [];
             my $evt = $RFC->process_refund($e, undef, $mrx->id, 0, $results);
@@ -3246,8 +3252,11 @@ sub process_lostpaid_checkin {
             return undef;
         }
     } else {
+        $logger->info("circulator: circ $circ_id is not in good condition");
 
         if ($mrx) {
+            $logger->info("circulator: circ $circ_id setting as non-refundable re: condition");
+
             # Call out that item could be refunded were it in better condition.
             $zero_note = 'Not eligible for refund due to item condition';
 
@@ -3259,6 +3268,8 @@ sub process_lostpaid_checkin {
             return $e->event unless $e->update_money_refundable_xact($mrx);
 
         }
+
+        $logger->info("circulator: circ $circ_id discarding damaged item");
 
         # Set item as Discard
         my $copy = $self->copy;
@@ -3276,6 +3287,9 @@ sub process_lostpaid_checkin {
 
     my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
     return undef if !$sum || $sum->balance_owed >= 0;
+
+
+    $logger->info("circulator: circ $circ_id adjusting bills to zero");
 
     my $res = $CC->adjust_bills_to_zero_manual_impl($e, [$circ->id], $zero_note);
     return $res if $U->is_event($res);

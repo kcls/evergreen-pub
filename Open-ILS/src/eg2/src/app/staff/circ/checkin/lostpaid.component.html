@@ -124,7 +124,7 @@
       <eg-progress-inline></eg-progress-inline>
     </div>
 
-    <div class="row">
+    <div class="row" *ngIf="!printPreviewHtml">
       <div class="col-6">
         <button *ngIf="hasCheckinBypassPerms" type="button" class="btn btn-danger" 
           (click)="checkin(true)" [disabled]="!initials" i18n>
@@ -153,9 +153,9 @@
   </div>
 </div>
 
-<div *ngIf="printPreviewHtml">
+<div>
   <hr class="mt-3 mb-3"/>
-  <div class="row">
+  <div class="row" *ngIf="printPreviewHtml">
     <div class="col">
       <button 
         (click)="printLetter()" 
