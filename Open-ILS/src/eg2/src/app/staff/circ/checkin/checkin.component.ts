@@ -265,6 +265,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
     printReceipt() {
         if (this.grid.context.getSelectedRows().length == 0) {
+            this.toast.warning($localize`Please select rows to print`);
             return;
         }
 
