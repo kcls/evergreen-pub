@@ -263,16 +263,18 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         }
     }
 
-    printReceipt() {
-        if (this.grid.context.getSelectedRows().length == 0) {
+    printReceipt(selected?: boolean) {
+        if (selected && this.grid.context.getSelectedRows().length == 0) {
             this.toast.warning($localize`Please select rows to print`);
             return;
         }
 
+        let checkins = selected ? this.grid.context.getSelectedRows() : this.checkins;
+
         this.printer.print({
             printContext: 'default',
             templateName: 'checkin',
-            contextData: {checkins: this.grid.context.getSelectedRows()}
+            contextData: {checkins: checkins}
         });
     }
 
