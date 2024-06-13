@@ -9,3 +9,4 @@
 0004-damaged-item-letter [0003-patron-requests] 2024-02-22T15:19:56Z berick <berick@kcls-311> # Damaged Item Letter
 XXXX-transit-sips [0003-patron-requests] 2024-04-30T20:55:15Z berick <berick@kcls-311> # transit slips
 XXXX-pending-patrons-notice [0004-damaged-item-letter] 2024-06-07T13:56:14Z berick <berick@kcls-311> # all access email notice
+XXXX-sip-filters [0004-damaged-item-letter] 2024-06-13T14:06:40Z berick <berick@kcls-311> # SIP mediator filters
