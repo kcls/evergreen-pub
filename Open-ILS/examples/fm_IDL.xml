@@ -15986,7 +15986,7 @@ SELECT  usr,
 			<link field="approved_by" reltype="has_a" key="id" map="" class="au"/>
 			<link field="rejected_by" reltype="has_a" key="id" map="" class="au"/>
 			<link field="paused_by" reltype="has_a" key="id" map="" class="au"/>
-			<link name="refund_session" reltype="has_a" key="id" map="" class="mrses"/>
+			<link field="refund_session" reltype="has_a" key="id" map="" class="mrses"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
