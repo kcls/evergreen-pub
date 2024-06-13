@@ -242,8 +242,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
             this.checkins.length = TRIM_LIST_TO;
         }
 
-        this.grid.context.reloadSync()
-            .then(_ => this.grid.context.toggleSelectOneRow(entry.index));
+        this.grid.context.reload();
     }
 
     toggleMod(mod: string) {
