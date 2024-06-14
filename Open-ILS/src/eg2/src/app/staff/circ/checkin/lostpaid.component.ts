@@ -32,6 +32,9 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     processing = false;
     hasCheckinBypassPerms: boolean | null = null;
     refundedCircId: number | null = null;
+    xactWasZeroed = false;
+    itemWasDiscarded = false;
+    checkinComplete = false;
 
     constructor(
         private router: Router,
@@ -97,6 +100,8 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
     checkin(skipRefund?: boolean) {
         this.processing = true;
+        this.xactWasZeroed = false;
+        this.itemWasDiscarded = false;
 
         let params: CheckinParams = this.checkinParams;
         params.confirmed_lostpaid_checkin = true;
@@ -108,6 +113,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         this.circ.checkin(params)
         .then(result => {
             this.processing = false;
+            this.checkinComplete = true;
 
             console.debug('Lost/Paid checkin returned: ', result);
 
@@ -134,13 +140,11 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
             } else {
 
                 if (lpr.item_discarded) {
-                    // TODO alert staff
-                    console.debug('Item Was Discarded');
+                    this.itemWasDiscarded = true;
                 }
 
                 if (lpr.transaction_zeroed) {
-                    // TODO alert staff
-                    console.debug('Transaction was zeroed');
+                    this.xactWasZeroed = true;
                 }
             }
         });

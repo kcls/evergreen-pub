@@ -3294,8 +3294,13 @@ sub process_lostpaid_checkin {
     my $res = $CC->adjust_bills_to_zero_manual_impl($e, [$circ->id], $zero_note);
     return $res if $U->is_event($res);
 
-    $self->lostpaid_checkin_result({transaction_zeroed => 
-        $self->editor->retrieve_money_billable_transaction_summary($circ->id)});
+    # may have item_discarded from above
+    my $result = $self->lostpaid_checkin_result || {};
+
+    $result->{transaction_zeroed} = 
+        $self->editor->retrieve_money_billable_transaction_summary($circ->id);
+
+    $self->lostpaid_checkin_result($result);
 
     return undef;
 }

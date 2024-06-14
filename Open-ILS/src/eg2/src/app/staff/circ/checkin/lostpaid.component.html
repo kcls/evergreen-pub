@@ -124,7 +124,7 @@
       <eg-progress-inline></eg-progress-inline>
     </div>
 
-    <div class="row" *ngIf="!printPreviewHtml">
+    <div class="row" *ngIf="!checkinComplete">
       <div class="col-6">
         <button *ngIf="hasCheckinBypassPerms" type="button" class="btn btn-danger" 
           (click)="checkin(true)" [disabled]="!initials" i18n>
@@ -150,6 +150,19 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="row mt-2 mb-2" *ngIf="checkinComplete">
+  <div class="col-lg-4 offset-lg-3">
+    <div class="alert alert-info">
+      <div class="mt-2" i18n>Checkin Complete</div>
+      <div *ngIf="xactWasZeroed" class="mt-2" i18n>Transaction was Zeroed</div>
+      <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was discarded.</div>
+    </div>
+  </div>
+  <div class="col-lg-2">
+    <button type="button" class="btn btn-outline-dark" (click)="close()" i18n>Close</button>
   </div>
 </div>
 
