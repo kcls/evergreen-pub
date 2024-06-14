@@ -35,6 +35,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     xactWasZeroed = false;
     itemWasDiscarded = false;
     checkinComplete = false;
+    makingPrintPreview = false;
 
     constructor(
         private router: Router,
@@ -151,11 +152,13 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     }
 
     printLetter(previewOnly?: boolean): Promise<any> {
+        this.makingPrintPreview = true;
         return this.net.request(
             'open-ils.circ',
             'open-ils.circ.refundable_payment.letter.by_xact.data',
             this.auth.token(), this.refundedCircId
         ).toPromise().then(data => {
+            this.makingPrintPreview = false;
             let evt = this.evt.parse(data);
 
             if (evt) {
