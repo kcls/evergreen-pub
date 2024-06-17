@@ -271,6 +271,10 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
         let checkins = selected ? this.grid.context.getSelectedRows() : this.checkins;
 
+        if (checkins.length === 0) {
+            return; // print-all version
+        }
+
         this.printer.print({
             printContext: 'default',
             templateName: 'checkin',
