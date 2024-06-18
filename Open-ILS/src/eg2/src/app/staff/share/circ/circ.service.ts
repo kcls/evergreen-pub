@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {Observable, empty, from} from 'rxjs';
 import {map, concatMap, mergeMap} from 'rxjs/operators';
-import {IdlObject} from '@eg/core/idl.service';
+import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
 import {PcrudService, PcrudQueryOps} from '@eg/core/pcrud.service';
@@ -246,6 +246,7 @@ export class CircService {
         private audio: AudioService,
         private evt: EventService,
         private org: OrgService,
+        private idl: IdlService,
         private net: NetService,
         private pcrud: PcrudService,
         private serverStore: ServerStoreService,
@@ -1175,14 +1176,54 @@ export class CircService {
             && vol.label().toUpperCase().startsWith("IL")
             && rec.title().toUpperCase().startsWith("ILL TITLE -")) {
 
+console.log('HERE 1');
+
             return this.getCopyNotes(copy.id())
             .then(notes => {
                 copy.notes(notes);
-
                 this.printer.print({
                     printContext: 'receipt',
                     templateName: 'ill_return_receipt',
                     contextData: {copy: copy}
+                });
+            })
+            .then(_ => {
+                // Auto-delete ILL copies upon successful checkin.
+                // Clone these so we can freely modify them without
+                // affecting the data display to the user.
+                let c = this.idl.clone(copy);
+                let v = this.idl.clone(vol);
+                c.isdeleted(true);
+                v.ischanged(true);
+                v.copies([c]);
+
+                if (typeof v.prefix() === 'object') {
+                    v.prefix(v.prefix().id());
+                }
+
+                if (typeof v.suffix() === 'object') {
+                    v.suffix(v.suffix().id());
+                }
+
+                console.log('Deleting ILL copy ', c.barcode());
+
+                return this.net.request(
+                    'open-ils.cat',
+                    'open-ils.cat.asset.volume.fleshed.batch.update.override',
+                    this.auth.token(),
+                    [v]
+                )
+                .toPromise()
+                .then(del => {
+                    console.log('Delete copy response: ', del);
+                    console.log('Deleting ILL record ', rec.id());
+
+                    return this.net.request(
+                        'open-ils.cat',
+                        'open-ils.cat.biblio.record_entry.delete',
+                        this.auth.token(),
+                        rec.id()
+                      ).toPromise();
                 });
             })
             .then(_ => result);
