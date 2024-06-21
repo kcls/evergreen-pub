@@ -1225,18 +1225,21 @@ export class CircService {
         .toPromise()
         .then(delVol => {
             console.log('Delete copy response: ', delVol);
-            console.log('Deleting ILL record ', record.id());
+            console.log('Deleting ILL record ', record.doc_id());
 
             return this.net.request(
                 'open-ils.cat',
                 'open-ils.cat.biblio.record_entry.delete',
                 this.auth.token(),
-                record.id()
+                record.doc_id()
             ).toPromise();
         })
         .then(delRec => {
             console.debug('Deleting record returned ', delRec);
-            this.toast.info($localize`Deleted item ${copy.barcode()}`);
+            // Allow the "print queued" toast to appear for a sec.
+            setTimeout(() => {
+                this.toast.info($localize`Deleted item ${copy.barcode()}`);
+            }, 2000);
         });
     }
 
