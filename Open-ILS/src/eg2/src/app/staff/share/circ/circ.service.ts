@@ -17,6 +17,7 @@ import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {WorkLogService, WorkLogEntry} from '@eg/staff/share/worklog/worklog.service';
 import {PermService} from '@eg/core/perm.service';
 import {PrintService} from '@eg/share/print/print.service';
+import {ToastService} from '@eg/share/toast/toast.service';
 
 export interface CircDisplayInfo {
     title?: string;
@@ -256,7 +257,8 @@ export class CircService {
         private holdings: HoldingsService,
         private worklog: WorkLogService,
         private perms: PermService,
-        private bib: BibRecordService
+        private bib: BibRecordService,
+        private toast: ToastService
     ) {}
 
     applySettings(): Promise<any> {
@@ -1176,8 +1178,6 @@ export class CircService {
             && vol.label().toUpperCase().startsWith("IL")
             && rec.title().toUpperCase().startsWith("ILL TITLE -")) {
 
-console.log('HERE 1');
-
             return this.getCopyNotes(copy.id())
             .then(notes => {
                 copy.notes(notes);
@@ -1193,43 +1193,51 @@ console.log('HERE 1');
                 // affecting the data display to the user.
                 let c = this.idl.clone(copy);
                 let v = this.idl.clone(vol);
-                c.isdeleted(true);
-                v.ischanged(true);
-                v.copies([c]);
-
-                if (typeof v.prefix() === 'object') {
-                    v.prefix(v.prefix().id());
-                }
-
-                if (typeof v.suffix() === 'object') {
-                    v.suffix(v.suffix().id());
-                }
-
-                console.log('Deleting ILL copy ', c.barcode());
-
-                return this.net.request(
-                    'open-ils.cat',
-                    'open-ils.cat.asset.volume.fleshed.batch.update.override',
-                    this.auth.token(),
-                    [v]
-                )
-                .toPromise()
-                .then(del => {
-                    console.log('Delete copy response: ', del);
-                    console.log('Deleting ILL record ', rec.id());
-
-                    return this.net.request(
-                        'open-ils.cat',
-                        'open-ils.cat.biblio.record_entry.delete',
-                        this.auth.token(),
-                        rec.id()
-                      ).toPromise();
-                });
+                return this.deleteIllHoldings(c, v, rec);
             })
             .then(_ => result);
         }
 
         return Promise.resolve(result);
+    }
+
+    deleteIllHoldings(copy: IdlObject, volume: IdlObject, record: IdlObject): Promise<void> {
+        copy.isdeleted(true);
+        volume.ischanged(true);
+        volume.copies([copy]);
+
+        if (typeof volume.prefix() === 'object') {
+            volume.prefix(volume.prefix().id());
+        }
+
+        if (typeof volume.suffix() === 'object') {
+            volume.suffix(volume.suffix().id());
+        }
+
+        console.log('Deleting ILL copy ', copy.barcode());
+
+        return this.net.request(
+            'open-ils.cat',
+            'open-ils.cat.asset.volume.fleshed.batch.update.override',
+            this.auth.token(),
+            [volume]
+        )
+        .toPromise()
+        .then(delVol => {
+            console.log('Delete copy response: ', delVol);
+            console.log('Deleting ILL record ', record.id());
+
+            return this.net.request(
+                'open-ils.cat',
+                'open-ils.cat.biblio.record_entry.delete',
+                this.auth.token(),
+                record.id()
+            ).toPromise();
+        })
+        .then(delRec => {
+            console.debug('Deleting record returned ', delRec);
+            this.toast.info($localize`Deleted item ${copy.barcode()}`);
+        });
     }
 
     handleCheckinLocAlert(result: CheckinResult): Promise<CheckinResult> {
