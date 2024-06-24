@@ -13,6 +13,7 @@ import {GridDataSource, GridColumn, GridCellTextGenerator,
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {Pager} from '@eg/share/util/pager';
 import {PromptDialogComponent} from '@eg/share/dialog/prompt.component';
+import {SelectDialogComponent} from '@eg/share/dialog/select.component';
 import {ItemRequestDialogComponent} from './dialog.component';
 
 @Component({
@@ -26,10 +27,15 @@ export class ItemRequestComponent implements OnInit {
     showRejected = false;
     showClaimedByMe = false;
     cellTextGenerator: GridCellTextGenerator;
+    routeToOptions = [
+        {label: $localize`ILL`, value: 'ill'},
+        {label: $localize`Acquisitions`, value: 'acq'}
+    ];
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('vendorPrompt') private vendorPrompt: PromptDialogComponent;
     @ViewChild('requestDialog') private requestDialog: ItemRequestDialogComponent;
+    @ViewChild('routeToDialog') private routeToDialog: SelectDialogComponent;
 
     constructor(
         private router: Router,
@@ -144,6 +150,15 @@ export class ItemRequestComponent implements OnInit {
             if (!value) { return; }
 
             reqs.forEach(r => r.vendor(value));
+            this.updateReqs(reqs);
+        });
+    }
+
+    applyRouteTo(reqs: IdlObject[]) {
+        this.routeToDialog.open().subscribe(value => {
+            if (!value) { return; }
+
+            reqs.forEach(r => r.route_to(value));
             this.updateReqs(reqs);
         });
     }
