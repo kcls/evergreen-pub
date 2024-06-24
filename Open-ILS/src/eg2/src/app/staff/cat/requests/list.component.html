@@ -1,6 +1,10 @@
 <eg-staff-banner bannerText="Patron Item Requests" i18n-bannerText></eg-staff-banner>
 <eg-prompt-dialog #vendorPrompt dialogTitle="Enter a Vendor" i18n-dialogTitle>
 </eg-prompt-dialog>
+<eg-select-dialog #routeToDialog
+  [options]="routeToOptions"
+  dialogTitle="Select a Route-To Value" i18n-dialogTitle>
+</eg-select-dialog>
 
 <eg-item-request-dialog #requestDialog></eg-item-request-dialog>
 
@@ -50,11 +54,15 @@
     (onClick)="claimItems($event)">
   </eg-grid-toolbar-action>
 
-  <!--
   <eg-grid-toolbar-action i18n-label label="Apply Vendor"
     (onClick)="applyVendor($event)">
   </eg-grid-toolbar-action>
 
+  <eg-grid-toolbar-action i18n-label label="Apply Route-To"
+    (onClick)="applyRouteTo($event)">
+  </eg-grid-toolbar-action>
+
+  <!--
   <eg-grid-toolbar-action i18n-label label="Create ILL Request"
     (onClick)="createIllRequest($event)">
   </eg-grid-toolbar-action>
