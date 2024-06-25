@@ -16124,6 +16124,9 @@ SELECT  usr,
 			<field reporter:label="Reject Reason" name="reject_reason" reporter:datatype="text"/>
 			<field reporter:label="Complete Date" name="complete_date" reporter:datatype="timestamp"/>
 			<field reporter:label="Cancel Date" name="cancel_date" reporter:datatype="timestamp"/>
+			<field reporter:label="ILL Opt-Out" name="ill_opt_out" reporter:datatype="bool"/>
+			<field reporter:label="ID Matched" name="id_matched" reporter:datatype="bool"/>
+			<field reporter:label="Patron Notes" name="patron_notes" reporter:datatype="bool"/>
 		</fields>
 		<links>
 			<link field="usr" reltype="has_a" key="id" map="" class="au"/>

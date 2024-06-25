@@ -10,7 +10,19 @@ use OpenILS::Event;
 use DateTime;
 my $U = "OpenILS::Application::AppUtils";
 
-my @REQ_FIELDS = qw/identifier format language title author pubdate publisher notes route_to/; 
+my @REQ_FIELDS = qw/
+    identifier
+    format
+    language
+    title
+    author
+    pubdate
+    publisher
+    notes
+    route_to
+    ill_opt_out
+    id_matched
+/; 
 
 # "Books" whose publication date is older than this many years
 # goes to ILL.
