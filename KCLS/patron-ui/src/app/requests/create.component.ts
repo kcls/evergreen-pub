@@ -43,7 +43,7 @@ export class CreateRequestComponent implements OnInit {
         $localize`عربي / Arabic`,
         $localize`中文 / Chinese`,
         $localize`Deutsch / German`,
-        $localize`ગુજરાતી  // Gujarati`,
+        $localize`ગુજરાતી / Gujarati`,
         $localize`עִברִית / Hebrew`,
         $localize`हिंदी  / indi`,
         $localize`italiano / Italian`,
@@ -74,6 +74,7 @@ export class CreateRequestComponent implements OnInit {
         publisher: new FormControl({value: '', disabled: true}),
         language: new FormControl({value: '', disabled: true}),
         notes: new FormControl({value: '', disabled: true}),
+        ill_opt_out: new FormControl(false),
     }
 
     constructor(
@@ -206,6 +207,7 @@ export class CreateRequestComponent implements OnInit {
         }
 
         values.format = this.requests.selectedFormat;
+        values.id_matched = this.suggestedRecords.length > 0;
 
         this.requestSubmitted = false;
         this.requestSubmitError = false;

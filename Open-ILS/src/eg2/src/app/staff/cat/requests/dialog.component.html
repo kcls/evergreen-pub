@@ -74,6 +74,18 @@
       </div>
     </div>
     <div class="row mt-3">
+      <div class="col-3" i18n>Match Found?</div>
+      <div class="col-1">
+        <eg-bool [value]="request.id_matched()"></eg-bool>
+      </div>
+      <div class="col-lg-2" *ngIf="request.id_matched() === 't'">
+        <a target="_blank" routerLink="/staff/catalog/search"
+          [queryParams]="{query: 'id:' + request.identifier()}">
+          {{request.identifier()}}
+        </a>
+      </div>
+    </div>
+    <div class="row mt-3">
       <div class="col-3" i18n>Route To</div>
       <div class="col-4">
         <eg-combobox 
