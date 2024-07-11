@@ -20,6 +20,27 @@
       </a>
     </div>
 
+    <div *ngIf="tab === 'create'" class="flex justify-center p-2 mt-4">
+      <div>
+        <div i18n>
+          Thank you for suggesting an item not owned by the King County
+          Library System (KCLS). Due to the large number of requests KCLS
+          receives, we cannot fulfill every request. We appreciate your
+          understanding. Holds will be placed for items we are able to
+          purchase or borrow through Interlibrary Loan (ILL) for pick up at
+          your preferred library location. Please check your library account
+          for the status of your request.
+        </div>
+        <div class="mt-3">
+          <mat-checkbox [formControl]="controls.ill_opt_out" i18n>
+            Opt out: I would like this item considered only for purchase. 
+            Please do not attempt to borrow through Interlibrary Loan if 
+            not available for purchase.
+          </mat-checkbox>
+        </div>
+      </div>
+    </div>
+
     <div *ngIf="tab === 'create'" class="flex p-2 mt-10">
       <mat-form-field class="flex-1">
         <mat-label i18n>Select a Format</mat-label>

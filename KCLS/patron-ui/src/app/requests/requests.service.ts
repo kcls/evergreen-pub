@@ -5,6 +5,7 @@ import {AppService} from '../app.service';
 @Injectable()
 export class RequestsService {
     selectedFormat: string | null = null;
+    illOptOut = false;
     requestsAllowed: boolean | null = null;
 
     // Emits after completion of every new patron auth+permission check.

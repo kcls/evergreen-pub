@@ -13,7 +13,8 @@ export class RequestsComponent implements OnInit {
     tab = 'create';
 
     controls: {[field: string]: FormControl} = {
-        format: new FormControl('')
+        format: new FormControl(''),
+        ill_opt_out: new FormControl(false),
     };
 
     constructor(
@@ -25,10 +26,16 @@ export class RequestsComponent implements OnInit {
 
     ngOnInit() {
         this.tab = this.router.url.split("/").pop() || 'create';
+        if (this.tab !== 'list') {
+            this.tab = 'create';
+        }
 
         this.router.events.subscribe((event: Event) => {
             if (event instanceof NavigationEnd) {
                 this.tab = event.url.split("/").pop() || 'create';
+                if (this.tab !== 'list') {
+                    this.tab = 'create';
+                }
             }
         });
 
@@ -40,6 +47,8 @@ export class RequestsComponent implements OnInit {
                 this.router.navigate(['/requests/create']);
             }
         });
+
+        this.controls.ill_opt_out.valueChanges.subscribe(opt => this.requests.illOptOut = opt);
 
         this.gateway.authSessionEnded.subscribe(() => this.reset());
     }
