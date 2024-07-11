@@ -117,6 +117,7 @@ sub create_request {
 
     my $request = Fieldmapper::actor::user_item_request->new;
     $request->usr($e->requestor->id);
+    $request->requestor($e->requestor->id);
 
     for my $field (@REQ_FIELDS) {
         # Avoid propagating empty strings, esp for numeric values.

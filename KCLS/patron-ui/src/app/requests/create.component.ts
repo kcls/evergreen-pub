@@ -74,7 +74,7 @@ export class CreateRequestComponent implements OnInit {
         publisher: new FormControl({value: '', disabled: true}),
         language: new FormControl({value: '', disabled: true}),
         notes: new FormControl({value: '', disabled: true}),
-        ill_opt_out: new FormControl(false),
+        //ill_opt_out: new FormControl(false),
     }
 
     constructor(
@@ -207,6 +207,7 @@ export class CreateRequestComponent implements OnInit {
         }
 
         values.format = this.requests.selectedFormat;
+        values.ill_opt_out = this.requests.illOptOut;
         values.id_matched = this.suggestedRecords.length > 0;
 
         this.requestSubmitted = false;
