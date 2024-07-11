@@ -6,7 +6,8 @@ BEGIN;
 ALTER TABLE actor.usr_item_request
     ADD COLUMN ill_opt_out BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN id_matched BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN patron_notes TEXT
+    ADD COLUMN patron_notes TEXT,
+    ADD COLUMN requestor INTEGER NOT NULL
 ;
 
 COMMIT;
