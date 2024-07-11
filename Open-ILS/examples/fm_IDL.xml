@@ -16127,10 +16127,12 @@ SELECT  usr,
 			<field reporter:label="ILL Opt-Out" name="ill_opt_out" reporter:datatype="bool"/>
 			<field reporter:label="ID Matched" name="id_matched" reporter:datatype="bool"/>
 			<field reporter:label="Patron Notes" name="patron_notes" reporter:datatype="bool"/>
+			<field reporter:label="Requestor" name="requestor" reporter:datatype="link"/>
 		</fields>
 		<links>
 			<link field="usr" reltype="has_a" key="id" map="" class="au"/>
 			<link field="claimed_by" reltype="has_a" key="id" map="" class="au"/>
+			<link field="requestor" reltype="has_a" key="id" map="" class="au"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
