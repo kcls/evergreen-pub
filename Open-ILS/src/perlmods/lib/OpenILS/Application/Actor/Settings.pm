@@ -103,6 +103,9 @@ sub get_context {
     # default to the workstation org if needed.
     $org_id = $e->requestor->ws_ou if $ws_id && !$org_id;
 
+    # If all else fails, use the home org unit as the permission org.
+    $org_id = $e->requestor->home_ou unless $org_id;
+
     return ($org_id, $user_id, $ws_id);
 }
 

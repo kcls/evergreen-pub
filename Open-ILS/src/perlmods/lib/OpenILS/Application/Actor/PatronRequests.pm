@@ -148,7 +148,7 @@ __PACKAGE__->register_method (
             desc => q/
                 List of patron requests.
                 /,
-            type => 'hash'
+            type => 'array'
         }
     }
 );

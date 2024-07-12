@@ -31,6 +31,11 @@
           your preferred library location. Please check your library account
           for the status of your request.
         </div>
+        <div class="mt-3" i18n>
+          Need to update your notification preferences? 
+          <a target="_blank" href="https://kcls.org/ask/">Contact Ask KCLS</a>
+          or visit your local community library.
+        </div>
         <div class="mt-3">
           <mat-checkbox [formControl]="controls.ill_opt_out" i18n>
             Opt out: I would like this item considered only for purchase. 
@@ -93,7 +98,12 @@
       <ng-container *ngIf="app.getAuthSession()">
         <ng-container *ngIf="!requests.requestsAllowed">
           <div class="mt-5 flex justify-center border rounded border-orange-400 p-4">
-            <p i18n>This account does not have permission to create new requests.</p>
+            <ng-container *ngIf="requests.tooManyActiveRequests()">
+              <p i18n>Patrons are allowed to have at most {{requests.maxRequestCount}} active requests.</p>
+            </ng-container>
+            <ng-container *ngIf="!requests.tooManyActiveRequests()">
+              <p i18n>This account does not have permission to create new requests.</p>
+            </ng-container>
           </div>
         </ng-container>
         <ng-container *ngIf="requests.requestsAllowed">
