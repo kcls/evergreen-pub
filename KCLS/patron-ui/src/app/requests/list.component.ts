@@ -9,7 +9,8 @@ type Request = Hash & {create_date: string};
 
 @Component({
   selector: 'app-patron-request-list',
-  templateUrl: './list.component.html'
+  templateUrl: './list.component.html',
+  styleUrls: ['list.component.css']
 })
 export class RequestListComponent implements OnInit {
 
