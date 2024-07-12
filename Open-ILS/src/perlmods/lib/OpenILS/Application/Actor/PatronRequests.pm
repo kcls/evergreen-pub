@@ -161,6 +161,9 @@ sub get_requests {
     return $e->die_event unless $e->checkauth;
     return $e->die_event unless $e->allowed('OPAC_LOGIN');
 
+    # We could also check the CREATE_PURCHASE_REQUEST permission
+    # here, but for KCLS purposes the result would be the same.
+
     my $filter = {usr => $e->requestor->id};
     if ($self->api_name =~ /pending/) {
         $filter->{cancel_date} = undef;

@@ -1,0 +1,13 @@
+::ng-deep .mat-stepper-horizontal .mat-horizontal-stepper-header {
+  padding: 10px;
+  height:auto;
+}
+
+::ng-deep .mat-stepper-horizontal .mat-stepper-horizontal-line {
+  /*margin: 0 -4px; */
+}
+
+/* Users are not allowed to modify the values */
+::ng-deep .mat-horizontal-stepper-header{
+  pointer-events: none !important;
+}
