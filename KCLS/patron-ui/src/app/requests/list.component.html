@@ -45,7 +45,12 @@
       <mat-card-actions *ngIf="!request.reject_date && !request.cancel_date && !request.claim_date">
         <hr class="mt-3 mb-3"/>
         <div class="p-1 flex w-full">
-          <ng-container *ngIf="cancelRequested !== request.id">
+          <ng-container *ngIf="request.route_to === 'ill'" i18n>
+            <p>To cancel an Interlibrary Loan request, please email 
+              <a target="_blank" href="mailto:illdept&#64;kcls.org">illdept&#64;kcls.org</a>
+            </p>
+          </ng-container>
+          <ng-container *ngIf="cancelRequested !== request.id && request.route_to !== 'ill'">
             <button mat-raised-button (click)="cancel(request)" i18n>Cancel Request</button>
           </ng-container>
           <ng-container *ngIf="cancelRequested === request.id">
