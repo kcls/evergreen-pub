@@ -1,13 +1,21 @@
-::ng-deep .mat-stepper-horizontal .mat-horizontal-stepper-header {
-  padding: 10px;
-  height:auto;
+.step-icon {
+  border-radius: 100%;
+  width: 24px;
+  height: 24px;
 }
 
-::ng-deep .mat-stepper-horizontal .mat-stepper-horizontal-line {
-  /*margin: 0 -4px; */
+.step-icon.done {
+  background-color: rgb(63, 81, 181);
+  color: white;
 }
 
-/* Users are not allowed to modify the values */
-::ng-deep .mat-horizontal-stepper-header{
-  pointer-events: none !important;
+.step-icon.skipped {
+  background-color: rgb(68, 71, 78);
+  color: white;
 }
+
+.step-icon.pending {
+  background-color: rgb(68, 71, 78);
+  color: white;
+}
+

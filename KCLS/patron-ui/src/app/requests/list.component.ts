@@ -68,5 +68,9 @@ export class RequestListComponent implements OnInit {
             return $localize`Pending`;
         }
     }
+
+    stepState(step: string): string {
+        return 'done';
+    }
 }
 

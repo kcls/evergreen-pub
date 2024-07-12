@@ -40,63 +40,29 @@
           </div>
         </div>
 
-        <!-- request process/status stepper -->
-        <mat-stepper #stepper [disableRipple]="true" selectedIndex="3">
-
-          <!-- custom icons -->
-          <ng-template matStepperIcon="completed">
-            <mat-icon>check</mat-icon>
-          </ng-template>
-          <ng-template matStepperIcon="pending">
-            <mat-icon>pending_actions</mat-icon>
-          </ng-template>
-          <ng-template matStepperIcon="skipped">
-            <mat-icon>arrow_forward_ios</mat-icon>
-          </ng-template>
-
-          <mat-step label="Pending" state="pending" [completed]="true" state="completed">
-          </mat-step>
-          <mat-step label="Loan/Purchase Rejected" state="ill-rejected" state="skipped">
-            <p i18n>Reason...</p>
-          </mat-step>
-          <mat-step label="Loan Request Submitted" state="ill">
-            <p i18n>An Interlibary Loan Request has been submitted</p>
-          </mat-step>
-          <mat-step label="Item On Order" state="ordered" [completed]="true">
-            <p i18n>Item has been ordered</p>
-          </mat-step>
-          <mat-step label="Received" state="pending">
-          </mat-step>
-        </mat-stepper>
-
-<mat-stepper>
-  <mat-step label="Step 1" state="phone">
-    <p>Put down your phones.</p>
-    <div>
-      <button mat-button matStepperNext>Next</button>
-    </div>
-  </mat-step>
-  <mat-step label="Step 2" state="chat">
-    <p>Socialize with each other.</p>
-    <div>
-      <button mat-button matStepperPrevious>Back</button>
-      <button mat-button matStepperNext>Next</button>
-    </div>
-  </mat-step>
-  <mat-step label="Step 3">
-    <p>You're welcome.</p>
-  </mat-step>
-
-  <!-- Icon overrides. -->
-  <ng-template matStepperIcon="phone">
-    <mat-icon>call_end</mat-icon>
-  </ng-template>
-  <ng-template matStepperIcon="chat">
-    <mat-icon>forum</mat-icon>
-  </ng-template>
-</mat-stepper>
+        <div class="flex">
+          <div class="local-step flex">
+            <div class="step-icon done">
+              <mat-icon>check</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Submitted</div>
+          </div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>arrow_forward_ios</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Submitted</div>
+          </div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon pending">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Ordered</div>
+          </div>
+        </div>
 
       </mat-card-content>
+
       <mat-card-actions *ngIf="!request.reject_date && !request.cancel_date && !request.claim_date">
         <hr class="mt-2 mb-2"/>
         <div class="p-1 flex w-full">
