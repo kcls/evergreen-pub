@@ -1,16 +1,6 @@
 <ng-container *ngIf="app.getAuthSession() && requests.requestsAllowed">
-  <!--
-  <div class="flex justify-center mt-5" i18n>
-    <div>
-      <p>Text goes here for the patron...</p>
-      <p>Text goes here for the patron...</p>
-      <p>Text goes here for the patron...</p>
-    </div>
-  </div>
-  -->
 
   <form role="form" class="mt-4">
-
     <div class="flex p-2" *ngIf="requests.selectedFormat !== 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>ISBN, ISSN, UPC, OCLC Number</mat-label>
