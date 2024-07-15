@@ -5,7 +5,7 @@ import {AppService} from '../app.service';
 
 // Define create_date as a string so it can be used
 // in the Date pipe in the template.
-type Request = Hash & {create_date: string};
+type Request = Hash & {id: number, create_date: string};
 
 @Component({
   selector: 'app-patron-request-list',
@@ -16,6 +16,7 @@ export class RequestListComponent implements OnInit {
 
     requests: Request[] = [];
     cancelRequested: number | null = null;
+    showRequestDetails: {[id: number]: boolean} = {};
 
     constructor(
         private title: Title,

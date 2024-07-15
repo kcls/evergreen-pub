@@ -39,26 +39,101 @@
             <div class="w-3/4 pl-2">{{request.notes}}</div>
           </div>
         </div>
+        <div class="mt-3 p-1 w-full">
+          <div class="w-full p-1 flex odd:bg-slate-50">
+            <div class="w-1/4" i18n>Status:</div>
+            <div class="w-1/4" i18n>Something Here</div>
+            <div class="w-1/4">
+              <a href="javascript:;" 
+                (click)="showRequestDetails[request.id] = !showRequestDetails[request.id]" i18n>Show More</a>
+            </div>
+          </div>
+        </div>
 
-        <div class="flex">
-          <div class="local-step flex">
+        <!-- TODO a simple summary status -->
+
+        <div *ngIf="showRequestDetails[request.id]">
+          <div class="local-step flex ml-2">
             <div class="step-icon done">
               <mat-icon>check</mat-icon>
             </div>
-            <div class="ml-2 flex-1" i18n>Submitted</div>
+            <div class="ml-2" i18n>Request Submitted</div>
           </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
           <div class="local-step flex ml-2">
             <div class="step-icon skipped">
-              <mat-icon>arrow_forward_ios</mat-icon>
+              <mat-icon>pending</mat-icon>
             </div>
-            <div class="ml-2 flex-1" i18n>Submitted</div>
+            <div class="ml-2 flex-1" i18n>Pending Patron Response</div>
           </div>
+
+          <!-- arrow_forward_ios -->
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
           <div class="local-step flex ml-2">
             <div class="step-icon pending">
               <mat-icon>pending</mat-icon>
             </div>
-            <div class="ml-2 flex-1" i18n>Ordered</div>
+            <div class="ml-2 flex-1" i18n>Under Consideration for Purchase</div>
           </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Transferred to Interlibrary Loan</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Interlibrary Loan Request Submitted</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Unable to Complete Interlibrary Loan</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Item On Order</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Unable to Place Hold</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Hold Placed</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
+            <div class="ml-2 flex-1" i18n>Request Complete</div>
+          </div>
+
         </div>
 
       </mat-card-content>
