@@ -25,6 +25,10 @@
   [cellTextGenerator]="cellTextGenerator"
   [showDeclaredFieldsOnly]="true" [filterable]="true">
 
+  <eg-grid-toolbar-button i18n-label label="New Request"
+    (onClick)="newRequest()">
+  </eg-grid-toolbar-button>
+
   <eg-grid-toolbar-checkbox i18n-label label="Route to ILL"
     [initialValue]="showRouteToIll"
     #routeToIllCbox (onChange)="toggleRouteToIll($event)">
