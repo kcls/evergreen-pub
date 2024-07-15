@@ -2,6 +2,7 @@
 
 BEGIN;
 
+DELETE FROM permission.perm_list WHERE code = 'CREATE_USER_ITEM_REQUEST';
 
 DELETE FROM config.org_unit_setting_type_log WHERE name = 'patron_requests.max_active';
 DELETE FROM actor.org_unit_setting WHERE name = 'patron_requests.max_active';

@@ -27,6 +27,11 @@ VALUES (
 INSERT INTO actor.org_unit_setting (org_unit, name, value) 
     VALUES (1, 'patron_requests.max_active', '20');
 
+INSERT INTO permission.perm_list (code, description) VALUES (
+    'CREATE_USER_ITEM_REQUEST', 
+    'Allows staff to create purchase/ill requests on behalf of a patron'
+);
+
 END IF; END $INSERT$;                                                          
 
 COMMIT;

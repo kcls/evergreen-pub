@@ -5,7 +5,20 @@
       i18n-aria-label aria-label="Close" (click)="close(false)"> </button>
   </div>
   <div class="modal-body form-validated" *ngIf="request">
-    <div class="row">
+    <div class="row" *ngIf="mode === 'create'">
+      <div class="col-3" i18n>Patron Barcode</div>
+      <div class="col-4">
+        <input class="form-control" type="text" [(ngModel)]="patronBarcode" (change)="findPatron()"/>
+      </div>
+    </div>
+
+    <div class="row mt-3" *ngIf="patronNotFound">
+      <div class="col-12 alert alert-danger" i18n>
+        Patron barcode '{{patronBarcode}}' not found.
+      </div>
+    </div>
+
+    <div class="row mt-3" *ngIf="request.usr()">
       <div class="col-3" i18n>Patron</div>
       <div class="col-9">
         {{request.usr().family_name()}}, {{request.usr().first_given_name()}}
@@ -23,6 +36,22 @@
         <button class="btn btn-primary" (click)="clearClaimedBy()" i18n>Clear</button>
       </div>
     </div>
+
+    <div class="row mt-3" *ngIf="mode !== 'create'">
+      <div class="col-3" i18n>Format</div>
+      <div class="col-4">{{request.format()}}</div>
+    </div>
+
+    <div class="row mt-3" *ngIf="mode === 'create'">
+      <div class="col-3" i18n>Format</div>
+      <div class="col-4">
+        <select [(ngModel)]="newFormat" class="form-select">
+          
+        </select>
+      </div>
+    </div>
+
+
     <div class="row mt-3">
       <div class="col-3" i18n>Title</div>
       <div class="col-9">
@@ -144,7 +173,7 @@
           (ngModelChange)="request.patron_notes($event)" [ngModel]="request.patron_notes()"/>
       </div>
     </div>
-    <div class="row mt-3">
+    <div class="row mt-3" *ngIf="mode !== 'create'">
       <div class="col-3" i18n>Status</div>
       <div class="col-4">{{getStatus()}}</div>
       <div class="col-5 d-flex">
@@ -168,13 +197,13 @@
     <button type="button" class="btn btn-info me-auto" (click)="createIll()"
       *ngIf="request.route_to() === 'ill'" i18n>Save &amp; Create ILL</button>
 
-    <button type="button" class="btn btn-warning" 
+    <button type="button" class="btn btn-warning"
       (click)="close(false)" i18n>Cancel</button>
 
-    <button type="button" class="btn btn-success ms-2" 
+    <button type="button" class="btn btn-success ms-2" [disabled]="!request.usr()"
       (click)="save()" i18n>Save</button>
 
-    <button type="button" class="btn btn-primary ms-2" 
+    <button type="button" class="btn btn-primary ms-2" [disabled]="!request.usr()"
       (click)="save(true)" i18n>Save &amp; Claim</button>
   </div>
 </ng-template>

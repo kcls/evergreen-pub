@@ -173,6 +173,16 @@ export class ItemRequestComponent implements OnInit {
         );
     }
 
+    newRequest() {
+        this.requestDialog.mode = 'create';
+        this.requestDialog.open({size: 'lg'})
+        .subscribe(changesMade => {
+            if (changesMade) {
+                this.grid.context.reloadSync();
+            }
+        });
+    }
+
     // may not need this.
     showRequestDialog(req: IdlObject) {
         this.requestDialog.requestId = req.id();

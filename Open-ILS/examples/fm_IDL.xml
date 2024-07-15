@@ -16136,6 +16136,9 @@ SELECT  usr,
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
+				<create permission="CREATE_USER_ITEM_REQUEST">
+					<context link="usr" field="home_ou"/>
+				</create>
 				<update permission="MANAGE_USER_ITEM_REQUEST">
 					<context link="usr" field="home_ou"/>
 				</update>
