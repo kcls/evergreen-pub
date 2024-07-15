@@ -85,6 +85,7 @@ core_scripts =   $(examples)/oils_ctl.sh \
 		 $(supportscr)/ingest_ctl \
 		 $(supportscr)/edi_fetcher.pl \
 		 $(supportscr)/edi_order_pusher.pl \
+		 $(supportscr)/bus-watch.sh \
 		 $(supportscr)/edi_pusher.pl
 
 installautojs = $(autojsbinscripts)
