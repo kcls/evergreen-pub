@@ -36,15 +36,32 @@ export class ItemRequestDialogComponent extends DialogComponent {
         {id: 'rejected',   label: $localize`Rejected`},
     ]
 
-    /* Do we need to list these for staff?
     languages = [
         $localize`English`,
+        $localize`አማርኛ / Amharic`,
+        $localize`عربي / Arabic`,
+        $localize`中文 / Chinese`,
+        $localize`Deutsch / German`,
+        $localize`ગુજરાતી / Gujarati`,
+        $localize`עִברִית / Hebrew`,
+        $localize`हिंदी  / indi`,
+        $localize`italiano / Italian`,
+        $localize`日本語 / Japanese`,
+        $localize`한국어 / Korean`,
+        $localize`मराठी  / Marathi`,
+        $localize`Kajin M̧ajeļ / Marshallese`,
+        $localize`ਪੰਜਾਬੀ  / Punjabi/Panjabi`,
+        $localize`فارسی / Persian`,
+        $localize`Português / Portuguese`,
+        $localize`Pусский / Russian`,
+        $localize`Soomaali / Somali`,
         $localize`Español / Spanish`,
-        $localize`Français / French`,
+        $localize`Tagalog`,
+        $localize`தமிழ்  / Tamil`,
+        $localize`తెలుగు  / Telugu`,
+        $localize`Українська / Ukrainian`,
+        $localize`Tiếng Việt / Vietnamese`,
     ];
-    */
-
-    languageEntries: ComboboxEntry[] = [];
 
     @Input() mode: 'edit' | 'create' = 'edit';
 
@@ -166,6 +183,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         } else {
             return promise.then(_ => {
                 this.request.usr(this.request.usr().id());
+                this.request.requestor(this.auth.user().id());
 
                 return this.pcrud.create(this.request).toPromise()
                 .then(_ => this.close(true))
