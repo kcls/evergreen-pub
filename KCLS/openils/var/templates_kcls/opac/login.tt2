@@ -111,8 +111,6 @@
 							<button type="submit" class="btn btn-primary" style="background: rgb(0,63,107)">Log In</button>
               <a href="https://kcls.org/library-cards/">Get a Library Card</a>
 
-              <h2>URL: -> [% CGI.param('redirect_to') %]</h2>
-
               <!--
 							<input type="hidden" name="url" value="[% ctx.url | html %]"/>
 							<input type="hidden" name="qurl" value="[% ctx.qurl | html %]"/>
