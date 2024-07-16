@@ -106,6 +106,8 @@ sub cgi {
 sub timelog {
     my($self, $description) = @_;
 
+    $logger->info("TPAC timelog $description");
+
     return unless DEBUG_TIMING;
     return unless $description;
     $self->ctx->{timing} ||= [];
@@ -612,6 +614,9 @@ sub load_login {
     my $cgi = $self->cgi;
     my $ctx = $self->ctx;
 
+    # Bibliocommons headers/footers for login page.
+    $self->collect_header_footer;
+
     $self->timelog("Load login begins");
 
     my $sso_org = $ctx->{sso_org};
@@ -776,6 +781,7 @@ sub load_login {
 
     # TODO: maybe move this logic to generic_redirect()?
     my $redirect_to = $cgi->param('redirect_to') || $acct;
+
     if (my $login_redirect_gf = $self->editor->retrieve_config_global_flag('opac.login_redirect_domains')) {
         if ($login_redirect_gf->enabled eq 't') {
 
