@@ -44,8 +44,18 @@
             <div class="w-1/4" i18n>Status:</div>
             <div class="w-1/4" i18n>Something Here</div>
             <div class="w-1/4">
-              <a href="javascript:;" 
-                (click)="showRequestDetails[request.id] = !showRequestDetails[request.id]" i18n>Show More</a>
+              <a class="mat-icon-plus-text" href="javascript:;" 
+                i18n-title title="Show/Hide Status Details"
+                (click)="showRequestDetails[request.id] = !showRequestDetails[request.id]">
+                <ng-container *ngIf="showRequestDetails[request.id]">
+                  <mat-icon>unfold_less</mat-icon>
+                  <span class="ml-2" i18n>Hide Details</span>
+                </ng-container>
+                <ng-container *ngIf="!showRequestDetails[request.id]">
+                  <mat-icon>read_more</mat-icon>
+                  <span class="ml-2" i18n>More Details</span>
+                </ng-container>
+              </a>
             </div>
           </div>
         </div>
@@ -83,6 +93,14 @@
             <div class="step-icon skipped">
               <mat-icon>pending</mat-icon>
             </div>
+            <div class="ml-2 flex-1" i18n>Purchase Approved</div>
+          </div>
+
+          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+          <div class="local-step flex ml-2">
+            <div class="step-icon skipped">
+              <mat-icon>pending</mat-icon>
+            </div>
             <div class="ml-2 flex-1" i18n>Transferred to Interlibrary Loan</div>
           </div>
 
@@ -100,14 +118,6 @@
               <mat-icon>pending</mat-icon>
             </div>
             <div class="ml-2 flex-1" i18n>Unable to Complete Interlibrary Loan</div>
-          </div>
-
-          <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
-          <div class="local-step flex ml-2">
-            <div class="step-icon skipped">
-              <mat-icon>pending</mat-icon>
-            </div>
-            <div class="ml-2 flex-1" i18n>Item On Order</div>
           </div>
 
           <div class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
