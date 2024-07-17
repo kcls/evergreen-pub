@@ -3372,7 +3372,7 @@ sub catalog_record_summary {
         # Let's get Formats & Editions data FIXME: consider peer bibs?
         unless ($is_meta) {
             my $meta_search = $e->search_metabib_metarecord_source_map({source => $rec_id});
-            if ($meta_search) {
+            if (@$meta_search) {
                 $response->{staff_view_metabib_id} = $meta_search->[0]->metarecord;
                 my $maps = $e->search_metabib_metarecord_source_map({metarecord => $response->{staff_view_metabib_id}});
                 my @metabib_records = map { $_->source } @$maps;
