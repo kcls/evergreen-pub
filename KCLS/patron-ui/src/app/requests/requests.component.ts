@@ -57,6 +57,7 @@ export class RequestsComponent implements OnInit {
         this.tab = 'create';
         this.requests.reset();
         this.controls.format.reset();
+        this.router.navigate(['/requests/create']); // in case
     }
 
     typeCanBeRequested(): boolean {
