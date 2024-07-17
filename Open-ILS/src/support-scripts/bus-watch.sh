@@ -29,10 +29,9 @@ function set_expire {
     key=$1
 
     ttl=$($REDIS ttl $key)
-    echo "TTL for $key is $ttl"
 
     if [ $ttl == -1 ]; then
-        echo "Setting expire for $key to $EXPIRE";
+        logger -p local0.info -t bus-watch "Setting expire for $key to $EXPIRE";
         $REDIS EXPIRE $key $EXPIRE
     fi;
 }
@@ -45,7 +44,6 @@ function set_expire {
 # it's just a little more clunky to work with.
 
 for namespace in "${NAMESPACES[@]}"; do
-    echo "Scanning namespace: $namespace";
     for key in $($REDIS KEYS "$namespace:*"); do
         set_expire "$key"
     done;
