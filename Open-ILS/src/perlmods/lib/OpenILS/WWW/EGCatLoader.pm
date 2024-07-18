@@ -606,6 +606,178 @@ sub get_carousel_loc {
     return $self->cgi->param('carousel_loc') || $ENV{carousel_loc};
 }
 
+my $ACTIVITY_AGENT = 'ezproxy'; # for backwards compat.
+
+sub load_kcls_databases_login {
+    my $self = shift;
+    my $cgi = $self->cgi;
+    my $ctx = $self->ctx;
+
+    $self->collect_header_footer;
+    $ctx->{page} = 'login';
+
+    my $username = $cgi->param('username') || '';
+    $username =~ s/\s//g;  # Remove blanks
+    my $password = $cgi->param('password');
+    my $org_unit = $ctx->{aou_tree}->()->id;
+
+    # Initial page load (or incomplete form)
+    return Apache2::Const::OK unless $username and $password;
+
+    my $bc_regex = $ctx->{get_org_setting}->($org_unit, 'opac.barcode_regex');
+
+    # To avoid surprises, default to "Barcodes start with digits"
+    $bc_regex = '^\d' unless $bc_regex;
+
+    if ($bc_regex and ($username =~ /$bc_regex/)) {
+        $args->{barcode} = $username;
+    } else {
+        $args->{username} = $username;
+    }
+
+    my $response = 
+        $self->check_database_login($args->{username}, $args->{barcode}, $password)
+        || OpenILS::Event->new('LOGIN_FAILED');
+
+    if($U->event_code($response)) { 
+        # login failed, report the reason to the template
+        $ctx->{login_failed_event} = $response;
+        return Apache2::Const::OK;
+    }
+
+    # login succeeded, redirect as necessary
+
+    my $acct = $self->apache->unparsed_uri;
+    $acct =~ s|/login|/myopac/main|;
+
+    # both login-related cookies should expire at the same time
+    my $login_cookie_expires = ($persist) ? CORE::time + $response->{payload}->{authtime} : undef;
+
+    my $cookie_list = [
+        # contains the actual auth token and should be sent only over https
+        $cgi->cookie(
+            -name => COOKIE_SES,
+            -path => '/',
+            -secure => 1,
+            -value => $response->{payload}->{authtoken},
+            -expires => $login_cookie_expires
+        ),
+        # contains only a hint that we are logged in, and is used to
+        # trigger a redirect to https
+        $cgi->cookie(
+            -name => COOKIE_LOGGEDIN,
+            -path => '/',
+            -secure => 0,
+            -value => '1',
+            -expires => $login_cookie_expires
+        )
+    ];
+
+    # TODO: maybe move this logic to generic_redirect()?
+    my $redirect_to = $cgi->param('redirect_to') || $acct;
+
+    if (my $login_redirect_gf = $self->editor->retrieve_config_global_flag('opac.login_redirect_domains')) {
+        if ($login_redirect_gf->enabled eq 't') {
+
+            my @redir_hosts = ();
+            if ($login_redirect_gf->value) {
+                @redir_hosts = map { '(?:[^/.]+\.)*' . quotemeta($_) } grep { $_ } split(/,\s*/, $login_redirect_gf->value);
+            }
+            unshift @redir_hosts, quotemeta($ctx->{hostname});
+
+            my $hn = join('|', @redir_hosts);
+            my $relative_redir = qr#^(?:(?:(?:(?:f|ht)tps?:)?(?://(?:$hn))(?:/|$))|/$|/[^/]+)#;
+
+            if ($redirect_to !~ $relative_redir) {
+                $logger->warn(
+                    "Login redirection of [$redirect_to] ".
+                    "disallowed based on Global Flag opac.".
+                    "login_redirect_domains RE [$relative_redir]"
+                );
+                $redirect_to = $acct; # fall back to myopac/main
+            }
+        }
+    }
+
+    return
+        $self->_perform_any_sso_required($response, $redirect_to, $cookie_list)
+        || $self->generic_redirect(
+            $redirect_to,
+            $cookie_list
+        );
+}
+
+sub check_databases_login {
+    my ($self, $username, $barcode, $password) = @_;
+
+    my $patron;
+    my $e = $self->editor;
+
+    if ($barcode) {
+
+        my $card = $e->search_actor_card([
+            {barcode => $barcode},
+            {flesh => 1, flesh_fields => {ac => ['usr']}}
+        ])->[0];
+
+        $patron = $card->usr if $card and $card->active eq 't';
+
+    } elsif ($username) {
+
+        $patron = $e->search_actor_user([
+            {username => $username},
+            {flesh => 1, flesh_fields => {au => ['card']}}
+        ])->[0];
+
+        $patron = undef unless $patron->card && $patron->card->active eq 't';
+    }
+
+    return undef unless $patron;
+
+    if ($patron->deleted eq 't') {
+        $logger->warn("openathens: patron is deleted $barcode");
+        return undef;
+    }
+
+    if ($patron->active eq 'f') {
+        $logger->warn("openathens: patron is not active $barcode");
+        return undef;
+    }
+
+    if (!$U->verify_migrated_patron_password($e, $patron->id, $password)) {
+        $logger->warn("openathens: bad password for $barcode");
+        return undef;
+    }
+
+    my $expire =
+        DateTime::Format::ISO8601->new->parse_datetime(
+            cleanse_ISO8601($patron->expire_date));
+
+    if ($expire < DateTime->now) {
+        $logger->warn("openathens: patron account is expired $barcode");
+        return undef;
+    }
+
+    $e->requestor($patron);
+
+    if (!$e->allowed('ACCESS_EBOOKS_AND_DATABASES', $patron->home_ou)) {
+        $logger->warn("openathens: patron does not have database permission $barcode");
+        return undef;
+    }
+
+    $logger->info("openathens: successful authentication for $barcode");
+
+    $U->log_patron_activity($patron->id, $ACTIVITY_AGENT, 'verify');
+
+    # Create a session so the openathens code can access it.
+    return $U->simplereq(
+        'open-ils.auth_internal',
+        'open-ils.auth_internal.session.create',
+        {user_id => $patron->id, login_type => 'opac'}
+    );
+}
+
+
 # -----------------------------------------------------------------------------
 # Log in and redirect to the redirect_to URL (or home)
 # -----------------------------------------------------------------------------
@@ -613,9 +785,6 @@ sub load_login {
     my $self = shift;
     my $cgi = $self->cgi;
     my $ctx = $self->ctx;
-
-    # Bibliocommons headers/footers for login page.
-    $self->collect_header_footer;
 
     $self->timelog("Load login begins");
 
@@ -672,11 +841,13 @@ sub load_login {
         return Apache2::Const::OK unless $username and $password;
 
         my $auth_proxy_enabled = 0; # default false
-        eval {
-            $auth_proxy_enabled = $U->simplereq(
-                'open-ils.auth_proxy',
-                'open-ils.auth_proxy.enabled');
-        };
+
+#        # KCLS doesn't need this extra hop during login.
+#        eval {
+#            $auth_proxy_enabled = $U->simplereq(
+#                'open-ils.auth_proxy',
+#                'open-ils.auth_proxy.enabled');
+#        };
 
         $self->timelog("Checked for auth proxy: $auth_proxy_enabled; org = $org_unit; username = $username");
 
@@ -698,12 +869,18 @@ sub load_login {
         }
 
         if (!$auth_proxy_enabled) {
-            my $seed = $U->simplereq(
-                'open-ils.auth',
-                'open-ils.auth.authenticate.init', $username);
-            $args->{password} = md5_hex($seed . md5_hex($password));
-            $response = $U->simplereq(
-                'open-ils.auth', 'open-ils.auth.authenticate.complete', $args);
+
+            # KCLS uses the OPAC login for access to databases only.
+            # These patrons are not required to have the OPAC_LOGIN
+            # permission, which means we can't use open-ils.auth for
+            # logging in.  Instead, manually create an internal session
+            # for the patron after verifying the credentials and account
+            # viability.
+
+            $response = 
+                $self->kcls_databases_login($args->{username}, $args->{barcode}, $password)
+                || OpenILS::Event->new( 'LOGIN_FAILED' );
+
         } else {
             $args->{password} = $password;
             $response = $U->simplereq(
