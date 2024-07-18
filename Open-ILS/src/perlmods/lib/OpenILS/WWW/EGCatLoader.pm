@@ -106,8 +106,6 @@ sub cgi {
 sub timelog {
     my($self, $description) = @_;
 
-    $logger->info("TPAC timelog $description");
-
     return unless DEBUG_TIMING;
     return unless $description;
     $self->ctx->{timing} ||= [];
@@ -200,6 +198,21 @@ sub load {
     return $self->load_ezproxy_form if $path =~ m|opac/ezproxy/login|;
     return $self->load_ezproxy_deny if $path =~ m|opac/ezproxy/deny|;
     return $self->load_ezproxy_headerfooter if $path =~ m|opac/ezproxy/headerfooter|;
+
+    if($path =~ m|opac/login_oa|) {
+        return $self->load_login_oa unless $self->editor->requestor; # already logged in?
+
+        # This will be less confusing to users than to be shown a login form
+        # when they're already logged in.
+        return $self->generic_redirect(
+            sprintf(
+                "%s://%s%s/myopac/main",
+                $self->ctx->{proto},
+                $self->ctx->{hostname}, $self->ctx->{opac_root}
+            )
+        );
+    }
+
 
     if($path =~ m|opac/login|) {
         return $self->load_login unless $self->editor->requestor; # already logged in?
@@ -606,9 +619,18 @@ sub get_carousel_loc {
     return $self->cgi->param('carousel_loc') || $ENV{carousel_loc};
 }
 
-my $ACTIVITY_AGENT = 'ezproxy'; # for backwards compat.
 
-sub load_kcls_databases_login {
+my $DATABASE_ACTIVITY_AGENT = 'ezproxy'; # for backwards compat.
+
+# OpenAthens dedicated login page.
+#
+# Patrons accessing databases are not required to have the OPAC_LOGIN
+# permission, which means we can't use open-ils.auth for logging in
+# (unless we add a new login type to open-ils.auth, which seems tedious
+# in C and has security implications).  Instead, manually create an
+# internal session for the patron after verifying the credentials and
+# account viability.
+sub load_login_oa {
     my $self = shift;
     my $cgi = $self->cgi;
     my $ctx = $self->ctx;
@@ -629,14 +651,15 @@ sub load_kcls_databases_login {
     # To avoid surprises, default to "Barcodes start with digits"
     $bc_regex = '^\d' unless $bc_regex;
 
+    my $barcode; 
+
     if ($bc_regex and ($username =~ /$bc_regex/)) {
-        $args->{barcode} = $username;
-    } else {
-        $args->{username} = $username;
+        $barcode = $username;
+        $username = undef;
     }
 
     my $response = 
-        $self->check_database_login($args->{username}, $args->{barcode}, $password)
+        $self->check_database_login($username, $barcode, $password)
         || OpenILS::Event->new('LOGIN_FAILED');
 
     if($U->event_code($response)) { 
@@ -650,9 +673,6 @@ sub load_kcls_databases_login {
     my $acct = $self->apache->unparsed_uri;
     $acct =~ s|/login|/myopac/main|;
 
-    # both login-related cookies should expire at the same time
-    my $login_cookie_expires = ($persist) ? CORE::time + $response->{payload}->{authtime} : undef;
-
     my $cookie_list = [
         # contains the actual auth token and should be sent only over https
         $cgi->cookie(
@@ -660,7 +680,6 @@ sub load_kcls_databases_login {
             -path => '/',
             -secure => 1,
             -value => $response->{payload}->{authtoken},
-            -expires => $login_cookie_expires
         ),
         # contains only a hint that we are logged in, and is used to
         # trigger a redirect to https
@@ -669,7 +688,6 @@ sub load_kcls_databases_login {
             -path => '/',
             -secure => 0,
             -value => '1',
-            -expires => $login_cookie_expires
         )
     ];
 
@@ -767,7 +785,7 @@ sub check_databases_login {
 
     $logger->info("openathens: successful authentication for $barcode");
 
-    $U->log_patron_activity($patron->id, $ACTIVITY_AGENT, 'verify');
+    $U->log_patron_activity($patron->id, $DATABASE_ACTIVITY_AGENT, 'verify');
 
     # Create a session so the openathens code can access it.
     return $U->simplereq(
@@ -841,13 +859,11 @@ sub load_login {
         return Apache2::Const::OK unless $username and $password;
 
         my $auth_proxy_enabled = 0; # default false
-
-#        # KCLS doesn't need this extra hop during login.
-#        eval {
-#            $auth_proxy_enabled = $U->simplereq(
-#                'open-ils.auth_proxy',
-#                'open-ils.auth_proxy.enabled');
-#        };
+        eval {
+            $auth_proxy_enabled = $U->simplereq(
+                'open-ils.auth_proxy',
+                'open-ils.auth_proxy.enabled');
+        };
 
         $self->timelog("Checked for auth proxy: $auth_proxy_enabled; org = $org_unit; username = $username");
 
@@ -869,18 +885,12 @@ sub load_login {
         }
 
         if (!$auth_proxy_enabled) {
-
-            # KCLS uses the OPAC login for access to databases only.
-            # These patrons are not required to have the OPAC_LOGIN
-            # permission, which means we can't use open-ils.auth for
-            # logging in.  Instead, manually create an internal session
-            # for the patron after verifying the credentials and account
-            # viability.
-
-            $response = 
-                $self->kcls_databases_login($args->{username}, $args->{barcode}, $password)
-                || OpenILS::Event->new( 'LOGIN_FAILED' );
-
+            my $seed = $U->simplereq(
+                'open-ils.auth',
+                'open-ils.auth.authenticate.init', $username);
+            $args->{password} = md5_hex($seed . md5_hex($password));
+            $response = $U->simplereq(
+                'open-ils.auth', 'open-ils.auth.authenticate.complete', $args);
         } else {
             $args->{password} = $password;
             $response = $U->simplereq(
@@ -958,7 +968,6 @@ sub load_login {
 
     # TODO: maybe move this logic to generic_redirect()?
     my $redirect_to = $cgi->param('redirect_to') || $acct;
-
     if (my $login_redirect_gf = $self->editor->retrieve_config_global_flag('opac.login_redirect_domains')) {
         if ($login_redirect_gf->enabled eq 't') {
 
