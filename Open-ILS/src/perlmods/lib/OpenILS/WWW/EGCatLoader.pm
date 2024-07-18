@@ -658,6 +658,8 @@ sub load_login_oa {
         $username = undef;
     }
 
+    $logger->info("OA login with u=$username b=$barcode (regex=$bc_regex)");
+
     my $response = 
         $self->check_database_login($username, $barcode, $password)
         || OpenILS::Event->new('LOGIN_FAILED');
@@ -725,7 +727,7 @@ sub load_login_oa {
         );
 }
 
-sub check_databases_login {
+sub check_database_login {
     my ($self, $username, $barcode, $password) = @_;
 
     my $patron;
@@ -743,11 +745,12 @@ sub check_databases_login {
     } elsif ($username) {
 
         $patron = $e->search_actor_user([
-            {username => $username},
+            {usrname => $username},
             {flesh => 1, flesh_fields => {au => ['card']}}
         ])->[0];
 
-        $patron = undef unless $patron->card && $patron->card->active eq 't';
+        $patron = undef unless 
+            $patron && $patron->card && $patron->card->active eq 't';
     }
 
     return undef unless $patron;
@@ -762,7 +765,7 @@ sub check_databases_login {
         return undef;
     }
 
-    if (!$U->verify_migrated_patron_password($e, $patron->id, $password)) {
+    if (!$U->verify_migrated_user_password($e, $patron->id, $password)) {
         $logger->warn("openathens: bad password for $barcode");
         return undef;
     }
@@ -785,7 +788,7 @@ sub check_databases_login {
 
     $logger->info("openathens: successful authentication for $barcode");
 
-    $U->log_patron_activity($patron->id, $DATABASE_ACTIVITY_AGENT, 'verify');
+    $U->log_user_activity($patron->id, $DATABASE_ACTIVITY_AGENT, 'verify');
 
     # Create a session so the openathens code can access it.
     return $U->simplereq(
