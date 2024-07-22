@@ -3268,7 +3268,8 @@ sub process_lostpaid_checkin {
 
                 return $evt if $evt;
 
-                $logger->info("Refund result: " .  OpenSRF::Utils::JSON->perl2JSON($results));
+                $logger->info("circulator: refund result: " . 
+                    OpenSRF::Utils::JSON->perl2JSON($results));
 
                 $mrx->dibs($self->lostpaid_staff_initials);
 
@@ -3282,7 +3283,12 @@ sub process_lostpaid_checkin {
 
                 return undef;
             }
+
+        } else {
+            $logger->info("circualtor: lost/paid item is not refundable");
+            $self->lostpaid_checkin_result({item_not_refundable => 1});
         }
+
     } else {
         $logger->info("circulator: circ $circ_id is not in good condition");
 
@@ -3298,7 +3304,6 @@ sub process_lostpaid_checkin {
             $mrx->notes('Not eligible for refund due to item condition');
 
             return $e->event unless $e->update_money_refundable_xact($mrx);
-
         }
 
         $logger->info("circulator: circ $circ_id discarding damaged item");
@@ -3319,7 +3324,6 @@ sub process_lostpaid_checkin {
 
     my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
     return undef if !$sum || $sum->balance_owed >= 0;
-
 
     $logger->info("circulator: circ $circ_id adjusting bills to zero");
 

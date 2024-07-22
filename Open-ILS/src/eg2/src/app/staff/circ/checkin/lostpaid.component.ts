@@ -150,6 +150,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                 if (lpr.transaction_zeroed) {
                     this.xactWasZeroed = true;
                 }
+
+                // TODO
+                // exceeds_max_return_date
+                // item_not_refundable
             }
         });
     }
