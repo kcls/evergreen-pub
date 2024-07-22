@@ -521,6 +521,7 @@ my @AUTOLOAD_FIELDS = qw/
     confirmed_lostpaid_checkin
     lostpaid_item_condition_ok
     lostpaid_checkin_result
+    lostpaid_staff_initials
     lostpaid_checkin_skip_processing
 /;
 

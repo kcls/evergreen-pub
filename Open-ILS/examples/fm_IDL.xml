@@ -15898,33 +15898,6 @@ SELECT  usr,
 		</fields>
 	</class>
 
-	<!-- create a minimal class to model pending refundable transactions.
-			All the caller really needs is the ID and filter org unit, from 
-			there can fetch summaries, etc. -->
-	<class id="merx" controller="open-ils.cstore open-ils.pcrud"
-		oils_obj:fieldmapper="money::eligible_refundable_xact" 
-		reporter:label="Eligible Refundable Transaction"
-		oils_persist:readonly="true">
-    <oils_persist:source_definition><![CDATA[
-			SELECT id, patron_home_ou, xact FROM money.eligible_refundable_xact
-		]]></oils_persist:source_definition>
-		<fields oils_persist:primary="id">
-			<field name="id" reporter:datatype="id" reporter:label="ID"/>
-			<field name="patron_home_ou" reporter:datatype="link" 
-				reporter:label="Patron Home Library"/>
-			<field name="xact" reporter:datatype="link" reporter:label="Transaction"/>
-		</fields>
-		<links>
-			<link field="patron_home_ou" reltype="has_a" key="id" map="" class="aou"/>
-			<link field="xact" reltype="has_a" key="id" map="" class="mbt"/>
-		</links>
-		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
-			<actions>
-				<retrieve permission="MANAGE_REFUNDABLE_XACT" global_required="true"/>
-			</actions>
-		</permacrud>
-	</class>
-
 	<class id="mrxs" controller="open-ils.cstore open-ils.pcrud" 
 		oils_obj:fieldmapper="money::refundable_xact_summary" 
 		oils_persist:tablename="money.refundable_xact_summary" 
