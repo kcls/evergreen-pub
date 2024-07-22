@@ -36,6 +36,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     itemWasDiscarded = false;
     checkinComplete = false;
     makingPrintPreview = false;
+    skipRefund = false;
 
     constructor(
         private router: Router,
@@ -100,6 +101,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     }
 
     checkin(skipRefund?: boolean) {
+        this.skipRefund = Boolean(skipRefund);
         this.processing = true;
         this.xactWasZeroed = false;
         this.itemWasDiscarded = false;
@@ -108,6 +110,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         params.confirmed_lostpaid_checkin = true;
         params.lostpaid_checkin_skip_processing = skipRefund;
         params.lostpaid_item_condition_ok = this.itemCondition === 'good';
+        params.lostpaid_staff_initials = this.initials;
 
         console.debug('Checking item in with params: ', params);
 

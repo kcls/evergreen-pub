@@ -38,9 +38,14 @@ $TEMPLATE$
   <tr>
     <th>Transaction</th>
     <th>Title</th>
+    <th>Barcode</th>
     <th>Last Billing Type</th>
+    <th>Last Payment Type</th>
+    <th>Last Payment Date</th>
     <th>Action</th>
     <th>Amount</th>
+    <th>Receipt #</th>
+    <th>Staff</th>
   </tr>
   [% FOR action IN refund_actions %]
   [% SET xact = action.payment.xact %]
@@ -48,9 +53,20 @@ $TEMPLATE$
   <tr>
     <td>#[% action.payment.xact.id %]</td>
     <td>[% copy.call_number.record.simple_record.title %]</td>
+    <td>[% copy.barcode %]</td>
     <td>[% xact.summary.last_billing_type %]
-    <td>[% action.action %]</td>
+    <td>[% xact.summary.last_payment_type %]
+    <td>[% date.format(xact.summary.last_payment_ts, '%x %r') %]
+    <td>
+        [% IF action.action == 'debit' %]
+            Subtracted from account
+        [% ELSE %]
+            Applied to account
+        [% END %]
+    </td>
     <td>[% money(Math.abs(action.payment.amount)) %]</td>
+    <td>[% refundable_xact.receipt_code %]</td>
+    <td>[% refundable_xact.dibs %]</td>
   </tr>
   [% END %]
 </table>

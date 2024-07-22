@@ -3,15 +3,16 @@
 </eg-staff-banner>
 
 <eg-worklog-strings-components></eg-worklog-strings-components>
+<eg-circ-components></eg-circ-components>
 
 <div *ngIf="invalidCheckin" class="alert alert-warning" i18n>
   Information on this page is out of date.
 </div>
 
-<div *ngIf="checkinResult" class="d-flex">
+<div *ngIf="checkinResult && !checkinComplete" class="d-flex">
   <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
     <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
-      <div class="col-lg-4 font-weight-bold" i18n>Item Barcode:</div>
+      <div class="col-lg-4" i18n>Item Barcode:</div>
       <div class="col-lg-8">
         <a target="_blank" 
           routerLink="/staff/cat/item/{{checkinResult.copy.id()}}/summary">
@@ -20,7 +21,7 @@
       </div>
     </div>
     <div class="row p-2 mt-1" *ngIf="checkinResult.record">
-      <div class="col-lg-4 font-weight-bold" i18n>Title:</div>
+      <div class="col-lg-4" i18n>Title:</div>
       <div class="col-lg-8">
         <a target="_blank" 
           routerLink="/staff/catalog/record/{{checkinResult.record.doc_id()}}">
@@ -42,19 +43,19 @@
       </div>
     </div>
     <div class="row p-2 mt-2">
-      <div class="col-lg-2 font-weight-bold" i18n>Checked Out:</div>
+      <div class="col-lg-2" i18n>Checked Out:</div>
       <div class="col-lg-2">{{checkinResult.circ.xact_start() | egDate}}</div>
-      <div class="col-lg-2 font-weight-bold" i18n>Due Date:</div>
+      <div class="col-lg-2" i18n>Due Date:</div>
       <div class="col-lg-2">{{checkinResult.circ.due_date() | egDate}}</div>
-      <div class="col-lg-2 font-weight-bold" i18n>Item Type:</div>
+      <div class="col-lg-2" i18n>Item Type:</div>
       <div class="col-lg-2">{{checkinResult.firstEvent.payload.circ_modifier.name()}}</div>
     </div>
     <div class="row p-2 mt-1 border-bottom">
-      <div class="col-lg-2 font-weight-bold" i18n>Marked Lost:</div>
+      <div class="col-lg-2" i18n>Marked Lost:</div>
       <div class="col-lg-2">{{checkinResult.circ.stop_fines_time() | egDate}}</div>
-      <div class="col-lg-2 font-weight-bold" i18n>Last Payment:</div>
+      <div class="col-lg-2" i18n>Last Payment:</div>
       <div class="col-lg-2">{{moneySummary().last_payment_ts() | egDate}}</div>
-      <div class="col-lg-2 font-weight-bold" i18n>Payment Type:</div>
+      <div class="col-lg-2" i18n>Last Payment Type:</div>
       <div class="col-lg-2">
         <ng-container [ngSwitch]="moneySummary().last_payment_type()">
           <ng-container *ngSwitchCase="'cash_payment'" i18n>Cash</ng-container>
@@ -100,10 +101,12 @@
     <div class="row p-2 mt-1" *ngIf="itemCondition">
       <div class="col-lg-12">
         <div class="alert alert-secondary">
+          <!--
           <ng-container 
             *ngIf="refundable() && itemCondition === 'good'" i18n>
             This item is eligible for refund.
           </ng-container>
+          -->
           <ng-container 
             *ngIf="refundable() && itemCondition !== 'good'" i18n>
             This item will <u>not</u> be refunded since it is not
@@ -156,13 +159,11 @@
 <div class="row mt-2 mb-2" *ngIf="checkinComplete">
   <div class="col-lg-4 offset-lg-3">
     <div class="alert alert-info">
-      <div class="mt-2" i18n>Checkin Complete</div>
+      <div class="mt-2" i18n>Refund Successfully Processed</div>
+      <div *ngIf="skipRefund" class="mt-2" i18n>Checkin Complete</div>
       <div *ngIf="xactWasZeroed" class="mt-2" i18n>Transaction was Zeroed</div>
       <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was discarded.</div>
     </div>
-  </div>
-  <div class="col-lg-2">
-    <button type="button" class="btn btn-outline-dark" (click)="close()" i18n>Close</button>
   </div>
 </div>
 
@@ -193,5 +194,10 @@
   </div>
 </div>
 
+<div class="row mt-2 mb-2" *ngIf="checkinComplete">
+  <div class="col-lg-2">
+    <button type="button" class="btn btn-outline-dark" (click)="close()" i18n>Close</button>
+  </div>
+</div>
 
 

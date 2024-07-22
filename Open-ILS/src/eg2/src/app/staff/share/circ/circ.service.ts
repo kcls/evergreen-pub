@@ -207,6 +207,7 @@ export interface CheckinParams {
     confirmed_lostpaid_checkin?: boolean;
     lostpaid_item_condition_ok?: boolean;
     lostpaid_checkin_skip_processing?: boolean;
+    lostpaid_staff_initials?: string;
 
 
     // internal / local values that are moved from the API request.

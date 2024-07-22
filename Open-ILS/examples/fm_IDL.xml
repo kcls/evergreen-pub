@@ -15894,6 +15894,7 @@ SELECT  usr,
 				suppress_controller="open-ils.reporter-store"  reporter:label="State"/>
 			<field name="usr_post_code" reporter:datatype="text" 
 				suppress_controller="open-ils.reporter-store"  reporter:label="Post Code"/>
+			<field name="dibs" reporter:datatype="text" reporter:label="Staff Initials"/>
 		</fields>
 	</class>
 
@@ -15977,6 +15978,7 @@ SELECT  usr,
 			<field name="call_number" reporter:datatype="text" reporter:label="Call Number"/>
 			<field name="title" reporter:datatype="text" reporter:label="Title"/>
 			<field name="refundable_payments" reporter:datatype="link" oils_persist:virtual="true"/>
+			<field name="dibs" reporter:datatype="text" reporter:label="Staff Initials"/>
 		</fields>
 		<links>
 			<link field="xact" reltype="has_a" key="id" map="" class="mbt"/>
