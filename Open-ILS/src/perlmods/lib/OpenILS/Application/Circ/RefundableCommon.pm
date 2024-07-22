@@ -422,7 +422,7 @@ sub maybe_pause_refund {
 # payment ('debits'), starting with the refundable transaction, until
 # the credit is exhausted or no positive-balance transactions remain.
 sub process_refund {
-    my ($class, $e, $ses_id, $mrx_id, $simulate, $results) = @_;
+    my ($class, $e, $ses_id, $mrx_id, $simulate, $results, $dibs) = @_;
     my $evt;
 
     if (!$ses_id) {
@@ -521,6 +521,7 @@ sub process_refund {
     # Stamp the final amount owed to the patron.
     $mrx->refund_session($ses_id);
     $mrx->refund_amount($refund_amount);
+    $mrx->dibs($dibs);
     $e->update_money_refundable_xact($mrx) or return $e->die_event;
 
     push(@$results, {

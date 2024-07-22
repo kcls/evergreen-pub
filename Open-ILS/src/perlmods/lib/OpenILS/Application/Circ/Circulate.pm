@@ -3265,14 +3265,13 @@ sub process_lostpaid_checkin {
                 $logger->info("circulator: circ $circ_id is eligible for refund");
 
                 my $results = [];
-                my $evt = $RFC->process_refund($e, undef, $mrx->id, 0, $results);
+                my $evt = $RFC->process_refund(
+                    $e, undef, $mrx->id, 0, $results, $self->lostpaid_staff_initials);
 
                 return $evt if $evt;
 
                 $logger->info("circulator: refund result: " . 
                     OpenSRF::Utils::JSON->perl2JSON($results));
-
-                $mrx->dibs($self->lostpaid_staff_initials);
 
                 return $e->die_event unless
                     $e->update_money_refundable_xact($mrx);
