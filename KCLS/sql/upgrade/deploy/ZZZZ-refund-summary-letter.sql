@@ -5,6 +5,8 @@ BEGIN;
 
 DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN                         
 
+DELETE FROM config.print_template WHERE name = 'refund_summary';
+
 INSERT INTO config.print_template 
     (name, label, owner, locale, active, template) VALUES 
     ('refund_summary', 'Refund Summary', 1, 'en-US', TRUE, 
@@ -39,7 +41,6 @@ $TEMPLATE$
     <th>Transaction</th>
     <th>Title</th>
     <th>Barcode</th>
-    <th>Last Billing Type</th>
     <th>Last Payment Type</th>
     <th>Last Payment Date</th>
     <th>Action</th>
@@ -54,7 +55,6 @@ $TEMPLATE$
     <td>#[% action.payment.xact.id %]</td>
     <td>[% copy.call_number.record.simple_record.title %]</td>
     <td>[% copy.barcode %]</td>
-    <td>[% xact.summary.last_billing_type %]
     <td>[% xact.summary.last_payment_type %]
     <td>[% date.format(xact.summary.last_payment_ts, '%x %r') %]
     <td>
@@ -65,7 +65,13 @@ $TEMPLATE$
         [% END %]
     </td>
     <td>[% money(Math.abs(action.payment.amount)) %]</td>
-    <td>[% refundable_xact.receipt_code %]</td>
+    <td>
+        [% FOR ref_pay IN refundable_xact.refundable_payments %]
+            [% IF ref_pay.payment == action.payment.id %]
+                [% ref_pay.receipt_code %]
+            [% END %]
+        [% END %]
+    </td>
     <td>[% refundable_xact.dibs %]</td>
   </tr>
   [% END %]
@@ -92,7 +98,6 @@ INSERT INTO permission.perm_list (code, description) VALUES (
     'CHECKIN_BYPASS_REFUND',
     'Allows a user to check in refundable item without automatically processing the refund'
 );
-
 
 END IF; END $INSERT$;                                                          
 
