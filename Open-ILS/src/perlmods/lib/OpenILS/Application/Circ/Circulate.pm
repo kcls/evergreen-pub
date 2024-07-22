@@ -3273,9 +3273,6 @@ sub process_lostpaid_checkin {
                 $logger->info("circulator: refund result: " . 
                     OpenSRF::Utils::JSON->perl2JSON($results));
 
-                return $e->die_event unless
-                    $e->update_money_refundable_xact($mrx);
-
                 $self->lostpaid_checkin_result({
                     refunded_xact => $circ->id, 
                     refund_actions => $results
