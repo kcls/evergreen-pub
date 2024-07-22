@@ -3235,26 +3235,53 @@ sub process_lostpaid_checkin {
         $logger->info("circulator: circ $circ_id is in good condition");
 
         if ($mrx) {
-            $logger->info("circulator: circ $circ_id is eligible for refund");
 
-            my $results = [];
-            my $evt = $RFC->process_refund($e, undef, $mrx->id, 0, $results);
+            my $return_interval_flag = 
+                $self->editor->retrieve_config_global_flag('circ.lostpaid.refund.max_return.interval');
 
-            return $evt if $evt;
+            my $return_interval = 
+                ($return_interval_flag && $U->is_true($return_interval_flag->enabled)) ?
+                $return_interval_flag->value :
+                '6 months';
 
-            $logger->info("Refund result: " .  OpenSRF::Utils::JSON->perl2JSON($results));
+            my $mbts = $e->retrieve_money_billable_transaction_summary($circ->id);
 
-            $mrx->dibs($self->lostpaid_staff_initials);
+            $return_interval = OpenILS::Utils::DateTime->interval_to_seconds($return_interval);
 
-            return $e->die_event unless
-                $e->update_money_refundable_xact($mrx);
+            my $dt_parser = DateTime::Format::ISO8601->new;
+            my $pay_date = $dt_parser->parse_datetime(clean_ISO8601($mbts->last_payment_ts));
 
-            $self->lostpaid_checkin_result({
-                refunded_xact => $circ->id, 
-                refund_actions => $results
-            });
+            my $cutoff = DateTime->now->subtract(seconds => $return_interval);
 
-            return undef;
+            if ($pay_date < $cutoff) {
+                $logger->info("circulator: circ $circ_id is NOT eligible for ".
+                    "refund with last payment date of " . $mbts->last_payment_ts);
+
+                $self->lostpaid_checkin_result({exceeds_max_return_date => 1});
+
+            } else {
+
+                $logger->info("circulator: circ $circ_id is eligible for refund");
+
+                my $results = [];
+                my $evt = $RFC->process_refund($e, undef, $mrx->id, 0, $results);
+
+                return $evt if $evt;
+
+                $logger->info("Refund result: " .  OpenSRF::Utils::JSON->perl2JSON($results));
+
+                $mrx->dibs($self->lostpaid_staff_initials);
+
+                return $e->die_event unless
+                    $e->update_money_refundable_xact($mrx);
+
+                $self->lostpaid_checkin_result({
+                    refunded_xact => $circ->id, 
+                    refund_actions => $results
+                });
+
+                return undef;
+            }
         }
     } else {
         $logger->info("circulator: circ $circ_id is not in good condition");
