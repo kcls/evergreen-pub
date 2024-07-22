@@ -3,6 +3,8 @@
 
 BEGIN;
 
+DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN                         
+
 INSERT INTO config.workstation_setting_type                                    
     (name, label, grp, datatype)                                               
 VALUES (                                                                       
@@ -11,5 +13,7 @@ VALUES (
     'circ',                                                                    
     'bool'                                                                     
 ); 
+
+END IF; END $INSERT$;                                                          
 
 COMMIT;
