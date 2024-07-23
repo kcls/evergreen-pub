@@ -12,10 +12,7 @@ const routes: Routes = [{
     data: {capture: true}
   }, {
     path: 'lostpaid/:itemId',
-    component: CheckinLostPaidComponent,
-  }, {
-    path: 'lostpaid/letter/:circId',
-    component: CheckinLostPaidComponent,
+    component: CheckinLostPaidComponent
 }];
 
 @NgModule({

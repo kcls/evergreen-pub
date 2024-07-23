@@ -156,6 +156,8 @@
       <div *ngIf="xactWasZeroed" class="mt-2" i18n>Transaction was Zeroed</div>
       <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was set to Discard/Weed status</div>
       <div *ngIf="circWasNotRefunded" class="mt-2" i18n>No refund was applied to circulation #{{refundedCircId}}</div>
+      <div *ngIf="itemNotRefundable" class="mt-2" i18n>This item type is not refundable</div>
+      <div *ngIf="exceedsReturnDate" class="mt-2" i18n>This item was returned too late to qualify for a refund</div>
     </div>
   </div>
 </div>

@@ -36,7 +36,16 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     checkinComplete = false;
     makingPrintPreview = false;
     skipRefund = false;
+
+    // affects display if trying to print a non-refunded circ
     circWasNotRefunded = false;
+
+    // Took too long
+    exceedsReturnDate = false;
+
+    // Item type, etc.
+    itemNotRefundable = false;
+
 
     constructor(
         private router: Router,
@@ -60,23 +69,15 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         this.processing = false;
         this.circWasNotRefunded = false;
 
-        // Will be set if we are going straight to the letter
-        this.refundedCircId = +this.route.snapshot.paramMap.get('circId');
-
         this.checkinParams = this.store.getLocalItem('circ.lostpaid.params');
 
         // Clean it up
         this.store.removeLocalItem('circ.lostpaid.params');
 
-        if (this.refundedCircId) {
-            this.printLetter(true);
-            return;
-
-        } else if (!this.checkinParams) {
+        if (!this.checkinParams) {
             this.invalidCheckin = true;
             return;
         }
-
 
         // Let the circ service know we're on top of things.
         this.checkinParams._lostpaid_checkin_in_progress = true;
@@ -127,6 +128,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         .then(result => {
             this.processing = false;
             this.checkinComplete = true;
+            this.itemNotRefundable = false;
+            this.exceedsReturnDate = false;
+            this.xactWasZeroed = false;
+            this.itemWasDiscarded = false;
 
             console.debug('Lost/Paid checkin returned: ', result);
 
@@ -160,9 +165,13 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                     this.xactWasZeroed = true;
                 }
 
-                // TODO
-                // exceeds_max_return_date
-                // item_not_refundable
+                if (lpr.exceeds_max_return_date) {
+                    this.exceedsReturnDate = true;
+                }
+
+                if (lpr.item_not_refundable) {
+                    this.itemNotRefundable = false;
+                }
             }
         });
     }
