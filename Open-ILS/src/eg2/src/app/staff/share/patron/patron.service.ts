@@ -442,7 +442,7 @@ export class PatronService {
         return 'NO_PENALTIES';
     }
 
-    printRefundSummary(xactId: number): Promise<any> {
+    printRefundLetter(xactId: number): Promise<any> {
         if (!xactId) { return Promise.resolve(); }
         return this.net.request(
             'open-ils.circ',
@@ -452,7 +452,13 @@ export class PatronService {
             let evt = this.evt.parse(data);
 
             if (evt) {
+                if (evt.textcode === 'XACT_NOT_REFUNDED') {
+                    alert($localize`No refund was applied to transaction ${xactId}`);
+                    return;
+                }
+                // Unexpected event.
                 console.error(evt);
+                alert(evt);
                 return;
             }
 
@@ -464,6 +470,5 @@ export class PatronService {
             });
         });
     }
-
 }
 
