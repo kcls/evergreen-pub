@@ -9,17 +9,20 @@
   Information on this page is out of date.
 </div>
 
-<div *ngIf="checkinResult && !checkinComplete" class="d-flex">
+<div *ngIf="checkinResult" class="d-flex">
   <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
     <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
       <div class="col-lg-4" i18n>Item Barcode:</div>
-      <div class="col-lg-8">
+      <div class="col-lg-7">
         <a target="_blank" 
           routerLink="/staff/cat/item/{{checkinResult.copy.id()}}/summary">
           {{checkinResult.copy.barcode()}}
         </a>
       </div>
+      <div class="col-lg-1">
+      </div>
     </div>
+    <ng-container *ngIf="checkinResult && !checkinComplete">
     <div class="row p-2 mt-1" *ngIf="checkinResult.record">
       <div class="col-lg-4" i18n>Title:</div>
       <div class="col-lg-8">
@@ -91,6 +94,8 @@
       </div>
     </div>
 
+    </ng-container>
+
     <div class="row p-2 mt-1" *ngIf="itemCondition && (itemCondition !== 'good' || !refundable())">
       <div class="col-lg-12">
         <div class="alert alert-secondary">
@@ -131,7 +136,7 @@
         <div class="position-absolute end-0">
           <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
           <button type="button" class="btn btn-success ms-2" (click)="checkin()" 
-            [disabled]="!initials || itemCondition === null">
+            [disabled]="(itemCondition === 'good' && !initials) || itemCondition === null">
             <ng-container *ngIf="itemCondition === null" i18n>
               Checkin
             </ng-container>
@@ -151,8 +156,8 @@
 <div class="row mt-2 mb-2" *ngIf="checkinComplete">
   <div class="col-lg-4 offset-lg-3">
     <div class="alert alert-info">
-      <div class="mt-2" i18n>Refund Successfully Processed</div>
-      <div *ngIf="skipRefund" class="mt-2" i18n>Checkin Complete</div>
+      <div *ngIf="printPreviewHtml" class="mt-2" i18n>Refund Successfully Processed</div>
+      <div *ngIf="skipRefund" class="mt-2" i18n>Checkin Complete.  No refund was processed</div>
       <div *ngIf="xactWasZeroed" class="mt-2" i18n>Transaction was Zeroed</div>
       <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was set to Discard/Weed status</div>
       <div *ngIf="circWasNotRefunded" class="mt-2" i18n>No refund was applied to circulation #{{refundedCircId}}</div>
