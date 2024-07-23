@@ -156,8 +156,8 @@
 <div class="row mt-2 mb-2" *ngIf="checkinComplete">
   <div class="col-lg-4 offset-lg-3">
     <div class="alert alert-info">
-      <div *ngIf="printPreviewHtml" class="mt-2" i18n>Refund Successfully Processed</div>
-      <div *ngIf="skipRefund" class="mt-2" i18n>Checkin Complete.  No refund was processed</div>
+      <div *ngIf="printPreviewHtml" class="mt-2" i18n>Item was checked in and the refund was successfully processed</div>
+      <div *ngIf="skipRefund" class="mt-2" i18n>Item was checked in. No refund was processed</div>
       <div *ngIf="xactWasZeroed" class="mt-2" i18n>Transaction was Zeroed</div>
       <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was set to Discard/Weed status</div>
       <div *ngIf="circWasNotRefunded" class="mt-2" i18n>No refund was applied to circulation #{{refundedCircId}}</div>
