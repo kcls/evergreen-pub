@@ -46,6 +46,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     // Item type, etc.
     itemNotRefundable = false;
 
+    reprinting = false;
 
     constructor(
         private router: Router,
@@ -74,7 +75,15 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         // Clean it up
         this.store.removeLocalItem('circ.lostpaid.params');
 
-        if (!this.checkinParams) {
+        // Will be set if we are going straight to the letter
+        this.refundedCircId = +this.route.snapshot.paramMap.get('circId');
+
+        if (this.refundedCircId) {
+            this.reprinting = true;
+            this.printLetter(true);
+            return;
+
+        } else if (!this.checkinParams) {
             this.invalidCheckin = true;
             return;
         }
@@ -198,8 +207,6 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                 alert(evt);
                 return;
             }
-
-            this.checkinComplete = true;
 
             const printDetails = {
                 templateName: 'refund_summary',

@@ -1,5 +1,11 @@
-<eg-staff-banner bannerStyle="alert-secondary border border-warning"
+<eg-staff-banner *ngIf="!reprinting"
+  bannerStyle="alert-secondary border border-warning"
   i18n-bannerText bannerText="Checkin Lost &amp; Paid Item">
+</eg-staff-banner>
+
+<eg-staff-banner *ngIf="reprinting"
+  bannerStyle="alert-secondary border border-warning"
+  i18n-bannerText bannerText="Lost &amp; Paid Item Letter">
 </eg-staff-banner>
 
 <eg-worklog-strings-components></eg-worklog-strings-components>
@@ -154,7 +160,7 @@
 </div>
 
 <div class="row mt-2 mb-2" *ngIf="checkinComplete">
-  <div class="col-lg-4 offset-lg-3">
+  <div class="col-lg-6 offset-lg-3">
     <div class="alert alert-info">
       <div *ngIf="printPreviewHtml" class="mt-2" i18n>Item was checked in and the refund was successfully processed</div>
       <div *ngIf="skipRefund" class="mt-2" i18n>Item was checked in. No refund was processed</div>
@@ -166,6 +172,13 @@
     </div>
   </div>
 </div>
+
+<div class="row mt-2 mb-2" *ngIf="circWasNotRefunded">
+  <div class="col-lg-6 offset-lg-3" i18n>
+    No refund was processed for transaction {{refundedCircId}}.
+  </div>
+</div>
+
 
 <div class="row mt-2 mb-2" *ngIf="makingPrintPreview">
   <div class="col-lg-6 offset-lg-3">
@@ -194,7 +207,7 @@
   </div>
 </div>
 
-<div class="row mt-2 mb-2" *ngIf="checkinComplete">
+<div class="row mt-2 mb-2" *ngIf="checkinComplete || reprinting">
   <div class="col-lg-2">
     <button type="button" class="btn btn-outline-dark" (click)="close()" i18n>Close</button>
   </div>

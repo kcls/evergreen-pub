@@ -13,6 +13,9 @@ const routes: Routes = [{
   }, {
     path: 'lostpaid/:itemId',
     component: CheckinLostPaidComponent
+  }, {
+    path: 'lostpaid/letter/:circId',
+    component: CheckinLostPaidComponent
 }];
 
 @NgModule({

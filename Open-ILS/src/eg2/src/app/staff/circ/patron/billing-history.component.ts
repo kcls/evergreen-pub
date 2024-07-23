@@ -267,8 +267,7 @@ export class BillingHistoryComponent implements OnInit {
     printRefundLetter(rows: any[]) {
         const xactId = rows.map(row => row['xact.id'])[0];
         if (!xactId) { return; }
-        this.progress.open();
-        this.patronService.printRefundLetter(xactId).then(_ => this.progress.close());
+        this.patronService.printRefundLetter(xactId);
     }
 }
 

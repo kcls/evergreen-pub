@@ -10,6 +10,7 @@ import {Observable} from 'rxjs';
 import {BarcodeSelectComponent} from '@eg/staff/share/barcodes/barcode-select.component';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PrintService} from '@eg/share/print/print.service';
+import {Location} from '@angular/common';
 
 export class PatronStats {
     fines = {
@@ -82,6 +83,7 @@ export class PatronService {
     surveys: IdlObject[];
 
     constructor(
+        private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
         private evt: EventService,
@@ -444,31 +446,11 @@ export class PatronService {
 
     printRefundLetter(xactId: number): Promise<any> {
         if (!xactId) { return Promise.resolve(); }
-        return this.net.request(
-            'open-ils.circ',
-            'open-ils.circ.refundable_payment.letter.by_xact.data',
-            this.auth.token(), xactId
-        ).toPromise().then(data => {
-            let evt = this.evt.parse(data);
 
-            if (evt) {
-                if (evt.textcode === 'XACT_NOT_REFUNDED') {
-                    alert($localize`No refund was applied to transaction ${xactId}`);
-                    return;
-                }
-                // Unexpected event.
-                console.error(evt);
-                alert(evt);
-                return;
-            }
+        const url = this.ngLocation.prepareExternalUrl(
+            `/staff/circ/checkin/lostpaid/letter/${xactId}`);
 
-            this.printer.print({
-                templateName: 'refund_summary',
-                contextData: data,
-                contentType: 'text/html',
-                printContext: 'default'
-            });
-        });
+        window.open(url);
     }
 }
 
