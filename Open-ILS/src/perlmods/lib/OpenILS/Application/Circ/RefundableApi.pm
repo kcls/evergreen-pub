@@ -211,7 +211,12 @@ sub refund_summary_data {
 
     my $ref_xact = $e->search_money_refundable_xact_summary([
         {xact => $xact_id}, 
-        {flesh => 1, flesh_fields => {mrxs => ['usr', 'refundable_payments']}}
+        {   flesh => 2, 
+            flesh_fields => {
+                mrxs => ['usr', 'refundable_payments', 'xact'],
+                mbt => ['summary']
+            }
+        }
     ])->[0] or return $e->event;
 
     return OpenILS::Event->new('XACT_NOT_REFUNDED')

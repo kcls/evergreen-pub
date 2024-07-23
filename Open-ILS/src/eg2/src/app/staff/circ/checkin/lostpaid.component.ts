@@ -21,7 +21,6 @@ import {EventService} from '@eg/core/event.service';
 })
 export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
-    itemId: number | null = null;
     checkinParams: CheckinParams = null;
     checkinResult: CheckinResult = null;
     invalidCheckin = false;
@@ -37,6 +36,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     checkinComplete = false;
     makingPrintPreview = false;
     skipRefund = false;
+    circWasNotRefunded = false;
 
     constructor(
         private router: Router,
@@ -55,19 +55,28 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     ) {}
 
     ngOnInit() {
-        this.itemId = +this.route.snapshot.paramMap.get('id');
+        this.itemCondition = null;
+        this.initials = '';
+        this.processing = false;
+        this.circWasNotRefunded = false;
+
+        // Will be set if we are going straight to the letter
+        this.refundedCircId = +this.route.snapshot.paramMap.get('circId');
+
         this.checkinParams = this.store.getLocalItem('circ.lostpaid.params');
+
         // Clean it up
         this.store.removeLocalItem('circ.lostpaid.params');
 
-        if (!this.checkinParams) {
+        if (this.refundedCircId) {
+            this.printLetter(true);
+            return;
+
+        } else if (!this.checkinParams) {
             this.invalidCheckin = true;
             return;
         }
 
-        this.itemCondition = null;
-        this.initials = '';
-        this.processing = false;
 
         // Let the circ service know we're on top of things.
         this.checkinParams._lostpaid_checkin_in_progress = true;
@@ -160,6 +169,8 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
     printLetter(previewOnly?: boolean): Promise<any> {
         this.makingPrintPreview = true;
+        this.circWasNotRefunded = false;
+
         return this.net.request(
             'open-ils.circ',
             'open-ils.circ.refundable_payment.letter.by_xact.data',
@@ -169,9 +180,17 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
             let evt = this.evt.parse(data);
 
             if (evt) {
+                if (evt.textcode === 'XACT_NOT_REFUNDED') {
+                    this.circWasNotRefunded = true;
+                    return;
+                }
+                // Unexpected event.
+                console.error(evt);
                 alert(evt);
                 return;
             }
+
+            this.checkinComplete = true;
 
             const printDetails = {
                 templateName: 'refund_summary',
