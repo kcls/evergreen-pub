@@ -119,6 +119,13 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
             this.checkinResult.firstEvent.payload.is_refundable;
     }
 
+    notRefundableReason(): string {
+        if (this.refundable()) {
+            return '';
+        }
+        return this.checkinResult.firstEvent.payload.not_refundable_reason;
+    }
+
     checkin(skipRefund?: boolean) {
         this.skipRefund = Boolean(skipRefund);
         this.processing = true;
@@ -176,10 +183,11 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
                 if (lpr.exceeds_max_return_date) {
                     this.exceedsReturnDate = true;
+                    this.itemNotRefundable = true;
                 }
 
                 if (lpr.item_not_refundable) {
-                    this.itemNotRefundable = false;
+                    this.itemNotRefundable = true;
                 }
             }
         });

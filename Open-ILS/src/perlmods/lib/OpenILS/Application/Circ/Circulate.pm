@@ -3197,6 +3197,31 @@ sub do_checkin {
     return;
 }
 
+# Returns true if the checkin time (now) of the transaction is 
+# within range of the max return interval to receive a refund
+# on a lostpaid item.
+sub lostpaid_circ_returned_in_time {
+    my ($self, $mbts) = @_;
+
+    my $return_interval_flag = 
+        $self->editor->retrieve_config_global_flag('circ.lostpaid.refund.max_return.interval');
+
+    my $return_interval = 
+        ($return_interval_flag && $U->is_true($return_interval_flag->enabled)) ?
+        $return_interval_flag->value :
+        '6 months';
+
+    $return_interval = OpenILS::Utils::DateTime->interval_to_seconds($return_interval);
+
+    my $pay_date = DateTime::Format::ISO8601
+        ->new
+        ->parse_datetime(clean_ISO8601($mbts->last_payment_ts));
+
+    my $cutoff = DateTime->now->subtract(seconds => $return_interval);
+
+    return $pay_date < $cutoff;
+}
+
 
 # At this point, the item has been checked in within the lost-return
 # interval and the caller has confirmed we should proceed with resolving
@@ -3237,30 +3262,9 @@ sub process_lostpaid_checkin {
 
         if ($mrx) {
 
-            my $return_interval_flag = 
-                $self->editor->retrieve_config_global_flag('circ.lostpaid.refund.max_return.interval');
-
-            my $return_interval = 
-                ($return_interval_flag && $U->is_true($return_interval_flag->enabled)) ?
-                $return_interval_flag->value :
-                '6 months';
-
             my $mbts = $e->retrieve_money_billable_transaction_summary($circ->id);
 
-            $return_interval = OpenILS::Utils::DateTime->interval_to_seconds($return_interval);
-
-            my $dt_parser = DateTime::Format::ISO8601->new;
-            my $pay_date = $dt_parser->parse_datetime(clean_ISO8601($mbts->last_payment_ts));
-
-            my $cutoff = DateTime->now->subtract(seconds => $return_interval);
-
-            if ($pay_date < $cutoff) {
-                $logger->info("circulator: circ $circ_id is NOT eligible for ".
-                    "refund with last payment date of " . $mbts->last_payment_ts);
-
-                $self->lostpaid_checkin_result({exceeds_max_return_date => 1});
-
-            } else {
+            if ($self->lostpaid_circ_returned_in_time($mbts)) {
 
                 $logger->info("circulator: circ $circ_id is eligible for refund");
 
@@ -3279,6 +3283,15 @@ sub process_lostpaid_checkin {
                 });
 
                 return undef;
+
+            } else {
+
+                $logger->info("circulator: circ $circ_id is NOT eligible for ".
+                    "refund with last payment date of " . $mbts->last_payment_ts);
+
+                $zero_note = 'Not eligible for refund: returned too late';
+
+                $self->lostpaid_checkin_result({exceeds_max_return_date => 1});
             }
 
         } else {
@@ -3298,7 +3311,7 @@ sub process_lostpaid_checkin {
             # Refundable, but no longer in circulating condition.
             $mrx->reject_date('now');
             $mrx->rejected_by($e->requestor->id);
-            $mrx->notes('Not eligible for refund due to item condition');
+            $mrx->notes($zero_note);
 
             return $e->event unless $e->update_money_refundable_xact($mrx);
         }
@@ -3374,24 +3387,42 @@ sub checkin_circ_is_lostpaid {
     my $mrx = $self->editor->search_money_refundable_xact({xact => $circ->id})->[0];
 
     # Presence of a refundable transaction entry is our proof this 
-    # circulation is refundable.
+    # circulation is ostensibly refundable.  We still have to verify
+    # the return date is in range.
     my $is_refundable = $mrx && !$mrx->reject_date;
 
-    if (!$is_refundable) {
-        # If the xact is not refundable (likely because of the item type
-        # / circ modifier), treat it as "lost and paid" if the last
-        # billing type is for lost materials and there is at least one
-        # non-voided payment.  Note the xact balance may not be zero or
-        # negative at this point.
+    my $not_refundable_reason = '';
+
+    if ($is_refundable) {
+        # Is the item getting checked in within the required time range?
+
+        if (!$self->lostpaid_circ_returned_in_time($sum)) {
+            $is_refundable = 0;
+            $not_refundable_reason = 'return_date';
+        }
+
+    } else {
+        # If the xact is not refundable (because of the item or payment
+        # type), treat it as "lost and paid" if the last billing type
+        # is for lost materials and there is at least one non-voided
+        # payment.  Note the xact balance may not be zero or negative at
+        # this point.
 
         # TODO: fetch the actual billing btype so we can avoid comparing labels.
         return 0 if $sum->last_billing_type ne 'Lost Materials'; 
         return 0 if $sum->total_paid == 0;
+
+        if ($sum->last_payment_type =~ /cash_payment|check_payment|credit_card_payment/) {
+            $not_refundable_reason = 'item_type';
+        } else {
+            $not_refundable_reason = 'payment_type';
+        }
     }
 
     $self->bail_on_events(
         OpenILS::Event->new('LOSTPAID_CHECKIN', payload => {
             is_refundable => $is_refundable,
+            not_refundable_reason => $not_refundable_reason,
             money_summary => $sum,
         }) 
     );
