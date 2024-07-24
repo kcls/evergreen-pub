@@ -18,8 +18,8 @@
 <div *ngIf="checkinResult" class="d-flex">
   <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
     <div class="row p-2 mt-1 border-bottom">
-      <div class="col-lg-4" i18n>
-        <label for="patron-name">Patron</label>
+      <div class="col-lg-4">
+        <label for="patron-name" i18n>Patron</label>
       </div>
       <div class="col-lg-8">
         <a target="_blank" id="patron-name"
@@ -100,22 +100,28 @@
       </div>
     </div>
 
-    <div class="row p-2 mt-1" *ngIf="!refundable())">
+    <div class="row p-2 mt-1" *ngIf="!refundable()">
       <div class="col-lg-12">
-        <div class="alert alert-secondary" i18n>
+        <div class="alert alert-secondary">
           <div class="mb-2" i18n>
             This item is <u>not</u> eligible for refund.  If checking
             the item in results in a negative transaction balance, the
             balance will be automatically zero'ed.
           </div>
-          <div *ngIf="notRefundableReason() === 'item_type'" i18n>This item type is not refundable</div>
-          <div *ngIf="notRefundableReason() === 'return_date'" i18n>This item was not returned in time to qualify for a refund</div>
-          <div *ngIf="notRefundableReason() === 'payment_type'" i18n>The payment type is not refundable</div>
+          <div *ngIf="notRefundableReason() === 'item_type'" i18n>
+            This item type is not refundable
+          </div>
+          <div *ngIf="notRefundableReason() === 'return_date'" i18n>
+            This item was not returned in time to qualify for a refund
+          </div>
+          <div *ngIf="notRefundableReason() === 'payment_type'" i18n>
+            The payment type is not refundable
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="row p-2 mt-1" *ngIf="itemCondition && (itemCondition !== 'good'">
+    <div class="row p-2 mt-1" *ngIf="itemCondition && (itemCondition !== 'good')">
       <div class="col-lg-12">
         <div class="alert alert-secondary">
           <ng-container 

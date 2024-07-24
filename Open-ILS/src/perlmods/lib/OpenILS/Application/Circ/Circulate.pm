@@ -3219,7 +3219,7 @@ sub lostpaid_circ_returned_in_time {
 
     my $cutoff = DateTime->now->subtract(seconds => $return_interval);
 
-    return $pay_date < $cutoff;
+    return $pay_date > $cutoff;
 }
 
 
@@ -4494,6 +4494,7 @@ sub checkin_flesh_events {
         if ($evt->{payload}) {
             # Extract these from the lostpaid event so we don't lose them.
             $payload->{is_refundable} = $evt->{payload}->{is_refundable};
+            $payload->{not_refundable_reason} = $evt->{payload}->{not_refundable_reason};
             $payload->{money_summary} = $evt->{payload}->{money_summary};
             $payload->{circ_modifier} = 
                 $self->editor->retrieve_config_circ_modifier($self->copy->circ_modifier);
