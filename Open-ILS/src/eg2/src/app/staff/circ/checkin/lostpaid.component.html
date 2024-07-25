@@ -75,47 +75,52 @@
         </ng-container>
       </div>
     </div>
-    <div class="row p-2 mt-2">
-      <div class="col-lg-4">
-        <label for="condition-select" i18n>
-          Is item in circulating condition?
-        </label>
+
+    <ng-container *ngIf="refundable()">
+      <div class="row p-2 mt-2">
+        <div class="col-lg-4">
+          <label for="condition-select" i18n>
+            Is item in circulating condition?
+          </label>
+        </div>
+        <div class="col-lg-3">
+          <select id="condition-select" name="condition-select" 
+            class="form-select" [required]="true" [(ngModel)]="itemCondition">
+            <option value="good" i18n>Yes</option>
+            <option value="bad" i18n>No</option>
+          </select>
+        </div>
       </div>
-      <div class="col-lg-3">
-        <select id="condition-select" name="condition-select" 
-          class="form-select" [required]="true" [(ngModel)]="itemCondition">
-          <option value="good" i18n>Yes</option>
-          <option value="bad" i18n>No</option>
-        </select>
+      <div class="row p-2 mt-1" *ngIf="refundable() && itemCondition === 'good'">
+        <div class="col-lg-4">
+          <label for="note-dibs" i18n>Staff Initials</label>
+        </div>
+        <div class="col-lg-3">
+          <input type="text" class="form-control" [(ngModel)]="initials" id="dibs-input"
+            [required]="true"
+            i18n-placeholder placeholder="Initials..."/>
+        </div>
       </div>
-    </div>
-    <div class="row p-2 mt-1" *ngIf="refundable() && itemCondition === 'good'">
-      <div class="col-lg-4">
-        <label for="note-dibs" i18n>Staff Initials</label>
-      </div>
-      <div class="col-lg-3">
-        <input type="text" class="form-control" [(ngModel)]="initials" id="dibs-input"
-          [required]="true"
-          i18n-placeholder placeholder="Initials..."/>
-      </div>
-    </div>
+    </ng-container><!-- refundable() -->
 
     <div class="row p-2 mt-1" *ngIf="!refundable()">
       <div class="col-lg-12">
-        <div class="alert alert-secondary">
-          <div class="mb-2" i18n>
-            This item is <u>not</u> eligible for refund.  If checking
-            the item in results in a negative transaction balance, the
-            balance will be automatically zero'ed.
-          </div>
-          <div *ngIf="notRefundableReason() === 'item_type'" i18n>
-            This item type is not refundable
-          </div>
-          <div *ngIf="notRefundableReason() === 'return_date'" i18n>
-            This item was not returned in time to qualify for a refund
-          </div>
-          <div *ngIf="notRefundableReason() === 'payment_type'" i18n>
-            The payment type is not refundable
+        <div class="alert alert-warning">
+          <span i18n>
+            This item is <u>not</u> eligible for refund:
+          </span>
+          <span *ngIf="notRefundableReason() === 'item_type'" i18n>
+            The item type is not refundable.
+          </span>
+          <span *ngIf="notRefundableReason() === 'return_date'" i18n>
+            This item was not returned in time to qualify.
+          </span>
+          <span *ngIf="notRefundableReason() === 'payment_type'" i18n>
+            The payment type is not refundable.
+          </span>
+          <div class="mt-2" i18n>
+            If checking the item in results in a negative transaction
+            balance, the balance will be automatically zero'ed.
           </div>
         </div>
       </div>

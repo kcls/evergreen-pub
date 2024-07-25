@@ -135,8 +135,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         let params: CheckinParams = this.checkinParams;
         params.confirmed_lostpaid_checkin = true;
         params.lostpaid_checkin_skip_processing = skipRefund;
-        params.lostpaid_item_condition_ok = this.itemCondition === 'good';
         params.lostpaid_staff_initials = this.initials;
+
+        // May be null if we didn't need to ask about the condition.
+        params.lostpaid_item_condition_ok = this.itemCondition !== 'bad';
 
         console.debug('Checking item in with params: ', params);
 
