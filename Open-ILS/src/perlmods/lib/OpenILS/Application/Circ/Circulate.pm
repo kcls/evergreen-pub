@@ -3313,7 +3313,7 @@ sub process_lostpaid_checkin {
             $mrx->rejected_by($e->requestor->id);
             $mrx->notes($zero_note);
 
-            return $e->event unless $e->update_money_refundable_xact($mrx);
+            return $e->die_event unless $e->update_money_refundable_xact($mrx);
         }
 
         $logger->info("circulator: circ $circ_id discarding damaged item");
@@ -3324,7 +3324,7 @@ sub process_lostpaid_checkin {
         $copy->edit_date('now');
         $copy->editor($e->requestor->id);
 
-        $copy = $e->update_asset_copy($copy) or return $e->event;
+        $copy = $e->update_asset_copy($copy) or return $e->die_event;
 
         $self->lostpaid_checkin_result({item_discarded => $copy});
     }

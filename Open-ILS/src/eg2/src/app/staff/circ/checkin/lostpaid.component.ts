@@ -1,5 +1,4 @@
 import {Component, ViewChild, OnInit, AfterViewInit, HostListener} from '@angular/core';
-import {Location} from '@angular/common';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {empty, from} from 'rxjs';
 import {concatMap, tap} from 'rxjs/operators';
@@ -14,7 +13,10 @@ import {StoreService} from '@eg/core/store.service';
 import {PermService} from '@eg/core/perm.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
 import {EventService} from '@eg/core/event.service';
+import {WinService} from '@eg/core/win.service';
+import {BroadcastService} from '@eg/share/util/broadcast.service';
 
+declare var encodeJS: (jsThing: any) => any;
 
 @Component({
   templateUrl: 'lostpaid.component.html',
@@ -37,6 +39,8 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     makingPrintPreview = false;
     skipRefund = false;
 
+    sourceWindow = 0;
+
     // affects display if trying to print a non-refunded circ
     circWasNotRefunded = false;
 
@@ -51,7 +55,6 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     constructor(
         private router: Router,
         private route: ActivatedRoute,
-        private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
         private perms: PermService,
@@ -62,6 +65,8 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         private evt: EventService,
         public patronService: PatronService,
         private printer: PrintService,
+        private win: WinService,
+        private broadcaster: BroadcastService,
     ) {}
 
     ngOnInit() {
@@ -77,6 +82,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
         // Will be set if we are going straight to the letter
         this.refundedCircId = +this.route.snapshot.paramMap.get('circId');
+        this.sourceWindow = +this.route.snapshot.queryParamMap.get('window');
 
         if (this.refundedCircId) {
             this.reprinting = true;
@@ -157,16 +163,13 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
             console.debug('Lost/Paid result', lpr);
 
-            if (!lpr) {
-                // Will happen when we skip processing, but there's also
-                // potential edge cases where this occurs.
-                if (!params.lostpaid_checkin_skip_processing) {
-                    console.error("No lost/paid result data was returned!");
-                    return;
-                } else {
-                    // Close the window or display some info to staff?
-                }
-            }
+            let dataRaw = encodeJS(result);
+            console.debug('Broadcasting', dataRaw);
+
+            this.broadcaster.broadcast(
+                'eg.checkin.lostpaid.result',
+                {result: dataRaw, window: this.sourceWindow}
+            );
 
             this.refundedCircId = lpr.refunded_xact;
 
@@ -181,15 +184,6 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
                 if (lpr.transaction_zeroed) {
                     this.xactWasZeroed = true;
-                }
-
-                if (lpr.exceeds_max_return_date) {
-                    this.exceedsReturnDate = true;
-                    this.itemNotRefundable = true;
-                }
-
-                if (lpr.item_not_refundable) {
-                    this.itemNotRefundable = true;
                 }
             }
         });

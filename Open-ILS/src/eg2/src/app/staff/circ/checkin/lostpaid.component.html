@@ -161,18 +161,27 @@
       <div class="col-6 position-relative">
         <div class="position-absolute end-0">
           <button type="button" class="btn btn-warning" (click)="close()" i18n>Cancel Checkin</button>
-          <button type="button" class="btn btn-success ms-2" (click)="checkin()" 
-            [disabled]="(itemCondition === 'good' && !initials)">
-            <ng-container *ngIf="refundable() && itemCondition === 'good'" i18n>
-              Checkin &amp; Process Refund
+
+          <ng-container *ngIf="refundable()">
+            <ng-container *ngIf="itemCondition !== 'bad'">
+              <button type="button" class="btn btn-success ms-2" (click)="checkin()" 
+                [disabled]="!initials" i18n>
+                Checkin &amp; Process Refund
+              </button>
             </ng-container>
-            <ng-container *ngIf="refundable() && itemCondition === 'bad'" i18n>
+            <ng-container *ngIf="itemCondition === 'bad'">
+            <button type="button" class="btn btn-success ms-2" (click)="checkin()" i18n>
               Checkin &amp; Mark Item Discard/Weed
+            </button>
             </ng-container>
-            <ng-container *ngIf="!refundable()" i18n>
+          </ng-container>
+
+          <ng-container *ngIf="!refundable()">
+            <button type="button" class="btn btn-success ms-2" (click)="checkin()" i18n>
               Checkin &amp; Zero Transaction
-            </ng-container>
-          </button>
+            </button>
+          </ng-container>
+
         </div>
       </div>
     </div>
@@ -183,7 +192,7 @@
   <div class="col-lg-6 offset-lg-3">
     <div class="alert alert-info">
       <div *ngIf="printPreviewHtml" class="mt-2" i18n>Item was checked in and the refund was successfully processed</div>
-      <div *ngIf="skipRefund" class="mt-2" i18n>Item was checked in. No refund was processed</div>
+      <div *ngIf="skipRefund" class="mt-2" i18n>Item was checked in without processing any refunds</div>
       <div *ngIf="xactWasZeroed" class="mt-2" i18n>Transaction was Zeroed</div>
       <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was set to Discard/Weed status</div>
       <div *ngIf="circWasNotRefunded" class="mt-2" i18n>No refund was applied to the circulation</div>

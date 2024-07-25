@@ -18,7 +18,7 @@ import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {WorkLogService, WorkLogEntry} from '@eg/staff/share/worklog/worklog.service';
 import {PermService} from '@eg/core/perm.service';
 import {PrintService} from '@eg/share/print/print.service';
-import {Location} from '@angular/common';
+import {WinService} from '@eg/core/win.service';
 
 export interface CircDisplayInfo {
     title?: string;
@@ -253,7 +253,6 @@ export class CircService {
     orgAddrCache: {[addrId: number]: IdlObject} = {};
 
     constructor(
-        private ngLocation: Location,
         private audio: AudioService,
         private evt: EventService,
         private org: OrgService,
@@ -267,6 +266,7 @@ export class CircService {
         private holdings: HoldingsService,
         private worklog: WorkLogService,
         private perms: PermService,
+        private win: WinService,
         private bib: BibRecordService
     ) {}
 
@@ -1083,10 +1083,9 @@ export class CircService {
             // with the same params.
             this.store.setLocalItem('circ.lostpaid.params', result.params);
 
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/circ/checkin/lostpaid/${result.copy.id()}`);
-
-            window.open(url);
+            const winId = this.win.getId();
+            const path = `/staff/circ/checkin/lostpaid/${result.copy.id()}?window=${winId}`;
+            this.win.open(path);
         }
 
         return Promise.resolve(result);
