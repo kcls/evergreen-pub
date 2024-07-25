@@ -285,6 +285,10 @@ sub load {
     # ----------------------------------------------------------------
     #  Everything below here requires authentication
     # ----------------------------------------------------------------
+    if ($path =~ m|opac/sso/openathens$| && !$self->editor->requestor) {
+        return $self->redirect_auth_oa;
+    }
+
     return $self->redirect_auth unless $self->editor->requestor;
 
     # Don't cache anything requiring auth for security reasons
@@ -382,6 +386,17 @@ sub redirect_auth {
             ($self->ctx->{is_staff} ? 'oils' : 'https'), 
             $self->ctx->{hostname}, $self->ctx->{opac_root});
         }
+    
+    return $self->generic_redirect("$login_page?redirect_to=$redirect_to");
+}
+
+sub redirect_auth_oa {
+    my $self = shift;
+
+    my $login_page = sprintf(
+        'https://%s%s/%s', $self->ctx->{hostname}, $self->ctx->{opac_root}, 'login_oa');
+
+    my $redirect_to = uri_escape_utf8($self->apache->unparsed_uri);
     
     return $self->generic_redirect("$login_page?redirect_to=$redirect_to");
 }
