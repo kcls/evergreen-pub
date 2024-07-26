@@ -681,6 +681,7 @@ sub load_login_oa {
 
     if($U->event_code($response)) { 
         # login failed, report the reason to the template
+        $ctx->{login_failed} = 1;
         $ctx->{login_failed_event} = $response;
         return Apache2::Const::OK;
     }
@@ -772,6 +773,11 @@ sub check_database_login {
 
     if ($patron->deleted eq 't') {
         $logger->warn("openathens: patron is deleted $barcode");
+        return undef;
+    }
+
+    if ($patron->barred eq 't') {
+        $logger->warn("openathens: patron is barred $barcode");
         return undef;
     }
 
