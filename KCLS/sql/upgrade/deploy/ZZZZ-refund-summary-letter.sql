@@ -29,7 +29,11 @@ $TEMPLATE$
 </style>
 
 <br/>
-<div>[% patron.first_given_name %] [% patron.family_name %],</div>
+<div>[% patron.first_given_name %] [% patron.family_name %]</div>
+[% IF addr %]
+<div>[% addr.street1 %][% addr.street2 %]</div>
+<div>[% addr.city %], [% addr.state %] [% addr.post_code %]</div>
+[% END %]
 <br/>
 
 <h3>Refund Information</h3>
@@ -57,16 +61,20 @@ $TEMPLATE$
         <td>[% ref_pay.receipt_code %]</td>
       </tr>
       <tr>
-        <td>Amount:</td>
-        <td>[% money(ref_pay.amount) %]</td>
+        <td>Payment Date:</td>
+        <td>[% date.format(ref_pay.payment_time, '%x %r') %]</td>
       </tr>
       <tr>
         <td>Last Payment Type:</td>
         <td>[% refundable_xact.xact.summary.last_payment_type %]</td>
       </tr>
       <tr>
-        <td>Payment Date:</td>
-        <td>[% date.format(ref_pay.payment_time, '%x %r') %]</td>
+        <td>Last Payment Date:</td>
+        <td>[% refundable_xact.xact.summary.last_payment_ts %]</td>
+      </tr>
+      <tr>
+        <td>Amount:</td>
+        <td>[% money(ref_pay.amount) %]</td>
       </tr>
     </table>
   </div>
@@ -83,15 +91,31 @@ $TEMPLATE$
 [% FOR action IN refund_actions %]
 [% SET xact = action.payment.xact %]
 [% SET copy = xact.circulation.target_copy %]
+  [% IF action.action == 'credit'; NEXT; END %]
   <div class="border-top">
     <table>
       <tr>
         <td>Transaction: </td>
         <td>#[% action.payment.xact.id %]</td>
       </tr>
+      [% IF copy %]
       <tr>
         <td>Title: </td>
         <td>[% copy.call_number.record.simple_record.title %]</td>
+      </tr>
+      <tr>
+        <td>Last Billing Type:</td>
+        <td>[% xact.summary.last_billing_type %]</td>
+      </tr>
+      [% ELSE %]
+      <tr>
+        <td>Charge Type:</td>
+        <td>[% xact.summary.last_billing_type %]</td>
+      </tr>
+      [% END %]
+      <tr>
+        <td>Last Billing Date:</td>
+        <td>[% date.format(xact.summary.last_billing_ts, '%x %r') %]</td>
       </tr>
       <tr>
         <td>Last Payment Type: </td>
@@ -102,27 +126,32 @@ $TEMPLATE$
         <td>[% date.format(xact.summary.last_payment_ts, '%x %r') %]
       </tr>
       <tr>
-        <td>Action: </td>
-        <td>
-            [% IF action.action == 'debit' %]
-                Subtracted from account
-            [% ELSE %]
-                Applied to account
-            [% END %]
-        </td>
+        <td>Refund Amount Applied: </td>
+        <td>[% money(Math.abs(action.payment.amount)) %]</td>
       </tr>
       <tr>
-        <td>Amount: </td>
-        <td>[% money(Math.abs(action.payment.amount)) %]</td>
+        <td>Transaction Balance:</td>
+        <td>[% money(xact.summary.balance_owed) %]</td>
       </tr>
     </table>
   </div>
 [% END %]
+<hr/>
 
-<br/>
 <div>Remaining Refund Due: <b>[% money(refundable_xact.refund_amount) %]</b></div>
 <br/>
 
+[% IF refundable_xact.refund_amount > 0 %]
+  [% FOR ref_pay IN refundable_xact.refundable_payments %]
+    [% IF ref_pay.payment.payment_type == 'credit_card_payment' %]
+      <div>Refund for payment #[% ref_pay.receipt_code %] will be applied as a credit to your credit card.</div>
+    [% ELSE %]
+      <div>Refund for payment #[% ref_pay.receipt_code %] will be mailed as a check.</div>
+    [% END %]
+  [% END %]
+[% END %]
+
+<br/>
 <p>KCLS Staff: [% refundable_xact.dibs %]</p>
 
 <div style="border: 1px solid grey; padding: 5px;">

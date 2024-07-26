@@ -211,10 +211,12 @@ sub refund_summary_data {
 
     my $ref_xact = $e->search_money_refundable_xact_summary([
         {xact => $xact_id}, 
-        {   flesh => 2, 
+        {   flesh => 3, 
             flesh_fields => {
                 mrxs => ['usr', 'refundable_payments', 'xact'],
-                mbt => ['summary']
+                mbt => ['summary'],
+                mrps => ['payment'],
+                au => ['billing_address', 'mailing_address']
             }
         }
     ])->[0] or return $e->event;
