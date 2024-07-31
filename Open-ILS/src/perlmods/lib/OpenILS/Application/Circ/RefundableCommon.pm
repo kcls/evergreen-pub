@@ -364,18 +364,18 @@ sub find_xacts_to_refund {
 # Returns 'mrx' object if the circ (by id) in question has an active
 # automated refund, which has not been processed, paused, or rejected.
 # Returns undef otherwise.
-sub circ_has_active_refund {
-    my ($class, $circ_id, $e) = @_;
-    $e ||= new_editor();
-
-    # eligible ref xact only includes 
-    my $merx = $e->search_money_eligible_refundable_xact(
-        {xact => $circ_id})->[0];
-
-    my $mrx = $e->retrieve_money_refundable_xact($merx->id) if $merx;
-
-    return ($mrx && !$mrx->pause_date && !$mrx->reject_date) ? $mrx : undef;
-}
+#sub circ_has_active_refund {
+#    my ($class, $circ_id, $e) = @_;
+#    $e ||= new_editor();
+#
+#    # eligible ref xact only includes 
+#    my $merx = $e->search_money_eligible_refundable_xact(
+#        {xact => $circ_id})->[0];
+#
+#    my $mrx = $e->retrieve_money_refundable_xact($merx->id) if $merx;
+#
+#    return ($mrx && !$mrx->pause_date && !$mrx->reject_date) ? $mrx : undef;
+#}
 
 
 # $args->{pause_refund} pauses the refund.

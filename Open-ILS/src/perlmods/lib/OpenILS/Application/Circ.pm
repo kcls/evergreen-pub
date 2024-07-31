@@ -1618,31 +1618,31 @@ sub try_abort_transit {
 # payment.  If so, ask staff if the auto-refund process should be
 # paused for the item.
 # Returns (bool, event).  bool = true if changes were made.
-sub handle_pending_refund {
-    my ($e, $circ_id, $args) = @_;
-
-    return (0) unless
-        my $mrx = $RFC->circ_has_active_refund($circ_id);
-
-    $logger->info("Found a pending refund for circulation: $circ_id");
-
-    if ($args->{pause_refund} || $args->{refund_notes}) {
-
-        return $RFC->maybe_pause_refund($mrx, $args, $e);
-
-    } elsif ($args->{no_pause_refund}) {
-
-        return (0);
-
-    } else {
-
-        $e->rollback;
-        my $evt = OpenILS::Event->new(
-            'REFUNDABLE_TRANSACTION_PENDING', payload => {mrx => $mrx});
-
-        return (0, $evt);
-    }
-}
+#sub handle_pending_refund {
+#    my ($e, $circ_id, $args) = @_;
+#
+#    return (0) unless
+#        my $mrx = $RFC->circ_has_active_refund($circ_id);
+#
+#    $logger->info("Found a pending refund for circulation: $circ_id");
+#
+#    if ($args->{pause_refund} || $args->{refund_notes}) {
+#
+#        return $RFC->maybe_pause_refund($mrx, $args, $e);
+#
+#    } elsif ($args->{no_pause_refund}) {
+#
+#        return (0);
+#
+#    } else {
+#
+#        $e->rollback;
+#        my $evt = OpenILS::Event->new(
+#            'REFUNDABLE_TRANSACTION_PENDING', payload => {mrx => $mrx});
+#
+#        return (0, $evt);
+#    }
+#}
 
 
 sub handle_mark_damaged {
@@ -1816,11 +1816,11 @@ sub mark_item_missing_pieces {
         return OpenILS::Event->new('ACTION_CIRCULATION_NOT_FOUND',{'copy'=>$copy});
     }
 
-    $e2->xact_begin;
-    my ($changes, $evt) = handle_pending_refund($e2, $circ->id, $args);
-
-    return $evt if $evt; # rolls back
-    if ($changes) { $e2->commit } else { $e2->rollback; }
+#    $e2->xact_begin;
+#    my ($changes, $evt) = handle_pending_refund($e2, $circ->id, $args);
+#
+#    return $evt if $evt; # rolls back
+#    if ($changes) { $e2->commit } else { $e2->rollback; }
 
     my $holds = $e2->search_action_hold_request(
         { 
