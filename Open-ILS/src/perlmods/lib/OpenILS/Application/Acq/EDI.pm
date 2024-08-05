@@ -1185,9 +1185,10 @@ sub create_shipment_notification_from_edi {
                 provider => $provider_id
             })->[0] or return $e->event;
 
-            # Not used by any updates, but useful below for checking
-            # if this is a new or existing entry.
-            $eg_asn->ischanged(1);
+            # The else branch below starts its own transaction so it
+            # can create a new shipment_nofication, which we don't need.
+            # But we do need a xact to add the entries past the if()
+            $e->xact_begin;
 
         } else {
             # New container code.  Create a new shipment notification
@@ -1234,12 +1235,6 @@ sub create_shipment_notification_from_edi {
 
             die "Error creating shipment notification: " . $e->die_event
                 unless $e->create_acq_shipment_notification($eg_asn);
-        }
-
-        if ($eg_asn->ischanged) {
-            # New notifications result in an xact_begin a few lines up.
-            # Only start a xact here for existing notifications.
-            $e->xact_begin;
         }
 
         my $entries = extract_shipment_notification_entries([
