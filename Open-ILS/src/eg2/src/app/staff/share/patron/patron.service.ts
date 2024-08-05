@@ -444,11 +444,18 @@ export class PatronService {
         return 'NO_PENALTIES';
     }
 
-    printRefundLetter(xactId: number): Promise<any> {
-        if (!xactId) { return Promise.resolve(); }
+    printRefundLetter(xactId?: number, payId?: number): Promise<any> {
+        let url;
 
-        const url = this.ngLocation.prepareExternalUrl(
-            `/staff/circ/checkin/lostpaid/letter/${xactId}`);
+        if (xactId) {
+            url = this.ngLocation.prepareExternalUrl(
+                `/staff/circ/checkin/lostpaid/letter/circ/${xactId}`);
+        } else if (payId) {
+             url = this.ngLocation.prepareExternalUrl(
+                `/staff/circ/checkin/lostpaid/letter/payment/${payId}`);
+        } else {
+            return Promise.resolve();
+        }
 
         window.open(url);
     }

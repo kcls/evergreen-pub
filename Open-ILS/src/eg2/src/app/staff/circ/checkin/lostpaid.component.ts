@@ -33,6 +33,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     processing = false;
     hasCheckinBypassPerms: boolean | null = null;
     refundedCircId: number | null = null;
+    refundedPaymentId: number | null = null;
     xactWasZeroed = false;
     itemWasDiscarded = false;
     checkinComplete = false;
@@ -82,9 +83,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
         // Will be set if we are going straight to the letter
         this.refundedCircId = +this.route.snapshot.paramMap.get('circId');
+        this.refundedPaymentId = +this.route.snapshot.paramMap.get('paymentId');
         this.sourceWindow = +this.route.snapshot.queryParamMap.get('window');
 
-        if (this.refundedCircId) {
+        if (this.refundedCircId || this.refundedPaymentId) {
             this.reprinting = true;
             this.printLetter(true);
             return;
@@ -196,7 +198,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         return this.net.request(
             'open-ils.circ',
             'open-ils.circ.refundable_payment.letter.by_xact.data',
-            this.auth.token(), this.refundedCircId
+            this.auth.token(), this.refundedCircId, this.refundedPaymentId
         ).toPromise().then(data => {
             this.makingPrintPreview = false;
             let evt = this.evt.parse(data);
@@ -206,6 +208,12 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                     this.circWasNotRefunded = true;
                     return;
                 }
+
+                if (evt.textcode === 'MONEY_REFUND_ACTION_NOT_FOUND') {
+                    this.circWasNotRefunded = true;
+                    return;
+                }
+
                 // Unexpected event.
                 console.error(evt);
                 alert(evt);

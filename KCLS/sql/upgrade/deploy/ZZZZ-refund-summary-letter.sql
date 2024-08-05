@@ -80,18 +80,22 @@ $TEMPLATE$
   </div>
 [% END %]
 
-<br/>
-<span>
-  The following actions were taken on your account due to the return
-  of a lost and paid item:
-</span>
-<br/>
-<br/>
-
 [% FOR action IN refund_actions %]
 [% SET xact = action.payment.xact %]
 [% SET copy = xact.circulation.target_copy %]
+[% SET loopfirst = 1 %]
   [% IF action.action == 'credit'; NEXT; END %]
+
+  [% IF loopfirst; loopfirst = 0; %]
+    <br/>
+    <span>
+      The following actions were taken on your account due to the return
+      of a lost and paid item:
+    </span>
+    <br/>
+    <br/>
+  [% END %]
+
   <div class="border-top">
     <table>
       <tr>

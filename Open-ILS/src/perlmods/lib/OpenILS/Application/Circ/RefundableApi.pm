@@ -192,10 +192,15 @@ __PACKAGE__->register_method(
     method    => 'refund_summary_data',
     api_name  => 'open-ils.circ.refundable_payment.letter.by_xact.data',
     signature => {
-        desc   => q/Collect data needed to print a refund summary/,
+        desc   => q/
+            Collect data needed to print a refund summary.
+            Caller may provide the lost circ ID or a the ID of
+            a refund payment linked to the desired refund session.
+        /,
         params => [
             {desc => 'Authentication token', type => 'string'},
-            {desc => 'Billable Transaction ID', type => 'number'}
+            {desc => 'Billable Transaction ID', type => 'number'},
+            {desc => 'Payment ID', type => 'number'}
         ],
         return => {
             desc => 'Hash of refund summary data'
@@ -204,14 +209,25 @@ __PACKAGE__->register_method(
 );
 
 sub refund_summary_data {
-    my ($self, $client, $auth, $xact_id) = @_;
+    my ($self, $client, $auth, $xact_id, $pay_id) = @_;
 
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
 
+    my $query = {xact => $xact_id};
+
+    if ($pay_id) {
+        # Caller provided the ID of a refund payment
+        my $session = $e->search_money_refund_action({payment => $pay_id})->[0]
+            or return $e->event;
+
+        $query = {id => $session->refundable_xact};
+    }
+
     my $ref_xact = $e->search_money_refundable_xact_summary([
-        {xact => $xact_id}, 
-        {   flesh => 3, 
+        $query,
+        {   
+            flesh => 3, 
             flesh_fields => {
                 mrxs => ['usr', 'refundable_payments', 'xact'],
                 mbt => ['summary'],

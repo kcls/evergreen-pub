@@ -264,10 +264,10 @@ export class BillingHistoryComponent implements OnInit {
         });
     }
 
-    printRefundLetter(rows: any[]) {
-        const xactId = rows.map(row => row['xact.id'])[0];
-        if (!xactId) { return; }
-        this.patronService.printRefundLetter(xactId);
+    printRefundLetterFromPayment(rows: any[]) {
+        const paymentId = rows.map(row => row['id'])[0];
+        if (!paymentId) { return; }
+        this.patronService.printRefundLetter(null, paymentId);
     }
 }
 

@@ -14,7 +14,10 @@ const routes: Routes = [{
     path: 'lostpaid/:itemId',
     component: CheckinLostPaidComponent
   }, {
-    path: 'lostpaid/letter/:circId',
+    path: 'lostpaid/letter/circ/:circId',
+    component: CheckinLostPaidComponent
+  }, {
+    path: 'lostpaid/letter/payment/:paymentId',
     component: CheckinLostPaidComponent
 }];
 
