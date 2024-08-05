@@ -1198,7 +1198,7 @@ sub create_shipment_notification_from_edi {
 
             $logger->info("ACQ creating new shipment noficiation for $container_code");
 
-            my $eg_asn = Fieldmapper::acq::shipment_notification->new;
+            $eg_asn = Fieldmapper::acq::shipment_notification->new;
             $eg_asn->isnew(1);
 
             # Some troubleshooting aids.  Yeah we should have made appropriate links
