@@ -1177,6 +1177,9 @@ sub create_shipment_notification_from_edi {
 
             $logger->info("ACQ appending to existing container $container_code");
 
+            # This is coming through as an object?
+            $provider_id = $provider_id->id if ref $provider_id;
+
             $eg_asn = $e->search_acq_shipment_notification({
                 container_code => $container_code,
                 provider => $provider_id
