@@ -1193,9 +1193,6 @@ sub create_shipment_notification_from_edi {
         } else {
             # New container code.  Create a new shipment notification
             # and update the edi_message accordingly.
-
-            $seen_container_codes->{$container_code} = 1;
-
             $logger->info("ACQ creating new shipment noficiation for $container_code");
 
             $eg_asn = Fieldmapper::acq::shipment_notification->new;
@@ -1235,6 +1232,8 @@ sub create_shipment_notification_from_edi {
 
             die "Error creating shipment notification: " . $e->die_event
                 unless $e->create_acq_shipment_notification($eg_asn);
+
+            $seen_container_codes->{$container_code} = 1;
         }
 
         my $entries = extract_shipment_notification_entries([
