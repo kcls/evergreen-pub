@@ -1233,7 +1233,6 @@ sub create_shipment_notification_from_edi {
             die "Error creating shipment notification: " . $e->die_event
                 unless $e->create_acq_shipment_notification($eg_asn);
 
-            $seen_container_codes->{$container_code} = 1;
         }
 
         my $entries = extract_shipment_notification_entries([
@@ -1246,6 +1245,8 @@ sub create_shipment_notification_from_edi {
         }
 
         $e->xact_commit;
+
+        $seen_container_codes->{$container_code} = 1;
     }
 
     return 1;
