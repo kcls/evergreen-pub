@@ -161,10 +161,6 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
             console.debug('Lost/Paid checkin returned: ', result);
 
-            const lpr = result.firstEvent.payload.lostpaid_checkin_result;
-
-            console.debug('Lost/Paid result', lpr);
-
             let dataRaw = encodeJS(result);
             console.debug('Broadcasting', dataRaw);
 
@@ -172,6 +168,13 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                 'eg.checkin.lostpaid.result',
                 {result: dataRaw, window: this.sourceWindow}
             );
+
+            const lpr = result.firstEvent.payload.lostpaid_checkin_result;
+
+            console.debug('Lost/Paid result', lpr);
+
+            // lpr will be null for no-op checkins
+            if (!lpr) { return; }
 
             this.refundedCircId = lpr.refunded_xact;
 
