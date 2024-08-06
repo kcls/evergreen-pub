@@ -2,6 +2,10 @@ package OpenILS::WWW::EGCatLoader;
 use strict; use warnings;
 use XML::LibXML;
 use URI::Escape;
+use URI;
+use URI::QueryParam;
+use MIME::Base64;
+use JSON::XS;
 use Digest::MD5 qw(md5_hex);
 use Apache2::Const -compile => qw(OK DECLINED FORBIDDEN HTTP_INTERNAL_SERVER_ERROR REDIRECT HTTP_BAD_REQUEST);
 use OpenSRF::AppSession;
@@ -637,6 +641,41 @@ sub get_carousel_loc {
 
 my $DATABASE_ACTIVITY_AGENT = 'ezproxy'; # for backwards compat.
 
+# The redirect_to target for an openathens login contains a base64-encoded
+# URL parmeter which itself contains a series of JSON objects.
+sub log_oa_target {
+    my ($self, $barcode, $username, $redirect) = @_;
+
+    eval {
+        # This is all experimental, so eval it to be safe.
+
+        my $uri = URI->new($redirect) or return;
+
+        my $return_data = $uri->query_param('returnData') or return;
+
+        # JSON objects are separated by .'s
+        my @parts = split(/\./, $return_data);
+
+        for my $p (@parts) {
+            my $decoded = MIME::Base64::decode_base64url($p);
+
+            my $hash;
+            # Not all values are valid JSON
+            eval { my $hash = decode_json($decoded) };
+
+            if ($hash && ref $hash eq 'HASH' && $hash->{targetURL}) {
+                my $target_uri = URI->new($hash->{targetURL});
+                my $relay_url = $target_uri->query_param('RelayState');
+                $logger->info("OA login for barcode=$barcode username=$username target=$relay_url");
+            }
+        }
+    };
+
+    if ($@) {
+        $logger->info("OA login params could not be parsed: redirect_to=$redirect");
+    }
+}
+
 # OpenAthens dedicated login page.
 #
 # Patrons accessing databases are not required to have the OPAC_LOGIN
@@ -673,7 +712,7 @@ sub load_login_oa {
         $username = undef;
     }
 
-    $logger->info("OA login with u=$username b=$barcode (regex=$bc_regex)");
+    $logger->info("OA logging in with u=$username b=$barcode");
 
     my $response = 
         $self->check_database_login($username, $barcode, $password)
@@ -711,6 +750,10 @@ sub load_login_oa {
 
     # TODO: maybe move this logic to generic_redirect()?
     my $redirect_to = $cgi->param('redirect_to') || $acct;
+
+    $logger->info("OA redirecting to: $redirect_to");
+
+    $self->log_oa_target($barcode, $username, $redirect_to);
 
     if (my $login_redirect_gf = $self->editor->retrieve_config_global_flag('opac.login_redirect_domains')) {
         if ($login_redirect_gf->enabled eq 't') {
