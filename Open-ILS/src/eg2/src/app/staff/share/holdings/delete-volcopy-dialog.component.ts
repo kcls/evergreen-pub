@@ -108,24 +108,36 @@ export class DeleteHoldingDialogComponent
 
     lookForCheckedOutItems(): Promise<boolean> {
         let checked: string[] = [];
+        let promise = Promise.resolve();
+
         this.callNums.forEach(cn => {
             cn.copies().forEach(copy => {
-                let stat = typeof copy.status() === 'object' ? copy.status().id() : copy.status();
-                if (Number(stat) === 1) { // Checked Out
-                    checked.push(copy.barcode());
-                }
+                promise = promise.then(_ => {
+                    return this.net.request(
+                        'open-ils.circ',
+                        'open-ils.circ.copy.is_checked_out',
+                        this.auth.token(), copy.id()
+                    ).toPromise().then(resp => {
+                        if (Number(resp) === 1) {
+                            checked.push(copy.barcode());
+                        }
+                    });
+                });
             });
         });
 
-        if (checked.length === 0) {
-            return Promise.resolve(false);
-        }
+        return promise.then(_ => {
 
-        this.checkedOutItemsStr = checked.join(' ');
+            if (checked.length === 0) {
+                return Promise.resolve(false);
+            }
 
-        this.close(false);
+            this.checkedOutItemsStr = checked.join(' ');
 
-        return this.checkOutAlert.open().toPromise().then(_ => true);
+            this.close(false);
+
+            return this.checkOutAlert.open().toPromise().then(_ => true);
+        });
     }
 
     deleteHoldings(override?: boolean) {
