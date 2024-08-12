@@ -63,7 +63,7 @@ $TEMPLATE$
       </tr>
       <tr>
         <td>Payment Date:</td>
-        <td>[% date.format(ref_pay.payment_time, '%x %r') %]</td>
+        <td>[% date.format(ref_pay.payment_time, '%x') %]</td>
       </tr>
       <tr>
         <td>Last Payment Type:</td>
@@ -71,7 +71,7 @@ $TEMPLATE$
       </tr>
       <tr>
         <td>Last Payment Date:</td>
-        <td>[% refundable_xact.xact.summary.last_payment_ts %]</td>
+        <td>[% date.format(refundable_xact.xact.summary.last_payment_ts, '%x') %]</td>
       </tr>
       <tr>
         <td>Amount:</td>
@@ -120,15 +120,15 @@ $TEMPLATE$
       [% END %]
       <tr>
         <td>Last Billing Date:</td>
-        <td>[% date.format(xact.summary.last_billing_ts, '%x %r') %]</td>
+        <td>[% date.format(xact.summary.last_billing_ts, '%x') %]</td>
       </tr>
       <tr>
         <td>Last Payment Type: </td>
-        <td>[% xact.summary.last_payment_type %]
+        <td>[% date.format(xact.summary.last_payment_type, '%x') %]
       </tr>
       <tr>
         <td>Last Payment Date: </td>
-        <td>[% date.format(xact.summary.last_payment_ts, '%x %r') %]
+        <td>[% date.format(xact.summary.last_payment_ts, '%x') %]
       </tr>
       <tr>
         <td>Refund Amount Applied: </td>
