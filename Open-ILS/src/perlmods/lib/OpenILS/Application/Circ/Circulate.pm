@@ -3255,14 +3255,22 @@ sub process_lostpaid_checkin {
         reject_date => undef,
     })->[0];
 
-    my $zero_note = 'Item is not eligible for refund';
+    my $mbts = $e->retrieve_money_billable_transaction_summary($circ->id);
+
+    # Make some initial assumptions about why the transaction is not
+    # refundable.  The note is replaced (or ignored) below depending
+    # on new information.
+    my $zero_note;
+    if ($mbts->last_payment_type =~ /cash_payment|check_payment|credit_card_payment/) {
+        $zero_note = 'Item type is not refundable';
+    } else {
+        $zero_note = 'Payment type is not refundable';
+    }
 
     if ($self->lostpaid_item_condition_ok) {
         $logger->info("circulator: circ $circ_id is in good condition");
 
         if ($mrx) {
-
-            my $mbts = $e->retrieve_money_billable_transaction_summary($circ->id);
 
             if ($self->lostpaid_circ_returned_in_time($mbts)) {
 
@@ -3289,12 +3297,13 @@ sub process_lostpaid_checkin {
                 $logger->info("circulator: circ $circ_id is NOT eligible for ".
                     "refund with last payment date of " . $mbts->last_payment_ts);
 
-                $zero_note = 'Not eligible for refund: returned too late';
+                $zero_note = 'Item was returned too late for a refund';
 
                 $self->lostpaid_checkin_result({exceeds_max_return_date => 1});
             }
 
         } else {
+            # $zero_note set above.
             $logger->info("circualtor: lost/paid item is not refundable");
             $self->lostpaid_checkin_result({item_not_refundable => 1});
         }
