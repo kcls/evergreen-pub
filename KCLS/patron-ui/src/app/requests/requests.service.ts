@@ -38,7 +38,13 @@ export class RequestsService {
             this.requestsAllowed = Number(r) === 1;
         }).then(() => {
             return this.settings.getServerSetting('patron_requests.max_active')
-            .then(r => this.maxRequestCount = Number(r));
+            .then(r => {
+              this.maxRequestCount = Number(r);
+              if (this.maxRequestCount === 0) {
+                  // If the setting has no value.
+                  this.maxRequestCount = 20;
+              }
+            });
         }).then(() => {
             if (!this.requestsAllowed) {
                 return Promise.resolve([]);
