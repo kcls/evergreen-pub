@@ -25,9 +25,12 @@ export class RequestsComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.tab = this.router.url.split("/").pop() || 'create';
-        if (this.tab !== 'list') {
-            this.tab = 'create';
+        this.tab = this.router.url.split("/").pop() || 'requests';
+
+        if (this.tab === 'requests') {
+            this.router.navigate(['/requests/create'])
+                .then(() => window.location.reload());
+            return;
         }
 
         this.router.events.subscribe((event: Event) => {
