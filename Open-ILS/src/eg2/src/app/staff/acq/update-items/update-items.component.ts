@@ -457,6 +457,7 @@ export class UpdateItemsComponent implements OnInit, AfterViewInit {
     }
 
     callNumberChanged(volume: IdlObject, label: string) {
+        label = (label || '').trim();
         volume.label(label);
         volume.ischanged(true);
         this.changesMade = true;
@@ -466,7 +467,8 @@ export class UpdateItemsComponent implements OnInit, AfterViewInit {
         const entry = this.callNumberCbox.selected;
         if (!entry) { return; }
 
-        const newLabel = entry.id || entry.label;
+        let newLabel = entry.id || entry.label;
+        newLabel = (newLabel || '').trim();
 
         this.holdings.forEach(orgSet => {
             orgSet.volumes.forEach(volSet => {
