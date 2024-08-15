@@ -34,6 +34,7 @@ export class ItemRequestComponent implements OnInit {
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('vendorPrompt') private vendorPrompt: PromptDialogComponent;
+    @ViewChild('notePrompt') private notePrompt: PromptDialogComponent;
     @ViewChild('requestDialog') private requestDialog: ItemRequestDialogComponent;
     @ViewChild('routeToDialog') private routeToDialog: SelectDialogComponent;
 
@@ -160,6 +161,48 @@ export class ItemRequestComponent implements OnInit {
 
             reqs.forEach(r => r.route_to(value));
             this.updateReqs(reqs);
+        });
+    }
+
+    addStaffNote(reqs: IdlObject[]) {
+        this.notePrompt.promptValue = '';
+        this.notePrompt.dialogTitle = $localize`Add Staff-Only Note`;
+
+        this.notePrompt.open().toPromise().then(value => {
+            if (!value) { return; }
+
+            reqs.forEach(req => {
+                let note = req.staff_notes();
+                if (note) {
+                    req.staff_notes(note + '\n' + value);
+                } else {
+                    req.staff_notes(value);
+                }
+            });
+
+            this.updateReqs(reqs);
+
+        });
+    }
+
+    addPatronVisibleNote(reqs: IdlObject[]) {
+        this.notePrompt.promptValue = '';
+        this.notePrompt.dialogTitle = $localize`Add Patron-Visible Note`;
+
+        this.notePrompt.open().toPromise().then(value => {
+            if (!value) { return; }
+
+            reqs.forEach(req => {
+                let note = req.patron_notes();
+                if (note) {
+                    req.patron_notes(note + '\n' + value);
+                } else {
+                    req.patron_notes(value);
+                }
+            });
+
+            this.updateReqs(reqs);
+
         });
     }
 

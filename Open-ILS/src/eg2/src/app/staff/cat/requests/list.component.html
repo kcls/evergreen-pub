@@ -1,6 +1,8 @@
 <eg-staff-banner bannerText="Patron Item Requests" i18n-bannerText></eg-staff-banner>
 <eg-prompt-dialog #vendorPrompt dialogTitle="Enter a Vendor" i18n-dialogTitle>
 </eg-prompt-dialog>
+<eg-prompt-dialog #notePrompt dialogTitle="Add Note" i18n-dialogTitle>
+</eg-prompt-dialog>
 <eg-select-dialog #routeToDialog
   [options]="routeToOptions"
   dialogTitle="Select a Route-To Value" i18n-dialogTitle>
@@ -65,6 +67,15 @@
   <eg-grid-toolbar-action i18n-label label="Apply Route-To"
     (onClick)="applyRouteTo($event)">
   </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Add Staff-Only Note"
+    (onClick)="addStaffNote($event)">
+  </eg-grid-toolbar-action>
+
+  <eg-grid-toolbar-action i18n-label label="Add Patron-Visible Note"
+    (onClick)="addPatronVisibleNote($event)">
+  </eg-grid-toolbar-action>
+
 
   <!--
   <eg-grid-toolbar-action i18n-label label="Create ILL Request"

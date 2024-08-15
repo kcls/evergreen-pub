@@ -81,6 +81,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
     open(args: NgbModalOptions): Observable<boolean> {
         this.request = null;
         this.sourceRequest = null;
+        this.patronBarcode = null;
 
         console.log(this.idl.classes['auir']);
 

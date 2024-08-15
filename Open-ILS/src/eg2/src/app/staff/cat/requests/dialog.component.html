@@ -46,7 +46,7 @@
     <div class="row mt-3" *ngIf="mode === 'create'">
       <div class="col-3" i18n>Format</div>
       <div class="col-4">
-        <select (ngModelChange)="request.format($event)" 
+        <select (ngModelChange)="request.format($event)" required
           [ngModel]="request.format()" class="form-select">
           <option value="book" i18n>Book</option>
           <option value="large-print" i18n>Large Print</option>
@@ -114,7 +114,7 @@
           (ngModelChange)="request.language($event)" [ngModel]="request.language()"/>
       </div>
     </div>
-    <div class="row mt-3">
+    <div class="row mt-3" *ngIf="mode !== 'create'">
       <div class="col-3" i18n>Match Found?</div>
       <div class="col-1">
         <eg-bool [value]="request.id_matched()"></eg-bool>
@@ -174,15 +174,17 @@
     <div class="row mt-3">
       <div class="col-3" i18n>Staff Notes</div>
       <div class="col-9">
-        <input class="form-control" type="text"
-          (ngModelChange)="request.staff_notes($event)" [ngModel]="request.staff_notes()"/>
+        <textarea rows="2" class="form-control"
+          (ngModelChange)="request.staff_notes($event)" [ngModel]="request.staff_notes()">
+        </textarea>
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-3 border border-warning rounded" i18n>Patron-Visible Note</div>
+      <div class="col-3" i18n>Patron-Visible Note</div>
       <div class="col-9">
-        <input class="form-control" type="text"
-          (ngModelChange)="request.patron_notes($event)" [ngModel]="request.patron_notes()"/>
+        <textarea rows="2" class="form-control border border-warning"
+          (ngModelChange)="request.patron_notes($event)" [ngModel]="request.patron_notes()">
+        </textarea>
       </div>
     </div>
     <div class="row mt-3" *ngIf="mode !== 'create'">
