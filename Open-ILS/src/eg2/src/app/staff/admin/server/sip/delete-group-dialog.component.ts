@@ -50,8 +50,8 @@ export class DeleteGroupDialogComponent extends DialogComponent implements OnIni
     }
 
     doDelete() {
-        this.net.request('open-ils.sip2',
-            'open-ils.sip2.setting_group.delete',
+        this.net.request('open-ils.rs-sip2',
+            'open-ils.rs-sip2.setting_group.delete',
             this.auth.token(), this.group.id(), this.targetGroup
         ).subscribe(ok => this.close((Number(ok) === 1)));
     }

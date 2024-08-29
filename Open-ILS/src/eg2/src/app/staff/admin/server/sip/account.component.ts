@@ -218,8 +218,8 @@ export class SipAccountComponent implements OnInit {
             account.ischanged(true);
         }
 
-        this.net.request('open-ils.sip2',
-            'open-ils.sip2.account.cud', this.auth.token(), account)
+        this.net.request('open-ils.rs-sip2',
+            'open-ils.rs-sip2.account.cud', this.auth.token(), account)
             .subscribe(acc => {
 
                 const evt = this.evt.parse(acc);
