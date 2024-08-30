@@ -112,6 +112,9 @@
           <span i18n>
             This item is <u>not</u> eligible for refund:
           </span>
+          <span *ngIf="notRefundableReason() === 'no_payments'" i18n>
+            No refundable payments were made for this transaction.
+          </span>
           <span *ngIf="notRefundableReason() === 'item_type'" i18n>
             The item type is not refundable.
           </span>

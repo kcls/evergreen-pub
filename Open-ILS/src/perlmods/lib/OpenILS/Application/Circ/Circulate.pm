@@ -3421,7 +3421,9 @@ sub checkin_circ_is_lostpaid {
         return 0 if $sum->last_billing_type ne 'Lost Materials'; 
         return 0 if $sum->total_paid == 0;
 
-        if ($sum->last_payment_type =~ /cash_payment|check_payment|credit_card_payment/) {
+        if (!$sum->last_payment_type) {
+            $not_refundable_reason = 'no_payments';
+        } elsif ($sum->last_payment_type =~ /cash_payment|check_payment|credit_card_payment/) {
             $not_refundable_reason = 'item_type';
         } else {
             $not_refundable_reason = 'payment_type';
