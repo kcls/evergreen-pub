@@ -1,5 +1,6 @@
 import {Component, ViewChild, OnInit, AfterViewInit, HostListener} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
+import {NgZone} from '@angular/core';
 import {empty, from} from 'rxjs';
 import {concatMap, tap} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
@@ -56,6 +57,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     constructor(
         private router: Router,
         private route: ActivatedRoute,
+        private ngZone: NgZone,
         private net: NetService,
         private org: OrgService,
         private perms: PermService,
@@ -105,12 +107,22 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         }
 
 
-
         // Re-run the checkin so we can see what the server
         // reports about the item.
         this.circ.applySettings()
             .then(_ => this.circ.checkin(this.checkinParams))
-            .then(res => this.checkinResult = res);
+            .then(res => this.checkinResult = res)
+            .then(_ => {
+                // Watch for address, etc. updates to our patron in another tab
+                this.broadcaster.listen('eg.circ.patron.edit').subscribe(userId => {
+                    console.debug('Broadcast received: ', userId);
+                    if (Number(userId) === Number(this.checkinResult.patron.id())) {
+                        this.ngZone.run(() => { // force change detection
+                            this.printLetter(true);
+                        });
+                    }
+                });
+            });
     }
 
     ngAfterViewInit() {
