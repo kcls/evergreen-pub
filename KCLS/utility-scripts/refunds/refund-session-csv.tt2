@@ -1,5 +1,9 @@
-[%- USE format; SET money = format('%.02f'); -%]
-Transaction Total Refund Due,Transaction ID,Refund Session ID,Patron ID,Patron Barcode,Item Barcode,Title,Patron First Name,Patron Middle Name,Patron Last Name,Street1,Street2,City,State,Post Code,Payment ID,Payment Amount,Payment Type,Credit Card Order Number,Credit Card Approval Code,Credit Card Processor,Receipt Code
+[%- 
+  USE date;
+  USE format; 
+  SET money = format('%.02f'); 
+-%]
+Transaction Total Refund Due,Transaction ID,Refund Session ID,Patron ID,Patron Barcode,Juvenile,Guardian,Item Barcode,Title,Patron First Name,Patron Middle Name,Patron Last Name,Street1,Street2,City,State,Post Code,Payment ID,Payment Amount,Payment Time, Payment Type,Credit Card Order Number,Credit Card Approval Code,Credit Card Processor,Credit Card Vendor,Receipt Code
 [%- FOR refund IN refunds %]
 [% 
 money(refund.refund_amount)
@@ -11,6 +15,10 @@ refund.refund_session_id
 refund.usr_id
 %],[% 
 refund.patron_barcode 
+%],[% 
+refund.juvenile
+%],[% 
+refund.guardian
 %],[% 
 refund.item_barcode
 %],[% 
@@ -36,6 +44,8 @@ refund.pay_id
 %],[% 
 money(refund.pay_amount)
 %],[% 
+date.format(refund.payment_ts, '%x %r')
+%],[% 
 refund.pay_type
 %],[% 
 refund.cc_order_number
@@ -43,6 +53,8 @@ refund.cc_order_number
 refund.cc_approval_code
 %],[% 
 refund.cc_processor
+%],[% 
+refund.cc_vendor
 %],[% 
 refund.receipt_code
 %]

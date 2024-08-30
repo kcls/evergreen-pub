@@ -3,12 +3,14 @@ use strict;
 use warnings;
 use Template;
 use DateTime;
+use DateTime::Format::ISO8601;
 use Getopt::Long;
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenSRF::Utils::JSON;
 use OpenSRF::AppSession;
 use OpenILS::Utils::CStoreEditor;
 use OpenILS::Utils::Fieldmapper;
+use OpenILS::Utils::DateTime qw/:datetime/;
 require '/openils/bin/oils_header.pl';                                                      
 use vars qw/$apputils/;
 $ENV{OSRF_LOG_CLIENT} = 1;
@@ -31,20 +33,14 @@ my @refund_responses;
 sub help {
     print <<HELP;
 
-Process automated refunds and generate CSV export of refund data.
+Generate CSV files per refund session and mark the transactions as exported.
 
 $0
 
-With no arguments, all currently eligible refundable transactions
-will be processed and exported to CSV.
+With no arguments, export all refunds which have been processed
+but not yet exported.
 
 Options:
-
-    --export-session <session_id>
-        Generate CSV export of refund session using the provided
-        session id (via money.refund_session.id).  
-        
-        This is a read-only operation.  No new refunds are processed.
 
     --simulate
         Run the process in simulation mode and generate CSV.
@@ -98,16 +94,33 @@ sub escape_csv {
     return $str;                                                           
 }
 
+# Turn an ISO date into something TT can parse.
+sub format_date {
+    my $date = shift;
+
+    $date = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($date));
+
+    return sprintf(
+        "%0.2d:%0.2d:%0.2d %0.2d-%0.2d-%0.4d",
+        $date->hour,
+        $date->minute,
+        $date->second,
+        $date->day,
+        $date->month,
+        $date->year
+    );
+}
+
+
 sub export_one_mrxs {
     my $mrxs = shift; 
 
-    my $csv_file = "$out_dir/refund-$today-".$mrxs->id.".csv";
 
     my $ctx = {refunds => []};
 
     # We stamp the address on the mrx for safe keeping, but the 
     # address could have changed since the mrx was created.
-    my $addr = $mrxs->usr->billing_address || $mrxs->usr->mailing_address;
+    my $addr = $mrxs->usr->mailing_address || $mrxs->usr->billing_address;
 
     my $refund = {
         refund_amount => escape_csv($mrxs->refund_amount),
@@ -124,16 +137,39 @@ sub export_one_mrxs {
         usr_street2 => escape_csv($addr->street2),
         usr_city => escape_csv($addr->city),
         usr_state => escape_csv($addr->state),
-        usr_post_code => escape_csv($addr->post_code)
+        usr_post_code => escape_csv($addr->post_code),
+        usr_is_juvenile => $mrxs->usr->juvenile eq 't' ? 'yes' : 'no'
     };
 
-    my $first = 0;
+    if ($refund->{usr_is_juvenile} eq 'yes') {
+        $refund->{guardian} = $$mrxs->usr->guardian;
+    }
+
+    my $csv_file;
+    my $first = 1;
     for my $rfp (@{$mrxs->refundable_payments}) {
+
+        # Shortened payment type w/ logic for credit card processor
+        my $ptype = $rfp->payment->payment_type;
+        $ptype =~ s/_payment//g;
+
+        if ($ptype eq 'credit_card') {
+            my $proc = $rfp->payment->cc_processor || '';
+            if ($proc =~ /^Payflow/) {
+                $ptype = 'paypal';
+            } else {
+                # Is this universally true?  what about vouchers?
+                $ptype = 'verifone';
+            }
+        }
 
         my $ref = {};
         if ($first) {
             $first = 0;
             $ref = $refund;
+
+            # Stamp the csv file name with the type of the first payment.
+            $csv_file = "$out_dir/refund-$today-$ptype-".$mrxs->id.".csv";
             
         } else {
             # Clone the refund 'row' to accommodate data on multiple payments.
@@ -144,11 +180,13 @@ sub export_one_mrxs {
         $ref->{pay_amount} = $rfp->payment->amount;
         $ref->{pay_type} = $rfp->payment->payment_type;
         $ref->{receipt_code} = escape_csv($rfp->receipt_code);
+        $ref->{payment_ts} = format_date($rfp->payment->payment_ts);
 
         if (my $cc = $rfp->payment->credit_card_payment) {
             $ref->{cc_order_number} = escape_csv($cc->cc_order_number);
             $ref->{cc_approval_code} = escape_csv($cc->approval_code);
             $ref->{cc_processor} = escape_csv($cc->cc_processor);
+            $ref->{cc_vendor} = escape_csv($ptype);
         }
 
         push(@{$ctx->{refunds}}, $ref);
@@ -194,18 +232,26 @@ sub export_one_mrxs {
 
 sub generate_csv {
 
-    # All refundable transactions which have been processed but
-    # not yet exported
-    my $mrx_list = $editor->search_money_refundable_xact([
-        {refund_amount => {'>' => 0}, erp_export_date => undef},
-        {idlist => 1}
-    ]);
+    my $mrx_list;
 
-    for my $mrx (@$mrx_list) {
-        announce('info', "Processing refundable transaction ".$mrx->id);
+    if ($mrx_id) {
+        $mrx_list = [$mrx_id];
+
+    } else {
+    
+        # All refundable transactions which have been processed but
+        # not yet exported
+        $mrx_list = $editor->search_money_refundable_xact(
+            {refund_amount => {'>' => 0}, erp_export_date => undef},
+            {idlist => 1}
+        );
+    }
+
+    for my $id (@$mrx_list) {
+        announce('info', "Processing refundable transaction $id");
 
         my $mrxs = $editor->retrieve_money_refundable_xact_summary([
-            $mrx->id, {
+            $id, {
                 flesh => 3,
                 flesh_fields => {
                     mrxs => [qw/refundable_payments usr/],
