@@ -226,7 +226,7 @@
         <span i18n>Print Letter</span>
         <span class="material-icons">print</span>
       </button>
-      <a class="ms-3" target="_blank"
+      <a *ngIf="checkinResult" class="ms-3" target="_blank"
         [queryParams]="{closeOnSave: 1}"
         routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/edit">
         <button class="btn btn-outline-primary" i18n>Retrieve Patron</button>

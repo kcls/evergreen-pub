@@ -100,13 +100,17 @@ $TEMPLATE$
   <div class="border-top">
     <table>
       <tr>
-        <td>Transaction: </td>
-        <td>#[% action.payment.xact.id %]</td>
+        <td>Transaction #: </td>
+        <td>[% action.payment.xact.id %]</td>
       </tr>
       [% IF copy %]
       <tr>
         <td>Title: </td>
         <td>[% copy.call_number.record.simple_record.title %]</td>
+      </tr>
+      <tr>
+        <td>Item Barcode: </td>
+        <td>[% copy.barcode %]</td>
       </tr>
       <tr>
         <td>Last Billing Type:</td>
@@ -124,7 +128,7 @@ $TEMPLATE$
       </tr>
       <tr>
         <td>Last Payment Type: </td>
-        <td>[% date.format(xact.summary.last_payment_type, '%x') %]
+        <td>[% xact.summary.last_payment_type %]
       </tr>
       <tr>
         <td>Last Payment Date: </td>
@@ -160,16 +164,19 @@ $TEMPLATE$
 <p>KCLS Staff: [% refundable_xact.dibs %]</p>
 
 <div style="border: 1px solid grey; padding: 5px;">
-  <div>[% staff_org.name.remove('Library') %] Library</div>
-  [% SET org_addr = staff_org.billing_address || staff_org.mailing_address %]
-  [% IF org_addr %]
-    <div>[% org_addr.street1 %][% org_addr.street2 %]</div>
-    <div>[% org_addr.city %], [% org_addr.state %] [% org_addr.post_code %]</div>
+  [% IF staff_org.shortname == "PR" || staff_org.shortname == "SV" || staff_org.shortname == "CS" %]
+    <div>King County Library System</div>
+    <div>(425) 462-9600 or (800) 462-9600 (in Washington State)</div>
+  [% ELSE %]
+    <div>[% staff_org.name.remove('Library') %] Library</div>
+    [% SET org_addr = staff_org.billing_address || staff_org.mailing_address %]
+    [% IF org_addr %]
+      <div>[% org_addr.street1 %][% org_addr.street2 %]</div>
+      <div>[% org_addr.city %], [% org_addr.state %] [% org_addr.post_code %]</div>
+    [% END %]
+    <div>[% staff_org.phone %]</div>
   [% END %]
-  <div>[% staff_org.phone %]</div>
 </div>
-
-
 $TEMPLATE$
 );
 
