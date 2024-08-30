@@ -142,7 +142,7 @@ sub export_one_mrxs {
     };
 
     if ($refund->{usr_is_juvenile} eq 'yes') {
-        $refund->{guardian} = $$mrxs->usr->guardian;
+        $refund->{guardian} = $mrxs->usr->guardian;
     }
 
     my $csv_file;
