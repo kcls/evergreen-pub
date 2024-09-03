@@ -67,7 +67,7 @@ $TEMPLATE$
       </tr>
       <tr>
         <td>Last Payment Type:</td>
-        <td>[% refundable_xact.xact.summary.last_payment_type %]</td>
+        <td>[% ref_pay.payment.payment_type %]</td>
       </tr>
       <tr>
         <td>Last Payment Date:</td>
