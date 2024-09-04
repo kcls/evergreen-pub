@@ -1161,6 +1161,8 @@ sub create_shipment_notification_from_edi {
 
     my $e = new_editor();
 
+    $provider_id = $provider_id->id if ref $provider_id;
+
     # Uniqify the container codes
     my %containers = map {$_->{container_code} => 1} @{$msg_data->{lineitems}};
 
