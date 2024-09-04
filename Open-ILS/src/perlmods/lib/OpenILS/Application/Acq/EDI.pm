@@ -1168,23 +1168,38 @@ sub create_shipment_notification_from_edi {
 
         next unless $container_code;
 
-        $logger->info("ACQ processing container: $container_code");
+        $logger->info("ACQ processing container $container_code for provider $provider_id");
 
-        my $eg_asn = Fieldmapper::acq::shipment_notification->new;
-        $eg_asn->isnew(1);
+        my $eg_asn = $e->search_acq_shipment_notification({
+            provider => $provider_id,
+            container_code => $container_code
+        })->[0];
 
-        # Some troubleshooting aids.  Yeah we should have made appropriate links
-        # for this in the schema, but this is better than nothing.  Probably
-        # *don't* try to i18n this.
-        $eg_asn->note("Generated from acq.edi_message #" . $edi_message->id . ".");
+        if ($eg_asn) {
+            $logger->info("ACQ appending to existing shipment notice: $container_code");
 
-        $eg_asn->provider($provider_id);
-        $eg_asn->shipper($provider_id);
-        $eg_asn->recv_method('EDI');
+        } else {
+            $logger->info("ACQ creating new shipment notice: $container_code");
 
-        $eg_asn->recv_date( # invoice_date is a misnomer; should be message date.
-            $class->edi_date_to_iso($msg_data->{invoice_date}));
+            $eg_asn = Fieldmapper::acq::shipment_notification->new;
+            $eg_asn->isnew(1);
 
+            # Some troubleshooting aids.  Yeah we should have made appropriate links
+            # for this in the schema, but this is better than nothing.  Probably
+            # *don't* try to i18n this.
+            $eg_asn->note("Generated from acq.edi_message #" . $edi_message->id . ".");
+
+            $eg_asn->provider($provider_id);
+            $eg_asn->shipper($provider_id);
+            $eg_asn->recv_method('EDI');
+            $eg_asn->container_code($container_code);
+
+            $eg_asn->recv_date( # recv_date is a misnomer; should be message date.
+                $class->edi_date_to_iso($msg_data->{invoice_date}));
+        }
+
+        # Any changes applied by process_message_buyer will not be applied
+        # to existing shipment notifications.  (They'll be the same values).
         $class->process_message_buyer($e, $msg_data, $edi_message, "ASN" , $eg_asn);
 
         if (!$eg_asn->receiver) {
@@ -1196,10 +1211,6 @@ sub create_shipment_notification_from_edi {
             ));
         }
 
-        $eg_asn->container_code($container_code);
-
-        die("No container code in DESADV message") unless $eg_asn->container_code;
-
         my $entries = extract_shipment_notification_entries([
             grep {$_->{container_code} eq $container_code} @{$msg_data->{lineitems}}]);
 
@@ -1208,8 +1219,10 @@ sub create_shipment_notification_from_edi {
         die "Error updating EDI message: " . $e->die_event
             unless $e->update_acq_edi_message($edi_message);
 
-        die "Error creating shipment notification: " . $e->die_event
-            unless $e->create_acq_shipment_notification($eg_asn);
+        if ($eg_asn->isnew) {
+            die "Error creating shipment notification: " . $e->die_event
+                unless $e->create_acq_shipment_notification($eg_asn);
+        }
 
         for my $entry (@$entries) {
             $entry->shipment_notification($eg_asn->id);
