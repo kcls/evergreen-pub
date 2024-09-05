@@ -16,7 +16,6 @@ use vars qw/$apputils/;
 $ENV{OSRF_LOG_CLIENT} = 1;
 
 my $out_dir = '/openils/var/data/auto-refunds';
-my $csv_template = 'refund-session-csv.tt2';
 my $today = DateTime->now->strftime("%F");
 
 my $editor;
@@ -27,13 +26,13 @@ my $username = 'admin';
 my $help;
 my $simulate;
 my $mrx_id;
-my $force_create_csv = 0;
+my $force_create_files = 0;
 my @refund_responses;
 
 sub help {
     print <<HELP;
 
-Generate CSV files per refund session and mark the transactions as exported.
+Generate JSON files per refund and mark the transactions as exported.
 
 $0
 
@@ -43,14 +42,14 @@ but not yet exported.
 Options:
 
     --simulate
-        Run the process in simulation mode and generate CSV.
+        Run the process in simulation mode and generate JSON.
 
     --mrx-id <id>
         Process a single money.refundable_transaction by ID instead of
         running in batch mode.
 
-    --force-create-csv
-        Overrite existing CSV files with the same name.
+    --force-create-files
+        Overrite existing JSON files with the same name.
 
     --help
         Show this message
@@ -79,42 +78,9 @@ sub announce {
     }
 }
 
-sub escape_csv {                                                         
-    my $str = shift || '';
-
-    # Remove leading/trailing spaces
-    $str =~ s/^\s+|\s+$//g;
-    # Collapse multi-space values down to a single space
-    $str =~ s/\s\s+/ /g;
-
-    if ($str =~ /\,/ || $str =~ /"/) {                                     
-        $str =~ s/"/""/g;                                                  
-        $str = '"' . $str . '"';                                           
-    }                                                                      
-    return $str;                                                           
-}
-
-# Turn an ISO date into something TT can parse.
-sub format_date {
-    my $date = shift;
-
-    $date = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($date));
-
-    return sprintf(
-        "%0.2d:%0.2d:%0.2d %0.2d-%0.2d-%0.4d",
-        $date->hour,
-        $date->minute,
-        $date->second,
-        $date->day,
-        $date->month,
-        $date->year
-    );
-}
-
 
 sub export_one_mrxs {
     my $mrxs = shift; 
-
 
     my $ctx = {refunds => []};
 
@@ -123,30 +89,32 @@ sub export_one_mrxs {
     my $addr = $mrxs->usr->mailing_address || $mrxs->usr->billing_address;
 
     my $refund = {
-        refund_amount => escape_csv($mrxs->refund_amount),
-        xact_id => escape_csv($mrxs->xact),
-        refund_session_id => escape_csv($mrxs->refund_session),
-        title => escape_csv($mrxs->title),
-        patron_barcode => escape_csv($mrxs->usr->card->barcode),
-        item_barcode => escape_csv($mrxs->copy_barcode),
-        usr_id => escape_csv($mrxs->usr->id),
-        usr_first_name => escape_csv($mrxs->usr->first_given_name),
-        usr_middle_name => escape_csv($mrxs->usr->second_given_name),
-        usr_family_name => escape_csv($mrxs->usr->family_name),
-        usr_street1 => escape_csv($addr->street1),
-        usr_street2 => escape_csv($addr->street2),
-        usr_city => escape_csv($addr->city),
-        usr_state => escape_csv($addr->state),
-        usr_post_code => escape_csv($addr->post_code),
-        usr_is_juvenile => $mrxs->usr->juvenile eq 't' ? 'yes' : 'no'
+        refund_amount => $mrxs->refund_amount,
+        xact_id => $mrxs->xact,
+        refund_session_id => $mrxs->refund_session,
+        title => $mrxs->title,
+        patron_barcode => $mrxs->usr->card->barcode,
+        item_barcode => $mrxs->copy_barcode,
+        usr_id => $mrxs->usr->id,
+        usr_first_name => $mrxs->usr->first_given_name,
+        usr_middle_name => $mrxs->usr->second_given_name,
+        usr_family_name => $mrxs->usr->family_name,
+        usr_street1 => $addr->street1,
+        usr_street2 => $addr->street2,
+        usr_city => $addr->city,
+        usr_state => $addr->state,
+        usr_post_code => $addr->post_code,
+        usr_is_juvenile => $mrxs->usr->juvenile eq 't' ? 'yes' : 'no',
+        refundable_payments => []
     };
 
     if ($refund->{usr_is_juvenile} eq 'yes') {
         $refund->{guardian} = $mrxs->usr->guardian;
     }
 
-    my $csv_file;
-    my $first = 1;
+    my $id_padded = sprintf("%07d", $mrxs->id);
+    my $json_file = "$out_dir/refund-$today-$id_padded.json";
+
     for my $rfp (@{$mrxs->refundable_payments}) {
 
         # Shortened payment type w/ logic for credit card processor
@@ -154,64 +122,46 @@ sub export_one_mrxs {
         $ptype =~ s/_payment//g;
 
         if ($ptype eq 'credit_card') {
-            my $proc = $rfp->payment->cc_processor || '';
+            my $proc = $rfp->cc_processor || '';
             if ($proc =~ /^Payflow/) {
                 $ptype = 'paypal';
+            } elsif ($proc eq 'VOUCHER') {
+                $ptype = 'voucher';
             } else {
-                # Is this universally true?  what about vouchers?
                 $ptype = 'verifone';
             }
         }
 
-        my $ref = {};
-        if ($first) {
-            $first = 0;
-            $ref = $refund;
-
-            # Stamp the csv file name with the type of the first payment.
-            $csv_file = "$out_dir/refund-$today-$ptype-".$mrxs->id.".csv";
-            
-        } else {
-            # Clone the refund 'row' to accommodate data on multiple payments.
-            $ref->{$_} = $refund->{$_} for keys %$refund;
-        }
-
-        $ref->{pay_id} = $rfp->payment->id;
-        $ref->{pay_amount} = $rfp->payment->amount;
-        $ref->{pay_type} = $rfp->payment->payment_type;
-        $ref->{receipt_code} = escape_csv($rfp->receipt_code);
-        $ref->{payment_ts} = format_date($rfp->payment->payment_ts);
+        my $payment = {
+            pay_id => $rfp->payment->id,
+            pay_amount => $rfp->payment->amount,
+            pay_type => $rfp->payment->payment_type,
+            receipt_code => $rfp->receipt_code,
+            payment_ts => $rfp->payment->payment_ts,
+        };
 
         if (my $cc = $rfp->payment->credit_card_payment) {
-            $ref->{cc_order_number} = escape_csv($cc->cc_order_number);
-            $ref->{cc_approval_code} = escape_csv($cc->approval_code);
-            $ref->{cc_processor} = escape_csv($cc->cc_processor);
-            $ref->{cc_vendor} = escape_csv($ptype);
+            $payment->{cc_order_number} = $cc->cc_order_number;
+            $payment->{cc_approval_code} = $cc->approval_code;
+            $payment->{cc_processor} = $cc->cc_processor;
+            $payment->{cc_vendor} = $ptype;
         }
 
-        push(@{$ctx->{refunds}}, $ref);
+        push(@{$refund->{refundable_payments}}, $payment);
     }
 
-    my $tt = Template->new;
-    my $output = '';
-    my $error;
-    unless($tt->process($csv_template, $ctx, \$output)) {
-        $output = undef;
-        ($error = $tt->error) =~ s/\n/ /og;
-        announce('error', "Error processing CSV template: $error");
-        return;
+    if (-e $json_file && !$force_create_files) {
+        announce('error', "File exists: $json_file; use --force-create-files to overwrite", 1);
     }
 
-    if (-e $csv_file && !$force_create_csv) {
-        announce('error', "File exists: $csv_file; use --force-create-csv to overwrite", 1);
-    }
+    open(JSON, ">$json_file") or
+        announce('error', "Cannot open JSON file for writing: $json_file: $!");
 
-    open(CSV, ">$csv_file") or
-        announce('error', "Cannot open CSV file for writing: $csv_file: $!");
+    my $output = OpenSRF::Utils::JSON->perl2JSON($refund);
 
-    print CSV $output;
+    print JSON "$output\n";
 
-    close(CSV);
+    close(JSON);
 
     return if $simulate;
 
@@ -230,7 +180,7 @@ sub export_one_mrxs {
     $editor->commit;
 }
 
-sub generate_csv {
+sub generate_json {
 
     my $mrx_list;
 
@@ -269,7 +219,7 @@ sub generate_csv {
 GetOptions(
     'simulate' => \$simulate,
     'mrx-id=s' => \$mrx_id,
-    'force-create-csv' => \$force_create_csv,
+    'force-create-files' => \$force_create_files,
     'help' => \$help
 ) || help();
 
@@ -282,5 +232,5 @@ $editor = OpenILS::Utils::CStoreEditor->new;
 $authtoken = oils_login_internal($username, 'staff')
     or die "Unable to login to Evergreen as user $username";
 
-generate_csv();
+generate_json();
 
