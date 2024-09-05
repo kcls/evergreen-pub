@@ -567,6 +567,26 @@ sub apply_refund_money_to_one_xact {
 
     $refund_amount = $U->fpdiff($refund_amount, $pay_amount);
 
+    if ($U->circ_is_refundable($xact_id, $e)) {
+        # Refund monies distributed to cover lost charges are themselves
+        # potentially refundable.
+        
+        $logger->info("L/P/R refund payment may also be refundable");
+
+        # For automati payments, there will be no auth key.
+        # Generate a dummy key for the refundable API.
+        my $sa = 'Auto-Refund';
+        my $authkey = $class->create_ldap_auth_entry($sa, $sa, $sa);
+
+        my $evt = $class->create_refundable_payment($e, $authkey, $payment->id);
+
+        if ($evt) {
+            $logger->error(
+                "Error tracking refundable payment data for payment ".$payment->id);
+            return $e->die_event;
+        }
+    }
+
     my $mus = $e->retrieve_money_user_summary($mrxs->usr);
     my $mbts = $e->retrieve_money_billable_transaction_summary($xact_id);
 
