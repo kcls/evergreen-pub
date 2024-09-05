@@ -269,7 +269,7 @@ export class CircService {
         private worklog: WorkLogService,
         private perms: PermService,
         private bib: BibRecordService,
-        private toast: ToastService
+        private toast: ToastService,
         private win: WinService
     ) {}
 
