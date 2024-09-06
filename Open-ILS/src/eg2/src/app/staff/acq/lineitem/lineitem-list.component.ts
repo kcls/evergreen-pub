@@ -21,6 +21,7 @@ import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 import {BatchUpdateCopiesDialogComponent} from './batch-update-copies-dialog.component';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
+import {PoProviderDialogComponent} from './po-provider-dialog.component';
 
 const DELETABLE_STATES = [
     'new', 'selector-ready', 'order-ready', 'approved', 'pending-order'
@@ -90,6 +91,7 @@ export class LineitemListComponent implements OnInit {
 
     @ViewChild('cancelDialog') cancelDialog: CancelDialogComponent;
     @ViewChild('plDialog') plDialog: PicklistDialogComponent;
+    @ViewChild('providerDialog') providerDialog: PoProviderDialogComponent;
     @ViewChild('transferConfirm') transferConfirm: ConfirmDialogComponent;
     @ViewChild('batchUpdateCopiesDialog') batchUpdateCopiesDialog: BatchUpdateCopiesDialogComponent;
     @ViewChild('batchProgress') batchProgress: ProgressInlineComponent;
@@ -813,6 +815,17 @@ export class LineitemListComponent implements OnInit {
         window.open(url);
 
         setTimeout(() => this.printNextWorksheet(ids), 500);
+    }
+
+    changeOrderProvider() {
+        this.providerDialog.poId = this.poId;
+        this.providerDialog.open().subscribe(updated => {
+            if (updated) {
+                // Changing the provider means this is practically
+                // a whole new PO.  Reload the page.
+                location.reload();
+            }
+        });
     }
 }
 
