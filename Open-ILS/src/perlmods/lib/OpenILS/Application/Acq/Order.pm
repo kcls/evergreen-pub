@@ -4874,6 +4874,59 @@ sub asn_receive_items {
     undef;
 }
 
+__PACKAGE__->register_method(
+    method => 'update_order_provider',
+    api_name => 'open-ils.acq.purchase_order.provider.update',
+    max_bundle_count => 1,
+    signature => {
+        desc => q/
+            Modify the provider for a pre-activited purchase order.
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Purchase Order ID', type => 'number'},
+            {desc => 'Provider ID', type => 'number'}
+        ],
+        return => {desc => q/1 on success, Event on error/}
+    }
+);
+
+sub update_order_provider {
+    my ($self, $client, $auth, $po_id, $provider_id) = @_;
+
+    my $e = new_editor(xact => 1, authtoken => $auth);
+    return $e->die_event unless $e->checkauth;
+
+    my $po = $e->retrieve_acq_purchase_order([
+        $po_id, 
+        {flesh => 1, flesh_fields => {acqpo => ['lineitems']}}
+    ]) or return $e->die_event;
+
+    return $e->die_event unless 
+        $e->allowed('CREATE_PURCHASE_ORDER', $po->ordering_agency);
+
+    my $provider = $e->retrieve_acq_provider($provider_id)
+        or return $e->die_event;
+
+    return $e->die_event unless 
+        $e->allowed(['ADMIN_PROVIDER', 'MANAGE_PROVIDER'], $provider->owner);
+
+    return $e->die_event(OpenILS::Event->new('PO_ALREADY_ACTIVATED'))
+        if $po->order_date; # Too late to change the provider.
+
+    $po->provider($provider_id);
+    return $e->die_event unless $e->update_acq_purchase_order($po);
+
+    for my $li (@{$po->lineitems}) {
+        $li->provider($provider_id);
+        return $e->die_event unless $e->update_acq_lineitem($li);
+    }
+
+    $e->commit;
+
+    return 1;
+}
+
 
 1;
 

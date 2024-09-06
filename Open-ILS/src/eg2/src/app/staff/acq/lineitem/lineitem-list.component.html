@@ -2,6 +2,7 @@
 <!-- BATCH ACTIONS -->
 <eg-acq-cancel-dialog #cancelDialog></eg-acq-cancel-dialog>
 <eg-acq-pl-dialog #plDialog></eg-acq-pl-dialog>
+<eg-acq-po-provider-dialog #providerDialog></eg-acq-po-provider-dialog>
 <eg-confirm-dialog #transferConfirm
   i18n-dialogTitle i18n-dialogBody
   dialogTitle="Confirm Lineitem Transfer"
@@ -49,6 +50,8 @@
           [disabled]="!poId" i18n>Un-Receive Selected Lineitems</button>
         <button ngbDropdownItem (click)="cancelSelected()" 
           [disabled]="!poId" i18n>Cancel Selected Lineitems</button>
+        <button ngbDropdownItem (click)="changeOrderProvider()"
+          [disabled]="!poId || isActivatedPo()" i18n>Change Order Provider</button>
       </div>
     </div>
   </div>
