@@ -1,4 +1,5 @@
 import {Component, OnInit} from '@angular/core';
+import {FormControl, Validators} from '@angular/forms';
 import {Title} from '@angular/platform-browser';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
@@ -28,6 +29,11 @@ export class RequestListComponent implements OnInit {
     cancelRequested: number | null = null;
     showRequestDetails: {[id: number]: boolean} = {};
 
+    controls: {[field: string]: FormControl} = {
+        //pendingCbox: new FormControl(''),
+        completedCbox: new FormControl('')
+    };
+
     statuses: RequestStatus[] = [
         {code: 'submitted', label: $localize`Request Submitted`},
         {code: 'patron-pending', label: $localize`Pending Patron Response`},
@@ -39,11 +45,11 @@ export class RequestListComponent implements OnInit {
         {code: 'ill-rejected', label: $localize`Unable to Complete Interlibrary Loan`},
         {code: 'hold-rejected', label: $localize`Unable to Place Hold`},
         {code: 'hold-placed', label: $localize`Hold Placed`},
-        {code: 'complete', label: $localize`Request Complete`}
+        {code: 'completed', label: $localize`Request Complete`}
     ];
 
     statusDispositions: {[icon: string]: StatusDisposition} = {
-        complete: {icon: 'check', class: 'bg-green-600 text-white'},
+        completed: {icon: 'check', class: 'bg-green-600 text-white'},
         pending: {icon: 'pending', class: 'bg-gray-600 text-white'},
         //skipped: {icon: 'remove_circle_outline', class: 'bg-gray-600 text-white font-light'},
         skipped: {icon: '', class: ''},
@@ -58,6 +64,10 @@ export class RequestListComponent implements OnInit {
     ) { }
 
     ngOnInit() {
+        //this.controls.pendingCbox.setValue(true);
+        //this.controls.pendingCbox.valueChanges.subscribe(_ => this.load());
+        this.controls.completedCbox.valueChanges.subscribe(_ => this.load());
+
         this.requests = [];
         this.title.setTitle($localize`My Requests`);
         this.app.authSessionLoad.subscribe(() => this.load());
@@ -67,14 +77,17 @@ export class RequestListComponent implements OnInit {
     load() {
         if (!this.app.getAuthSession()) { return; }
 
-        this.gateway.requestOne(
-            'open-ils.actor',
-            'open-ils.actor.patron-request.retrieve.pending',
-            this.app.getAuthtoken()
-        ).then((list: unknown) => {
+        let api = 'open-ils.actor.patron-request.retrieve.pending';
+        if (this.controls.completedCbox.value) {
+            api = 'open-ils.actor.patron-request.retrieve.all';
+        }
+
+        this.gateway.requestOne('open-ils.actor', api, this.app.getAuthtoken())
+        .then((list: unknown) => {
             this.requests = (list as Hash[]).map((hash: Hash) => {
                 let request = hash["request"] as Request;
                 request._status = (hash["status"] as Hash)["status"] as string;
+                console.log('fetched requet with status ', request._status);
                 return request;
             });
         });
@@ -119,7 +132,7 @@ export class RequestListComponent implements OnInit {
 
         const hidden = {icon: '', class: ''};
         const rejected = this.statusDispositions.rejected;
-        const complete = this.statusDispositions.complete;
+        const complete = this.statusDispositions.completed;
 
         // Does the status in question match the current status of the request?
         // The 'submitted' status is always 'complete' since it's the first action.
@@ -142,14 +155,14 @@ export class RequestListComponent implements OnInit {
                 return complete;
             }
 
-            if (stat === 'ill-requested' && reqStat === 'complete') {
+            if (stat === 'ill-requested' && reqStat === 'completed') {
                 return complete;
             }
         } else {
             if (stat === 'purchase-review' && reqStat !== 'submitted') {
                 return complete;
             }
-            if (stat === 'purchase-approved' && reqStat === 'complete') {
+            if (stat === 'purchase-approved' && reqStat === 'completed') {
                 return complete;
             }
         }
