@@ -38,30 +38,12 @@
             <div class="w-1/4" i18n>Comments:</div>
             <div class="w-3/4 pl-2">{{request.notes}}</div>
           </div>
-        </div>
-        <div class="mt-3 p-1 w-full">
           <div class="w-full p-1 flex odd:bg-slate-50">
-            <div class="w-1/4" i18n>Status:</div>
-            <!-- TODO labels -->
-            <div class="w-1/4" i18n>{{request._status}}</div>
-            <div class="w-1/4">
-              <a class="mat-icon-plus-text" href="javascript:;" 
-                i18n-title title="Show/Hide Status Details"
-                (click)="showRequestDetails[request.id] = !showRequestDetails[request.id]">
-                <ng-container *ngIf="showRequestDetails[request.id]">
-                  <mat-icon>unfold_less</mat-icon>
-                  <span class="ml-2" i18n>Hide Details</span>
-                </ng-container>
-                <ng-container *ngIf="!showRequestDetails[request.id]">
-                  <mat-icon>read_more</mat-icon>
-                  <span class="ml-2" i18n>More Details</span>
-                </ng-container>
-              </a>
-            </div>
+            <div class="w-1/4" i18n>Notes from Staff:</div>
+            <div class="w-3/4 pl-2">{{request.patron_notes}}</div>
           </div>
         </div>
-
-        <div *ngIf="showRequestDetails[request.id]" class="mt-2">
+        <div class="mt-2">
           <ng-container *ngFor="let status of statuses; index as idx">
             <ng-container *ngIf="getStatusDisposition(request, status.code).icon != ''">
               <div *ngIf="idx > 0" class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
@@ -73,6 +55,9 @@
               </div>
             </ng-container>
           </ng-container>
+        </div>
+        <div class="mt-2 p-2 border border-grey-500 rounded" *ngIf="request._status === 'ill-rejected'">
+          {{request.ill_denial}}
         </div>
 
       </mat-card-content>
