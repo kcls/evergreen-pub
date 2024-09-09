@@ -42,7 +42,8 @@
         <div class="mt-3 p-1 w-full">
           <div class="w-full p-1 flex odd:bg-slate-50">
             <div class="w-1/4" i18n>Status:</div>
-            <div class="w-1/4" i18n>{{getRequestStatus(request).label}}</div>
+            <!-- TODO labels -->
+            <div class="w-1/4" i18n>{{request._status}}</div>
             <div class="w-1/4">
               <a class="mat-icon-plus-text" href="javascript:;" 
                 i18n-title title="Show/Hide Status Details"
@@ -62,13 +63,15 @@
 
         <div *ngIf="showRequestDetails[request.id]" class="mt-2">
           <ng-container *ngFor="let status of statuses; index as idx">
-            <div *ngIf="idx > 0" class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
-            <div class="local-step flex ml-2">
-              <div class="step-icon {{getStatusDisposition(request, status.code).class}}">
-                <mat-icon>{{getStatusDisposition(request, status.code).icon}}</mat-icon>
+            <ng-container *ngIf="getStatusDisposition(request, status.code).icon != ''">
+              <div *ngIf="idx > 0" class="border-l-2 ml-5 p-2 mt-1 mb-1 border-grey-500"></div>
+              <div class="local-step flex ml-2">
+                <div class="step-icon {{getStatusDisposition(request, status.code).class}}">
+                  <mat-icon>{{getStatusDisposition(request, status.code).icon}}</mat-icon>
+                </div>
+                <div class="ml-2" i18n>{{status.label}}</div>
               </div>
-              <div class="ml-2" i18n>{{status.label}}</div>
-            </div>
+            </ng-container>
           </ng-container>
         </div>
 
