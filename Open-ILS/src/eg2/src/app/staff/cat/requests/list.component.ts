@@ -218,7 +218,7 @@ export class ItemRequestComponent implements OnInit {
 
     newRequest() {
         this.requestDialog.mode = 'create';
-        this.requestDialog.open({size: 'lg'})
+        this.requestDialog.open({size: 'xl'})
         .subscribe(changesMade => {
             if (changesMade) {
                 this.grid.context.reloadSync();
@@ -229,7 +229,7 @@ export class ItemRequestComponent implements OnInit {
     // may not need this.
     showRequestDialog(req: IdlObject) {
         this.requestDialog.requestId = req.id();
-        this.requestDialog.open({size: 'lg'})
+        this.requestDialog.open({size: 'xl'})
         .subscribe(changesMade => {
             if (changesMade) {
                 this.grid.context.reloadSync();
