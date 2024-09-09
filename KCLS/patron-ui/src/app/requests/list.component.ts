@@ -33,22 +33,22 @@ export class RequestListComponent implements OnInit {
         {code: 'patron-pending', label: $localize`Pending Patron Response`},
         {code: 'purchase-review', label: $localize`Under Consideration for Purchase`},
         {code: 'purchase-approved', label: $localize`Purchase Approved`},
-        {code: 'purchase-failed', label: $localize`Unable to Purchase`},
+        {code: 'purchase-rejected', label: $localize`Unable to Purchase`},
         {code: 'ill-review', label: $localize`Transferred to Interlibrary Loan`},
         {code: 'ill-requested', label: $localize`Interlibrary Loan Request Submitted`},
-        {code: 'ill-failed', label: $localize`Unable to Complete Interlibrary Loan`},
-        {code: 'hold-failed', label: $localize`Unable to Place Hold`},
+        {code: 'ill-rejected', label: $localize`Unable to Complete Interlibrary Loan`},
+        {code: 'hold-rejected', label: $localize`Unable to Place Hold`},
         {code: 'hold-placed', label: $localize`Hold Placed`},
         {code: 'complete', label: $localize`Request Complete`}
     ];
 
     statusDispositions: {[icon: string]: StatusDisposition} = {
         complete: {icon: 'check', class: 'bg-green-600 text-white'},
-        //pending: {icon: 'pending', class: 'bg-gray-600 text-white'},
-        pending: {icon: '', class: ''},
+        pending: {icon: 'pending', class: 'bg-gray-600 text-white'},
         //skipped: {icon: 'remove_circle_outline', class: 'bg-gray-600 text-white font-light'},
         skipped: {icon: '', class: ''},
-        failed: {icon: 'feedback', class: 'bg-rose-600 text-white'},
+        //rejected: {icon: 'feedback', class: 'bg-rose-600 text-white'},
+        rejected: {icon: 'warning', class: 'bg-rose-600 text-white'},
     };
 
     constructor(
@@ -75,7 +75,6 @@ export class RequestListComponent implements OnInit {
             this.requests = (list as Hash[]).map((hash: Hash) => {
                 let request = hash["request"] as Request;
                 request._status = (hash["status"] as Hash)["status"] as string;
-                console.log('LOADED request', request._status);
                 return request;
             });
         });
@@ -98,71 +97,64 @@ export class RequestListComponent implements OnInit {
         });
     }
 
+
+    /* Status Movement
+		submitted
+
+		purchase-review
+		purchase-rejected / purchase-approved
+        hold-placed (todo)
+        hold-rejected (todo)
+
+		ill-review
+		ill-rejected / ill-requested
+
+		complete
+	*/
+
+    // Render a status as completed, rejected, or pending, depending on
+    // the status of the request.
     getStatusDisposition(request: Request, stat: string): StatusDisposition {
         let reqStat = request._status;
 
-        if (reqStat === stat) {
-            // Status in question matches the current status of the request.
-            if (stat.match(/failed/)) {
-                this.statusDispositions.failed;
+        const hidden = {icon: '', class: ''};
+        const rejected = this.statusDispositions.rejected;
+        const complete = this.statusDispositions.complete;
+
+        // Does the status in question match the current status of the request?
+        // The 'submitted' status is always 'complete' since it's the first action.
+        if (reqStat === stat || stat === 'submitted') {
+            if (stat.match(/rejected/)) {
+                return rejected;
             } else {
-                return this.statusDispositions.complete;
+                return complete;
             }
         }
 
-        switch (stat) {
-            case 'submitted':
-                return this.statusDispositions.complete;
-            case 'patron-pending':
-                    // TODO
-                return this.statusDispositions.pending;
-            case 'purchase-review':
-                    // TODO
-                return this.statusDispositions.pending;
-            case 'purchase-approved':
-                    // TODO
-                return this.statusDispositions.pending;
-            case 'ill-review':
-                if (request.route_to === 'ill') {
-                    return this.statusDispositions.complete;
-                } else if (reqStat === 'submitted') {
-                    return this.statusDispositions.pending;
-                } else {
-                    return this.statusDispositions.skipped;
-                }
-            case 'ill-requested':
-                if (request.route_to === 'ill') {
-                    // TODO
-                    return this.statusDispositions.complete;
-                } else if (reqStat === 'submitted') {
-                    return this.statusDispositions.pending;
-                } else {
-                    return this.statusDispositions.skipped;
-                }
-            case 'ill-failed':
-                if (request.route_to === 'ill') {
-                    // TODO
-                    return this.statusDispositions.complete;
-                } else if (reqStat === 'submitted') {
-                    return this.statusDispositions.pending;
-                } else {
-                    return this.statusDispositions.skipped;
-                }
-            case 'hold-failed':
-                    // TODO
-                return this.statusDispositions.pending;
-            case 'hold-placed':
-                    // TODO
-                return this.statusDispositions.pending;
-            case 'complete':
-                if (reqStat === 'complete') {
-                    return this.statusDispositions.complete;
-                } else {
-                    return this.statusDispositions.pending;
-                }
+        // If this request is not in a rejected status, then there's
+        // never a reason to display a rejected status in the list.
+        if (stat.match(/rejected/)) {
+            return hidden;
         }
 
-        return this.statusDispositions.pending;
+        if (request.route_to === 'ill') {
+            if (stat === 'ill-review' && reqStat !== 'submitted') {
+                return complete;
+            }
+
+            if (stat === 'ill-requested' && reqStat === 'complete') {
+                return complete;
+            }
+        } else {
+            if (stat === 'purchase-review' && reqStat !== 'submitted') {
+                return complete;
+            }
+            if (stat === 'purchase-approved' && reqStat === 'complete') {
+                return complete;
+            }
+        }
+
+        return hidden;
     }
 }
 

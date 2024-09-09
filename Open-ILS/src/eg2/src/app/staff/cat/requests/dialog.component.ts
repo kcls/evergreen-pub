@@ -107,6 +107,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.illDenialOptions = this.illDenials.map(denial => {
             // Remove any mutli-spaces caused by formatting.
             let value = denial.replace(/ +/g, ' ');
+            value = value.replace(/\n/g, ' ');
             return {id: value, label: value};
         });
     }
