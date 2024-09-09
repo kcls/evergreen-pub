@@ -153,6 +153,25 @@ __PACKAGE__->register_method (
     }
 );
 
+__PACKAGE__->register_method (
+    method      => 'get_requests',
+    api_name    => 'open-ils.actor.patron-request.retrieve.all',
+    signature => {
+        desc => q/Return patron requests/,
+        params => [
+            {desc => 'Patron authtoken', type => 'string'},
+            {desc => 'Hash of options.', type => 'hash'}
+        ],
+        return => {
+            desc => q/
+                List of patron requests.
+                /,
+            type => 'array'
+        }
+    }
+);
+
+
 sub get_requests {
     my ($self, $client, $auth, $options) = @_;
 

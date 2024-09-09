@@ -28,7 +28,7 @@
             >{{request.usr().card().barcode()}}</a>)
       </div>
       <div class="col-2" i18n>Claimed By</div>
-      <div class="col-4" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
+      <div class="col-3" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
         {{request.claimed_by().usrname()}} @ {{request.claim_date() | date:'shortDate'}}
       </div>
       <div class="col-1 ps-0" *ngIf="request.claimed_by()">
