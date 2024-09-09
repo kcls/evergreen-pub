@@ -21,23 +21,20 @@
 
     <div class="row mt-3" *ngIf="request.usr() && request.usr().id">
       <div class="col-2" i18n>Patron</div>
-      <div class="col-10">
+      <div class="col-4">
         {{request.usr().family_name()}}, {{request.usr().first_given_name()}}
         (<a *ngIf="request.usr().card()" target="_blank"
             routerLink="/staff/circ/patron/{{request.usr().id()}}/checkout"
             >{{request.usr().card().barcode()}}</a>)
       </div>
-    </div>
-    <div class="row mt-3">
       <div class="col-2" i18n>Claimed By</div>
-      <div class="col-8" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
+      <div class="col-4" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
         {{request.claimed_by().usrname()}} @ {{request.claim_date() | date:'shortDate'}}
       </div>
       <div class="col-1 ps-0" *ngIf="request.claimed_by()">
         <button class="btn btn-primary" (click)="clearClaimedBy()" i18n>Clear</button>
       </div>
     </div>
-
     <div class="row mt-3">
       <div class="col-2" i18n>Title</div>
       <div class="col-10">
@@ -203,7 +200,7 @@
       <div class="col-10">
         <eg-combobox 
           [startId]="request.ill_denial()"
-          (onChange)="request.route_to($event ? $event.id : null)"
+          (onChange)="request.ill_denial($event ? $event.id : null)"
           i18n-placeholder placeholder="ILL Denial Reason..."
           [entries]="illDenialOptions">
         </eg-combobox>

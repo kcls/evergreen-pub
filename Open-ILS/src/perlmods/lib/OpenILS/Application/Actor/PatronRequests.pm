@@ -174,7 +174,11 @@ sub get_requests {
         $filter, {order_by => {auir => 'create_date DESC'}}
     ]);
 
-    return [ map { $_->to_bare_hash } @$requests ];
+    return [
+        map {
+            {status => request_status_impl($_), request => $_->to_bare_hash}
+        } @$requests
+    ];
 }
 
 __PACKAGE__->register_method (
@@ -212,6 +216,85 @@ sub cancel_request {
     $e->commit;
 
     return OpenILS::Event->new('SUCCESS');
+}
+
+__PACKAGE__->register_method (
+    method      => 'request_status',
+    api_name    => 'open-ils.actor.patron-request.status',
+    signature => {
+        desc => q/Get the status code for a request/,
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Request ID', type => 'number'}
+        ],
+        return => {
+            desc => q/Status hash/,
+            type => 'hash'
+        }
+    }
+);
+
+sub request_status {
+    my ($self, $client, $auth, $req_id) = @_;
+    my $e = new_editor(authtoken => $auth);
+
+    return $e->die unless $e->checkauth;
+
+    my $req = $e->retrieve_actor_user_item_request($req_id) 
+        or return {status => 'not-found'};
+
+    if ($req->usr ne $e->requestor->id) {
+        # Patrons are allowed to see their own requests
+        return $e->event unless $e->allowed('VIEW_USER');
+    }
+
+    return request_status_impl($req);
+}
+
+sub request_status_impl {
+    my $req = shift;
+
+    if ($req->complete_date) {
+        return {status => 'completed'};
+    }
+
+    if ($req->reject_date) {
+        if ($req->route_to eq 'ill') {
+            return {
+                status => 'ill-rejected',
+                ill_denial => $req->ill_denial
+            };
+        } else {
+            return {
+                status => 'purchase-rejected',
+                reject_reason => $req->reject_reason
+            };
+        }
+    }
+
+    if (!$req->claim_date) {
+        return {status => 'submitted'};
+    }
+
+    # If we're here, the request is being handled by staff.
+
+    # TODO patron-pending? staff have questions for the patron.
+
+    if ($req->route_to eq 'acq') {
+
+        # Is this the correct check for review vs approved?
+        if ($req->vendor) {
+            return {status => 'purchase-approved'};
+        } else {
+            return {status => 'purchase-review'};
+        }
+
+        # TODO hold-placed and hold-failed
+
+    } else { # ILL
+        return {status => 'ill-requested'} if $req->illno;
+        return {status => 'ill-review'};
+    }
 }
 
 __PACKAGE__->register_method (

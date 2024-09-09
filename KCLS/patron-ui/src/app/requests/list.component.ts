@@ -15,7 +15,7 @@ interface RequestStatus {
 
 // Define create_date as a string so it can be used
 // in the Date pipe in the template.
-type Request = Hash & {id: number, create_date: string};
+type Request = Hash & {id: number, create_date: string, _status: string};
 
 @Component({
   selector: 'app-patron-request-list',
@@ -44,8 +44,10 @@ export class RequestListComponent implements OnInit {
 
     statusDispositions: {[icon: string]: StatusDisposition} = {
         complete: {icon: 'check', class: 'bg-green-600 text-white'},
-        pending: {icon: 'pending', class: 'bg-gray-600 text-white'},
-        skipped: {icon: 'remove_circle_outline', class: 'bg-gray-600 text-white font-light'},
+        //pending: {icon: 'pending', class: 'bg-gray-600 text-white'},
+        pending: {icon: '', class: ''},
+        //skipped: {icon: 'remove_circle_outline', class: 'bg-gray-600 text-white font-light'},
+        skipped: {icon: '', class: ''},
         failed: {icon: 'feedback', class: 'bg-rose-600 text-white'},
     };
 
@@ -69,7 +71,14 @@ export class RequestListComponent implements OnInit {
             'open-ils.actor',
             'open-ils.actor.patron-request.retrieve.pending',
             this.app.getAuthtoken()
-        ).then((list: unknown) => this.requests = list as Request[]);
+        ).then((list: unknown) => {
+            this.requests = (list as Hash[]).map((hash: Hash) => {
+                let request = hash["request"] as Request;
+                request._status = (hash["status"] as Hash)["status"] as string;
+                console.log('LOADED request', request._status);
+                return request;
+            });
+        });
     }
 
     cancel(request: Request) {
@@ -89,41 +98,10 @@ export class RequestListComponent implements OnInit {
         });
     }
 
-    getRequestStatus(req: Request): RequestStatus {
-        if (req.reject_date) {
-            return this.statuses.filter(s => s.code === 'purchase-failed')[0];
-        } else if (req.complete_date) {
-            return this.statuses.filter(s => s.code === 'complete')[0];
-        } else if (req.claim_date) {
-            if (req.route_to === 'ill') {
-                return this.statuses.filter(s => s.code === 'ill-review')[0];
-            } else {
-                return this.statuses.filter(s => s.code === 'purchase-review')[0];
-            }
-        } else {
-            // TODO...
-            return this.statuses.filter(s => s.code === 'submitted')[0];
-        }
-
-        /*
-        {code: 'submitted', label: $localize`Request Submitted`},
-        {code: 'patron-pending', label: $localize`Pending Patron Response`},
-        {code: 'purchase-review', label: $localize`Under Consideration for Purchase`},
-        {code: 'purchase-approved', label: $localize`Purchase Approved`},
-        {code: 'ill-review', label: $localize`Transferred to Interlibrary Loan`},
-        {code: 'ill-requested', label: $localize`Interlibrary Loan Request Submitted`},
-        {code: 'ill-failed', label: $localize`Unable to Complete Interlibrary Loan`},
-        {code: 'hold-failed', label: $localize`Unable to Place Hold`},
-        {code: 'hold-placed', label: $localize`Hold Placed`},
-        {code: 'complete', label: $localize`Request Complete`}
-        */
-
-    }
-
     getStatusDisposition(request: Request, stat: string): StatusDisposition {
-        let reqStat = this.getRequestStatus(request);
+        let reqStat = request._status;
 
-        if (reqStat.code === stat) {
+        if (reqStat === stat) {
             // Status in question matches the current status of the request.
             if (stat.match(/failed/)) {
                 this.statusDispositions.failed;
@@ -147,7 +125,7 @@ export class RequestListComponent implements OnInit {
             case 'ill-review':
                 if (request.route_to === 'ill') {
                     return this.statusDispositions.complete;
-                } else if (reqStat.code === 'submitted') {
+                } else if (reqStat === 'submitted') {
                     return this.statusDispositions.pending;
                 } else {
                     return this.statusDispositions.skipped;
@@ -156,7 +134,7 @@ export class RequestListComponent implements OnInit {
                 if (request.route_to === 'ill') {
                     // TODO
                     return this.statusDispositions.complete;
-                } else if (reqStat.code === 'submitted') {
+                } else if (reqStat === 'submitted') {
                     return this.statusDispositions.pending;
                 } else {
                     return this.statusDispositions.skipped;
@@ -165,7 +143,7 @@ export class RequestListComponent implements OnInit {
                 if (request.route_to === 'ill') {
                     // TODO
                     return this.statusDispositions.complete;
-                } else if (reqStat.code === 'submitted') {
+                } else if (reqStat === 'submitted') {
                     return this.statusDispositions.pending;
                 } else {
                     return this.statusDispositions.skipped;
@@ -177,7 +155,7 @@ export class RequestListComponent implements OnInit {
                     // TODO
                 return this.statusDispositions.pending;
             case 'complete':
-                if (reqStat.code === 'complete') {
+                if (reqStat === 'complete') {
                     return this.statusDispositions.complete;
                 } else {
                     return this.statusDispositions.pending;
