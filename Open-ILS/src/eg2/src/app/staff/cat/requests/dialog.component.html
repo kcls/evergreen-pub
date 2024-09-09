@@ -6,7 +6,7 @@
   </div>
   <div class="modal-body form-validated" *ngIf="request">
     <div class="row" *ngIf="mode === 'create'">
-      <div class="col-3" i18n>Patron Barcode</div>
+      <div class="col-2" i18n>Patron Barcode</div>
       <div class="col-4">
         <input required class="form-control" type="text" 
           [(ngModel)]="patronBarcode" (change)="findPatron()"/>
@@ -20,8 +20,8 @@
     </div>
 
     <div class="row mt-3" *ngIf="request.usr() && request.usr().id">
-      <div class="col-3" i18n>Patron</div>
-      <div class="col-9">
+      <div class="col-2" i18n>Patron</div>
+      <div class="col-10">
         {{request.usr().family_name()}}, {{request.usr().first_given_name()}}
         (<a *ngIf="request.usr().card()" target="_blank"
             routerLink="/staff/circ/patron/{{request.usr().id()}}/checkout"
@@ -29,7 +29,7 @@
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-3" i18n>Claimed By</div>
+      <div class="col-2" i18n>Claimed By</div>
       <div class="col-8" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
         {{request.claimed_by().usrname()}} @ {{request.claim_date() | date:'shortDate'}}
       </div>
@@ -38,67 +38,52 @@
       </div>
     </div>
 
-    <div class="row mt-3" *ngIf="mode !== 'create'">
-      <div class="col-3" i18n>Format</div>
-      <div class="col-4">{{request.format()}}</div>
-    </div>
-
-    <div class="row mt-3" *ngIf="mode === 'create'">
-      <div class="col-3" i18n>Format</div>
-      <div class="col-4">
-        <select (ngModelChange)="request.format($event)" required
-          [ngModel]="request.format()" class="form-select">
-          <option value="book" i18n>Book</option>
-          <option value="large-print" i18n>Large Print</option>
-          <option value="audiobook" i18n>Audiobook</option>
-          <option value="cd" i18n>Music CD</option>
-          <option value="dvd" i18n>DVD</option>
-          <option value="ebook-eaudio" i18n>eBook / eAudio</option>
-          <option value="article" i18n>Magazine / Newspaper / Journal Article</option>
-          <option value="subscription" i18n>Magazine / Newspaper Subscription</option>
-          <option value="microfilm" i18n>Microfilm</option>
-        </select>
-      </div>
-    </div>
-
-
     <div class="row mt-3">
-      <div class="col-3" i18n>Title</div>
-      <div class="col-9">
+      <div class="col-2" i18n>Title</div>
+      <div class="col-10">
         <input class="form-control" type="text" required
           (ngModelChange)="request.title($event)" [ngModel]="request.title()"/>
       </div>
     </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>Author</div>
-      <div class="col-9">
+
+    <div class="row mt-3" *ngIf="mode !== 'create'">
+      <ng-container *ngIf="mode !== 'create'">
+        <div class="col-2" i18n>Format</div>
+        <div class="col-4">{{request.format()}}</div>
+      </ng-container>
+
+      <ng-container *ngIf="mode === 'create'">
+        <div class="col-2" i18n>Format</div>
+        <div class="col-4">
+          <select (ngModelChange)="request.format($event)" required
+            [ngModel]="request.format()" class="form-select">
+            <option value="book" i18n>Book</option>
+            <option value="large-print" i18n>Large Print</option>
+            <option value="audiobook" i18n>Audiobook</option>
+            <option value="cd" i18n>Music CD</option>
+            <option value="dvd" i18n>DVD</option>
+            <option value="ebook-eaudio" i18n>eBook / eAudio</option>
+            <option value="article" i18n>Magazine / Newspaper / Journal Article</option>
+            <option value="subscription" i18n>Magazine / Newspaper Subscription</option>
+            <option value="microfilm" i18n>Microfilm</option>
+          </select>
+        </div>
+      </ng-container>
+
+      <div class="col-2" i18n>Author</div>
+      <div class="col-4">
         <input class="form-control" type="text"
           (ngModelChange)="request.author($event)" [ngModel]="request.author()"/>
       </div>
     </div>
+
     <div class="row mt-3">
-      <div class="col-3" i18n>ISBN/UPC/Etc.</div>
-      <div class="col-9">
+      <div class="col-2" i18n>ISBN/UPC/Etc.</div>
+      <div class="col-4">
         <input class="form-control" type="text"
           (ngModelChange)="request.identifier($event)" [ngModel]="request.identifier()"/>
       </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>Publication Year</div>
-      <div class="col-4">
-        <input class="form-control" type="number" min="1900"
-          (ngModelChange)="request.pubdate($event)" [ngModel]="request.pubdate()"/>
-      </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>Publisher</div>
-      <div class="col-9">
-        <input class="form-control" type="text"
-          (ngModelChange)="request.publisher($event)" [ngModel]="request.publisher()"/>
-      </div>
-    </div>
-    <div class="row mt-3" *ngIf="mode === 'create'">
-      <div class="col-3" i18n>Language</div>
+      <div class="col-2" i18n>Language</div>
       <div class="col-4">
         <select class="form-select"
           (ngModelChange)="request.language($event)"
@@ -107,33 +92,37 @@
         </select>
       </div>
     </div>
-    <div class="row mt-3" *ngIf="mode !== 'create'">
-      <div class="col-3" i18n>Language</div>
-        <div class="col-4">
+    <div class="row mt-3">
+      <div class="col-2" i18n>Publication Year</div>
+      <div class="col-4">
+        <input class="form-control" type="number" min="1900"
+          (ngModelChange)="request.pubdate($event)" [ngModel]="request.pubdate()"/>
+      </div>
+      <div class="col-2" i18n>Publisher</div>
+      <div class="col-4">
         <input class="form-control" type="text"
-          (ngModelChange)="request.language($event)" [ngModel]="request.language()"/>
+          (ngModelChange)="request.publisher($event)" [ngModel]="request.publisher()"/>
       </div>
     </div>
     <div class="row mt-3" *ngIf="mode !== 'create'">
-      <div class="col-3" i18n>Match Found?</div>
+      <div class="col-2" i18n>Match Found?</div>
       <div class="col-1">
         <eg-bool [value]="request.id_matched()"></eg-bool>
       </div>
-      <div class="col-lg-2" *ngIf="request.id_matched() === 't'">
-        <a target="_blank" routerLink="/staff/catalog/search"
+      <div class="col-lg-3">
+        <a *ngIf="request.id_matched() === 't'"
+          target="_blank" routerLink="/staff/catalog/search"
           [queryParams]="{query: 'id:' + request.identifier()}">
           {{request.identifier()}}
         </a>
       </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>ILL Opt Out?</div>
+      <div class="col-2" i18n>ILL Opt Out?</div>
       <div class="col-4">
         <eg-bool [value]="request.ill_opt_out()"></eg-bool>
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-3" i18n>Route To</div>
+      <div class="col-2" i18n>Route To</div>
       <div class="col-4">
         <eg-combobox 
           [startId]="request.route_to()"
@@ -145,50 +134,53 @@
             i18n-entryLabel></eg-combobox-entry>
         </eg-combobox>
       </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>Vendor</div>
-      <div class="col-4">
-        <input class="form-control" type="text"
-          (ngModelChange)="request.vendor($event)" [ngModel]="request.vendor()"/>
-      </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>Price</div>
-      <div class="col-4">
-        <input class="form-control" type="number" step="0.1" min="0.00"
-          (ngModelChange)="request.price($event)" [ngModel]="request.price()"/>
-      </div>
-    </div>
-    <div class="row mt-3">
-      <div class="col-3" i18n>ILL#</div>
+      <div class="col-2" i18n>ILL#</div>
       <div class="col-4">
         <input class="form-control" type="text"
           (ngModelChange)="request.illno($event)" [ngModel]="request.illno()"/>
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-3" i18n>Request Notes</div>
-      <div class="col-9">{{request.notes()}}</div>
+      <div class="col-2" i18n>Vendor</div>
+      <div class="col-4">
+        <input class="form-control" type="text"
+          (ngModelChange)="request.vendor($event)" [ngModel]="request.vendor()"/>
+      </div>
+      <div class="col-2" i18n>Price</div>
+      <div class="col-4">
+        <input class="form-control" type="number" step="0.1" min="0.00"
+          (ngModelChange)="request.price($event)" [ngModel]="request.price()"/>
+      </div>
     </div>
     <div class="row mt-3">
-      <div class="col-3" i18n>Staff Notes</div>
-      <div class="col-9">
+      <div class="col-2" i18n>Request Notes</div>
+      <div class="col-10">
+        <ng-container *ngIf="request.notes()">
+          {{request.notes()}}
+        </ng-container>
+        <ng-container *ngIf="!request.notes()">
+          <span i18n class="fst-italic">No Patron Request Notes</span>
+        </ng-container>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>Internal Staff Notes</div>
+      <div class="col-10">
         <textarea rows="2" class="form-control"
           (ngModelChange)="request.staff_notes($event)" [ngModel]="request.staff_notes()">
         </textarea>
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-3" i18n>Patron-Visible Note</div>
-      <div class="col-9">
+      <div class="col-2" i18n>Patron-Visible Note</div>
+      <div class="col-10">
         <textarea rows="2" class="form-control border border-warning"
           (ngModelChange)="request.patron_notes($event)" [ngModel]="request.patron_notes()">
         </textarea>
       </div>
     </div>
     <div class="row mt-3" *ngIf="mode !== 'create'">
-      <div class="col-3" i18n>Status</div>
+      <div class="col-2" i18n>Status</div>
       <div class="col-4">{{getStatus()}}</div>
       <div class="col-5 d-flex">
         <div class="flex-1"></div>
@@ -199,11 +191,22 @@
       </div>
     </div>
     <div class="row mt-3" *ngIf="request.reject_date()">
-      <div class="col-3" i18n>Reason for Rejection</div>
-      <div class="col-9">
+      <div class="col-2" i18n>Reason for Rejection</div>
+      <div class="col-10">
         <input type="text" class="form-control" 
           [ngModel]="request.reject_reason()"
           (ngModelChange)="request.reject_reason($event)"/>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-2" i18n>ILL Denial Reason</div>
+      <div class="col-10">
+        <eg-combobox 
+          [startId]="request.ill_denial()"
+          (onChange)="request.route_to($event ? $event.id : null)"
+          i18n-placeholder placeholder="ILL Denial Reason..."
+          [entries]="illDenialOptions">
+        </eg-combobox>
       </div>
     </div>
   </div>
