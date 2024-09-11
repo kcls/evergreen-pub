@@ -56,6 +56,24 @@
   </div>
 </div>
 
+<div class="row m-1" *ngIf="expiredPatronAccount">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-warning">
+      <p i18n>
+        The patron account in question has expired.  Please extend the
+        patron's expire date and re-process the missing pieces.
+      </p>
+      <p>
+        <a target="_blank" 
+          routerLink="/staff/circ/patron/{{expiredPatronAccount.id()}}/edit" i18n>
+          {{expiredPatronAccount.family_name()}} / {{expiredPatronAccount.card().barcode()}}
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
+
+
 <div class="row m-1" *ngIf="noSuchItem">
   <div class="col-lg-6 offset-lg-3">
     <div class="alert alert-warning" i18n>

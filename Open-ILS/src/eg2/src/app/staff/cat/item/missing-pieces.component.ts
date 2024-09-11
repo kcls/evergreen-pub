@@ -33,6 +33,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
     circ: IdlObject;
     staffInitials = '';
     printPreviewHtml = '';
+    expiredPatronAccount = null;
 
     autoRefundsActive = false;
     alertMsgUpdated = false;
@@ -161,6 +162,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
     processItem(args: any = {}) {
         this.circNotFound = false;
         this.itemProcessed = false;
+        this.expiredPatronAccount = null;
 
         if (!this.item) { return; }
 
@@ -173,9 +175,23 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
             'open-ils.circ.mark_item_missing_pieces',
             this.auth.token(), this.itemId, args
         ).subscribe(resp => {
+
+            // If the checkin fails, multiple events may be returned.
+            if (Array.isArray(resp)) {
+                resp = resp[0];
+            }
+
             const evt = this.evt.parse(resp); // always returns event
+
+            console.debug('Missing pieces returned: ', evt);
+
             this.processing = false;
             this.itemProcessed = true;
+
+            if (evt.textcode === 'PATRON_ACCOUNT_EXPIRED') {
+                this.expiredPatronAccount = evt?.payload;
+                return;
+            }
 
             if (evt.textcode === 'ACTION_CIRCULATION_NOT_FOUND') {
                 this.circNotFound = true;

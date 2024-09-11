@@ -1621,6 +1621,8 @@ sub try_abort_transit {
 sub handle_pending_refund {
     my ($e, $circ_id, $args) = @_;
 
+    return (0);  # going away soon
+
     return (0) unless
         my $mrx = $RFC->circ_has_active_refund($circ_id);
 

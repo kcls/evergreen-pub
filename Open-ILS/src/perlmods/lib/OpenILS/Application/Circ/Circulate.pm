@@ -1030,7 +1030,9 @@ sub mk_env {
                 clean_ISO8601($patron->expire_date));
 
             if (CORE::time > $expire->epoch) {
-                $self->bail_on_events(OpenILS::Event->new('PATRON_ACCOUNT_EXPIRED'))
+                $self->bail_on_events(
+                    OpenILS::Event->new('PATRON_ACCOUNT_EXPIRED', payload => $patron)
+                );
             }
         }
     }
