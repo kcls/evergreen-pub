@@ -189,7 +189,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
             this.itemProcessed = true;
 
             if (evt.textcode === 'PATRON_ACCOUNT_EXPIRED') {
-                this.expiredPatronAccount = evt?.payload;
+                this.expiredPatronAccount = evt.payload;
                 return;
             }
 
