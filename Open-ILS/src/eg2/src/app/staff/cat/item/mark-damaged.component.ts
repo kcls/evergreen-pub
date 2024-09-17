@@ -3,6 +3,7 @@ import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {IdlObject} from '@eg/core/idl.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {AuthService} from '@eg/core/auth.service';
+import {OrgService} from '@eg/core/org.service';
 import {NetService} from '@eg/core/net.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
@@ -14,6 +15,10 @@ import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {BillingService} from '@eg/staff/share/billing/billing.service';
 import {PatronPenaltyDialogComponent} from '@eg/staff/share/patron/penalty-dialog.component';
 import {BroadcastService} from '@eg/share/util/broadcast.service';
+import {DateUtil} from '@eg/share/util/date';
+import {StaffService} from '@eg/staff/share/staff.service';
+
+const PROBLEM_SHELF_DURATION = 86400 * 7 * 6 * 1000; // 6 weeks in milleconds
 
 @Component({
   templateUrl: 'mark-damaged.component.html'
@@ -46,6 +51,8 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     itemIsLost = false;
     noPatronToNotify = false;
 
+    shelfNote = '';
+
     // If the item is checked out, ask the API to check it in first.
     handleCheckin = true;
 
@@ -60,6 +67,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         private net: NetService,
         private printer: PrintService,
         private pcrud: PcrudService,
+        private org: OrgService,
         private auth: AuthService,
         private evt: EventService,
         private toast: ToastService,
@@ -67,7 +75,8 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         private bib: BibRecordService,
         private billing: BillingService,
         private broadcaster: BroadcastService,
-        private holdings: HoldingsService
+        private holdings: HoldingsService,
+        private staff: StaffService
     ) {}
 
     ngOnInit() {
@@ -213,10 +222,38 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
                     this.penaltyDialog.startPatronMessage = 53;
                     this.penaltyDialog.startInitials = this.dibs;
 
+                    let org = this.org.get(this.auth.user().ws_ou()).shortname();
+
+
+                    // problem shelf end date
+                    let end = new Date(new Date().getTime() + PROBLEM_SHELF_DURATION);
+                    console.log('END ', end);
+                    // translated to YMD
+                    let ymd = DateUtil.localYmdPartsFromDate(end);
+                    console.log('YMD', ymd);
+
+                    // formatted as staff expect. typically we use the
+                    // date pipe in the template to handle the date
+                    // locale format.  Doign it manually this time.
+                    let day = ymd.month + '/' + ymd.day + '/' + ymd.year;
+
+                    this.shelfNote = `On ${org} problem shelf until ${day}.`;
+
                     this.penaltyDialog.appendToPatronMessage =
                         this.bibSummary.display.title + ', ' +
                         this.itemBarcode + ', ' +
-                        this.damageNote;
+                        this.damageNote + '. ' +
+                        this.shelfNote;
+
+
+                    if (this.itemAlert) {
+                        this.itemAlert += '\n';
+                    } else {
+                        this.itemAlert = '';
+                    }
+
+                    this.itemAlert += `Damage: ${this.damageNote}. ${this.shelfNote}`;
+                    this.itemAlert = this.staff.appendInitials(this.itemAlert, this.dibs);
 
                     this.penaltyDialog.open({size: 'lg'}).toPromise()
                     .finally(() => this.refreshPrintDetails());
