@@ -11,3 +11,4 @@
 0006-sip-filters [0004-damaged-item-letter] 2024-06-13T14:06:40Z berick <berick@kcls-311> # SIP mediator filters
 0007-patron-req-cont [0004-damaged-item-letter] 2024-06-24T23:17:07Z berick <berick@kcls-311> # patron requests continued
 XXXX-transit-sips [0003-patron-requests] 2024-04-30T20:55:15Z berick <berick@kcls-311> # transit slips
+XXXX-checkout-emails [0004-damaged-item-letter] 2024-09-19T15:23:11Z berick <berick@kcls311> # Checkout Emails
