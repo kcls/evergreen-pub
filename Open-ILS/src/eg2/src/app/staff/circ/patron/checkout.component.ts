@@ -374,6 +374,21 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
         );
     }
 
+    willEmailReceipt(): boolean {
+        if (!this.context.summary) { return false; }
+
+        const patron = this.context.summary.patron;
+        const setting = patron.settings()
+            .filter(s => s.name() === 'notification.checkout.email')[0];
+
+        return (
+            this.patronHasEmail() &&
+            setting &&
+            setting.value() === 'true' // JSON encoded
+        );
+    }
+
+
     quickReceipt() {
         if (this.mayEmailReceipt()) {
             this.emailReceipt();

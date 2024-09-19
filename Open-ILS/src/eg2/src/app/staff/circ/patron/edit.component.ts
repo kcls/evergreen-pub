@@ -1344,6 +1344,11 @@ export class EditComponent implements OnInit {
             this.fieldVisibility[field] = DEFAULT_FIELD_VISIBILITY[field] || 0;
         }
 
+        if (!this.toolbar) {
+            // Avoid console errors on non-edit pages.
+            return false;
+        }
+
         return this.fieldVisibility[field] >= this.toolbar.visibilityLevel;
     }
 
