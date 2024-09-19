@@ -227,10 +227,8 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
 
                     // problem shelf end date
                     let end = new Date(new Date().getTime() + PROBLEM_SHELF_DURATION);
-                    console.log('END ', end);
                     // translated to YMD
                     let ymd = DateUtil.localYmdPartsFromDate(end);
-                    console.log('YMD', ymd);
 
                     // formatted as staff expect. typically we use the
                     // date pipe in the template to handle the date
