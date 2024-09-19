@@ -743,11 +743,21 @@ int oilsAuthComplete( osrfMethodContext* ctx ) {
     jsonObject* cacheObj = osrfCacheGetObject(cache_key); // free
 
     if (!cacheObj) {
+        /*
         return osrfAppRequestRespondException(ctx->session,
             ctx->request, "No authentication seed found. "
             "open-ils.auth.authenticate.init must be called first "
             " (check that memcached is running and can be connected to) "
         );
+        */
+
+        // Return a login failed message instaed of an error so we
+        // avoid filling the error log with the 'no seed found' messsages.
+        response = oilsNewEvent(__FILE__, harmless_line_number, OILS_EVENT_AUTH_FAILED);
+        osrfAppRespondComplete(ctx, oilsEventToJSON(response));
+        oilsEventFree(response); // frees event JSON
+
+        return 0;
     }
 
     int user_id = jsonObjectGetNumber(
