@@ -390,6 +390,14 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
         }
     }
 
+    donePrintReceipt() {
+        this.printReceipt(true);
+    }
+
+    doneNoReceipt() {
+        this.doneRedirect();
+    }
+
     emailReceipt(redirect?: boolean) {
         if (this.patronHasEmail() && this.context.checkouts.length > 0) {
             return this.net.request(
