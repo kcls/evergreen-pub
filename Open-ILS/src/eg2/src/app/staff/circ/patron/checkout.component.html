@@ -171,11 +171,14 @@
           for="strict-barcode-cbox" i18n>Strict Barcode</label>
       </div>
     </div>
-    <button class="btn btn-outline-dark" (click)="doneNoReceipt()" i18n type="button">
-      Done
+    <button class="btn btn-outline-dark" (click)="printReceipt()" i18n type="button">
+      Quick Receipt
     </button>
     <button class="btn btn-outline-dark ms-2" (click)="donePrintReceipt()" i18n type="button">
       Done &amp; Print Receipt
+    </button>
+    <button class="btn btn-outline-dark ms-2" (click)="doneNoReceipt()" i18n type="button">
+      Done
     </button>
   </div>
 </div>
