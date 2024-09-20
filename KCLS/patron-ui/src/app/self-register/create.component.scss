@@ -8,3 +8,7 @@
 .card-image-horiz {
   max-height: 90px;
 }
+
+.mat-mdc-button:not(:disabled) {
+    color: #005cbb;
+}
