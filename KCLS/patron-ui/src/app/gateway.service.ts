@@ -13,7 +13,8 @@ interface GatewayResponse {
     payload: Array<unknown>;
 }
 
-const GATEWAY_PATH = '/osrf-gateway-v1';
+//const GATEWAY_PATH = '/osrf-gateway-v1';
+const GATEWAY_PATH = '/eg-http-gateway';
 
 @Injectable()
 export class Gateway {
@@ -32,8 +33,12 @@ export class Gateway {
     request(service: string, method: string, ...params: unknown[]): Observable<unknown> {
         console.debug(`Gateway service=${service}\n  method=${method}\n  paramCount=${params.length}`);
 
-        let postData =
-          `service=${encodeURIComponent(service)}&method=${encodeURIComponent(method)}`;
+        service = encodeURIComponent(service);
+        method = encodeURIComponent(method);
+
+        // format=fullhash allows us to retrieve IDL-classed objects
+        // as hashes.  This means we don't need to load the IDL.
+        let postData = `format=hashfull&service=${service}&method=${method}`;
 
         for (const param of params) {
             postData += `&param=${encodeURIComponent(JSON.stringify(param))}`;
@@ -49,7 +54,7 @@ export class Gateway {
                         return;
                     }
 
-                    //console.debug("Gateway response: ", evt);
+                    // console.debug("Gateway response: ", evt);
 
                     const resp = evt as HttpResponse<GatewayResponse>;
                     const body = resp.body || {payload: [], status: 0};
