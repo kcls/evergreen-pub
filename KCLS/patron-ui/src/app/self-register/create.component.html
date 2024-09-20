@@ -1,61 +1,86 @@
 
 <mat-stepper orientation="vertical" [linear]="true" #stepper>
-  <mat-step>
-    <ng-template matStepLabel i18n>Choose a Card</ng-template>
 
-    <p class="mt-1 mb-1" i18n>You'll receive one wallet-size and one keychain-size card.</p>
+  <mat-step [stepControl]="cardDesignGroup">
+    <form [formGroup]="cardDesignGroup">
+      <ng-template matStepLabel i18n>Choose a Card</ng-template>
 
-    <mat-radio-group [formControl]="controls.cardDesign">
-      <div>
-        <mat-radio-button value="2019_Dog_Combo">
-          <img class="card-image-horiz" src="/images/patron_cards/2019_Dog_Combo.png"/>
-        </mat-radio-button>
-        <mat-radio-button value="2018_Pride_Combo">
-          <img class="card-image-horiz" src="/images/patron_cards/2018_Pride_Combo.png"/>
-        </mat-radio-button>
-      </div>
-      <div class="mt-3">
-        <mat-radio-button value="2019_Sasquatch_Combo">
-          <img class="card-image-vert " src="/images/patron_cards/2019_Sasquatch_Combo.png"/>
-        </mat-radio-button>
-        <mat-radio-button value="2019_Red_Combo">
-          <img class="card-image-vert " src="/images/patron_cards/2019_Red_Combo.png"/>
-        </mat-radio-button>
-      </div>
-      <div class="mt-3">
-        <mat-radio-button value="2018_Slug">
-          <img class="card-image-vert" src="/images/patron_cards/2018_Slug.png"/>
-        </mat-radio-button>
-        <mat-radio-button value="2021_Baby_Yoda">
-          <img class="card-image-vert" src="/images/patron_cards/2021_Baby_Yoda.png"/>
-        </mat-radio-button>
-      </div>
-    </mat-radio-group>
+      <p class="mt-1 mb-1" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 
-    <div class="mt-2">
-      <button mat-button matStepperNext>Next</button>
-    </div>
+      <mat-radio-group formControlName="design">
+        <div>
+          <mat-radio-button value="2019_Dog_Combo">
+            <img class="card-image-horiz" src="/images/patron_cards/2019_Dog_Combo.png"/>
+          </mat-radio-button>
+          <mat-radio-button value="2018_Pride_Combo">
+            <img class="card-image-horiz" src="/images/patron_cards/2018_Pride_Combo.png"/>
+          </mat-radio-button>
+        </div>
+        <div class="mt-3">
+          <mat-radio-button value="2019_Sasquatch_Combo">
+            <img class="card-image-vert " src="/images/patron_cards/2019_Sasquatch_Combo.png"/>
+          </mat-radio-button>
+          <mat-radio-button value="2019_Red_Combo">
+            <img class="card-image-vert " src="/images/patron_cards/2019_Red_Combo.png"/>
+          </mat-radio-button>
+        </div>
+        <div class="mt-3">
+          <mat-radio-button value="2018_Slug">
+            <img class="card-image-vert" src="/images/patron_cards/2018_Slug.png"/>
+          </mat-radio-button>
+          <mat-radio-button value="2021_Baby_Yoda">
+            <img class="card-image-vert" src="/images/patron_cards/2021_Baby_Yoda.png"/>
+          </mat-radio-button>
+        </div>
+      </mat-radio-group>
+
+      <div class="mt-2">
+        <button mat-button matStepperNext>Next</button>
+      </div>
+    </form>
   </mat-step>
 
-  <mat-step>
-    <ng-template matStepLabel i18n>Choose How To Get Your Card</ng-template>
-    <mat-radio-group [formControl]="controls.cardDelivery">
-      <mat-radio-button value="Mail">
-        <span i18n>Mail my card.  
-          <span class="italic text-sm">
-            (You’ll receive your card and activation instructions within 1-2 weeks.)
+  <mat-step [stepControl]="cardDeliveryGroup">
+    <form [formGroup]="cardDeliveryGroup">
+      <ng-template matStepLabel i18n>Choose How To Get Your Card</ng-template>
+      <mat-radio-group formControlName="delivery">
+        <mat-radio-button value="Mail">
+          <span i18n>Mail my card.  
+            <span class="italic text-sm">
+              (You’ll receive your card and activation instructions within 1-2 weeks.)
+            </span>
           </span>
-        </span>
-      </mat-radio-button>
-      <mat-radio-button value="Pick up">
-        <span i18n> I will pick up at my home library
-          <span class="italic text-sm">(Available same day.)</span>
-        </span>
-      </mat-radio-button>
-    </mat-radio-group>
-    <div class="border border-slate-300 rounded mt-2">
-      <button mat-button matStepperPrevious>Back</button>
-      <button mat-button matStepperNext>Next</button>
-    </div>
+        </mat-radio-button>
+        <mat-radio-button value="Pick up">
+          <span i18n> I will pick up at my home library
+            <span class="italic text-sm">(Available same day.)</span>
+          </span>
+        </mat-radio-button>
+      </mat-radio-group>
+      <div class="border border-slate-300 rounded mt-2">
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button matStepperNext>Next</button>
+      </div>
+    </form>
   </mat-step>
+
+  <mat-step [stepControl]="nameGroup">
+    <form [formGroup]="nameGroup">
+      <ng-template matStepLabel i18n>Tell Us Your Name</ng-template>
+
+      <mat-form-field>
+        <mat-label i18n>First Name</mat-label>
+        <input type="text" matInput formControlName="first"/>
+        <mat-error *ngIf="nameGroup.controls.first.hasError('required')" i18n>
+            First Name <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+
+      <div class="border border-slate-300 rounded mt-2">
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button matStepperNext>Next</button>
+      </div>
+    </form>
+  </mat-step>
+
 </mat-stepper>
