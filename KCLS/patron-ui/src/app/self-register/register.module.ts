@@ -4,10 +4,12 @@ import {AppCommonModule} from '../common.module';
 import {SelfRegisterRoutingModule} from './routing.module';
 import {SelfRegisterService} from './register.service';
 import {SelfRegisterComponent} from './register.component';
+import {SelfRegisterCreateComponent} from './create.component';
 
 @NgModule({
   declarations: [
     SelfRegisterComponent,
+    SelfRegisterCreateComponent,
   ],
   imports: [
     CommonModule,
