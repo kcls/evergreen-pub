@@ -7,8 +7,8 @@ import {SelfRegisterService} from './register.service';
 import {Title}  from '@angular/platform-browser';
 
 @Component({
-  templateUrl: './register.component.html'
-  //styleUrls: ['./register.component.scss']
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.scss']
 })
 export class SelfRegisterComponent implements OnInit {
 
