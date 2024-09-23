@@ -128,6 +128,19 @@
         </mat-error>
       </mat-form-field>
     </div>
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Phone Number</mat-label>
+        <input type="tel" matInput formControlName="phone"/>
+        <mat-hint>111-222-3333</mat-hint>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
+            Phone Number <strong>required</strong>
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
+            Phone format is <strong>111-222-3333</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
   </div>
 
   <div class="mt-6" *ngIf="isJuvenile">
@@ -150,26 +163,18 @@
   <div class="columns-2 mt-6">
     <div>
       <mat-form-field class="w-full">
-        <mat-label i18n>Phone Number</mat-label>
-        <input type="tel" matInput formControlName="phone"/>
-        <mat-hint>111-222-3333</mat-hint>
-        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
-            Phone Number <strong>required</strong>
-        </mat-error>
-        <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
-            Phone format is <strong>111-222-3333</strong>
+        <mat-label i18n>Email Address</mat-label>
+        <input type="email" matInput formControlName="email"/>
+        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
+            Email format is <strong>not valid</strong>
         </mat-error>
       </mat-form-field>
     </div>
-  </div>
-
-  <div class="columns-2 mt-6">
     <div>
       <mat-form-field class="w-full">
-        <mat-label i18n>Email Address</mat-label>
-        <input type="email" matInput formControlName="email"/>
-        <mat-hint>user&#64;example.org</mat-hint>
-        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
+        <mat-label i18n>Confirm Email Address</mat-label>
+        <input type="email" matInput formControlName="email2"/>
+        <mat-error *ngIf="formGroup.controls.email.hasError('email2')" i18n>
             Email format is <strong>not valid</strong>
         </mat-error>
       </mat-form-field>
@@ -331,6 +336,9 @@
   <div class="columns-1 mt-6">
     <button mat-raised-button [disabled]="!canSubmit()" (click)="submit()" i18n>Apply</button>
     <button mat-raised-button (click)="cancel()" class="ml-4" i18n>Cancel</button>
+    <span *ngIf="formNeedsWork" class="ml-4 p-2 text-red-400 border-2 rounded-md">
+      Please provide values for all required fields.
+    </span>
   </div>
 
 </form>

@@ -20,6 +20,8 @@ export class SelfRegisterCreateComponent implements OnInit {
     isJuvenile = false;
     juvMinDob: Date;
 
+    formNeedsWork = false;
+
     formGroup = this.formBuilder.group({
         design: ['', Validators.required],
         delivery: ['Mail', Validators.required],
@@ -34,6 +36,7 @@ export class SelfRegisterCreateComponent implements OnInit {
         guardian: '',
         phone: ['', [Validators.required, Validators.pattern(/\d{3}-\d{3}-\d{4}/)]],
         email: ['', Validators.email],
+        email2: ['', Validators.email],
         wantsLibNews: false,
         wantsFoundationInfo: false,
         street1: ['', Validators.required],
@@ -145,15 +148,11 @@ export class SelfRegisterCreateComponent implements OnInit {
         });
     }
 
+    // Avoid disabling the submit button for missing values.
+    // See submit() for why.
     canSubmit(): boolean {
         if (!this.formGroup.controls.termsOfService.value) {
             return false;
-        }
-
-        for (const field in this.formGroup.controls) {
-            if ((this.formGroup.controls as any)[field].errors) {
-                return false;
-            }
         }
 
         return true;
@@ -164,6 +163,20 @@ export class SelfRegisterCreateComponent implements OnInit {
     }
 
     submit() {
+        this.formNeedsWork = false;
+
+        for (const field in this.formGroup.controls) {
+
+            // Set all form fields to "touched" so that empty+required
+            // fields will appear as errors in the form.
+            (this.formGroup.controls as any)[field].markAsTouched();
+
+            if ((this.formGroup.controls as any)[field].errors) {
+                this.formNeedsWork = true;
+                return;
+            }
+        }
+
         // if state == DEFAULT_STATE => WA
     }
 }
