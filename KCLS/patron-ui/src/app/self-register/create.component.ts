@@ -6,6 +6,7 @@ import {AppService} from '../app.service';
 import {SelfRegisterService} from './register.service';
 
 const JUV_AGE = 18; // years
+const DEFAULT_STATE = 'Washington';
 
 @Component({
   templateUrl: './create.component.html',
@@ -38,14 +39,14 @@ export class SelfRegisterCreateComponent implements OnInit {
         street1: ['', Validators.required],
         street2: '',
         city: ['', Validators.required],
-        state: ['WA', Validators.required],
-        zipCode: ['', [Validators.required, Validators.pattern(/\d{5/)]],
+        state: [DEFAULT_STATE, Validators.required],
+        zipCode: ['', [Validators.required, Validators.pattern(/\d{5}/)]],
         mailingIsSame: true,
-        mailingStreet1: ['', Validators.required],
+        mailingStreet1: '',
         mailingStreet2: '',
-        mailingCity: ['', Validators.required],
-        mailingState: ['Washington', Validators.required],
-        mailingZipCode: ['', [Validators.required, Validators.pattern(/\d{5/)]],
+        mailingCity: '',
+        mailingState: DEFAULT_STATE,
+        mailingZipCode: '',
         termsOfService: false,
     });
 
@@ -145,7 +146,16 @@ export class SelfRegisterCreateComponent implements OnInit {
     }
 
     canSubmit(): boolean {
-        // check termsOfService checkbox
+        if (!this.formGroup.controls.termsOfService.value) {
+            return false;
+        }
+
+        for (const field in this.formGroup.controls) {
+            if ((this.formGroup.controls as any)[field].errors) {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -154,7 +164,7 @@ export class SelfRegisterCreateComponent implements OnInit {
     }
 
     submit() {
-        // if state == Washington => WA
+        // if state == DEFAULT_STATE => WA
     }
 }
 

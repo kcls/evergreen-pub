@@ -229,7 +229,7 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>State</mat-label>
-        <mat-select formControlName="state">
+        <mat-select formControlName="state" [value]="formGroup.controls.state.value">
           <mat-option *ngFor="let state of states" [value]="state">{{state}}</mat-option>
         </mat-select>
         <mat-error *ngIf="formGroup.controls.state.hasError('required')" i18n>
@@ -320,7 +320,7 @@
 
   <div class="columns-1 mt-6">
     <div>
-      <mat-checkbox formControlName="mailingIsSame" i18n>
+      <mat-checkbox formControlName="termsOfService" i18n>
         I assume full responsibility for the use of this card and all 
         charges associated with its use. I will give immediate notice of 
         loss of card or change of address.
