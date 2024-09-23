@@ -40,7 +40,71 @@ export class SelfRegisterCreateComponent implements OnInit {
         city: ['', Validators.required],
         state: ['WA', Validators.required],
         zipCode: ['', [Validators.required, Validators.pattern(/\d{5/)]],
+        mailingIsSame: true,
+        mailingStreet1: ['', Validators.required],
+        mailingStreet2: '',
+        mailingCity: ['', Validators.required],
+        mailingState: ['Washington', Validators.required],
+        mailingZipCode: ['', [Validators.required, Validators.pattern(/\d{5/)]],
+        termsOfService: false,
     });
+
+    states = [
+        $localize`Alabama`,
+        $localize`Alaska`,
+        $localize`Arizona`,
+        $localize`Arkansas`,
+        $localize`California`,
+        $localize`Colorado`,
+        $localize`Connecticut`,
+        $localize`Delaware`,
+        $localize`District of Columbia`,
+        $localize`Florida`,
+        $localize`Georgia`,
+        $localize`Hawaii`,
+        $localize`Idaho`,
+        $localize`Illinois`,
+        $localize`Indiana`,
+        $localize`Iowa`,
+        $localize`Kansas`,
+        $localize`Kentucky`,
+        $localize`Louisiana`,
+        $localize`Maine`,
+        $localize`Maryland`,
+        $localize`Massachusetts`,
+        $localize`Michigan`,
+        $localize`Minnesota`,
+        $localize`Mississippi`,
+        $localize`Missouri`,
+        $localize`Montana`,
+        $localize`Nebraska`,
+        $localize`Nevada`,
+        $localize`New Hampshire`,
+        $localize`New Jersey`,
+        $localize`New Mexico`,
+        $localize`New York`,
+        $localize`North Carolina`,
+        $localize`North Dakota`,
+        $localize`Ohio`,
+        $localize`Oklahoma`,
+        $localize`Oregon`,
+        $localize`Pennsylvania`,
+        $localize`Rhode Island`,
+        $localize`South Carolina`,
+        $localize`South Dakota`,
+        $localize`Tennessee`,
+        $localize`Texas`,
+        $localize`Utah`,
+        $localize`Vermont`,
+        $localize`Virginia`,
+        $localize`Washington`,
+        $localize`West Virginia`,
+        $localize`Wisconsin`,
+        $localize`Wyoming`,
+        $localize`Armed Forces Americas`,
+        $localize`Armed Forces Europe`,
+        $localize`Armed Forces Pacific`
+    ];
 
     constructor(
         private router: Router,
@@ -64,6 +128,33 @@ export class SelfRegisterCreateComponent implements OnInit {
                 this.formGroup.controls.guardian.clearValidators();
             }
         });
+
+        this.formGroup.controls.mailingIsSame.valueChanges.subscribe(isSame => {
+            if (isSame) {
+                this.formGroup.controls.mailingStreet1.clearValidators();
+                this.formGroup.controls.mailingCity.clearValidators();
+                this.formGroup.controls.mailingState.clearValidators();
+                this.formGroup.controls.mailingZipCode.clearValidators();
+            } else {
+                this.formGroup.controls.mailingStreet1.setValidators(Validators.required);
+                this.formGroup.controls.mailingCity.setValidators(Validators.required);
+                this.formGroup.controls.mailingState.setValidators(Validators.required);
+                this.formGroup.controls.mailingZipCode.setValidators([Validators.required, Validators.pattern(/\d{5/)]);
+            }
+        });
+    }
+
+    canSubmit(): boolean {
+        // check termsOfService checkbox
+        return true;
+    }
+
+    cancel() {
+        window.location.reload();
+    }
+
+    submit() {
+        // if state == Washington => WA
     }
 }
 

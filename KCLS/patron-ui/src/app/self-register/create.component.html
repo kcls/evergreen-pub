@@ -230,60 +230,7 @@
       <mat-form-field class="w-full">
         <mat-label i18n>State</mat-label>
         <mat-select formControlName="state">
-          <mat-option value="Alabama">Alabama</mat-option>
-          <mat-option value="Alaska">Alaska</mat-option>
-          <mat-option value="Arizona">Arizona</mat-option>
-          <mat-option value="Arkansas">Arkansas</mat-option>
-          <mat-option value="California">California</mat-option>
-          <mat-option value="Colorado">Colorado</mat-option>
-          <mat-option value="Connecticut">Connecticut</mat-option>
-          <mat-option value="Delaware">Delaware</mat-option>
-          <mat-option value="District of Columbia">District of Columbia</mat-option>
-          <mat-option value="Florida">Florida</mat-option>
-          <mat-option value="Georgia">Georgia</mat-option>
-          <mat-option value="Hawaii">Hawaii</mat-option>
-          <mat-option value="Idaho">Idaho</mat-option>
-          <mat-option value="Illinois">Illinois</mat-option>
-          <mat-option value="Indiana">Indiana</mat-option>
-          <mat-option value="Iowa">Iowa</mat-option>
-          <mat-option value="Kansas">Kansas</mat-option>
-          <mat-option value="Kentucky">Kentucky</mat-option>
-          <mat-option value="Louisiana">Louisiana</mat-option>
-          <mat-option value="Maine">Maine</mat-option>
-          <mat-option value="Maryland">Maryland</mat-option>
-          <mat-option value="Massachusetts">Massachusetts</mat-option>
-          <mat-option value="Michigan">Michigan</mat-option>
-          <mat-option value="Minnesota">Minnesota</mat-option>
-          <mat-option value="Mississippi">Mississippi</mat-option>
-          <mat-option value="Missouri">Missouri</mat-option>
-          <mat-option value="Montana">Montana</mat-option>
-          <mat-option value="Nebraska">Nebraska</mat-option>
-          <mat-option value="Nevada">Nevada</mat-option>
-          <mat-option value="New Hampshire">New Hampshire</mat-option>
-          <mat-option value="New Jersey">New Jersey</mat-option>
-          <mat-option value="New Mexico">New Mexico</mat-option>
-          <mat-option value="New York">New York</mat-option>
-          <mat-option value="North Carolina">North Carolina</mat-option>
-          <mat-option value="North Dakota">North Dakota</mat-option>
-          <mat-option value="Ohio">Ohio</mat-option>
-          <mat-option value="Oklahoma">Oklahoma</mat-option>
-          <mat-option value="Oregon">Oregon</mat-option>
-          <mat-option value="Pennsylvania">Pennsylvania</mat-option>
-          <mat-option value="Rhode Island">Rhode Island</mat-option>
-          <mat-option value="South Carolina">South Carolina</mat-option>
-          <mat-option value="South Dakota">South Dakota</mat-option>
-          <mat-option value="Tennessee">Tennessee</mat-option>
-          <mat-option value="Texas">Texas</mat-option>
-          <mat-option value="Utah">Utah</mat-option>
-          <mat-option value="Vermont">Vermont</mat-option>
-          <mat-option value="Virginia">Virginia</mat-option>
-          <mat-option value="WA" selected="selected">Washington</mat-option>
-          <mat-option value="West Virginia">West Virginia</mat-option>
-          <mat-option value="Wisconsin">Wisconsin</mat-option>
-          <mat-option value="Wyoming">Wyoming</mat-option>
-          <mat-option value="Armed Forces Americas">Armed Forces Americas</mat-option>
-          <mat-option value="Armed Forces Europe">Armed Forces Europe</mat-option>
-          <mat-option value="Armed Forces Pacific">Armed Forces Pacific</mat-option>
+          <mat-option *ngFor="let state of states" [value]="state">{{state}}</mat-option>
         </mat-select>
         <mat-error *ngIf="formGroup.controls.state.hasError('required')" i18n>
             State is <strong>required</strong>
@@ -302,6 +249,88 @@
         </mat-error>
       </mat-form-field>
     </div>
+  </div>
+
+  <h3 i18n>Mailing Address</h3>
+
+  <div class="columns-1 mt-6">
+    <mat-checkbox formControlName="mailingIsSame">
+      Same as Residential Address
+    </mat-checkbox>
+  </div>
+
+  <ng-container *ngIf="!formGroup.controls.mailingIsSame.value">
+    <div class="columns-1 mt-6">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Street Address</mat-label>
+          <input type="text" matInput formControlName="mailingStreet1"/>
+          <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+              Street address is <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="columns-2 mt-4">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Apartment or Unit</mat-label>
+          <input type="text" matInput formControlName="mailingStreet2"/>
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>City</mat-label>
+          <input type="text" matInput formControlName="mailingCity"/>
+          <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+              City is <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="columns-2 mt-4">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>State</mat-label>
+          <mat-select formControlName="mailingState">
+            <mat-option *ngFor="let state of states" [value]="state">{{state}}</mat-option>
+          </mat-select>
+          <mat-error *ngIf="formGroup.controls.state.hasError('required')" i18n>
+              State is <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Zip Code</mat-label>
+          <input type="text" matInput formControlName="mailingZipCode"/>
+          <mat-error *ngIf="formGroup.controls.zipCode.hasError('required')" i18n>
+              Zip Code is <strong>required</strong>
+          </mat-error>
+          <mat-error *ngIf="formGroup.controls.zipCode.hasError('pattern')" i18n>
+              Zip  Code format is <strong>12345</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <div class="columns-1 mt-6">
+    <div>
+      <mat-checkbox formControlName="mailingIsSame" i18n>
+        I assume full responsibility for the use of this card and all 
+        charges associated with its use. I will give immediate notice of 
+        loss of card or change of address.
+      </mat-checkbox>
+    </div>
+  </div>
+
+  <div class="columns-1 mt-6">
+    <button mat-raised-button [disabled]="!canSubmit()" (click)="submit()" i18n>Apply</button>
+    <button mat-raised-button (click)="cancel()" class="ml-4" i18n>Cancel</button>
   </div>
 
 </form>
