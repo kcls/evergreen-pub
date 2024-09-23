@@ -19,15 +19,9 @@ export class SelfRegisterCreateComponent implements OnInit {
     isJuvenile = false;
     juvMinDob: Date;
 
-    cardDesignGroup = this.formBuilder.group({
+    formGroup = this.formBuilder.group({
         design: ['', Validators.required],
-    });
-
-    cardDeliveryGroup = this.formBuilder.group({
         delivery: ['Mail', Validators.required],
-    });
-
-    nameGroup = this.formBuilder.group({
         first: ['', Validators.required],
         middle: '',
         last: ['', Validators.required],
@@ -35,26 +29,17 @@ export class SelfRegisterCreateComponent implements OnInit {
         legalFirst: '',
         legalMiddle: '',
         legalLast: '',
-    });
-
-    dobGroup = this.formBuilder.group({
         dob: ['', Validators.required],
         guardian: '',
-    });
-
-    contactsGroup = this.formBuilder.group({
         phone: ['', [Validators.required, Validators.pattern(/\d{3}-\d{3}-\d{4}/)]],
         email: ['', Validators.email],
         wantsLibNews: false,
         wantsFoundationInfo: false,
-    });
-
-    addressGroup = this.formBuilder.group({
-
-    });
-
-    submitGroup = this.formBuilder.group({
-
+        street1: ['', Validators.required],
+        street2: '',
+        city: ['', Validators.required],
+        state: ['WA', Validators.required],
+        zipCode: ['', [Validators.required, Validators.pattern(/\d{5/)]],
     });
 
     constructor(
@@ -70,13 +55,13 @@ export class SelfRegisterCreateComponent implements OnInit {
 
     ngOnInit() {
 
-        this.dobGroup.controls.dob.valueChanges.subscribe((dob: unknown) => {
+        this.formGroup.controls.dob.valueChanges.subscribe((dob: unknown) => {
             if ((dob as Date) > this.juvMinDob) {
                 this.isJuvenile = true;
-                this.dobGroup.controls.guardian.setValidators(Validators.required);
+                this.formGroup.controls.guardian.setValidators(Validators.required);
             } else {
                 this.isJuvenile = false;
-                this.dobGroup.controls.guardian.clearValidators();
+                this.formGroup.controls.guardian.clearValidators();
             }
         });
     }
