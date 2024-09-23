@@ -5,28 +5,80 @@
     <div class="flex justify-center">
       <h1 i18n>Get a Library Card</h1>
     </div>
+    <div class="flex justify-center mt-4">
+      <div>
+
+        <p class="mt-4">
+          Get access to all the 
+          <span *ngIf="inKioskMode">services</span>
+          <span *ngIf="!inKioskMode">
+            <a href="https://kcls.org/library-cards/#allaccess">services</a> 
+          </span>
+          that are available from the King County Library System. 
+        </p>
+        <p class="mt-4">
+          Fill out the application below to apply for your All-Access Library Card.
+        </p>
+        <p class="mt-4">
+          You'll need to 
+          <span *ngIf="inKioskMode">
+            bring proof of address and photo ID that shows your date of birth
+          </span>
+          <span *ngIf="!inKioskMode">
+            <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
+              bring proof of address and photo ID that shows your date of birth
+            </a>
+          </span>
+          to a library to activate your card. (Parents or guardians can help 
+          with this for applicants younger than age 18.)  
+        </p>
+        <p class="mt-4 italic">
+          Reasonable accommodation for individuals with disabilities is available 
+          upon request. Accommodations include modifications to policies, 
+          programs, appropriate equipment, and services. Contact your 
+          <span *ngIf="inKioskMode">community library</span>
+          <span *ngIf="!inKioskMode">
+            community library or visit 
+            <a href="https://kcls.org/accessibility/">https://kcls.org/accessibility/</a>
+          </span>
+          to request accommodation. 
+        </p>
+        <ng-container *ngIf="!inKioskMode">
+          <p class="mt-4" *ngIf="!inKioskMode">
+            <a href="https://kcls.org/faq/library-cards/">
+              Learn about All-Access cards in our frequently asked questions. 
+            </a>
+          </p>
+          <p class="mt-4">
+            Read our <a href="https://kcls.bibliocommons.com/info/privacy">Privacy Policy</a>
+          </p>
+        </ng-container>
+      </div>
+    </div>
     <div class="flex justify-center">
       <router-outlet></router-outlet>
     </div>
   </div>
 
   <div class="flex-1 pt-8">
-    <a href='https://kcls.bibliocms.com/faq/library-cards/' i18n>Related FAQs</a>
+    <ng-container *ngIf="!inKioskMode">	
+      <a href='https://kcls.bibliocms.com/faq/library-cards/' i18n>Related FAQs</a>
 
-    <h2 i18n>Download an Application</h2>
+      <h2 i18n>Download an Application</h2>
 
-    <ul class="list-disc ml-8">
-      <li class="mt-3" *ngFor="let lang of languageForms">
-        <a href="https://w3.kcls.org/PDF/applications/{{lang.pdf}}">{{lang.label}}</a>
-      </li>
-      <li class="mt-3">
-        You'll need <a href='https://get.adobe.com/reader/'>PDF Reader</a>
-      </li>
-      <li class="mt-3">
-        <hr/>
-        Read our <a href='https://kcls.bibliocommons.com/info/privacy'>Privacy Policy</a>.
-      </li>
-    </ul>
+      <ul class="list-disc ml-8">
+        <li class="mt-3" *ngFor="let lang of languageForms">
+          <a href="https://w3.kcls.org/PDF/applications/{{lang.pdf}}">{{lang.label}}</a>
+        </li>
+        <li class="mt-3">
+          You'll need <a href='https://get.adobe.com/reader/'>PDF Reader</a>
+        </li>
+        <li class="mt-3">
+          <hr/>
+          Read our <a href='https://kcls.bibliocommons.com/info/privacy'>Privacy Policy</a>.
+        </li>
+      </ul>
+    </ng-container>
   </div>
 </div>
 

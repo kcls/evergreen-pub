@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {Router, Event, NavigationEnd} from '@angular/router';
+import {Router, ActivatedRoute, Params, ParamMap} from '@angular/router';
 import {AppService} from '../app.service';
 import {FormControl} from '@angular/forms';
 import {Gateway} from '../gateway.service';
@@ -11,6 +11,8 @@ import {Title}  from '@angular/platform-browser';
   styleUrls: ['./register.component.scss']
 })
 export class SelfRegisterComponent implements OnInit {
+
+	inKioskMode = false;
 
     languageForms = [{
         label: `አማርኛ | Amharic`,
@@ -79,6 +81,7 @@ export class SelfRegisterComponent implements OnInit {
 
     constructor(
         private router: Router,
+        private route: ActivatedRoute,
         private title: Title,
         private gateway: Gateway,
         public app: AppService,
@@ -86,6 +89,10 @@ export class SelfRegisterComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        this.route.queryParams.subscribe((params: Params) => {
+			this.inKioskMode = Boolean(params.kiosk);
+        });
+
         this.title.setTitle($localize`Get a Library Card`);
     }
 }
