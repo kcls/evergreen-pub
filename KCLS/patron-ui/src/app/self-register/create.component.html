@@ -67,9 +67,9 @@
 
   <mat-step [stepControl]="nameGroup">
     <form [formGroup]="nameGroup">
-      <ng-template matStepLabel i18n>Tell Us About You</ng-template>
+      <ng-template matStepLabel i18n>Fill Out Your Name</ng-template>
 
-      <h3 class="mt-4" i18n>Name</h3>
+      <h4 class="mt-4" i18n>Name</h4>
 
       <div class="columns-2 mt-4">
         <div>
@@ -130,6 +130,11 @@
           </div>
         </div>
       </div>
+    </form>
+  </mat-step>
+  <mat-step [stepControl]="dobGroup">
+    <form [formGroup]="dobGroup">
+      <ng-template matStepLabel i18n>Date of Birth</ng-template>
 
       <h4 class="mt-4" i18n>Date of Birth</h4>
 
@@ -141,7 +146,7 @@
             <mat-hint>MM/DD/YYYY</mat-hint>
             <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>
             <mat-datepicker #dobPicker></mat-datepicker>
-            <mat-error *ngIf="nameGroup.controls.dob.hasError('required')" i18n>
+            <mat-error *ngIf="dobGroup.controls.dob.hasError('required')" i18n>
                 Birth Date <strong>required</strong>
             </mat-error>
           </mat-form-field>
@@ -152,12 +157,12 @@
         <p i18n>If you’re younger than age 18, list the names of all 
           parents and guardians who live with you.</p>
 
-        <div class="columns-2 mt-4">
+        <div class="columns-1 mt-4">
           <div>
             <mat-form-field class="w-full">
               <mat-label i18n>Parent or Guardian</mat-label>
               <input type="text" matInput formControlName="guardian"/>
-              <mat-error *ngIf="nameGroup.controls.guardian.hasError('required')" i18n>
+              <mat-error *ngIf="dobGroup.controls.guardian.hasError('required')" i18n>
                   Parent or Guardian <strong>required</strong>
               </mat-error>
             </mat-form-field>
@@ -175,8 +180,56 @@
   <mat-step [stepControl]="contactsGroup">
     <form [formGroup]="contactsGroup">
       <ng-template matStepLabel i18n>Contact Information</ng-template>
+
+      <h4 class="mr-4" i18n>Contact Information</h4>
+
+      <div class="columns-2 mt-4">
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>Phone Number</mat-label>
+            <input type="tel" matInput formControlName="phone"/>
+            <mat-hint>111-222-3333</mat-hint>
+            <mat-error *ngIf="contactsGroup.controls.phone.hasError('required')" i18n>
+                Phone Number <strong>required</strong>
+            </mat-error>
+            <mat-error *ngIf="contactsGroup.controls.phone.hasError('pattern')" i18n>
+                Phone format is <strong>111-222-3333</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>Email Address</mat-label>
+            <input type="email" matInput formControlName="email"/>
+            <mat-error *ngIf="contactsGroup.controls.email.hasError('email')" i18n>
+                Email format is <strong>not valid</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <h4 class="mt-4" i18n>Contact Preferences</h4>
+
+      <div class="columns-1 mt-4">
+        <div class="w-full">
+          <h5 i18n>May we contact you?</h5>
+          <div class="pl-4">
+            <mat-checkbox formControlName="wantsLibNews" i18n>
+              Tell me about library news and events
+            </mat-checkbox>
+            <mat-checkbox formControlName="wantsFoundationInfo" i18n>
+              Send me information about supporting the King County Library System Foundation.
+            </mat-checkbox>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-slate-300 rounded mt-4">
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button matStepperNext>Next</button>
+      </div>
     </form>
-    <!-- phone, email, home lib, prefs -->
+    <!-- email, home lib, prefs -->
   </mat-step>
 
   <mat-step [stepControl]="addressGroup">

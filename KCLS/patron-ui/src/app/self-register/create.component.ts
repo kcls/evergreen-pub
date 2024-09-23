@@ -27,15 +27,6 @@ export class SelfRegisterCreateComponent implements OnInit {
         delivery: ['Mail', Validators.required],
     });
 
-    contactsGroup = this.formBuilder.group({
-    });
-
-    addressGroup = this.formBuilder.group({
-    });
-
-    submitGroup = this.formBuilder.group({
-    });
-
     nameGroup = this.formBuilder.group({
         first: ['', Validators.required],
         middle: '',
@@ -44,8 +35,26 @@ export class SelfRegisterCreateComponent implements OnInit {
         legalFirst: '',
         legalMiddle: '',
         legalLast: '',
+    });
+
+    dobGroup = this.formBuilder.group({
         dob: ['', Validators.required],
         guardian: '',
+    });
+
+    contactsGroup = this.formBuilder.group({
+        phone: ['', [Validators.required, Validators.pattern(/\d{3}-\d{3}-\d{4}/)]],
+        email: ['', Validators.email],
+        wantsLibNews: false,
+        wantsFoundationInfo: false,
+    });
+
+    addressGroup = this.formBuilder.group({
+
+    });
+
+    submitGroup = this.formBuilder.group({
+
     });
 
     constructor(
@@ -61,14 +70,13 @@ export class SelfRegisterCreateComponent implements OnInit {
 
     ngOnInit() {
 
-
-        this.nameGroup.controls.dob.valueChanges.subscribe((dob: unknown) => {
+        this.dobGroup.controls.dob.valueChanges.subscribe((dob: unknown) => {
             if ((dob as Date) > this.juvMinDob) {
                 this.isJuvenile = true;
-                this.nameGroup.controls.guardian.setValidators(Validators.required);
+                this.dobGroup.controls.guardian.setValidators(Validators.required);
             } else {
                 this.isJuvenile = false;
-                this.nameGroup.controls.guardian.clearValidators();
+                this.dobGroup.controls.guardian.clearValidators();
             }
         });
     }
