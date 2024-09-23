@@ -35,7 +35,7 @@
         </div>
       </mat-radio-group>
 
-      <div class="border border-slate-300 rounded mt-2">
+      <div class="border border-slate-300 rounded mt-4">
         <button mat-button matStepperNext>Next</button>
       </div>
     </form>
@@ -58,7 +58,7 @@
           </span>
         </mat-radio-button>
       </mat-radio-group>
-      <div class="border border-slate-300 rounded mt-2">
+      <div class="border border-slate-300 rounded mt-4">
         <button mat-button matStepperPrevious>Back</button>
         <button mat-button matStepperNext>Next</button>
       </div>
@@ -67,9 +67,11 @@
 
   <mat-step [stepControl]="nameGroup">
     <form [formGroup]="nameGroup">
-      <ng-template matStepLabel i18n>Tell Us Your Name</ng-template>
+      <ng-template matStepLabel i18n>Tell Us About You</ng-template>
 
-      <div class="columns-2 mt-2">
+      <h3 class="mt-4" i18n>Name</h3>
+
+      <div class="columns-2 mt-4">
         <div>
           <mat-form-field class="w-full">
             <mat-label i18n>First Name</mat-label>
@@ -86,8 +88,7 @@
           </mat-form-field>
         </div>
       </div>
-
-      <div class="columns-2 mt-2">
+      <div class="columns-2 mt-4">
         <div>
           <mat-form-field class="w-full">
             <mat-label i18n>Last Name</mat-label>
@@ -99,11 +100,95 @@
         </div>
       </div>
 
-      <div class="border border-slate-300 rounded mt-2">
+      <h4 class="mt-4" i18n>Legal Name</h4>
+
+      <mat-checkbox formControlName="legalIsSame">
+        Same as above; uncheck to submit a legal name that appears on valid photo ID.
+      </mat-checkbox>
+
+      <div class="mt-4" *ngIf="!nameGroup.controls.legalIsSame.value">
+        <div class="columns-2 mt-4">
+          <div>
+            <mat-form-field class="w-full">
+              <mat-label i18n>Legal First Name</mat-label>
+              <input type="text" matInput formControlName="legalFirst"/>
+            </mat-form-field>
+          </div>
+          <div>
+            <mat-form-field class="w-full pl-2">
+              <mat-label i18n>Legal Middle Name</mat-label>
+              <input type="text" matInput formControlName="legalMiddle"/>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="columns-2 mt-4">
+          <div>
+            <mat-form-field class="w-full">
+              <mat-label i18n>Legal Last Name</mat-label>
+              <input type="text" matInput formControlName="legalLast"/>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="mt-4" i18n>Date of Birth</h4>
+
+      <div class="columns-2 mt-4">
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>Birth Date</mat-label>
+            <input matInput [matDatepicker]="dobPicker" formControlName="dob" [max]="maxDob" [min]="minDob"/>
+            <mat-hint>MM/DD/YYYY</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>
+            <mat-datepicker #dobPicker></mat-datepicker>
+            <mat-error *ngIf="nameGroup.controls.dob.hasError('required')" i18n>
+                Birth Date <strong>required</strong>
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="mt-4" *ngIf="isJuvenile">
+        <p i18n>If you’re younger than age 18, list the names of all 
+          parents and guardians who live with you.</p>
+
+        <div class="columns-2 mt-4">
+          <div>
+            <mat-form-field class="w-full">
+              <mat-label i18n>Parent or Guardian</mat-label>
+              <input type="text" matInput formControlName="guardian"/>
+              <mat-error *ngIf="nameGroup.controls.guardian.hasError('required')" i18n>
+                  Parent or Guardian <strong>required</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-slate-300 rounded mt-4">
         <button mat-button matStepperPrevious>Back</button>
         <button mat-button matStepperNext>Next</button>
       </div>
     </form>
   </mat-step>
+
+  <mat-step [stepControl]="contactsGroup">
+    <form [formGroup]="contactsGroup">
+      <ng-template matStepLabel i18n>Contact Information</ng-template>
+    </form>
+    <!-- phone, email, home lib, prefs -->
+  </mat-step>
+
+  <mat-step [stepControl]="addressGroup">
+    <form [formGroup]="addressGroup">
+      <ng-template matStepLabel i18n>Address</ng-template>
+    </form>
+    <!-- residential address; maybe mailing -->
+  </mat-step>
+
+  <mat-step [stepControl]="submitGroup">
+    <ng-template matStepLabel i18n>Submit Form</ng-template>
+  </mat-step>
+
 
 </mat-stepper>
