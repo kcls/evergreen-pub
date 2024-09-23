@@ -174,10 +174,15 @@
       <mat-form-field class="w-full">
         <mat-label i18n>Confirm Email Address</mat-label>
         <input type="email" matInput formControlName="email2"/>
-        <mat-error *ngIf="formGroup.controls.email.hasError('email2')" i18n>
+        <mat-error *ngIf="formGroup.controls.email2.hasError('email')" i18n>
             Email format is <strong>not valid</strong>
         </mat-error>
       </mat-form-field>
+      <!-- for some reason, form-level errors cannot be used
+        reliably within a <mat-error> container -->
+      <div *ngIf="formGroup.hasError('sameEmailValidator')" class="mat-mdc-form-field-error" i18n>
+        Email addresses do not match
+      </div>
     </div>
   </div>
 
@@ -258,19 +263,19 @@
 
   <h3 i18n>Mailing Address</h3>
 
-  <div class="columns-1 mt-6">
+  <div class="columns-1">
     <mat-checkbox formControlName="mailingIsSame">
       Same as Residential Address
     </mat-checkbox>
   </div>
 
   <ng-container *ngIf="!formGroup.controls.mailingIsSame.value">
-    <div class="columns-1 mt-6">
+    <div class="columns-1 mt-4">
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>Street Address</mat-label>
           <input type="text" matInput formControlName="mailingStreet1"/>
-          <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+          <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
               Street address is <strong>required</strong>
           </mat-error>
         </mat-form-field>
@@ -288,7 +293,7 @@
         <mat-form-field class="w-full">
           <mat-label i18n>City</mat-label>
           <input type="text" matInput formControlName="mailingCity"/>
-          <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+          <mat-error *ngIf="formGroup.controls.city.hasError('required')" i18n>
               City is <strong>required</strong>
           </mat-error>
         </mat-form-field>
@@ -336,7 +341,7 @@
   <div class="columns-1 mt-6">
     <button mat-raised-button [disabled]="!canSubmit()" (click)="submit()" i18n>Apply</button>
     <button mat-raised-button (click)="cancel()" class="ml-4" i18n>Cancel</button>
-    <span *ngIf="formNeedsWork" class="ml-4 p-2 text-red-400 border-2 rounded-md">
+    <span *ngIf="formNeedsWork" class="ml-4 p-2 mat-mdc-form-field-error border-2 rounded-md">
       Please provide values for all required fields.
     </span>
   </div>

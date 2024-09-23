@@ -1,12 +1,31 @@
 import {Component, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
-import {FormBuilder, FormControl, Validators} from '@angular/forms';
+import {FormBuilder, FormControl, Validators, AbstractControl,
+    ValidationErrors, ValidatorFn} from '@angular/forms';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {SelfRegisterService} from './register.service';
 
 const JUV_AGE = 18; // years
 const DEFAULT_STATE = 'Washington';
+
+export const sameEmailValidator: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
+    const email = control.get('email');
+    const email2 = control.get('email2');
+
+    if (email &&
+        email2 &&
+        email.value &&
+        (email2.touched || email2.dirty) &&
+        email.value !== email2.value
+    ) {
+        return {sameEmailValidator: true};
+    }
+
+    return null;
+};
 
 @Component({
   templateUrl: './create.component.html',
@@ -51,7 +70,7 @@ export class SelfRegisterCreateComponent implements OnInit {
         mailingState: DEFAULT_STATE,
         mailingZipCode: '',
         termsOfService: false,
-    });
+    }, {validators: sameEmailValidator});
 
     states = [
         $localize`Alabama`,
@@ -172,6 +191,11 @@ export class SelfRegisterCreateComponent implements OnInit {
             (this.formGroup.controls as any)[field].markAsTouched();
 
             if ((this.formGroup.controls as any)[field].errors) {
+                this.formNeedsWork = true;
+                return;
+            }
+
+            if (this.formGroup.errors) {
                 this.formNeedsWork = true;
                 return;
             }
