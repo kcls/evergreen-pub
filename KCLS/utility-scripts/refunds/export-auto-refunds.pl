@@ -138,6 +138,7 @@ sub export_one_mrxs {
             pay_type => $rfp->payment->payment_type,
             receipt_code => $rfp->receipt_code,
             payment_ts => $rfp->payment->payment_ts,
+            payment_ou => $rfp->payment_ou->shortname,
         };
 
         if (my $cc = $rfp->payment->credit_card_payment) {
@@ -205,7 +206,7 @@ sub generate_json {
                 flesh => 3,
                 flesh_fields => {
                     mrxs => [qw/refundable_payments usr/],
-                    mrps => [qw/payment/],
+                    mrps => [qw/payment payment_ou/],
                     mp => [qw/credit_card_payment/],
                     au => [qw/card billing_address mailing_address/]
                 }
