@@ -1675,8 +1675,8 @@ sub handle_mark_damaged {
     # Only return the note value if staff entered a custom note.
     $damaged_details->{note} = $new_note;
 
-    my ($changes, $evt) = handle_pending_refund($e, $circ->id, $args);
-    return $evt if $evt;
+    #my ($changes, $evt) = handle_pending_refund($e, $circ->id, $args);
+    #return $evt if $evt;
 
     my $charge_price = $U->ou_ancestor_setting_value(
         $owning_lib, 'circ.charge_on_damaged', $e);
