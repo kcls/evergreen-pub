@@ -18,4 +18,14 @@ export class Settings {
             this.app.getAuthtoken()
         ).then(summary => (summary as Hash).value);
     }
+
+    settingValueForOrgs(name: string): Promise<Hash[]> {
+        return this.gateway.requestOne(
+            'open-ils.actor',
+            'open-ils.actor.settings.value_for_all_orgs.atomic',
+            // Authtoken is not required for publicly-visible setting values.
+            this.app.getAuthtoken(),
+            name,
+        ).then(list => list as Hash[]);
+    }
 }

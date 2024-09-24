@@ -5,6 +5,8 @@ import {Settings} from '../settings.service';
 
 @Injectable()
 export class SelfRegisterService {
+	inKioskMode = false;
+
     constructor(
         private app: AppService,
         private settings: Settings,

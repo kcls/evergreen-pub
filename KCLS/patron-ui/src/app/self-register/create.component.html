@@ -186,6 +186,27 @@
     </div>
   </div>
 
+  <h3 i18n>What library is closest to your residence?</h3>
+
+  <p class="mt-4" *ngIf="!register.inKioskMode" i18n>
+    Not sure? Find your nearest library on this
+    <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
+  </p>
+
+  <div class="columns-2 mt-6">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Home Library</mat-label>
+        <mat-select formControlName="homeOrg">
+          <mat-option [value]="org.id" *ngFor="let org of homeOrgs">{{org.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
+            Home Library is <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
   <h2 i18n>Contact Preferences</h2>
   <hr/>
 

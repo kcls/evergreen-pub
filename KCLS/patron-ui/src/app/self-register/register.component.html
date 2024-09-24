@@ -13,8 +13,8 @@
 
         <p class="mt-4">
           Get access to all the 
-          <span *ngIf="inKioskMode">services</span>
-          <span *ngIf="!inKioskMode">
+          <span *ngIf="register.inKioskMode">services</span>
+          <span *ngIf="!register.inKioskMode">
             <a href="https://kcls.org/library-cards/#allaccess">services</a> 
           </span>
           that are available from the King County Library System. 
@@ -24,10 +24,10 @@
         </p>
         <p class="mt-4">
           You'll need to 
-          <span *ngIf="inKioskMode">
+          <span *ngIf="register.inKioskMode">
             bring proof of address and photo ID that shows your date of birth
           </span>
-          <span *ngIf="!inKioskMode">
+          <span *ngIf="!register.inKioskMode">
             <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
               bring proof of address and photo ID that shows your date of birth
             </a>
@@ -39,15 +39,15 @@
           Reasonable accommodation for individuals with disabilities is available 
           upon request. Accommodations include modifications to policies, 
           programs, appropriate equipment, and services. Contact your 
-          <span *ngIf="inKioskMode">community library</span>
-          <span *ngIf="!inKioskMode">
+          <span *ngIf="register.inKioskMode">community library</span>
+          <span *ngIf="!register.inKioskMode">
             community library or visit 
             <a href="https://kcls.org/accessibility/">https://kcls.org/accessibility/</a>
           </span>
           to request accommodation. 
         </p>
-        <ng-container *ngIf="!inKioskMode">
-          <p class="mt-4" *ngIf="!inKioskMode">
+        <ng-container *ngIf="!register.inKioskMode">
+          <p class="mt-4" *ngIf="!register.inKioskMode">
             <a href="https://kcls.org/faq/library-cards/">
               Learn about All-Access cards in our frequently asked questions. 
             </a>
@@ -64,7 +64,7 @@
   </div>
 
   <div class="flex-1 pt-8">
-    <ng-container *ngIf="!inKioskMode">	
+    <ng-container *ngIf="!register.inKioskMode">	
       <a href='https://kcls.bibliocms.com/faq/library-cards/' i18n>Related FAQs</a>
 
       <h2 i18n>Download an Application</h2>

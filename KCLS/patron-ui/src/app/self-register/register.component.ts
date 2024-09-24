@@ -12,8 +12,6 @@ import {Title}  from '@angular/platform-browser';
 })
 export class SelfRegisterComponent implements OnInit {
 
-	inKioskMode = false;
-
     languageForms = [{
         label: `አማርኛ | Amharic`,
         pdf: `amharic.pdf`,
@@ -85,12 +83,17 @@ export class SelfRegisterComponent implements OnInit {
         private title: Title,
         private gateway: Gateway,
         public app: AppService,
-        public registers: SelfRegisterService,
+        public register: SelfRegisterService,
     ) {}
 
     ngOnInit() {
+        // It's possible an auth token from another app component (e.g.
+        // patron requests) is still present.  We explicitly don't want
+        // an auth token for self-registration, so clear it.
+        this.app.clearAuth();
+
         this.route.queryParams.subscribe((params: Params) => {
-			this.inKioskMode = Boolean(params.kiosk);
+			this.register.inKioskMode = Boolean(params.kiosk);
         });
 
         this.title.setTitle($localize`Get a Library Card`);

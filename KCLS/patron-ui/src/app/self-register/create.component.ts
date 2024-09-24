@@ -4,6 +4,7 @@ import {FormBuilder, FormControl, Validators, AbstractControl,
     ValidationErrors, ValidatorFn} from '@angular/forms';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
+import {Settings} from '../settings.service';
 import {SelfRegisterService} from './register.service';
 
 const JUV_AGE = 18; // years
@@ -40,6 +41,7 @@ export class SelfRegisterCreateComponent implements OnInit {
     juvMinDob: Date;
 
     formNeedsWork = false;
+    homeOrgs: Hash[] = [];
 
     formGroup = this.formBuilder.group({
         design: ['', Validators.required],
@@ -56,6 +58,7 @@ export class SelfRegisterCreateComponent implements OnInit {
         phone: ['', [Validators.required, Validators.pattern(/\d{3}-\d{3}-\d{4}/)]],
         email: ['', Validators.email],
         email2: ['', Validators.email],
+        homeOrg: ['', Validators.required],
         wantsLibNews: false,
         wantsFoundationInfo: false,
         street1: ['', Validators.required],
@@ -133,14 +136,34 @@ export class SelfRegisterCreateComponent implements OnInit {
         private router: Router,
         private gateway: Gateway,
         private formBuilder: FormBuilder,
-        public app: AppService,
-        public requests: SelfRegisterService,
+        private app: AppService,
+        private settings: Settings,
+        public register: SelfRegisterService,
     ) {
         this.juvMinDob = new Date();
         this.juvMinDob.setFullYear(new Date().getFullYear() - JUV_AGE);
     }
 
     ngOnInit() {
+
+        // Users are allowed to select a home lib from the set of
+        // org units where the opac.allow_pending_user setting is true.
+        this.app.getOrgTree().then(tree => {
+            this.settings.settingValueForOrgs('opac.allow_pending_user')
+            .then((list: Hash[]) => {
+                list.forEach(setting => {
+                    if ((setting.summary as Hash).value) {
+                        let org = this.app.getOrgUnit(setting.org_unit as number);
+                        if (org) {
+                            this.homeOrgs.push(org);
+                        }
+                    }
+                });
+
+                this.homeOrgs = this.homeOrgs.sort((a: Hash, b: Hash) =>
+                    (a.name as string) < (b.name as string) ? -1 : 1);
+            });
+        });
 
         this.formGroup.controls.dob.valueChanges.subscribe((dob: unknown) => {
             if ((dob as Date) > this.juvMinDob) {
