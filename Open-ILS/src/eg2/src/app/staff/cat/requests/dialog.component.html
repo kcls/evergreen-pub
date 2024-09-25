@@ -169,7 +169,7 @@
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-2" i18n>Patron-Visible Note</div>
+      <div class="col-2" i18n>Patron-Visible Note *</div>
       <div class="col-10">
         <textarea rows="2" class="form-control border border-warning"
           (ngModelChange)="request.patron_notes($event)" [ngModel]="request.patron_notes()">
@@ -179,15 +179,20 @@
     <div class="row mt-3" *ngIf="mode !== 'create'">
       <div class="col-2" i18n>Status</div>
       <div class="col-4">{{getStatus()}}</div>
-      <div class="col-5 d-flex">
+      <div class="col-6 d-flex">
         <div class="flex-1"></div>
         <button class="btn btn-outline-dark" 
+          [disabled]="request.complete_date()"
           (click)="setStatus('complete')" i18n>Set as Complete</button>
         <button class="btn btn-outline-dark ms-2" 
+          [disabled]="request.reject_date() || request.complete_date()"
           (click)="setStatus('rejected')" i18n>Set as Rejected</button>
+        <button class="btn btn-outline-dark ms-2" 
+          [disabled]="!request.reject_date() && !request.complete_date()"
+          (click)="setStatus('active')" i18n>Re-Activate</button>
       </div>
     </div>
-    <div class="row mt-3" *ngIf="request.reject_date()">
+    <div class="row mt-3" *ngIf="request.route_to() === 'acq' && request.reject_date()">
       <div class="col-2" i18n>Reason for Rejection</div>
       <div class="col-10">
         <input type="text" class="form-control" 
@@ -195,8 +200,8 @@
           (ngModelChange)="request.reject_reason($event)"/>
       </div>
     </div>
-    <div class="row mt-3">
-      <div class="col-2" i18n>ILL Denial Reason</div>
+    <div class="row mt-3" *ngIf="request.route_to() === 'ill' && request.reject_date()">
+      <div class="col-2" i18n>ILL Denial Reason *</div>
       <div class="col-10">
         <eg-combobox 
           [startId]="request.ill_denial()"
@@ -204,6 +209,11 @@
           i18n-placeholder placeholder="ILL Denial Reason..."
           [entries]="illDenialOptions">
         </eg-combobox>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-12 fst-italic" i18n>
+        Contents of items marked with <strong>*</strong> are visible to patrons.
       </div>
     </div>
   </div>

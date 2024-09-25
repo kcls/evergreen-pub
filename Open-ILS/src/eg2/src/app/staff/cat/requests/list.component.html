@@ -22,6 +22,36 @@
   {{row.route_to() | uppercase}}
 </ng-template>
 
+<!-- Grid Filters -->
+
+<div class="mb-3 p-2 border rounded border-secondary">
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="checkbox" (click)="toggleRouteToAcq()" 
+      [(ngModel)]="showRouteToAcq" id="acq-cbox"/>
+    <label class="form-check-label" for="acq-cbox" i18n>Purchasing</label>
+  </div>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="checkbox" (click)="toggleRouteToIll()" 
+      [(ngModel)]="showRouteToIll" id="ill-cbox"/>
+    <label class="form-check-label" for="ill-cbox" i18n>ILL</label>
+  </div>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="checkbox" (click)="toggleClaimedByMe()" 
+      [(ngModel)]="showClaimedByMe" id="claimed-cbox"/>
+    <label class="form-check-label" for="claimed-cbox" i18n>Claimed by Me</label>
+  </div>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="checkbox" (click)="toggleShowRejected()"
+      [(ngModel)]="showRejected" id="rejected-cbox"/>
+    <label class="form-check-label" for="rejected-cbox" i18n>Include Rejected</label>
+  </div>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="checkbox" (click)="toggleShowCompleted()"
+      [(ngModel)]="showCompleted" id="completed-cbox"/>
+    <label class="form-check-label" for="completed-cbox" i18n>Include Completed</label>
+  </div>
+</div>
+
 <eg-grid #grid idlClass="auir" [dataSource]="gridDataSource" pageSize="50"
   persistKey="staff.cat.requests" (onRowActivate)="showRequestDialog($event)"
   [cellTextGenerator]="cellTextGenerator"
@@ -30,31 +60,6 @@
   <eg-grid-toolbar-button i18n-label label="New Request"
     (onClick)="newRequest()">
   </eg-grid-toolbar-button>
-
-  <eg-grid-toolbar-checkbox i18n-label label="Route to ILL"
-    [initialValue]="showRouteToIll"
-    #routeToIllCbox (onChange)="toggleRouteToIll($event)">
-  </eg-grid-toolbar-checkbox>
-
-  <eg-grid-toolbar-checkbox i18n-label label="Route to Acq"
-    [initialValue]="showRouteToAcq"
-    #routeToAcqCbox (onChange)="toggleRouteToAcq($event)">
-  </eg-grid-toolbar-checkbox>
-
-  <eg-grid-toolbar-checkbox i18n-label label="Un-Routed"
-    [initialValue]="showRouteToNull"
-    #routeToAcqCbox (onChange)="toggleRouteToNull($event)">
-  </eg-grid-toolbar-checkbox>
-
-  <eg-grid-toolbar-checkbox i18n-label label="Claimed by Me"
-    [initialValue]="showClaimedByMe"
-    #routeToAcqCbox (onChange)="toggleClaimedByMe($event)">
-  </eg-grid-toolbar-checkbox>
-
-  <eg-grid-toolbar-checkbox i18n-label label="Include Rejected"
-    [initialValue]="showRejected"
-    #routeToAcqCbox (onChange)="toggleShowRejected($event)">
-  </eg-grid-toolbar-checkbox>
 
   <eg-grid-toolbar-action i18n-label label="Claim for Processing"
     (onClick)="claimItems($event)">

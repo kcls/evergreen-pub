@@ -25,6 +25,7 @@ export class ItemRequestComponent implements OnInit {
     showRouteToAcq = true;
     showRouteToNull = true;
     showRejected = false;
+    showCompleted = false;
     showClaimedByMe = false;
     cellTextGenerator: GridCellTextGenerator;
     routeToOptions = [
@@ -70,6 +71,9 @@ export class ItemRequestComponent implements OnInit {
             if (!this.showRejected) {
                 base.reject_date = null;
             }
+            if (!this.showCompleted) {
+                base.complete_date = null;
+            }
             if (this.showClaimedByMe) {
                 base.claimed_by = this.auth.user().id();
             }
@@ -111,27 +115,32 @@ export class ItemRequestComponent implements OnInit {
     }
 
     toggleClaimedByMe(action: boolean) {
-        this.showClaimedByMe = action;
+        this.showClaimedByMe = !this.showClaimedByMe;
         this.grid.reload();
     }
 
     toggleShowRejected(action: boolean) {
-        this.showRejected = action;
+        this.showRejected = !this.showRejected;
+        this.grid.reload();
+    }
+
+    toggleShowCompleted(action: boolean) {
+        this.showCompleted = action;
         this.grid.reload();
     }
 
     toggleRouteToIll(action: boolean) {
-        this.showRouteToIll = action;
+        this.showRouteToIll = !this.showRouteToIll;
         this.grid.reload();
     }
 
     toggleRouteToAcq(action: boolean) {
-        this.showRouteToAcq = action;
+        this.showRouteToAcq = !this.showRouteToAcq;
         this.grid.reload();
     }
 
     toggleRouteToNull(action: boolean) {
-        this.showRouteToNull = action;
+        this.showRouteToNull = !this.showRouteToNull;
         this.grid.reload();
     }
 

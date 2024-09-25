@@ -266,6 +266,13 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 this.request.rejected_by(this.auth.user().id());
                 this.request.complete_date(null);
                 break;
+
+            case 'active':
+                this.request.cancel_date(null);
+                this.request.reject_date(null);
+                this.request.rejected_by(null);
+                this.request.complete_date(null);
+                break;
         }
     }
 
