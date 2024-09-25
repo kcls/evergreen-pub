@@ -114,32 +114,32 @@ export class ItemRequestComponent implements OnInit {
         };
     }
 
-    toggleClaimedByMe(action: boolean) {
+    toggleClaimedByMe() {
         this.showClaimedByMe = !this.showClaimedByMe;
         this.grid.reload();
     }
 
-    toggleShowRejected(action: boolean) {
+    toggleShowRejected() {
         this.showRejected = !this.showRejected;
         this.grid.reload();
     }
 
-    toggleShowCompleted(action: boolean) {
-        this.showCompleted = action;
+    toggleShowCompleted() {
+        this.showCompleted = !this.showCompleted;
         this.grid.reload();
     }
 
-    toggleRouteToIll(action: boolean) {
+    toggleRouteToIll() {
         this.showRouteToIll = !this.showRouteToIll;
         this.grid.reload();
     }
 
-    toggleRouteToAcq(action: boolean) {
+    toggleRouteToAcq() {
         this.showRouteToAcq = !this.showRouteToAcq;
         this.grid.reload();
     }
 
-    toggleRouteToNull(action: boolean) {
+    toggleRouteToNull() {
         this.showRouteToNull = !this.showRouteToNull;
         this.grid.reload();
     }
