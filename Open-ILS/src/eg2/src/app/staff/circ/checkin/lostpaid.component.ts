@@ -16,6 +16,7 @@ import {PatronService} from '@eg/staff/share/patron/patron.service';
 import {EventService} from '@eg/core/event.service';
 import {WinService} from '@eg/core/win.service';
 import {BroadcastService} from '@eg/share/util/broadcast.service';
+import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 
 declare var encodeJS: (jsThing: any) => any;
 
@@ -29,6 +30,9 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     invalidCheckin = false;
     printPreviewHtml = '';
     refundActionss: any[] = [];
+
+    printNeeded = false;
+    hasPrinted = false;
 
     simpleCheckinMode = false;
     openBillsSummary: {name: string, value: number}[] = [];
@@ -57,6 +61,8 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     itemNotRefundable = false;
 
     reprinting = false;
+
+    @ViewChild('noPrintDialog') private noPrintDialog: ConfirmDialogComponent;
 
     constructor(
         private router: Router,
@@ -139,6 +145,21 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
+    }
+
+    @HostListener('window:beforeunload', ['$event'])
+    canDeactivate($event?: Event): Promise<boolean> {
+        if (!this.hasPrinted) {
+            if ($event) { // window.onbeforeunload
+                $event.preventDefault();
+                $event.returnValue = true;
+
+            } else { // tab OR route change.
+                return this.noPrintDialog.open().toPromise();
+            }
+        } else {
+            return Promise.resolve(true);
+        }
     }
 
     loadRefundDryRun(): Promise<any> {
@@ -232,6 +253,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
             this.refundedCircId = lpr.refunded_xact;
 
             if (lpr.refund_actions) {
+                this.printNeeded = true;
                 this.printLetter(true);
 
             } else {
@@ -290,6 +312,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                     document.getElementById('print-preview-pane').innerHTML = response.content;
                 });
             } else {
+                this.hasPrinted = true;
                 this.printer.print(printDetails);
             }
         });
