@@ -149,7 +149,7 @@ export class RefundDetailComponent implements OnInit {
             return Promise.resolve();
         }
 
-        if (this.state() > 1 && this.state() < 6) {
+        //if (this.state() > 1 && this.state() < 6) {
             // Xact has not been refunded -- fetch the simulated refund.
             return this.net.request(
                 'open-ils.circ',
@@ -157,7 +157,7 @@ export class RefundDetailComponent implements OnInit {
                 this.auth.token(), this.rfXactId
             ).pipe(tap(action => this.refundableActions.push(action)))
             .toPromise();
-        }
+        //}
 
         // Transaction has been processed.
         // Fetch the refund actions
