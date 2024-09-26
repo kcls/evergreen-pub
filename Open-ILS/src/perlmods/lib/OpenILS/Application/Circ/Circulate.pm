@@ -3430,9 +3430,18 @@ sub checkin_circ_is_lostpaid {
         }
     }
 
+    my $mrx_id = $mrx ? $mrx->id : undef;
+
+    $logger->info("Circ " . $circ->id . " is refundable (mrx=$mrx_id)")
+        if $is_refundable;
+
+    # NOTE items added to the payload here must be explicitly retained
+    # in checkin_flesh_events() or they won't make it to the caller.
     $self->bail_on_events(
         OpenILS::Event->new('LOSTPAID_CHECKIN', payload => {
             is_refundable => $is_refundable,
+            mrx_id => $mrx_id,
+            circ_id => $circ->id,
             not_refundable_reason => $not_refundable_reason,
             money_summary => $sum,
         }) 
@@ -4504,6 +4513,8 @@ sub checkin_flesh_events {
 
         if ($evt->{payload}) {
             # Extract these from the lostpaid event so we don't lose them.
+            $payload->{mrx_id} = $evt->{payload}->{mrx_id};
+            $payload->{circ_id} = $evt->{payload}->{circ_id};
             $payload->{is_refundable} = $evt->{payload}->{is_refundable};
             $payload->{not_refundable_reason} = $evt->{payload}->{not_refundable_reason};
             $payload->{money_summary} = $evt->{payload}->{money_summary};

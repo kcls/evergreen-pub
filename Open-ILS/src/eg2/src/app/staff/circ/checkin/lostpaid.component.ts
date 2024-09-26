@@ -28,6 +28,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     checkinResult: CheckinResult = null;
     invalidCheckin = false;
     printPreviewHtml = '';
+    refundActionss: any[] = [];
+
+    simpleCheckinMode = false;
+    openBillsSummary: {name: string, value: number}[] = [];
 
     itemCondition: string | null = null;
     initials = '';
@@ -88,6 +92,14 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         this.refundedPaymentId = +this.route.snapshot.paramMap.get('paymentId');
         this.sourceWindow = +this.route.snapshot.queryParamMap.get('window');
 
+        this.simpleCheckinMode = Boolean(this.route.snapshot.queryParamMap.get('simpleCheckinMode'));
+
+        if (this.simpleCheckinMode) {
+            const copyId = +this.route.snapshot.paramMap.get('itemId');
+            console.info('Checking in test item ', copyId);
+            this.checkinParams = {copy_id: copyId};
+        }
+
         if (this.refundedCircId || this.refundedPaymentId) {
             this.reprinting = true;
             this.printLetter(true);
@@ -112,6 +124,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         this.circ.applySettings()
             .then(_ => this.circ.checkin(this.checkinParams))
             .then(res => this.checkinResult = res)
+            .then(_ => this.loadRefundDryRun())
             .then(_ => {
                 // Watch for address, etc. updates to our patron in another tab
                 this.broadcaster.listen('eg.circ.patron.edit').subscribe(userId => {
@@ -126,6 +139,34 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
+    }
+
+    loadRefundDryRun(): Promise<any> {
+        if (!this.refundable()) { return Promise.resolve(); }
+
+        const circId = this.checkinResult?.firstEvent?.payload?.circ_id;
+
+        if (!circId) { return Promise.resolve(); }
+
+        this.openBillsSummary = [];
+        let summaries = {};
+
+        return this.pcrud.search('mbts',
+            {usr: this.checkinResult.patron.id(), balance_owed: {'<>': 0}})
+        .pipe(tap(xact => {
+            console.log('got xact ', xact.id(), circId);
+            if (xact.id() !== circId) {
+                let amount = summaries[xact.last_billing_type()] || 0;
+                summaries[xact.last_billing_type()] = amount + Number(xact.balance_owed());
+            }
+        }))
+        .toPromise()
+        .then(_ => {
+            Object.keys(summaries).forEach(key =>
+                this.openBillsSummary.push({name: key, value: summaries[key].toFixed(2)})
+            );
+            console.log(this.openBillsSummary);
+        });
     }
 
     moneySummary(): string {

@@ -18,39 +18,44 @@
 <div *ngIf="checkinResult" class="d-flex">
   <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
     <div class="row p-2 mt-1 border-bottom">
-      <div class="col-lg-4">
-        <label for="patron-name" i18n>Patron</label>
+      <div class="col-lg-1">
+        <label for="patron-name" i18n>Patron:</label>
       </div>
       <div class="col-lg-8">
-        <a target="_blank" id="patron-name"
-          routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/checkout">
+        <span id="patron-name">
           {{checkinResult.patron.family_name()}},
           {{checkinResult.patron.first_given_name()}}
           {{checkinResult.patron.second_given_name()}}
+        </span>
+      </div>
+      <div class="col-lg-3 d-flex">
+        <div class="flex-1"></div>
+        <a target="_blank"
+          routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/bills">
+          <button class="btn btn-sm btn-primary label-with-material-icon" i18n>
+            <span class="pe-2">Open Patron</span>
+            <span class="material-icons">north_east</span>
+          </button>
         </a>
       </div>
     </div>
     <div class="row p-2 mt-1" *ngIf="checkinResult.copy">
-      <div class="col-lg-4" i18n>Item Barcode:</div>
-      <div class="col-lg-7">
+      <div class="col-lg-1" i18n>Item:</div>
+      <div class="col-lg-2">
         <a target="_blank" 
           routerLink="/staff/cat/item/{{checkinResult.copy.id()}}/summary">
           {{checkinResult.copy.barcode()}}
         </a>
       </div>
-      <div class="col-lg-1">
-      </div>
-    </div>
-    <ng-container *ngIf="checkinResult && !checkinComplete">
-    <div class="row p-2 mt-1" *ngIf="checkinResult.record">
-      <div class="col-lg-4" i18n>Title:</div>
-      <div class="col-lg-8">
+      <div class="col-lg-1" i18n>Title:</div>
+      <div class="col-lg-8"  ng-container *ngIf="checkinResult && !checkinComplete" i18n>
         <a target="_blank" 
           routerLink="/staff/catalog/record/{{checkinResult.record.doc_id()}}">
           {{checkinResult.record.title()}}
         </a>
       </div>
     </div>
+    <ng-container *ngIf="checkinResult && !checkinComplete">
     <div class="row p-2 mt-2">
       <div class="col-lg-2" i18n>Checked Out:</div>
       <div class="col-lg-2">{{checkinResult.circ.xact_start() | egDate}}</div>
@@ -77,6 +82,17 @@
     </div>
 
     <ng-container *ngIf="refundable()">
+      <div class="row p-2 mt-1" *ngIf="openBillsSummary.length !== 0">
+        <div class="col-12">
+          <p i18n>The following open fines/fees (summarized) may be affected by this refund:</p>
+          <table>
+            <tr><th class="p-1" i18n>Charge Type</th><th class="p-1" i18n>Sum Total Owed</th></tr>
+            <tr class="mt-1" *ngFor="let sum of openBillsSummary">
+              <td class="p-1">{{sum.name}}</td><td class="p-1">{{sum.value | currency}}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
       <div class="row p-2 mt-2">
         <div class="col-lg-4">
           <label for="condition-select" i18n>
@@ -149,7 +165,6 @@
         </div>
       </div>
     </div>
-
     </ng-container>
 
     <div class="row p-2 mt-1" *ngIf="processing">
@@ -158,7 +173,7 @@
 
     <div class="row" *ngIf="!checkinComplete">
       <div class="col-6">
-        <button *ngIf="hasCheckinBypassPerms" type="button" class="btn btn-danger" 
+        <button [disabled]="!hasCheckinBypassPerms" type="button" class="btn btn-danger" 
           (click)="checkin(true)" i18n>
             Standard Checkin / No Extra Processing
         </button>
@@ -230,9 +245,8 @@
         <span class="material-icons">print</span>
       </button>
       <a *ngIf="checkinResult" class="ms-3" target="_blank"
-        [queryParams]="{closeOnSave: 1}"
-        routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/edit">
-        <button class="btn btn-outline-primary" i18n>Retrieve Patron</button>
+        routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/bills">
+        <button class="btn btn-outline-dark" i18n>Open Patron</button>
       </a>
     </div>
   </div>

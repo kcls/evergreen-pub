@@ -185,6 +185,12 @@ INSERT INTO permission.perm_list (code, description) VALUES (
     'Allows a user to check in refundable item without automatically processing the refund'
 );
 
+INSERT INTO permission.grp_perm_map (perm, grp, depth, grantable) VALUES 
+    ((SELECT id FROM permission.perm_list WHERE code = 'CHECKIN_BYPASS_REFUND'), 5, 0, FALSE), 
+    ((SELECT id FROM permission.perm_list WHERE code = 'CHECKIN_BYPASS_REFUND'), 75, 0, FALSE)
+;
+
+
 END IF; END $INSERT$;                                                          
 
 COMMIT;
