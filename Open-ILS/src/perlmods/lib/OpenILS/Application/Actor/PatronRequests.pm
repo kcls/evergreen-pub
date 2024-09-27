@@ -436,4 +436,80 @@ sub create_allowed {
     return @$penalties == 0;
 }
 
+__PACKAGE__->register_method(
+    method   => 'apply_lineitem',
+    api_name => 'open-ils.actor.patron-request.lineitem.apply',
+    signature => q/
+        Sets the line item value of the request and creates the hold
+        request.  This assumes line item assets have already been
+        created.
+    /
+);
+
+sub apply_lineitem {
+    my ($self, $conn, $auth, $req_id, $lineitem_id) = @_;
+
+    my $e = new_editor(authtoken => $auth, xact => 1);
+
+    return $e->die_event unless $e->checkauth;
+    return $e->die_event unless $e->allowed('MANAGE_USER_ITEM_REQUEST');
+
+    my $lineitem = $e->retrieve_acq_lineitem($lineitem_id)
+        or return $e->die_event;
+
+    my $req = $e->retrieve_actor_user_item_request([
+        $req_id,
+        {flesh => 1, flesh_fields => {auir => ['usr']}}
+    ]) or return $e->die_event;
+
+    $logger->info("Linking lineitem $lineitem_id to user request $req_id");
+
+    # Lineitem linked; now create the hold request.
+
+    my $set = $e->search_actor_user_setting({
+        usr => $req->usr->id,
+        name => 'opac.default_pickup_location'
+    })->[0];
+
+    my $pickup_lib = $set ? 
+        OpenSRF::Utils::JSON->JSON2perl($set->value) : $req->usr->home_ou;
+
+    my $args = {
+        patronid => $req->usr->id,
+        pickup_lib => $pickup_lib,
+        hold_type => 'T',
+    };
+
+    if (my $bre_id = $lineitem->eg_bib_id) {
+        # Place a hold on the lineitem's bib record.
+
+        my $resp = $U->simplereq(
+            'open-ils.circ',
+            'open-ils.circ.holds.test_and_create.batch',
+             $auth, $args, [$bre_id]);
+
+        if ($U->event_code($resp)) {
+
+            $logger->info("User request $req_id hold placement failed: " . 
+                OpenSRF::Utils::JSON->perl2JSON($resp));
+
+        } else {
+
+            # TODO action trigger event for user request hold placed.
+
+            $logger->info("User request $req_id successfully created hold");
+            $req->hold(ref $resp ? $resp->{result} : $resp);
+        }
+    }
+
+    $req->lineitem($lineitem_id);
+
+    return $e->die_event unless $e->update_actor_user_item_request($req);
+
+    $e->commit;
+
+    return $req;
+}
+
+
 1;
