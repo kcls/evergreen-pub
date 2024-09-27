@@ -11,7 +11,6 @@ INSERT INTO config.print_template
     (name, label, owner, locale, active, template) VALUES 
     ('refund_summary', 'Refund Summary', 1, 'en-US', TRUE, 
 $TEMPLATE$
-
 [%
   USE date;
   USE Math;
@@ -27,6 +26,7 @@ $TEMPLATE$
   table { border-collapse: collapse; }
   td {padding-right: 10px; }
   div.border-top { border-top: 1px solid grey; }
+  .border-table td {border: 1px solid grey; }
 </style>
 
 <br/>
@@ -35,22 +35,29 @@ $TEMPLATE$
 <div>[% addr.street1 %][% addr.street2 %]</div>
 <div>[% addr.city %], [% addr.state %] [% addr.post_code %]</div>
 [% END %]
+<div>(Patron ID #[% patron.id %])</div>
+
+<br/>
+Dear Patron,
 <br/>
 
-<h3>Refund Information</h3>
+<br/>
+We are happy to inform you that the following item previously billed as lost was returned:
+<br/>
+<br/>
 
-<span>Item Information</span>
+<div>Item Information</div>
 <br/>
 
 <div class="border-top">
-  <table>
+  <table class="border-table">
     <tr><td>Title</td><td>[% refundable_xact.title %]</td></tr>
     <tr><td>Barcode</td><td>[% refundable_xact.copy_barcode %]</td></tr>
   </table>
 </div>
 
 <br/>
-<span>The following refundable payments were made:</span>
+<span>The following refundable payments were made for the returned lost item:</span>
 <br/>
 <br/>
 
@@ -70,10 +77,6 @@ $TEMPLATE$
         <td>[% ref_pay.payment.payment_type %]</td>
       </tr>
       <tr>
-        <td>Last Payment Date:</td>
-        <td>[% date.format(refundable_xact.xact.summary.last_payment_ts, '%x') %]</td>
-      </tr>
-      <tr>
         <td>Amount:</td>
         <td>[% money(ref_pay.amount) %]</td>
       </tr>
@@ -90,15 +93,14 @@ $TEMPLATE$
   [% IF loopfirst; loopfirst = 0; %]
     <br/>
     <span>
-      The following actions were taken on your account due to the return
-      of a lost and paid item:
+      The refund was applied to the following existing charge(s) on your account:
     </span>
     <br/>
     <br/>
   [% END %]
 
   <div class="border-top">
-    <table>
+    <table class="border-table">
       <tr>
         <td>Transaction #: </td>
         <td>[% action.payment.xact.id %]</td>
@@ -143,12 +145,11 @@ $TEMPLATE$
         <td>[% money(xact.summary.balance_owed) %]</td>
       </tr>
     </table>
+    <hr/>
   </div>
 [% END %]
-<hr/>
 
 <div>Remaining Refund Due: <b>[% money(refundable_xact.refund_amount) %]</b></div>
-<br/>
 
 [% IF refundable_xact.refund_amount > 0 %]
   [% FOR ref_pay IN refundable_xact.refundable_payments %]
@@ -177,6 +178,7 @@ $TEMPLATE$
     <div>[% staff_org.phone %]</div>
   [% END %]
 </div>
+
 $TEMPLATE$
 );
 
