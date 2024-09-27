@@ -291,29 +291,25 @@ sub request_status_impl {
         }
     }
 
-    if (!$req->claim_date) {
-        return {status => 'submitted'};
-    }
-
-    # If we're here, the request is being handled by staff.
-
     # TODO patron-pending? staff have questions for the patron.
+    # TODO hold-placed and hold-failed
 
     if ($req->route_to eq 'acq') {
-
-        # Is this the correct check for review vs approved?
-        if ($req->vendor) {
+        if ($req->lineitem) {
             return {status => 'purchase-approved'};
-        } else {
+        } elsif ($req->claim_date) {
             return {status => 'purchase-review'};
         }
 
-        # TODO hold-placed and hold-failed
-
     } else { # ILL
-        return {status => 'ill-requested'} if $req->illno;
-        return {status => 'ill-review'};
+        if ($req->illno) {
+            return {status => 'ill-requested'};
+        } elsif ($req->claim_date) {
+            return {status => 'ill-review'};
+        }
     }
+
+    return {status => 'submitted'};
 }
 
 __PACKAGE__->register_method (
