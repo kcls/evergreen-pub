@@ -2,10 +2,6 @@ import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
 
 const routes: Routes = [{
-  path: 'refunds',
-  loadChildren: () =>
-    import('./refunds/refunds.module').then(m => m.CircRefundsModule)
-}, {
   path: 'patron',
   loadChildren: () =>
     import('./patron/patron.module').then(m => m.PatronManagerModule)
