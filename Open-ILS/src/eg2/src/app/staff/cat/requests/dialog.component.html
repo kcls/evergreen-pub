@@ -131,11 +131,20 @@
             i18n-entryLabel></eg-combobox-entry>
         </eg-combobox>
       </div>
-      <div class="col-2" i18n>ILL#</div>
-      <div class="col-4">
-        <input class="form-control" type="text"
-          (ngModelChange)="request.illno($event)" [ngModel]="request.illno()"/>
-      </div>
+      <ng-container *ngIf="request.route_to() === 'ill'">
+        <div class="col-2" i18n>ILL #</div>
+        <div class="col-4">
+          <input class="form-control" type="text"
+            (ngModelChange)="request.illno($event)" [ngModel]="request.illno()"/>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="request.route_to() === 'acq'">
+        <div class="col-2" i18n>Lineitem #</div>
+        <div class="col-4">
+          <input class="form-control" type="number" [min]="0"
+            (ngModelChange)="request.lineitem($event)" [ngModel]="request.lineitem()"/>
+        </div>
+      </ng-container>
     </div>
     <div class="row mt-3">
       <div class="col-2" i18n>Vendor</div>

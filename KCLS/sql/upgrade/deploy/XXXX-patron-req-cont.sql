@@ -1,4 +1,4 @@
--- Deploy kcls-evergreen:XXXX-patron-req-cont to pg
+- - Deploy kcls-evergreen:XXXX-patron-req-cont to pg
 -- requires: 0004-damaged-item-letter
 
 BEGIN;
@@ -8,7 +8,8 @@ ALTER TABLE actor.usr_item_request
     ADD COLUMN id_matched BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN patron_notes TEXT,
     ADD COLUMN requestor INTEGER NOT NULL,
-    ADD COLUMN ill_denial TEXT 
+    ADD COLUMN ill_denial TEXT,
+    ADD COLUMN lineitem INTEGER REFERENCES acq.lineitem(id)
 ;
 
 

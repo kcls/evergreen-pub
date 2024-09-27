@@ -185,9 +185,11 @@
               egAccessKey keyCtx="patron" i18n-keySpec i18n-keyDesc
               keySpec="alt+p" keyDesc="Test Password"
               ngbDropdownItem i18n>Test Password</a>
+            <!--
             <a href="/eg/staff/acq/requests/user/{{patronId}}" 
               target="_top"
               ngbDropdownItem i18n>Acquisition Patron Requests</a>
+            -->
             <a routerLink="/staff/booking/manage_reservations/by_patron/{{patronId}}"
               target="_top"
               ngbDropdownItem i18n>Booking: Manage Reservations</a>
