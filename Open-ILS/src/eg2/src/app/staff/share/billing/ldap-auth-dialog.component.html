@@ -13,13 +13,15 @@
     <div class="row mt-3">
       <div class="col-lg-4"><label i18n>Username:</label></div>
       <div class="col-lg-8">
-        <input type="text" [(ngModel)]="args.username" class="form-control"/>
+        <input type="text" id="ldap-username" 
+          (keyup.enter)="maybeSubmit()" [(ngModel)]="args.username" class="form-control"/>
       </div>
     </div>
     <div class="row mt-2">
       <div class="col-lg-4"><label i18n>Password:</label></div>
       <div class="col-lg-8">
-        <input type="password" [(ngModel)]="args.password" class="form-control"/>
+        <input type="password" [(ngModel)]="args.password" 
+          (keyup.enter)="maybeSubmit()" class="form-control"/>
       </div>
     </div>
   </div>

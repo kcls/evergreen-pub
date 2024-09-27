@@ -36,7 +36,15 @@ export class LdapAuthDialogComponent
     }
 
     ngOnInit() {
+        this.onOpen$.subscribe(_ => {
+            setTimeout(() => document.getElementById('ldap-username').focus());
+        });
+    }
 
+    maybeSubmit() {
+        if (this.args.username && this.args.password) {
+            this.close(this.args);
+        }
     }
 }
 
