@@ -149,7 +149,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
 
     @HostListener('window:beforeunload', ['$event'])
     canDeactivate($event?: Event): Promise<boolean> {
-        if (!this.hasPrinted) {
+        if (this.printNeeded && !this.hasPrinted) {
             if ($event) { // window.onbeforeunload
                 $event.preventDefault();
                 $event.returnValue = true;
