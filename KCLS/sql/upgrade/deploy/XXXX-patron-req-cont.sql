@@ -9,7 +9,8 @@ ALTER TABLE actor.usr_item_request
     ADD COLUMN patron_notes TEXT,
     ADD COLUMN requestor INTEGER NOT NULL,
     ADD COLUMN ill_denial TEXT,
-    ADD COLUMN lineitem INTEGER REFERENCES acq.lineitem(id)
+    ADD COLUMN lineitem INTEGER REFERENCES acq.lineitem(id),
+    ADD COLUMN hold INTEGER REFERENCES action.hold_request(id)
 ;
 
 

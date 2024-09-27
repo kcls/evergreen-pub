@@ -244,43 +244,6 @@ sub update_lineitem {
     return undef;
 }
 
-# KCLS uses an alternate user request tracking table.
-sub promote_lineitem_holds_kcls {
-    my($mgr, $li) = @_;
-
-    my $user_requests = $mgr->editor->search_actor_user_item_request([
-        {lineitem => $li->id},
-        {flesh => 1, flesh_fields => {auir => ['usr']}}
-    ]);
-
-    for my $req (@$user_requests) {
-        $logger->info("User request " . 
-            $req->id . " creating hold for bib " . $li->eg_bib_id);
-
-        my $set = $mgr->editor->search_actor_user_setting({
-            usr => $req->usr,
-            name => 'opac.default_pickup_location'
-        })->[0];
-
-        my $pickup_lib = $set ? 
-            OpenSRF::Utils::JSON->JSON2perl($set->value) : $req->usr->home_ou;
-
-        my $args = {
-            patronid => $req->usr->id,
-            pickup_lib => $pickup_lib,
-            hold_type => 'T',
-        };
-
-        my $resp = $U->simplereq(
-            'open-ils.circ',
-            'open-ils.circ.holds.test_and_create.batch',
-             $mgr->editor->authtoken, $args, [$li->eg_bib_id]);
-
-        $logger->info("User request hold placement returned: " . 
-            OpenSRF::Utils::JSON->perl2JSON($resp));
-    }
-}
-
 
 # ----------------------------------------------------------------------------
 # Create real holds from patron requests for a given lineitem
@@ -1395,8 +1358,7 @@ sub create_lineitem_assets {
     # -----------------------------------------------------------------
     # The lineitem is going live, promote user request holds to real holds
     # -----------------------------------------------------------------
-    #promote_lineitem_holds($mgr, $li) or return 0;
-    promote_lineitem_holds_kcls($mgr, $li) or return 0;
+    promote_lineitem_holds($mgr, $li) or return 0;
 
     my $li_details = $mgr->editor->search_acq_lineitem_detail({lineitem => $li_id}, {idlist=>1});
 

@@ -210,9 +210,18 @@ export class ItemRequestDialogComponent extends DialogComponent {
             });
         }
 
+        let lineitem = null;
+        if (this.request.lineitem() !== this.sourceRequest.lineitem()) {
+            // Applying a line item value requires special care.
+            // Save + remove the value so we can update it separately.
+            lineitem = this.request.lineitem();
+            this.request.lineitem(null);
+        }
+
         if (this.mode !== 'create') {
             return promise.then(_ => {
                 this.pcrud.update(this.request).toPromise()
+                .then(_ => this.applyLineitem(lineitem))
                 .then(_ => this.close(true))
             });
         } else {
@@ -224,6 +233,25 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 .then(_ => this.close(true))
             });
         }
+    }
+
+    applyLineitem(lineitem: number | null): Promise<any> {
+        if (!lineitem) { return Promise.resolve(); }
+
+        return this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.patron-request.lineitem.apply',
+            this.auth.token(), this.requestId, lineitem)
+        .toPromise()
+        .then(resp => {
+            const evt = this.evt.parse(resp);
+            console.log('Applying lineitem returned: ', resp);
+
+            if (evt) {
+                alert($localize`Error applying lineitem ${evt}`);
+                return;
+            }
+        });
     }
 
     clearClaimedBy() {
