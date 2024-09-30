@@ -54,6 +54,15 @@ export class RequestsComponent implements OnInit {
         this.controls.ill_opt_out.valueChanges.subscribe(opt => this.requests.illOptOut = opt);
 
         this.gateway.authSessionEnded.subscribe(() => this.reset());
+        this.requests.formResetRequested.subscribe(() => this.resetForm());
+    }
+
+    resetForm() {
+        for (const field in this.controls) {
+            this.controls[field].reset();
+            this.controls[field].markAsPristine();
+            this.controls[field].markAsUntouched();
+        }
     }
 
     reset() {

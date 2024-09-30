@@ -2,7 +2,7 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {Router} from '@angular/router';
 import {Location} from '@angular/common';
 import {from, EMPTY} from 'rxjs';
-import {concatMap} from 'rxjs/operators';
+import {tap, map, concatMap} from 'rxjs/operators';
 import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
@@ -15,6 +15,8 @@ import {Pager} from '@eg/share/util/pager';
 import {PromptDialogComponent} from '@eg/share/dialog/prompt.component';
 import {SelectDialogComponent} from '@eg/share/dialog/select.component';
 import {ItemRequestDialogComponent} from './dialog.component';
+
+const LIB_RESIDENCE_STAT_CAT = 12;
 
 @Component({
   templateUrl: 'list.component.html'
@@ -105,12 +107,26 @@ export class ItemRequestComponent implements OnInit {
                 flesh: 2,
                 flesh_fields: {
                     auir: ['usr', 'claimed_by'],
-                    au: ['card', 'profile']
+                    au: ['card', 'profile', 'stat_cat_entries']
                 },
                 order_by: orderBy
             };
 
-            return this.pcrud.search('auir', query, flesh);
+            return this.pcrud.search('auir', query, flesh)
+            .pipe(tap(req => {
+                req.usr()._residence =
+                    req.usr().stat_cat_entries()
+                    .filter(entry => Number(entry.stat_cat()) === LIB_RESIDENCE_STAT_CAT)
+                    .map(entry => entry.stat_cat_entry())[0];
+            }))
+            .pipe(concatMap(req => {
+                return this.net.request(
+                    'open-ils.actor',
+                    'open-ils.actor.patron-request.status',
+                    this.auth.token(), req.id())
+                .pipe(tap(stat => req._status = stat.status))
+                .pipe(map(_ => req));
+            }));
         };
     }
 
@@ -245,22 +261,5 @@ export class ItemRequestComponent implements OnInit {
             }
         });
     }
-
-
-    /*
-    createIllRequest(reqs: IdlObject[]) {
-        reqs = [].concat(reqs);
-        let req = reqs[0];
-        if (!req) { return; }
-
-        let url = '/staff/cat/ill/track?';
-        url += `title=${encodeURIComponent(req.title())}`;
-        url += `&patronBarcode=${encodeURIComponent(req.usr().card().barcode())}`;
-
-        url = this.ngLocation.prepareExternalUrl(url);
-
-        window.open(url);
-    }
-    */
 }
 

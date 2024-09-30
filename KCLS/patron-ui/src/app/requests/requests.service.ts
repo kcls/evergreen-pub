@@ -14,6 +14,10 @@ export class RequestsService {
     // Emits after completion of every new patron auth+permission check.
     patronChecked: EventEmitter<void> = new EventEmitter<void>();
 
+    // Called by the create form when it's time to reset/clear the values.
+    // Some values are managed outside of the main create form (e.g. format)
+    formResetRequested: EventEmitter<void> = new EventEmitter<void>();
+
     constructor(
         private app: AppService,
         private settings: Settings,
