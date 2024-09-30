@@ -517,10 +517,11 @@ sub apply_lineitem {
 
         } else {
 
-            # TODO action trigger event for user request hold placed.
-
             $logger->info("User request $req_id successfully created hold");
             $req->hold(ref $resp ? $resp->{result} : $resp);
+
+            # TODO action trigger event for user request hold placed.
+            # see also apply_hold();
         }
     }
 
@@ -532,6 +533,38 @@ sub apply_lineitem {
 
     return $req;
 }
+
+__PACKAGE__->register_method(
+    method   => 'apply_hold',
+    api_name => 'open-ils.actor.patron-request.hold.apply',
+    signature => q/
+        Link a hold ID to a patron request and create the notification events.
+    /
+);
+
+sub apply_hold {
+    my ($self, $conn, $auth, $req_id, $hold_id) = @_;
+
+    my $e = new_editor(authtoken => $auth, xact => 1);
+
+    return $e->die_event unless $e->checkauth;
+    return $e->die_event unless $e->allowed('MANAGE_USER_ITEM_REQUEST');
+
+    my $request = $e->retrieve_actor_user_item_request($req_id)
+        or return $e->die_event;
+
+    $request->hold($hold_id);
+
+    # Will fail if the hold id is not valid.
+    return $e->die_event unless $e->update_actor_user_item_request($request);
+
+    $e->commit;
+
+    # TODO create notice evens
+    
+    return 1;
+}
+
 
 
 1;
