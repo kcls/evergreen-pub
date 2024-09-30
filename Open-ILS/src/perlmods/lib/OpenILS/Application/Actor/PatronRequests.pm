@@ -565,6 +565,47 @@ sub apply_hold {
     return 1;
 }
 
+__PACKAGE__->register_method(
+    method   => 'search_dupes',
+    api_name => 'open-ils.actor.patron-request.dupes.search',
+    signature => q/
+        Search for duplicate requests for a give patron based on
+        format and normalized title.
+    /
+);
+
+sub search_dupes {
+    my ($self, $conn, $auth, $patron_id, $format, $title) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+
+    return $e->die_event unless $e->checkauth;
+    $patron_id ||= $e->requestor->id;
+
+    if ($patron_id != $e->requestor->id) {
+        return $e->event unless $e->allowed('MANAGE_USER_ITEM_REQUEST');
+    }
+
+    # trim and lower
+    $title =~ s/^\s+|\s+$//g;
+    $title = lc($title);
+
+    my $query = {
+        select => {auir => ['id']},
+        from => 'auir',
+        where => {
+            '+auir' => {
+                format => $format,
+                title => {"=" => {transform => 'lowercase', value => $title}}
+            }
+        }
+    };
+
+    return $e->json_query($query)->[0] ? 1 : 0;
+}
+
+
+
 
 
 1;
