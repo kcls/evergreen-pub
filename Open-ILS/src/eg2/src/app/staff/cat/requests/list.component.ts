@@ -35,6 +35,8 @@ export class ItemRequestComponent implements OnInit {
         {label: $localize`Acquisitions`, value: 'acq'}
     ];
 
+    illDenialOptions: ComboboxEntry[] = [];
+
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('vendorPrompt') private vendorPrompt: PromptDialogComponent;
     @ViewChild('notePrompt') private notePrompt: PromptDialogComponent;
@@ -55,6 +57,10 @@ export class ItemRequestComponent implements OnInit {
             patron_barcode: r => r.usr().card() ? r.usr().card().barcode() : '',
             route_to: r => r.route_to(),
         };
+
+        // Pre-cache these
+        this.pcrud.retrieveAll('cirr', {order_by: {cirr: 'label'}}).subscribe(
+            reason => this.illDenialOptions.push({label: reason.label(), id: reason.label()}));
 
         this.gridDataSource.getRows = (pager: Pager, sort: GridColumnSort[]) => {
             const orderBy: any = {ausp: 'create_date'};
@@ -242,6 +248,7 @@ export class ItemRequestComponent implements OnInit {
     }
 
     newRequest() {
+        this.requestDialog.illDenialOptions = this.illDenialOptions;
         this.requestDialog.mode = 'create';
         this.requestDialog.open({size: 'xl'})
         .subscribe(changesMade => {
@@ -253,6 +260,7 @@ export class ItemRequestComponent implements OnInit {
 
     // may not need this.
     showRequestDialog(req: IdlObject) {
+        this.requestDialog.illDenialOptions = this.illDenialOptions;
         this.requestDialog.requestId = req.id();
         this.requestDialog.open({size: 'xl'})
         .subscribe(changesMade => {
