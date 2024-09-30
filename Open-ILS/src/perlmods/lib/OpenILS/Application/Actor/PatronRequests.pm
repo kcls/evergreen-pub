@@ -19,7 +19,6 @@ my @REQ_FIELDS = qw/
     pubdate
     publisher
     notes
-    route_to
     ill_opt_out
     id_matched
 /; 
@@ -29,7 +28,7 @@ my @REQ_FIELDS = qw/
 my $ILL_ROUTE_AGE_YEARS = 2;
 
 # These format salways go to ILL.                                                     
-my @ILL_FORMATS = ['microfilm', 'article'];
+my @ILL_FORMATS = ('microfilm', 'article');
 
 sub apply_route_to {
     my ($request) = @_;
@@ -48,7 +47,7 @@ sub apply_route_to {
                 }
             }
         }
-    } elsif (grep {$_} @ILL_FORMATS) {
+    } elsif (grep {$_ eq $request->format} @ILL_FORMATS) {
         $route_to = 'ill';
     }
 
