@@ -14,7 +14,7 @@
           <mat-label>{{barcodeLabel}}</mat-label>
           <input type="text" matInput [formControl]="controls.identifier"/>
           <mat-error *ngIf="controls.identifier.hasError('required')">
-              {{barcodeLabel}}<strong>required</strong>
+              {{barcodeLabel}} <strong>required</strong>
           </mat-error>
         </mat-form-field>
       </div>
