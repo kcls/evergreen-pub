@@ -315,6 +315,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         let url = '/staff/cat/ill/track?';
         url += `title=${encodeURIComponent(req.title())}`;
+        url += `&patronRequestId=${this.requestId}`;
         url += `&patronBarcode=${encodeURIComponent(req.usr().card().barcode())}`;
         url += `&illno=${encodeURIComponent(req.illno())}`;
 
