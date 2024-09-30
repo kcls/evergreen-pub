@@ -18,6 +18,8 @@ export class RequestsService {
     // Some values are managed outside of the main create form (e.g. format)
     formResetRequested: EventEmitter<void> = new EventEmitter<void>();
 
+    formatChanged: EventEmitter<void> = new EventEmitter<void>();
+
     constructor(
         private app: AppService,
         private settings: Settings,

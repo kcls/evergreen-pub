@@ -38,6 +38,8 @@ export class CreateRequestComponent implements OnInit {
     previousSearch = '';
     holdRequestUrl = '';
     maxTextLength = MAX_TEXT_LENGTH;
+    dupesFound = false;
+    checkingDupes = false;
 
     languages = [
         $localize`English`,
@@ -95,6 +97,30 @@ export class CreateRequestComponent implements OnInit {
 
         this.controls.identifier.valueChanges.pipe(debounceTime(500))
         .subscribe(ident => this.identLookup(ident));
+
+        this.controls.title.valueChanges.pipe(debounceTime(500))
+        .subscribe(title => this.dupesLookup());
+
+        this.requests.formatChanged.subscribe(_ => this.dupesLookup());
+    }
+
+    dupesLookup() {
+        let title = this.controls.title.value;
+        let format = this.requests.selectedFormat;
+
+        if (!title || !format) {
+            return;
+        }
+
+        this.checkingDupes = true;
+        this.gateway.requestOne(
+            'open-ils.actor',
+            'open-ils.actor.patron-request.dupes.search',
+            this.app.getAuthtoken(), null, format, title)
+        .then((found: unknown) => {
+            this.dupesFound = Boolean(Number(found));
+            this.checkingDupes = false;
+        });
     }
 
     filterLangs(value: string): string[] {
@@ -175,6 +201,9 @@ export class CreateRequestComponent implements OnInit {
     }
 
     canSubmit(): boolean {
+        if (this.checkingDupes || this.dupesFound) {
+            return false;
+        }
         if (!this.requests.requestsAllowed) {
             return false;
         }

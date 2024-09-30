@@ -44,6 +44,7 @@ export class RequestsComponent implements OnInit {
 
         this.controls.format.valueChanges.subscribe(format => {
             this.requests.selectedFormat = format;
+            this.requests.formatChanged.emit();
             // Changing the format means starting a new request.
             // Route to the create page.
             if (this.tab !== 'create') {
