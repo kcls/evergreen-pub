@@ -14,6 +14,7 @@ import {debounceTime} from 'rxjs/operators';
 const BC_URL = 'https://kcls.bibliocommons.com/item/show/';
 const BC_CODE = '082';
 const MIN_ID_LENGTH = 6;
+const MAX_TEXT_LENGTH = 256;
 
 interface SuggestedRecord {
     id: number,
@@ -36,6 +37,7 @@ export class CreateRequestComponent implements OnInit {
     searchingRecords = false;
     previousSearch = '';
     holdRequestUrl = '';
+    maxTextLength = MAX_TEXT_LENGTH;
 
     languages = [
         $localize`English`,
@@ -64,8 +66,6 @@ export class CreateRequestComponent implements OnInit {
         $localize`Tiếng Việt / Vietnamese`,
     ];
 
-    filteredLangs: Observable<string[]> = new Observable<string[]>();
-
     controls: {[field: string]: FormControl} = {
         title: new FormControl({value: '', disabled: true}, [Validators.required]),
         author: new FormControl({value: '', disabled: true}),
@@ -74,7 +74,6 @@ export class CreateRequestComponent implements OnInit {
         publisher: new FormControl({value: '', disabled: true}),
         language: new FormControl({value: '', disabled: true}),
         notes: new FormControl({value: '', disabled: true}),
-        //ill_opt_out: new FormControl(false),
     }
 
     constructor(
@@ -96,11 +95,6 @@ export class CreateRequestComponent implements OnInit {
 
         this.controls.identifier.valueChanges.pipe(debounceTime(500))
         .subscribe(ident => this.identLookup(ident));
-
-        this.filteredLangs = this.controls.language.valueChanges.pipe(
-            startWith(''),
-            map(value => this.filterLangs(value || '')),
-        );
     }
 
     filterLangs(value: string): string[] {
@@ -244,6 +238,9 @@ export class CreateRequestComponent implements OnInit {
         return false;
     }
 
+    // keepIdent is used when toggling between records matched via
+    // ISBN, etc. search.  In those cases, we want to clear most
+    // of the form, but not the identifier or the format/ill-opt-out.
     resetForm(keepIdent?: boolean) {
         setTimeout(() => {
             for (const field in this.controls) {
@@ -253,6 +250,9 @@ export class CreateRequestComponent implements OnInit {
                 this.controls[field].reset();
                 this.controls[field].markAsPristine();
                 this.controls[field].markAsUntouched();
+                if (!keepIdent) {
+                    this.requests.formResetRequested.emit();
+                }
             }
         });
     }

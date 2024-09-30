@@ -195,7 +195,7 @@ sub get_requests {
 
     return [
         map {
-            {status => request_status_impl($_), request => $_->to_bare_hash}
+            {status => request_status_impl($e, $_), request => $_->to_bare_hash}
         } @$requests
     ];
 }
@@ -267,11 +267,11 @@ sub request_status {
         return $e->event unless $e->allowed('VIEW_USER');
     }
 
-    return request_status_impl($req);
+    return request_status_impl($e, $req);
 }
 
 sub request_status_impl {
-    my $req = shift;
+    my ($e, $req) = @_;
 
     if ($req->complete_date) {
         return {status => 'completed'};
@@ -291,12 +291,34 @@ sub request_status_impl {
         }
     }
 
+    # Hold placement is the final step.
+    if ($req->hold) {
+        my $hold = $e->retrieve_action_hold_request($req->hold)
+            or return $e->die_event;
+
+        if ($hold->fulfillment_time) {
+            return {status => 'completed'}
+        } elsif ($hold->cancel_time) {
+            return {status => 'hold-canceled'};
+        } else {
+            return {status => 'hold-placed'};
+        }
+    }
+
     # TODO patron-pending? staff have questions for the patron.
     # TODO hold-placed and hold-failed
 
     if ($req->route_to eq 'acq') {
         if ($req->lineitem) {
-            return {status => 'purchase-approved'};
+
+            my $li = $e->retrieve_acq_lineitem($req->lineitem)
+                or return $e->die_event;
+
+            if ($li->state eq 'on-order') {
+                return {status => 'purchase-approved'};
+            } else {
+                return {status => 'purchase-review'};
+            }
         } elsif ($req->claim_date) {
             return {status => 'purchase-review'};
         }

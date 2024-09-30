@@ -90,11 +90,15 @@
 
   <eg-grid-column i18n-label label="Request ID" path="id" [hidden]="true" [required]="true">
   </eg-grid-column>
+  <eg-grid-column i18n-label label="Status" path="_status">
+  </eg-grid-column>
   <eg-grid-column path="usr.family_name" label="Patron Last Name" i18n-label>
   </eg-grid-column>
   <eg-grid-column name="patron_barcode" [cellTemplate]="patronBarcodeTemplate" label="Patron Card" i18n-label>
   </eg-grid-column>
   <eg-grid-column path="usr.profile.name" label="Patron Profile" i18n-label>
+  </eg-grid-column>
+  <eg-grid-column path="usr._residence" label="District of Residence" i18n-label>
   </eg-grid-column>
   <eg-grid-column i18n-label [cellTemplate]="routeToTemplate" label="Route To" name="route_to" [sortable]="true">
   </eg-grid-column>

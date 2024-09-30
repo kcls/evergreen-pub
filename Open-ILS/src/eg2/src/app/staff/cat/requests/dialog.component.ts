@@ -244,13 +244,15 @@ export class ItemRequestDialogComponent extends DialogComponent {
             this.auth.token(), this.requestId, lineitem)
         .toPromise()
         .then(resp => {
-            const evt = this.evt.parse(resp);
             console.log('Applying lineitem returned: ', resp);
 
+            const evt = this.evt.parse(resp);
             if (evt) {
                 alert($localize`Error applying lineitem ${evt}`);
                 return;
             }
+
+            this.toast.success($localize`Hold successfully placed`);
         });
     }
 

@@ -4,7 +4,7 @@
     <div class="flex p-2" *ngIf="requests.selectedFormat !== 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>ISBN, ISSN, UPC, OCLC Number</mat-label>
-        <input type="text" matInput [formControl]="controls.identifier"
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.identifier"
         />
           <!--
           (keyup.enter)="identLookup()" (blur)="identLookup()"/>
@@ -17,7 +17,7 @@
     <div class="flex p-2" *ngIf="requests.selectedFormat === 'article'">
       <mat-form-field class="flex-1">
         <mat-label i18n>Journal DOI</mat-label>
-        <input type="text" matInput [formControl]="controls.identifier"
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.identifier"
           placeholder="E.g. http://dx.doi.org/10.1093/ajae/aaq063"/>
       </mat-form-field>
     </div>
@@ -47,7 +47,7 @@
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Title</mat-label>
-        <input type="text" matInput [formControl]="controls.title"/>
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.title"/>
         <mat-error *ngIf="controls.title.hasError('required')" i18n>
             Title <strong>required</strong>
         </mat-error>
@@ -57,7 +57,7 @@
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Author, Creator, Performer</mat-label>
-        <input type="text" matInput [formControl]="controls.author"/>
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.author"/>
       </mat-form-field>
     </div>
 
@@ -81,47 +81,19 @@
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Select a Language</mat-label>
-        <input type="text" matInput [formControl]="controls.language" [matAutocomplete]="auto">
-        <mat-autocomplete #auto="matAutocomplete">
-          @for (option of filteredLangs | async; track option) {
-            <mat-option [value]="option">{{option}}</mat-option>
-          }
-        </mat-autocomplete>
+        <mat-select [formControl]="controls.language">
+          <mat-option *ngFor="let lang of languages" value="{{lang}}">{{lang}}</mat-option>
+        </mat-select>
       </mat-form-field>
     </div>
 
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Other Notes &amp; Comments</mat-label>
-        <textarea rows="3" matInput [formControl]="controls.notes">
+        <textarea rows="3" [maxlength]="maxTextLength" matInput [formControl]="controls.notes">
         </textarea>
       </mat-form-field>
     </div>
-
-    <!--
-    <div class="flex justify-center mt-4" i18n>
-      <div>
-        <p>Text goes here for the patron...</p>
-        <p>Text goes here for the patron...</p>
-        <p>Text goes here for the patron...</p>
-      </div>
-    </div>
-
-    <div class="flex justify-center p-2 mt-4">
-      <div>
-        <div i18n>
-          All items will be considered for purchase if they meet our
-          selection criteria.  Otherwise, staff will attempt to fill the 
-          request through the Interlibrary Loan service.
-        </div>
-        <div>
-          <mat-checkbox [formControl]="controls.ill_opt_out" i18n>
-            I do not want this item through Interlibrary Loan
-          </mat-checkbox>
-        </div>
-      </div>
-    </div>
-    -->
 
     <div class="flex justify-center p-2 mt-4">
       <button mat-raised-button class="kcls-background-dark kcls-text-light" 
