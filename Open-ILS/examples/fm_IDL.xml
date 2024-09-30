@@ -16154,6 +16154,26 @@ SELECT  usr,
 		</permacrud>
 	</class>
 
+	<class id="cirr" controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::ill_reject_reason" 
+		oils_persist:tablename="config.ill_reject_reason" 
+		reporter:label="ILL Rejection Reasons">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.ill_reject_reason_id_seq">
+			<field name="id" reporter:datatype="id" reporter:selector="label"/>
+			<field name="label" reporter:datatype="text" oils_obj:required="true" oils_persist:i18n="true"/>
+			<field name="content" reporter:datatype="text" oils_obj:required="true" oils_persist:i18n="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+				<retrieve permission="STAFF_LOGIN" global_required="true"/>
+				<update permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+				<delete permission="MANAGE_USER_ITEM_REQUEST" global_required="true"/>
+			</actions>
+		</permacrud>
+	</class>
+
+
 	<class id="cpt" controller="open-ils.cstore open-ils.pcrud"
 		oils_obj:fieldmapper="config::print_template" 
 		oils_persist:tablename="config.print_template" 
