@@ -44,6 +44,10 @@
       </p>
     </div>
 
+    <div class="p-4 border rounded borderr-slate-400 mt-0 mb-4 mat-mdc-form-field-error" *ngIf="dupeIdentFound">
+      <p i18n>A request for this item is already active on this account.</p>
+    </div>
+
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Title</mat-label>
@@ -54,7 +58,7 @@
       </mat-form-field>
     </div>
 
-    <div class="p-4 border rounded borderr-slate-400 mt-0 mb-4 mat-mdc-form-field-error" *ngIf="dupesFound">
+    <div class="p-4 border rounded borderr-slate-400 mt-0 mb-4 mat-mdc-form-field-error" *ngIf="dupeTitleFound">
       <p i18n>A request for this item is already active on this account.</p>
     </div>
 
