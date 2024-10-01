@@ -63,10 +63,22 @@ export class ItemRequestComponent implements OnInit {
             reason => this.illDenialOptions.push({label: reason.label(), id: reason.label()}));
 
         this.gridDataSource.getRows = (pager: Pager, sort: GridColumnSort[]) => {
-            const orderBy: any = {ausp: 'create_date'};
+            let orderBy: any = {ausp: 'create_date'};
 
             if (sort.length) {
-                orderBy.auir = sort[0].name + ' ' + sort[0].dir;
+                const field = this.idl.classes.auir.field_map[sort[0].name];
+                if (field && field.datatype === 'text') {
+                    // When sorting on TEXT fields pass the value through the
+                    // lowercase transform.
+                    orderBy = [{
+                        class: "auir",
+                        field: field.name,
+                        transform: "evergreen.lowercase",
+                        direction: sort[0].dir
+                    }];
+                } else {
+                    orderBy.auir = sort[0].name + ' ' + sort[0].dir
+                }
             }
 
             // base query to grab everything
