@@ -63,8 +63,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
         $localize`Tiếng Việt / Vietnamese`,
     ];
 
-    illDenials: IdlObject[] = [];
-
     illDenialOptions: ComboboxEntry[] = [];
 
     @Input() mode: 'edit' | 'create' = 'edit';
@@ -80,13 +78,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
         private org: OrgService,
         private auth: AuthService) {
         super(modal); // required for subclassing
-
-        this.illDenialOptions = this.illDenials.map(denial => {
-            // Remove any mutli-spaces caused by formatting.
-            let value = denial.replace(/ +/g, ' ');
-            value = value.replace(/\n/g, ' ');
-            return {id: value, label: value};
-        });
     }
 
     open(args: NgbModalOptions): Observable<boolean> {
