@@ -20,6 +20,9 @@ import {ConfirmDialogComponent} from '@eg/share/dialog/confirm.component';
 
 declare var encodeJS: (jsThing: any) => any;
 
+// Move these into the database.  See also AppUtils.pm
+const NON_REFUNDABLE_CIRC_MODS = ['1', '7', '45', '46', '66', '40', '41', '47', '48']
+
 @Component({
   templateUrl: 'lostpaid.component.html',
 })
@@ -35,7 +38,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     hasPrinted = false;
 
     simpleCheckinMode = false;
-    openBillsSummary: {name: string, value: number}[] = [];
+    openBillsSummary: {name: string, value: number, isNonCatLost: boolean}[] = [];
 
     itemCondition: string | null = null;
     initials = '';
@@ -172,22 +175,39 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         this.openBillsSummary = [];
         let summaries = {};
 
-        return this.pcrud.search('mbts',
-            {usr: this.checkinResult.patron.id(), balance_owed: {'<>': 0}})
+        return this.pcrud.search('mobts', {
+                usr: this.checkinResult.patron.id(),
+                balance_owed: {'<>': 0}
+            }, {
+                flesh: 5,
+                flesh_fields: {
+                    mobts: ['circulation', 'grocery'],
+                    circ: ['target_copy'],
+                    acp: ['call_number', 'circ_modifier'],
+                    acn: ['record'],
+                    bre: ['simple_record']
+                },
+                order_by: {mobts: 'xact_start'}
+            })
         .pipe(tap(xact => {
-            console.log('got xact ', xact.id(), circId);
-            if (xact.id() !== circId) {
-                let amount = summaries[xact.last_billing_type()] || 0;
-                summaries[xact.last_billing_type()] = amount + Number(xact.balance_owed());
+            if (xact.circulation()) {
+                const copy = xact.circulation().target_copy();
+
+                xact._title =
+                    Number(copy.call_number().id()) === -1 ?
+                    copy.dummy_title() :
+                    copy.call_number().record().simple_record().title();
+
+                if (NON_REFUNDABLE_CIRC_MODS.includes(copy.circ_modifier().code())) {
+                    xact._non_cat_item = true;
+                }
+            } else {
+                xact._title = xact.grocery().note();
             }
+
+            this.openBillsSummary.push(xact);
         }))
-        .toPromise()
-        .then(_ => {
-            Object.keys(summaries).forEach(key =>
-                this.openBillsSummary.push({name: key, value: summaries[key].toFixed(2)})
-            );
-            console.log(this.openBillsSummary);
-        });
+        .toPromise();
     }
 
     moneySummary(): string {

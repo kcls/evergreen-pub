@@ -23,7 +23,7 @@
 
 <div *ngIf="checkinResult" class="d-flex">
   <div class="form-validated common-form striped-odd w-75 ms-auto me-auto">
-    <div class="row p-2 mt-1 border-bottom">
+    <div class="row p-2 mt-1 border-bottom" *ngIf="checkinResult.patron">
       <div class="col-lg-1">
         <label for="patron-name" i18n>Patron:</label>
       </div>
@@ -61,7 +61,7 @@
         </a>
       </div>
     </div>
-    <ng-container *ngIf="checkinResult && !checkinComplete">
+    <ng-container *ngIf="checkinResult && checkinResult.circ && !checkinComplete">
     <div class="row p-2 mt-2">
       <div class="col-lg-2" i18n>Checked Out:</div>
       <div class="col-lg-2">{{checkinResult.circ.xact_start() | egDate}}</div>
@@ -70,7 +70,7 @@
       <div class="col-lg-2" i18n>Item Type:</div>
       <div class="col-lg-2">{{checkinResult.firstEvent.payload.circ_modifier.name()}}</div>
     </div>
-    <div class="row p-2 mt-1 border-bottom">
+    <div class="row p-2 mt-1">
       <div class="col-lg-2" i18n>Marked Lost:</div>
       <div class="col-lg-2">{{checkinResult.circ.stop_fines_time() | egDate}}</div>
       <div class="col-lg-2" i18n>Last Payment:</div>
@@ -88,17 +88,45 @@
     </div>
 
     <ng-container *ngIf="refundable()">
-      <div class="row p-2 mt-1" *ngIf="openBillsSummary.length !== 0">
-        <div class="col-12">
-          <p i18n>The following open fines/fees (summarized) may be affected by this refund:</p>
-          <table>
-            <tr><th class="p-1" i18n>Charge Type</th><th class="p-1" i18n>Sum Total Owed</th></tr>
-            <tr class="mt-1" *ngFor="let sum of openBillsSummary">
-              <td class="p-1">{{sum.name}}</td><td class="p-1">{{sum.value | currency}}</td>
-            </tr>
-          </table>
+      <div class="row p-2 mt-1">
+        <div class="col-12 d-flex fw-bold text-success">
+          <div class="flex-1"></div>
+          <div i18n>This item is refundable.</div>
+          <div class="flex-1"></div>
         </div>
       </div>
+
+      <ng-container *ngIf="openBillsSummary.length !== 0">
+        <div class="row p-1 mt-1">
+          <div class="col-12">
+            <p i18n>The following charges may be affected by this refund:</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-12" style="max-height:400px; overflow-y:auto">
+            <table>
+              <tr>
+                <th class="p-2" i18n>Charge Type</th>
+                <th class="p-2" i18n>Amount Owed</th>
+                <th class="p-2" i18n>Circ Modifier</th>
+                <th class="p-2" i18n>Title/Note</th>
+              </tr>
+              <tr [ngClass]="{'border-bottom': idx < openBillsSummary.length - 1}"
+                *ngFor="let xact of openBillsSummary; index as idx">
+                <td class="p-2">{{xact.last_billing_type()}}</td>
+                <td class="p-2">{{xact.balance_owed() | currency}}</td>
+                <td class="p-2">
+                  <span *ngIf="xact.circulation()">
+                    {{xact.circulation().target_copy().circ_modifier().name()}}
+                    <ng-container *ngIf="xact._non_cat_item">*</ng-container>
+                  </span>
+                </td>
+                <td class="p-2">{{xact._title}}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </ng-container>
       <div class="row p-2 mt-2">
         <div class="col-lg-4">
           <label for="condition-select" i18n>
@@ -250,9 +278,12 @@
         <span i18n>Print Letter</span>
         <span class="material-icons">print</span>
       </button>
-      <a *ngIf="checkinResult" class="ms-3" target="_blank"
+      <a target="_blank" class="ms-3"
         routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/bills">
-        <button class="btn btn-outline-dark" i18n>Open Patron</button>
+        <button class="btn btn-primary label-with-material-icon" i18n>
+          <span class="pe-2">Open Patron</span>
+          <span class="material-icons">north_east</span>
+        </button>
       </a>
     </div>
   </div>
