@@ -567,14 +567,21 @@ sub apply_hold {
 __PACKAGE__->register_method(
     method   => 'search_dupes',
     api_name => 'open-ils.actor.patron-request.dupes.search',
-    signature => q/
-        Search for duplicate requests for a give patron based on
-        format and normalized title.
-    /
+    signature => {
+        params => [
+            {desc => 'Patron authtoken', type => 'string'},
+            {desc => 'Patron ID / Optional', type => 'number'},
+            {desc => 'Format', type => 'string'},
+            {desc => 'Title', type => 'string'},
+            {desc => 'Identifier', type => 'string'},
+        ],
+        desc => q/Search for duplicate requests for a give patron based on
+            format and normalized title or identifier search./
+    }
 );
 
 sub search_dupes {
-    my ($self, $conn, $auth, $patron_id, $format, $title) = @_;
+    my ($self, $conn, $auth, $patron_id, $format, $title, $ident) = @_;
 
     my $e = new_editor(authtoken => $auth);
 
@@ -585,20 +592,21 @@ sub search_dupes {
         return $e->event unless $e->allowed('MANAGE_USER_ITEM_REQUEST');
     }
 
-    # trim and lower
-    $title =~ s/^\s+|\s+$//g;
-    $title = lc($title);
-
     my $query = {
         select => {auir => ['id']},
         from => 'auir',
-        where => {
-            '+auir' => {
-                format => $format,
-                title => {"=" => {transform => 'lowercase', value => $title}}
-            }
-        }
+        where => {'+auir' => {format => $format}}
     };
+
+    # Favor ident searches over title searches since they're more strict.
+    my $field = $ident ? 'identifier' : 'title';
+    my $value = $ident ? $ident : $title;
+
+    # trim and lower
+    $value =~ s/^\s+|\s+$//g;
+    $value = lc($value);
+
+    $query->{where}->{'+auir'}->{$field} = {"=" => {transform => 'lowercase', value => $value}};
 
     return $e->json_query($query)->[0] ? 1 : 0;
 }

@@ -38,7 +38,8 @@ export class CreateRequestComponent implements OnInit {
     previousSearch = '';
     holdRequestUrl = '';
     maxTextLength = MAX_TEXT_LENGTH;
-    dupesFound = false;
+    dupeTitleFound = false;
+    dupeIdentFound = false;
     checkingDupes = false;
 
     languages = [
@@ -96,7 +97,10 @@ export class CreateRequestComponent implements OnInit {
         this.activateForm();
 
         this.controls.identifier.valueChanges.pipe(debounceTime(500))
-        .subscribe(ident => this.identLookup(ident));
+        .subscribe(ident => {
+            this.identLookup(ident);
+            this.dupesLookup();
+        });
 
         this.controls.title.valueChanges.pipe(debounceTime(500))
         .subscribe(title => this.dupesLookup());
@@ -106,19 +110,31 @@ export class CreateRequestComponent implements OnInit {
 
     dupesLookup() {
         let title = this.controls.title.value;
+        let ident = this.controls.identifier.value;
         let format = this.requests.selectedFormat;
 
-        if (!title || !format) {
+        this.dupeTitleFound = false;
+        this.dupeIdentFound = false;
+
+        if (!format || !(title || ident)) {
             return;
         }
 
         this.checkingDupes = true;
+
         this.gateway.requestOne(
             'open-ils.actor',
             'open-ils.actor.patron-request.dupes.search',
-            this.app.getAuthtoken(), null, format, title)
+            this.app.getAuthtoken(), null, format, title, ident)
         .then((found: unknown) => {
-            this.dupesFound = Boolean(Number(found));
+            if (Boolean(Number(found))) {
+                if (ident) {
+                    this.dupeIdentFound = true;
+                } else {
+                    this.dupeTitleFound = true;
+                }
+            }
+
             this.checkingDupes = false;
         });
     }
@@ -201,7 +217,7 @@ export class CreateRequestComponent implements OnInit {
     }
 
     canSubmit(): boolean {
-        if (this.checkingDupes || this.dupesFound) {
+        if (this.checkingDupes || this.dupeTitleFound || this.dupeIdentFound) {
             return false;
         }
         if (!this.requests.requestsAllowed) {
