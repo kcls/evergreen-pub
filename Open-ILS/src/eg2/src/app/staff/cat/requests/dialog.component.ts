@@ -63,7 +63,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
         $localize`Tiếng Việt / Vietnamese`,
     ];
 
-    illDenialOptions: ComboboxEntry[] = [];
+    illDenialSelectorVal = '';
+    illDenialOptions: IdlObject[] = [];
 
     @Input() mode: 'edit' | 'create' = 'edit';
 
@@ -292,6 +293,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
         window.open(url);
     }
 
+    illDenialChanged(content) {
+        this.request.ill_denial(content);
+    }
 }
 
 

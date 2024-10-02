@@ -212,12 +212,23 @@
     <div class="row mt-3" *ngIf="request.route_to() === 'ill' && request.reject_date()">
       <div class="col-2" i18n>ILL Denial Reason *</div>
       <div class="col-10">
-        <eg-combobox 
-          [startId]="request.ill_denial()"
-          (onChange)="request.ill_denial($event ? $event.id : null)"
-          i18n-placeholder placeholder="ILL Denial Reason..."
-          [entries]="illDenialOptions">
-        </eg-combobox>
+        <div class="row">
+          <div class="col-4">
+            <select class="form-select" 
+              [ngModel]="illDenialSelectorVal" (ngModelChange)="illDenialChanged($event)">
+              <option value="" selected></option>
+              <option *ngFor="let reason of illDenialOptions" 
+                [value]="reason.content()">{{reason.label()}}</option>
+            </select>
+          </div>
+        </div>
+        <div class="row mt-1">
+          <div class="col-12">
+            <textarea rows="3" class="form-control" 
+              (ngModelChange)="request.ill_denial($event)" [ngModel]="request.ill_denial()">
+            </textarea>
+          </div>
+        </div>
       </div>
     </div>
     <div class="row mt-3">

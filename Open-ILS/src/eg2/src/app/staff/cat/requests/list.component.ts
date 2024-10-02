@@ -35,7 +35,7 @@ export class ItemRequestComponent implements OnInit {
         {label: $localize`Acquisitions`, value: 'acq'}
     ];
 
-    illDenialOptions: ComboboxEntry[] = [];
+    illDenialOptions: IdlObject[] = [];
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('vendorPrompt') private vendorPrompt: PromptDialogComponent;
@@ -60,7 +60,7 @@ export class ItemRequestComponent implements OnInit {
 
         // Pre-cache these
         this.pcrud.retrieveAll('cirr', {order_by: {cirr: 'label'}}).subscribe(
-            reason => this.illDenialOptions.push({label: reason.label(), id: reason.label()}));
+            reason => this.illDenialOptions.push(reason));
 
         this.gridDataSource.getRows = (pager: Pager, sort: GridColumnSort[]) => {
             let orderBy: any = {ausp: 'create_date'};
