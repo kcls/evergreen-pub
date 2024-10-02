@@ -18,6 +18,9 @@ export class AppService {
 
     authPollTimeoutId: number | null = null;
 
+    orgTree: Hash | null = null;
+    orgHash: {[id: number]: Hash} = {};
+
     constructor(private gateway: Gateway) {
         this.gateway.authSessionEnded.subscribe(() => {
             console.debug('Clearing auth data on timeout');
@@ -99,6 +102,39 @@ export class AppService {
             clearTimeout(this.authPollTimeoutId);
             this.authPollTimeoutId = null;
         }
+    }
+
+    getOrgTree(): Promise<Hash> {
+        if (this.orgTree) {
+            return Promise.resolve(this.orgTree);
+        }
+
+        return this.gateway.requestOne(
+            'open-ils.pcrud',
+            'open-ils.pcrud.search.aou',
+            'ANONYMOUS',
+            {parent_ou: null},
+            {flesh: -1, flesh_fields: {aou: ["children"]}}
+        ).then((tree: unknown) => {
+            this.orgTree = tree as Hash;
+
+            let flatten = (node: Hash) => {
+                this.orgHash[node.id as number] = node;
+                (node.children as Hash[]).forEach(flatten);
+            }
+
+            flatten(tree as Hash);
+
+            // When first retrieving the tree, create a hash version
+            // as well for easier lookup.
+
+            return this.orgTree;
+        });
+    }
+
+    // Values will only be available if getOrgTree() has been called.
+    getOrgUnit(id: number): Hash | null {
+        return this.orgHash[id];
     }
 }
 
