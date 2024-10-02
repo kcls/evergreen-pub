@@ -1,0 +1,695 @@
+<form [formGroup]="formGroup">
+
+<mat-stepper #stepper (selectionChange)="onStepChange($event)">
+  <mat-step label="Your Information">
+
+  <h3 i18n>Tell us about yourself. This information is used for verification purposes.</h3>
+
+  <div class="columns-2 mt-6">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>First Name</mat-label>
+        <input type="text" matInput formControlName="first"/>
+        <mat-error *ngIf="formGroup.controls.first.hasError('required')" i18n>
+            First Name <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field class="w-full pl-2">
+        <mat-label i18n>Middle Name</mat-label>
+        <input type="text" matInput formControlName="middle"/>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="columns-2 mt-4">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Last Name</mat-label>
+        <input type="text" matInput formControlName="last"/>
+        <mat-error *ngIf="formGroup.controls.last.hasError('required')" i18n>
+            Last Name <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="columns-1 mt-2">
+    <mat-checkbox formControlName="legalIsSame" i18n>
+      Legal name is the same as above.
+    </mat-checkbox>
+  </div>
+
+  <div class="mt-6" *ngIf="!formGroup.controls.legalIsSame.value">
+    <div class="columns-2 mt-4">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Legal First Name</mat-label>
+          <input type="text" matInput formControlName="legalFirst"/>
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field class="w-full pl-2">
+          <mat-label i18n>Legal Middle Name</mat-label>
+          <input type="text" matInput formControlName="legalMiddle"/>
+        </mat-form-field>
+      </div>
+    </div>
+    <div class="columns-2 mt-4">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Legal Last Name</mat-label>
+          <input type="text" matInput formControlName="legalLast"/>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+
+  <div class="columns-2 mt-6">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Birth Date</mat-label>
+        <input matInput [matDatepicker]="dobPicker" formControlName="dob" [max]="maxDob" [min]="minDob"/>
+        <mat-hint>MM/DD/YYYY</mat-hint>
+        <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>
+        <mat-datepicker #dobPicker></mat-datepicker>
+        <mat-error *ngIf="formGroup.controls.dob.hasError('required')" i18n>
+            Birth Date <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="mt-6" *ngIf="isJuvenile">
+    <p i18n>If you’re younger than age 18, list the names of all 
+      parents and guardians who live with you.</p>
+
+    <div class="columns-1 mt-6">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Parent or Guardian</mat-label>
+          <input type="text" matInput formControlName="guardian"/>
+          <mat-error *ngIf="formGroup.controls.guardian.hasError('required')" i18n>
+              Parent or Guardian <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+
+  <h3 i18n>Let us know where you live or own property in King County:</h3>
+
+  <div class="columns-1 mt-2 border-2 border-red-500 p-2">
+    <b>For Debugging</b>
+    <div>Calculated Home Library: <b>{{homeOrgUnit() ? homeOrgUnit().name : ''}}</b></div>
+    <div>Calculated District of Residence: <b>{{this.districtOfResidence}}</b></div>
+  </div>
+
+  <div class="columns-1 mt-6">
+    <!-- Address Line 1 doubles as the address search input. -->
+    <mat-form-field class="w-full">
+      <mat-label i18n>Address</mat-label>
+      <input type="text"
+             placeholder="Start typing an address, e.g. 123 Main..."
+             i18n-placeholder
+             aria-label="Street Address"
+             autocomplete="off"
+             matInput
+             formControlName="street1">
+      <span class="material-icons res-unit-check mr-2" matSuffix
+            *ngIf="addressSelected" aria-hidden="true">check_circle</span>
+      <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
+        Address is <strong>required</strong>
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Suggestion dropdown, shown below the address input while searching. -->
+    <div class="res-addr-dropdown" *ngIf="showResSuggestions()">
+      <div *ngIf="resLookupLoading" class="res-addr-loading">
+        <mat-spinner diameter="18"></mat-spinner>
+        <span i18n>Searching addresses…</span>
+      </div>
+
+      <ng-container *ngIf="!resLookupLoading">
+        <button type="button" class="res-addr-suggestion"
+            *ngFor="let addr of resAddressSuggestions | slice:0:5"
+            (click)="selectResAddress(addr)">
+          <span class="material-icons res-addr-pin" aria-hidden="true">place</span>
+          <span class="res-addr-lines">
+            <span class="res-addr-primary">{{addr.street_line}}<ng-container
+                *ngIf="addr.entries > 1"> ({{addr.entries}} units)</ng-container></span>
+            <span class="res-addr-secondary">{{addr.city}}, {{addr.state}} · United States</span>
+          </span>
+        </button>
+
+        <div class="res-addr-more" *ngIf="resAddressSuggestions.length > 5" i18n>
+          {{resAddressSuggestions.length - 5}} more not shown — keep typing to narrow results.
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="res-addr-notfound mat-mdc-form-field-error"
+         *ngIf="!resLookupLoading && resLookupNotFound" i18n>
+      We couldn't find that address. Please check your entry.
+    </div>
+
+    <div i18n *ngIf="showResStreet2()">
+      The selected address requires an Apt / Unit / Suite / Bldg number.
+    </div>
+
+    <!-- Address Line 2 (unit) — shown for multi-unit buildings (required) or
+         when the selected address already carries a unit value. -->
+    <mat-form-field class="w-full mt-2" *ngIf="showResStreet2()">
+      <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
+      <input type="text"
+             #resStreet2Input
+             ___placeholder="Apt / Suite / Bldg / Unit"
+             i18n-placeholder
+             matInput
+             formControlName="street2">
+      <span class="material-icons res-unit-check mr-2" matSuffix
+            *ngIf="resUnitValid === true" aria-hidden="true">check_circle</span>
+      <!--
+      <mat-error *ngIf="formGroup.controls.street2.hasError('required')" i18n>
+        Apt / Suite / Bldg / Unit is <strong>required</strong> for this address
+      </mat-error>
+      -->
+    </mat-form-field>
+
+    <div class="res-addr-notfound mat-mdc-form-field-error"
+         *ngIf="resUnitValid === false" i18n>
+      We couldn't match that unit to a known address. Please check the unit number.
+    </div>
+
+    <!-- Structured address fields, filled from the selected suggestion.  Only
+         Address Line 1 / 2 are editable; the rest are shown disabled. -->
+    <ng-container *ngIf="addressSelected">
+      <div class="columns-2 mt-2">
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>City</mat-label>
+            <input matInput disabled [value]="formGroup.controls.city.value">
+          </mat-form-field>
+        </div>
+        <div>
+          <mat-form-field class="w-full pl-2">
+            <mat-label i18n>State / Region</mat-label>
+            <input matInput disabled [value]="formGroup.controls.state.value">
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="columns-2">
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>Postal Code</mat-label>
+            <input matInput disabled [value]="formGroup.controls.zipCode.value">
+          </mat-form-field>
+        </div>
+        <div>
+          <mat-form-field class="w-full pl-2">
+            <mat-label i18n>Country</mat-label>
+            <input matInput disabled value="United States">
+          </mat-form-field>
+        </div>
+      </div>
+    </ng-container>
+
+    <div *ngIf="resAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+      This address is not a valid residential address.
+    </div>
+
+    <div *ngIf="resAddressBlocked" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+      This address isn't eligible for online registration — please contact your library.
+    </div>
+  </div>
+
+  <h3 i18n>Mailing Address</h3>
+
+  <div class="columns-1">
+    <mat-checkbox formControlName="mailingIsSame">
+      Same as Residential Address
+    </mat-checkbox>
+  </div>
+
+  <ng-container *ngIf="!formGroup.controls.mailingIsSame.value">
+    <div class="columns-1 mt-4">
+      <mat-form-field class="w-full">
+        <mat-label>Street Address</mat-label>
+        <input type="text"
+               placeholder="Street Address"
+               aria-label="Mailing Street Address"
+               matInput
+               formControlName="mailingStreet1">
+        <mat-error *ngIf="formGroup.controls.mailingStreet1.hasError('required')" i18n>
+          Street address is <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Mailing address suggestion / selection area (mirrors residential). -->
+      <div class="res-addr-area">
+        <ng-container *ngIf="mailAddressSelected; else mailAddrChooser">
+          <div class="res-addr-selected">
+            <span class="material-icons res-addr-check">check_circle</span>
+            <span class="res-addr-selected-text">{{selectedMailAddress}}</span>
+            <button mat-button type="button" (click)="changeMailAddress()" i18n>
+              Choose a different address
+            </button>
+          </div>
+          <div *ngIf="mailAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+            This address is not a valid mailing address.
+          </div>
+        </ng-container>
+
+        <ng-template #mailAddrChooser>
+          <div *ngIf="mailLookupLoading" class="res-addr-loading">
+            <mat-spinner diameter="20"></mat-spinner>
+            <span i18n>Searching addresses…</span>
+          </div>
+          <div *ngIf="!mailLookupLoading && mailAddressSuggestions.length > 0" class="res-addr-list">
+            <h3 class="res-addr-list-label" i18n>Select Your Address</h3>
+            <button mat-stroked-button type="button" class="res-addr-option"
+                *ngFor="let addr of mailAddressSuggestions | slice:0:5"
+                (click)="selectMailAddress(addr)">
+              {{addr.full_string}}
+            </button>
+            <div class="res-addr-more" *ngIf="mailAddressSuggestions.length > 5" i18n>
+              Showing 5 of {{mailAddressSuggestions.length}} matches. Refine your search to narrow results.
+            </div>
+          </div>
+          <div *ngIf="!mailLookupLoading && mailLookupNotFound" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+            We couldn't find that address. Please check your entry.
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </ng-container>
+
+</mat-step>
+
+<mat-step label="Eligibility">
+  <div class="mt-5 p-3 banner">
+
+    <ng-container *ngIf="maybeDupeAccount; else notADupe">
+      Whoops! We noticed that you already have a library card on file.
+      Please proceed to the 
+      <a href="https://kcls.bibliocommons.com/user/login">login page</a> 
+      to access everything the library has to offer.
+    </ng-container>
+
+    <ng-template #notADupe>
+
+      @switch (accountTypeOption) {
+
+        @case (AccountTypeOption.Ecard) {
+          <p>
+            Congratulations, you're eligible for a digital library card!
+            Complete your application to enjoy instant 24/7 access to our
+            complete digital collection of eBooks, audiobooks, video
+            streaming, and more!
+          </p>
+        }
+
+        @case (AccountTypeOption.AllAccess) {
+          <p>
+            Congratulations, you're eligible for an all-access library card!  
+            Complete your application to start enjoying all the library has to offer.  
+          </p>
+        }
+
+        @case (AccountTypeOption.Either) {
+          <div class="columns-1 mt-4">
+            <div class="w-full">
+
+              <div>
+              Congratulations! You're eligible for both an all-access library
+              card and a digital library card!  You have the option to enjoy
+              instant digital access today with a digital library card, or you
+              may choose an all-access library card for full borrowing privileges
+              online and at our library locations.
+              </div>
+
+              <div class="mt-4">
+              To receive an all-access library card, you must complete the form and choose to pick up your
+              library card at any KCLS location or have it sent by mail.
+              </div>
+
+              <h3 i18n>Which card would you prefer?</h3>
+              <div class="pl-4">
+                <mat-radio-group class="flex flex-col" required 
+                  aria-label="Select an option" formControlName="selectedAccountType">
+                  <mat-radio-button [value]="AccountTypeOption.AllAccess">All-access library card</mat-radio-button>
+                  <mat-radio-button [value]="AccountTypeOption.Ecard">Digital library card</mat-radio-button>
+                </mat-radio-group>
+              </div>
+            </div>
+
+          </div>
+        }
+        @default {
+          <p>
+            This location is not in our service area.  Unfortunately, we are
+            unable to provide library card access to this area. Find more
+            information <a href="https://kcls.org/cards">here</a>.
+          </p>
+        }
+      }
+    </ng-template>
+  </div>
+  
+</mat-step>
+
+<mat-step label="Communication Preferences">
+
+  <h3 i18n>Please share your communication preferences. This will be your
+    preferred method for staying connected with the library.</h3>
+
+  <div class="columns-2 mt-6">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Email Address</mat-label>
+        <input type="email" matInput formControlName="email"/>
+        <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+          <ng-container *ngIf="wantsEcard()">
+            Email is <strong>required</strong> to receive email notices.
+          </ng-container>
+          <ng-container *ngIf="wantsAllAccess()">
+            <ng-container *ngIf="wantsEmailNotices()">
+              Email is <b>required</b> for email notices.
+            </ng-container>
+            <ng-container *ngIf="!wantsEmailNotices()">
+              All-access library cards require either a phone number or email address.
+            </ng-container>
+          </ng-container>
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
+          Email format is <strong>not valid</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="columns-2 mt-4">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Phone Number</mat-label>
+        <input type="tel" matInput formControlName="phone" autoPhoneDash/>
+        <mat-hint>111-222-3333</mat-hint>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
+            Phone Number format is <strong>111-222-3333</strong>
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
+          <ng-container *ngIf="wantsPhoneNotices()">
+            Phone Number is <b>required</b> for phone notices.
+          </ng-container>
+          <ng-container *ngIf="!wantsPhoneNotices()">
+            All-access library cards require either a phone number or email address.
+          </ng-container>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="columns-1 mt-2">
+    <mat-checkbox formControlName="smsIsSame" i18n>
+      My text/SMS number is the same as my phone number.
+    </mat-checkbox>
+  </div>
+  <div class="columns-2 mt-4">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>SMS/Text Number</mat-label>
+        <input matInput formControlName="smsNumber" type="text" autoPhoneDash/>
+        <mat-hint>111-222-3333</mat-hint>
+        <mat-error *ngIf="formGroup.controls.smsNumber.hasError('required')" i18n>
+            SMS/Text Number is <strong>required</strong> to receive text notices.
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.smsNumber.hasError('pattern')" i18n>
+            SMS/Text Number format is <strong>111-222-3333</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
+
+  <ng-container *ngIf="wantsAllAccess()">
+    <div class="columns-1 mt-4">
+      <div class="w-full">
+        <h3 i18n>Notification Preferences</h3>
+        <div class="pl-4" *ngIf="emailSettings.length > 0">
+          <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
+        </div>
+        <div class="pl-4" *ngIf="textSettings.length > 0">
+          <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
+        </div>
+        <div class="pl-4" *ngIf="phoneSettings.length > 0">
+          <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
+        </div>
+      </div>
+    </div>
+
+    <div class="columns-1 mt-4">
+      <div class="w-full">
+        <h3 i18n>What library location would you like to receive your holds?</h3>
+        <div class="pl-4">
+          <mat-form-field class="w-1/2">
+            <mat-label i18n>Hold Pickup Library</mat-label>
+            <mat-select formControlName="pickupLib">
+              <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
+          Not sure? Find your nearest library
+          <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
+        </div>
+      </div>
+    </div>
+
+    <h3 i18n>How would you like to receive your All-Access Library Card?</h3>
+
+    <mat-radio-group class="flex flex-col" formControlName="delivery">
+      <mat-radio-button value="Pick up">
+        <span i18n>Pickup at my local branch</span>
+        <span class="italic text-sm ml-1" i18n>(Available now.)</span>
+        <b *ngIf="homeOrgUnit().name" class="ml-2">{{homeOrgUnit().name}}</b>
+      </mat-radio-button>
+
+      <!-- TODO (deferred): "Pickup at a different library" (Available same day)
+           needs its own card-pickup-location chooser and backend mapping. -->
+
+      <mat-radio-button value="Mail">
+        <span i18n>By mail</span>
+        <span class="italic text-sm ml-1" i18n>(Wait 1-2 weeks for your card to be mailed to your home address.)</span>
+      </mat-radio-button>
+    </mat-radio-group>
+
+  </ng-container>
+</mat-step>
+<mat-step label="My Library Card" *ngIf="wantsAllAccess()">
+
+  <h3 i18n>Select your preferred library card design.</h3>
+  <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
+
+  <mat-radio-group i18n-aria-label aria-label="Card Design" formControlName="design">
+    <div class="grid grid-cols-2 xs:grid-cols-1">
+      <div *ngFor="let card of cardOptions" class="mb-3">
+        <mat-radio-button [value]="card" aria-label="{{cardDescription(card)}}"
+            class="card-option"
+            [class.card-option-selected]="formGroup.controls.design.value === card">
+          <img class="card-image-horiz" [src]="cardOptionUrl(card)" alt="{{cardDescription(card)}}"/>
+          <div class="card-option-desc text-sm">{{cardDescription(card)}}</div>
+        </mat-radio-button>
+      </div>
+    </div>
+  </mat-radio-group>
+
+  <p class="mt-1 mb-2" *ngIf="!register.inKioskMode">
+    <a href="https://kcls.org/library-card-artists/" i18n>
+      Learn about the artists who created these new designs.
+    </a>
+  </p>
+
+  <div class="mt-3"></div>
+
+</mat-step>
+<mat-step label="Review &amp; Submit">
+
+
+  <!-- Hidden for now; the selected design is shown (larger) in the
+       "Your Library Card" summary section below instead.
+  <div class="review-hero" *ngIf="wantsAllAccess() && formGroup.controls.design.value">
+    <span class="review-hero-label" i18n>Your new library card:</span>
+    <img class="review-hero-image"
+         [src]="cardOptionUrl($any(formGroup.controls.design.value))"
+         alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
+  </div>
+  -->
+
+  <!-- Summary -->
+  <div class="submit-summary mt-6">
+
+    <div class="summary-section">
+      <div class="summary-section-header">
+        <span class="summary-section-title" i18n>Your Information</span>
+        <button mat-button type="button" class="summary-edit-btn"
+            (click)="stepper.selectedIndex = 0" i18n>Edit</button>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Name</span>
+        <span class="summary-value">
+          {{formGroup.controls.first.value}}
+          <ng-container *ngIf="formGroup.controls.middle.value"> {{formGroup.controls.middle.value}}</ng-container>
+          {{formGroup.controls.last.value}}
+        </span>
+      </div>
+      <div class="summary-row" *ngIf="!formGroup.controls.legalIsSame.value">
+        <span class="summary-label" i18n>Legal Name</span>
+        <span class="summary-value">
+          {{formGroup.controls.legalFirst.value}}
+          <ng-container *ngIf="formGroup.controls.legalMiddle.value"> {{formGroup.controls.legalMiddle.value}}</ng-container>
+          {{formGroup.controls.legalLast.value}}
+        </span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Date of Birth</span>
+        <span class="summary-value">{{$any(formGroup.controls.dob.value) | date:'mediumDate'}}</span>
+      </div>
+      <div class="summary-row" *ngIf="isJuvenile">
+        <span class="summary-label" i18n>Parent / Guardian</span>
+        <span class="summary-value">{{formGroup.controls.guardian.value}}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Residential</span>
+        <span class="summary-value">
+          {{formGroup.controls.street1.value}}<ng-container *ngIf="formGroup.controls.street2.value">, {{formGroup.controls.street2.value}}</ng-container>,
+          {{formGroup.controls.city.value}}, {{formGroup.controls.state.value}} {{formGroup.controls.zipCode.value}}
+        </span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Mailing</span>
+        <span class="summary-value" *ngIf="formGroup.controls.mailingIsSame.value" i18n>Same as residential</span>
+        <span class="summary-value" *ngIf="!formGroup.controls.mailingIsSame.value">
+          {{formGroup.controls.mailingStreet1.value}}<ng-container *ngIf="formGroup.controls.mailingStreet2.value">, {{formGroup.controls.mailingStreet2.value}}</ng-container>,
+          {{formGroup.controls.mailingCity.value}}, {{formGroup.controls.mailingState.value}} {{formGroup.controls.mailingZipCode.value}}
+        </span>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-header">
+        <span class="summary-section-title" i18n>Communication Preferences</span>
+        <button mat-button type="button" class="summary-edit-btn"
+            (click)="stepper.selectedIndex = 2" i18n>Edit</button>
+      </div>
+      <div class="summary-row" *ngIf="formGroup.controls.email.value">
+        <span class="summary-label" i18n>Email</span>
+        <span class="summary-value">{{formGroup.controls.email.value}}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Phone</span>
+        <span class="summary-value">{{formGroup.controls.phone.value}}</span>
+      </div>
+      <div class="summary-row" *ngIf="formGroup.controls.smsNumber.value">
+        <span class="summary-label" i18n>SMS/Text</span>
+        <span class="summary-value">{{formGroup.controls.smsNumber.value}}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Stay in touch</span>
+        <span class="summary-value">
+          <ng-container i18n>System Messages</ng-container><ng-container *ngIf="formGroup.controls.wantsLibNews.value" i18n>, Library News and Events</ng-container><ng-container *ngIf="formGroup.controls.wantsFoundationInfo.value" i18n>, KCLS Foundation Information</ng-container>
+        </span>
+      </div>
+      <div class="summary-row" *ngIf="wantsAllAccess()">
+        <span class="summary-label" i18n>Notices</span>
+        <span class="summary-value">
+          <ng-container *ngIf="!formGroup.controls.allEmailNotices.value && !formGroup.controls.allTextNotices.value && !formGroup.controls.allPhoneNotices.value" i18n>None</ng-container>
+          <ng-container *ngIf="formGroup.controls.allEmailNotices.value" i18n>Email </ng-container>
+          <ng-container *ngIf="formGroup.controls.allTextNotices.value" i18n>Text </ng-container>
+          <ng-container *ngIf="formGroup.controls.allPhoneNotices.value" i18n>Phone</ng-container>
+        </span>
+      </div>
+    </div>
+
+    <div class="summary-section" *ngIf="wantsAllAccess()">
+      <div class="summary-section-header">
+        <span class="summary-section-title" i18n>Your Library Card</span>
+        <button mat-button type="button" class="summary-edit-btn"
+            (click)="stepper.selectedIndex = 3" i18n>Edit</button>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Pickup Library</span>
+        <span class="summary-value">{{pickupLibName()}}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Delivery</span>
+        <span class="summary-value">{{formGroup.controls.delivery.value}}</span>
+      </div>
+      <div class="summary-row" *ngIf="formGroup.controls.design.value">
+        <span class="summary-label" i18n>Card Design</span>
+        <span class="summary-value">
+          <img class="summary-card-image"
+               [src]="cardOptionUrl($any(formGroup.controls.design.value))"
+               alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
+          <div class="summary-card-desc text-sm">{{cardDescription($any(formGroup.controls.design.value))}}</div>
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="columns-1 mt-2">
+    <div class="w-full">
+      <h3 i18n>Let's stay in touch.</h3>
+      <div class="pl-4">
+        <mat-checkbox formControlName="wantsLibNews" i18n>
+          Library News and Events
+        </mat-checkbox>
+      </div>
+      <div class="pl-4">
+        <mat-checkbox formControlName="wantsFoundationInfo" i18n>
+          KCLS Foundation Information
+        </mat-checkbox>
+      </div>
+    </div>
+  </div>
+
+  <div class="columns-1 mt-6">
+    <div>
+      <mat-checkbox formControlName="termsOfService" i18n>
+        I assume full responsibility for the use of this card and all 
+        charges associated with its use. I will give immediate notice of 
+        loss of card or change of address.
+      </mat-checkbox>
+    </div>
+  </div>
+
+  <div class="mt-4" *ngIf="formNeedsWork">
+    <span class="p-2 mat-mdc-form-field-error border-2 rounded-md" i18n>
+      Please provide values for all required fields.
+    </span>
+  </div>
+</mat-step>
+</mat-stepper>
+
+<div class="stepper-nav">
+  <button mat-raised-button type="button"
+      (click)="stepper.previous()"
+      *ngIf="stepper.selectedIndex > 0"
+      i18n>Back</button>
+  <button mat-raised-button type="button"
+      (click)="stepper.next()"
+      [disabled]="!canContinue()"
+      *ngIf="stepper.selectedIndex < stepper.steps.length - 1"
+      style="margin-left: auto"
+      i18n>Continue &#187;</button>
+  <button mat-raised-button type="button"
+      [disabled]="!canSubmit()"
+      (click)="submit()"
+      *ngIf="stepper.selectedIndex === stepper.steps.length - 1"
+      style="margin-left: auto"
+      i18n>Submit Application</button>
+</div>
+
+</form>
+
+

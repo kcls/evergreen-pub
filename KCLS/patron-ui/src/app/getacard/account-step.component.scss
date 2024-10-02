@@ -1,0 +1,62 @@
+p {
+  color: var(--gac-ink, #1a1a1a);
+  margin: 0 0 12px;
+}
+
+.gac-subhead {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+  margin: 20px 0 12px;
+}
+
+.gac-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Big tappable option tiles standing in for bare radio buttons. */
+.gac-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: #fff;
+  border: 2px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus {
+    border-color: var(--gac-tint-strong, rgba(0, 63, 107, 0.35));
+    box-shadow: var(--gac-shadow, 0 2px 12px rgba(0, 63, 107, 0.12));
+    outline: none;
+  }
+}
+
+.gac-choice-selected,
+.gac-choice-selected:hover,
+.gac-choice-selected:focus {
+  border-color: var(--gac-blue, #003f6b);
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+}
+
+.gac-choice-icon {
+  color: var(--gac-blue, #003f6b);
+}
+
+.gac-choice-label {
+  flex: 1;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-choice-check {
+  color: var(--gac-blue, #003f6b);
+}

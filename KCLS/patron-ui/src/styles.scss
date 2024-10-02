@@ -15,10 +15,20 @@
 }
 
 html, body { height: 100%; }
-body { 
-  margin: 0; 
+body {
+  margin: 0;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1rem;
+}
+
+/* Tailwind's preflight reset (tailwindcss/base above) gives every element
+   border-style: solid, which makes Material's outlined form fields render a
+   stray 1px vertical line at the edge of the floating-label notch.  The
+   notch never legitimately draws side borders (the leading/trailing outline
+   segments own those), so remove them. */
+.mdc-notched-outline__notch {
+  border-left: none;
+  border-right: none;
 }
 
 // --mdc-filled-text-field-error-label-text-color: #F6323E;
@@ -29,6 +39,19 @@ body {
   top: -1000px;
   left: -1000px;
   z-index: 0;
+}
+
+/*
+ * Kiosk mode (KioskService adds .kiosk-mode to <body>): hide the externally
+ * generated BiblioCommons page chrome that generate-index.pl bakes into the
+ * production index.html.  Its body-level pieces are the screen-reader-nav
+ * span, the <header>, and the footer's bc_core_external div; direct-child
+ * selectors leave the app's own content untouched.
+ */
+body.kiosk-mode > span.bc_core_external,
+body.kiosk-mode > header,
+body.kiosk-mode > div.bc_core_external {
+  display: none !important;
 }
 
 /* BC header navigation stays collapsed for some reason */
@@ -87,5 +110,65 @@ a, a:visited {
 .kcls-raised-button-warning:not(:disabled) {
   background: $kcls-warning-color !important;
   color: $kcls-bg-color !important;
+}
+
+
+/*
+ * Library card registration branding (per "Library Card Content" revisions).
+ *
+ * The app uses the prebuilt indigo-pink Material theme, whose accent palette
+ * (#ff4081) colors radios, checkboxes, form-field focus and the stepper
+ * "pathway step" icon circles.  These overrides repaint those elements in
+ * KCLS dark blue.  Scoped to .kcls-register so other patron-ui features
+ * (login, requests) keep the stock theme.  styles.scss loads after
+ * indigo-pink.css, so matching-or-greater specificity wins.
+ */
+$kcls-blue: #06436e;
+
+.kcls-register {
+  font-family: 'Lato', Arial, Helvetica, sans-serif;
+
+  h1 {
+    font-family: 'Bebas Neue', Arial, Helvetica, sans-serif;
+  }
+
+  /* Bebas Neue doesn't render well at these smaller header sizes;
+     keep the prior (pre-branding) sans-serif font for them. */
+  h2, h3, h4 {
+    font-family: 'Lato', Arial, Helvetica, sans-serif;
+  }
+
+  /* Checkboxes (default token defined at html level) */
+  .mat-mdc-checkbox {
+    --mdc-checkbox-selected-icon-color: #{$kcls-blue};
+    --mdc-checkbox-selected-focus-icon-color: #{$kcls-blue};
+    --mdc-checkbox-selected-hover-icon-color: #{$kcls-blue};
+    --mdc-checkbox-selected-pressed-icon-color: #{$kcls-blue};
+  }
+
+  /* Radio buttons (default color is accent / .mat-accent) */
+  .mat-mdc-radio-button.mat-accent {
+    --mdc-radio-selected-icon-color: #{$kcls-blue};
+    --mdc-radio-selected-focus-icon-color: #{$kcls-blue};
+    --mdc-radio-selected-hover-icon-color: #{$kcls-blue};
+    --mdc-radio-selected-pressed-icon-color: #{$kcls-blue};
+    --mat-radio-checked-ripple-color: #{$kcls-blue};
+  }
+
+  /* Focused form-field underline, caret and floating label */
+  .mat-mdc-form-field {
+    --mdc-filled-text-field-focus-active-indicator-color: #{$kcls-blue};
+    --mdc-filled-text-field-caret-color: #{$kcls-blue};
+    --mdc-filled-text-field-focus-label-text-color: #{$kcls-blue};
+  }
+
+  /* Stepper "pathway step" icon circles (cover whichever palette the
+     stepper headers default to) */
+  .mat-step-header.mat-accent,
+  .mat-step-header.mat-primary {
+    --mat-stepper-header-selected-state-icon-background-color: #{$kcls-blue};
+    --mat-stepper-header-done-state-icon-background-color: #{$kcls-blue};
+    --mat-stepper-header-edit-state-icon-background-color: #{$kcls-blue};
+  }
 }
 

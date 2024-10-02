@@ -21,6 +21,11 @@ const routes: Routes = [{
     loadChildren: () =>
       import('./floating-group/floating-group.module').then(m => m.FloatingGroupModule)
 }, {
+    path: 'config/usr_address_exception',
+    loadChildren: () =>
+      import('./usr-address-exception/usr-address-exception.module')
+        .then(m => m.UsrAddressExceptionModule)
+}, {
     path: 'config/hard_due_date',
     component: BasicAdminPageComponent,
     data: [{

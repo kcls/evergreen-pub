@@ -1,0 +1,51 @@
+<div class="gac-page">
+
+  <!-- The first step greets; subsequent steps get the compact header. -->
+  <div class="gac-overline" *ngIf="index > 0" i18n>Get a Library Card</div>
+
+  <div class="gac-welcome" *ngIf="index === 0">
+    <h1 class="gac-welcome-title" i18n>Welcome to King County Library System!</h1>
+    <p class="gac-welcome-sub" i18n>
+      Your library card is key to unlocking your curiosity. Let's get
+      started by finding the right card for you!
+    </p>
+  </div>
+
+  <div class="gac-head">
+    <h1 class="gac-title">{{current.label}}</h1>
+    <span class="gac-count" i18n>Step {{index + 1}} of {{steps.length}}</span>
+  </div>
+
+  <div class="gac-progress" role="progressbar"
+      [attr.aria-valuenow]="index + 1" [attr.aria-valuemin]="1"
+      [attr.aria-valuemax]="steps.length">
+    <div class="gac-progress-fill" [style.width.%]="progressPct"></div>
+  </div>
+
+  <main class="gac-card">
+    <ng-container [ngSwitch]="current.slug">
+      <gac-address-step *ngSwitchCase="'address'"></gac-address-step>
+      <gac-account-step *ngSwitchCase="'account'"></gac-account-step>
+      <gac-about-step *ngSwitchCase="'about-you'"></gac-about-step>
+      <gac-contact-step *ngSwitchCase="'contact'"></gac-contact-step>
+      <gac-card-step *ngSwitchCase="'card'"></gac-card-step>
+      <gac-review-step *ngSwitchCase="'review'"></gac-review-step>
+    </ng-container>
+  </main>
+
+  <div class="gac-nav">
+    <button mat-button type="button" class="gac-back"
+        [class.gac-hidden]="index === 0" (click)="back()" i18n>
+      &#171; Back
+    </button>
+    <button mat-flat-button type="button" class="gac-continue" *ngIf="!isLast"
+        [disabled]="!canContinue()" (click)="next()" i18n>
+      Continue &#187;
+    </button>
+    <button mat-flat-button type="button" class="gac-continue" *ngIf="isLast"
+        [disabled]="!canContinue()" (click)="submit()" i18n>
+      Submit
+    </button>
+  </div>
+
+</div>

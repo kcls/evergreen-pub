@@ -1,0 +1,35 @@
+<mat-form-field class="gac-field" appearance="outline">
+  <mat-label>{{label}}</mat-label>
+  <input type="text" matInput autocomplete="off"
+         [placeholder]="placeholder"
+         [attr.aria-label]="label"
+         [formControl]="search"/>
+</mat-form-field>
+
+<div class="gac-dropdown" *ngIf="loading || suggestions.length > 0">
+  <div class="gac-async-row" *ngIf="loading">
+    <mat-spinner diameter="18"></mat-spinner>
+    <span i18n>Searching addresses&#8230;</span>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <button type="button" class="gac-suggestion"
+        *ngFor="let addr of suggestions | slice:0:5"
+        (click)="select(addr)">
+      <span class="material-icons gac-pin" aria-hidden="true">place</span>
+      <span class="gac-sug-lines">
+        <span class="gac-sug-primary">{{addr.street_line}}<ng-container
+            *ngIf="addr.entries > 1"> ({{addr.entries}} units)</ng-container></span>
+        <span class="gac-sug-secondary">{{addr.city}}, {{addr.state}} &#183; United States</span>
+      </span>
+    </button>
+
+    <div class="gac-more" *ngIf="suggestions.length > 5" i18n>
+      {{suggestions.length - 5}} more not shown &#8212; keep typing to narrow results.
+    </div>
+  </ng-container>
+</div>
+
+<div class="gac-error" *ngIf="!loading && notFound" i18n>
+  We couldn't find that address. Please check your entry.
+</div>

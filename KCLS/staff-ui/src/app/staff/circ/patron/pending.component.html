@@ -8,13 +8,19 @@
 </eg-confirm-dialog>
 
 <div class="row">
-  <div class="col-lg-5">
+  <div class="col-lg-3">
     <div class="input-group">
       <div class="input-group-prepend">
         <div class="input-group-text" i18n>Home Library</div>
       </div>
       <eg-org-select [applyDefault]="true" (onChange)="homeLibChanged($event)">
       </eg-org-select>
+    </div>
+  </div>
+  <div class="col-lg-3">
+    <div class="input-group">
+      <input class="form-control" type="text" placeholder="Search all branches..." 
+        (keyup.enter)="userSearch()" [(ngModel)]="searchTerms"/>
     </div>
   </div>
 </div>
