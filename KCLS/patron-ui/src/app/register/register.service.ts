@@ -4,7 +4,7 @@ import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 
 @Injectable()
-export class SelfRegisterService {
+export class RegisterService {
 	inKioskMode = false;
 
     constructor(

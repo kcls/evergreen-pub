@@ -1,14 +1,14 @@
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
-import {SelfRegisterComponent} from './register.component';
-import {SelfRegisterCreateComponent} from './create.component';
+import {RegisterComponent} from './register.component';
+import {RegisterCreateComponent} from './create.component';
 
 const routes: Routes = [{
   path: '',
-  component: SelfRegisterComponent,
+  component: RegisterComponent,
   children: [{
     path: 'create',
-    component: SelfRegisterCreateComponent
+    component: RegisterCreateComponent
   }]
 }];
 
@@ -16,4 +16,4 @@ const routes: Routes = [{
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
-export class SelfRegisterRoutingModule { }
+export class RegisterRoutingModule { }

@@ -3,14 +3,14 @@ import {Router, ActivatedRoute, Params, ParamMap} from '@angular/router';
 import {AppService} from '../app.service';
 import {FormControl} from '@angular/forms';
 import {Gateway} from '../gateway.service';
-import {SelfRegisterService} from './register.service';
+import {RegisterService} from './register.service';
 import {Title}  from '@angular/platform-browser';
 
 @Component({
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss']
 })
-export class SelfRegisterComponent implements OnInit {
+export class RegisterComponent implements OnInit {
 
     languageForms = [{
         label: `አማርኛ | Amharic`,
@@ -83,7 +83,7 @@ export class SelfRegisterComponent implements OnInit {
         private title: Title,
         private gateway: Gateway,
         public app: AppService,
-        public register: SelfRegisterService,
+        public register: RegisterService,
     ) {}
 
     ngOnInit() {

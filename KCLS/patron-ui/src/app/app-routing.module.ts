@@ -6,9 +6,9 @@ const routes: Routes = [{
   loadChildren: () =>
     import('./requests/requests.module').then(m => m.RequestsModule)
 }, {
-  path: 'self-register',
+  path: 'register',
   loadChildren: () =>
-    import('./self-register/register.module').then(m => m.SelfRegisterModule)
+    import('./register/register.module').then(m => m.RegisterModule)
 }];
 
 @NgModule({

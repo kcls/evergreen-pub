@@ -5,7 +5,7 @@ import {FormBuilder, FormControl, Validators, AbstractControl,
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
-import {SelfRegisterService} from './register.service';
+import {RegisterService} from './register.service';
 
 const JUV_AGE = 18; // years
 const DEFAULT_STATE = 'Washington';
@@ -32,7 +32,7 @@ export const sameEmailValidator: ValidatorFn = (
   templateUrl: './create.component.html',
   styleUrls: ['./create.component.scss']
 })
-export class SelfRegisterCreateComponent implements OnInit {
+export class RegisterCreateComponent implements OnInit {
 
     minDob = new Date("1900-01-01");
     maxDob = new Date();
@@ -138,7 +138,7 @@ export class SelfRegisterCreateComponent implements OnInit {
         private formBuilder: FormBuilder,
         private app: AppService,
         private settings: Settings,
-        public register: SelfRegisterService,
+        public register: RegisterService,
     ) {
         this.juvMinDob = new Date();
         this.juvMinDob.setFullYear(new Date().getFullYear() - JUV_AGE);
