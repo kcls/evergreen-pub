@@ -1,0 +1,154 @@
+.gac-subhead {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+  margin: 20px 0 12px;
+
+  &.gac-first {
+    margin-top: 0;
+  }
+}
+
+.gac-help {
+  color: var(--gac-ink, #1a1a1a);
+  margin: 0 0 16px;
+}
+
+.gac-note {
+  color: var(--gac-muted, #5f6b76);
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+/* Card design gallery: two-up tiles sized by the column so the border and
+   description wrap at the image's edge. */
+.gac-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gac-card-tile {
+  position: relative;
+  display: block;
+  padding: 8px;
+  background: #fff;
+  border: 2px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover,
+  &:focus {
+    border-color: var(--gac-tint-strong, rgba(0, 63, 107, 0.35));
+    box-shadow: var(--gac-shadow, 0 2px 12px rgba(0, 63, 107, 0.12));
+    transform: translateY(-2px);
+    outline: none;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+}
+
+.gac-card-tile-selected,
+.gac-card-tile-selected:hover,
+.gac-card-tile-selected:focus {
+  border-color: var(--gac-blue, #003f6b);
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+}
+
+.gac-card-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--gac-blue, #003f6b);
+  background: #fff;
+  border-radius: 50%;
+}
+
+.gac-card-desc {
+  display: block;
+  padding: 8px 4px 4px;
+  font-size: 0.85rem;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+/* Delivery option tiles (same recipe as the account-step choices). */
+.gac-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gac-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: #fff;
+  border: 2px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus {
+    border-color: var(--gac-tint-strong, rgba(0, 63, 107, 0.35));
+    box-shadow: var(--gac-shadow, 0 2px 12px rgba(0, 63, 107, 0.12));
+    outline: none;
+  }
+}
+
+.gac-choice-selected,
+.gac-choice-selected:hover,
+.gac-choice-selected:focus {
+  border-color: var(--gac-blue, #003f6b);
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+}
+
+.gac-choice-icon {
+  color: var(--gac-blue, #003f6b);
+}
+
+.gac-choice-lines {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.gac-choice-label {
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-choice-sub {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-choice-org {
+  font-style: normal;
+  margin-left: 6px;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-choice-check {
+  color: var(--gac-blue, #003f6b);
+}

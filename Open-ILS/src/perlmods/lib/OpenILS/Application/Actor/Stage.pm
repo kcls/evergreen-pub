@@ -193,6 +193,76 @@ sub delete_user_stage {
     return 1;
 }
 
+__PACKAGE__->register_method (
+    method      => 'search_user_stage',
+    api_name    => 'open-ils.actor.user.stage.search',
+    signature => {
+        desc => 'Performs a keyword search for staged (pending) users',
+        params => [
+            {desc => 'authtoken', type => 'string'},
+            {desc => 'query', type => 'object'},
+        ],
+        return => {
+            desc => 'Stream of matched stage user objects',
+        }
+
+    }
+);
+
+sub search_user_stage {
+    my ($self, $client, $auth, $org_id, $query) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+
+    $org_id ||= $e->requestor->ws_ou;
+    return $e->event unless $e->allowed('VIEW_USER', $org_id);
+
+    $query = {} unless ref $query eq 'HASH';
+
+    my $keywords = $query->{keywords} || '';
+
+    # Scrub the input so it plays nicely with like searches, etc.
+    $keywords =~ s/[^\w\s\.'-@]//g;
+
+    my @term_groups;
+    for my $term (split(/\s+/, $keywords)) {
+        my @field_term_matches;
+        for my $field (qw/first_given_name second_given_name family_name day_phone email/) {
+            push(@field_term_matches, {$field => {ilike => "$term%"}});
+        }
+        push(@term_groups, {'-or' => \@field_term_matches});
+    }
+
+    return OpenILS::Event->new('BAD_PARAMS') unless @term_groups;
+
+    my $search = {
+        home_ou => {
+            in => {
+                select => {aou => [{
+                    column => 'id', 
+                    transform => 'actor.org_unit_descendants', 
+                    result_field => 'id'
+                }]},
+                from => 'aou',
+                where => {id => $org_id}
+            }
+        },
+        '-and' => \@term_groups
+    };
+
+    # TODO support paging
+    my $users = $e->search_staging_user_stage([
+        $search, 
+        {limit => 500, order_by => {stgu => 'family_name ASC'}}
+    ]);
+
+    $client->respond(flesh_user_stage($e, $_)) for map { $_->row_id } @$users;
+
+    undef
+}
+
+
 
 1;
 

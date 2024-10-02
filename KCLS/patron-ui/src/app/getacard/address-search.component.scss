@@ -1,0 +1,77 @@
+.gac-field {
+  width: 100%;
+}
+
+/* Suggestion dropdown: borderless rows, pin icon, two-line layout. */
+.gac-dropdown {
+  display: flex;
+  flex-direction: column;
+  margin-top: -12px;
+  margin-bottom: 8px;
+  background: #fff;
+  border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  box-shadow: var(--gac-shadow, 0 2px 12px rgba(0, 63, 107, 0.12));
+  overflow: hidden;
+}
+
+.gac-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover,
+  &:focus {
+    background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+    outline: none;
+  }
+}
+
+.gac-pin {
+  color: var(--gac-blue, #003f6b);
+  font-size: 20px;
+  line-height: 1.4;
+  flex: 0 0 auto;
+}
+
+.gac-sug-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gac-sug-primary {
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-sug-secondary {
+  font-size: 0.85rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-more {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-async-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 8px 12px;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-error {
+  color: var(--gac-error, #b3261e);
+  margin: 4px 0 8px;
+}
