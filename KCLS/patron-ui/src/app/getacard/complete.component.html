@@ -1,0 +1,115 @@
+<div class="gac-page">
+
+  <div class="gac-overline" i18n>Get a Library Card</div>
+
+  <main class="gac-card">
+
+    <ng-container *ngIf="state.registerResult.success">
+
+      <h2 class="gac-title" i18n>Registration successful!</h2>
+
+      <!-- All-Access card success -->
+      <ng-container *ngIf="state.registerResult.accountType === 'full'">
+
+        <p *ngIf="state.registerResult.deliveryMethod === 'Mail'" i18n>
+          You have chosen to have your library card mailed to you.
+          It will arrive within 1-2 weeks.
+        </p>
+
+        <p *ngIf="state.registerResult.deliveryMethod !== 'Mail'" i18n>
+          You have chosen to pick up your library card at your selected
+          home library: {{state.registerResult.homeOrgName}}.
+        </p>
+
+        <!-- Kiosks show no links that navigate away from the app; render
+             the same guidance as plain text instead. -->
+        <p *ngIf="!state.inKioskMode" i18n>
+          You'll need to
+          <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
+            bring proof of address and photo ID that shows your date of birth
+          </a>
+          to a library to activate your card. (Parents or guardians can help
+          with this for applicants younger than age 18.)
+        </p>
+        <p *ngIf="state.inKioskMode" i18n>
+          You'll need to bring proof of address and photo ID that shows your
+          date of birth to a library to activate your card. (Parents or
+          guardians can help with this for applicants younger than age 18.)
+        </p>
+
+        <p class="gac-italic" *ngIf="!state.inKioskMode" i18n>
+          Reasonable accommodation for individuals with disabilities is available
+          upon request. Accommodations include modifications to policies,
+          programs, appropriate equipment, and services. Contact your
+          <a href="https://kcls.org/accessibility/">community library or visit
+          our accessibility page</a> to request accommodation.
+        </p>
+        <p class="gac-italic" *ngIf="state.inKioskMode" i18n>
+          Reasonable accommodation for individuals with disabilities is available
+          upon request. Accommodations include modifications to policies,
+          programs, appropriate equipment, and services. Contact your
+          community library to request accommodation.
+        </p>
+
+        <hr class="gac-hr"/>
+
+        <h3 class="gac-subhead" i18n>Verification Requirements</h3>
+
+        <p i18n>
+          1. Photo identification with birth date (one piece required for adults).
+          Acceptable examples are as follows and may be current or expired:
+        </p>
+        <ul>
+          <li i18n>Driver's License</li>
+          <li i18n>Passport</li>
+          <li i18n>Washington ID Card</li>
+          <li i18n>U.S. Military ID</li>
+          <li i18n>Matricula Consular (issued by Mexican government)</li>
+        </ul>
+
+        <p i18n>
+          2. Address verification matching qualifying residential address and given name
+          (one piece required for adults and minors).
+          Acceptable examples&mdash;chosen document must be current:
+        </p>
+        <ul>
+          <li i18n>Washington Driver's License</li>
+          <li i18n>Washington ID Card</li>
+          <li i18n>Printed Checks</li>
+          <li i18n>Utility Bill (printout of online bill acceptable)</li>
+          <li i18n>Apartment Lease</li>
+          <li i18n>Voter's Registration</li>
+          <li i18n>King County Tax Bill</li>
+          <li i18n>Other (Must be of a legal or permanent nature)</li>
+        </ul>
+
+        <p i18n>
+          If residence address differs from mailing address, the residence address
+          determines patron eligibility. You may get a library card today without
+          address verification, but you will be limited to checking out 2 items.
+          If you do not bring address verification, the card will expire after
+          6 months.
+        </p>
+
+      </ng-container>
+
+      <!-- E-card success -->
+      <ng-container *ngIf="state.registerResult.accountType === 'ecard'">
+        <p *ngIf="state.registerResult.barcode" i18n>
+          Your library card number is <b>{{state.registerResult.barcode}}</b>.
+        </p>
+      </ng-container>
+
+    </ng-container>
+
+    <ng-container *ngIf="state.registerResult.complete && !state.registerResult.success">
+      <h2 class="gac-title" i18n>Registration could not be completed</h2>
+      <p i18n>
+        An error occurred while processing your registration.
+        Please try again or contact your local library for assistance.
+      </p>
+    </ng-container>
+
+  </main>
+
+</div>

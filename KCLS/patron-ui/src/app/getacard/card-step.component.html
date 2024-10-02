@@ -1,0 +1,60 @@
+<h3 class="gac-subhead gac-first" i18n>Select your preferred library card design.</h3>
+<p class="gac-help" i18n>You'll receive one wallet-size and one keychain-size card.</p>
+
+<div class="gac-cards" role="radiogroup" aria-label="Card Design" i18n-aria-label>
+  <button type="button" class="gac-card-tile" role="radio"
+      *ngFor="let card of state.cardOptions"
+      [attr.aria-checked]="state.cardDesign === card"
+      [class.gac-card-tile-selected]="state.cardDesign === card"
+      (click)="chooseDesign(card)">
+    <span class="material-icons gac-card-check" aria-hidden="true"
+        *ngIf="state.cardDesign === card">check_circle</span>
+    <img [src]="state.cardOptionUrl(card)" [alt]="state.cardDescription(card)"/>
+    <span class="gac-card-desc">{{state.cardDescription(card)}}</span>
+  </button>
+</div>
+
+<!-- Kiosks show no links that navigate away from the app. -->
+<p class="gac-note" *ngIf="!state.inKioskMode">
+  <a href="https://kcls.org/library-card-artists/" i18n>
+    Learn about the artists who created these new designs.
+  </a>
+</p>
+
+<h3 class="gac-subhead" i18n>How would you like to receive your All-Access Library Card?</h3>
+
+<div class="gac-choices" role="radiogroup"
+    aria-label="How would you like to receive your All-Access Library Card?"
+    i18n-aria-label>
+
+  <button type="button" class="gac-choice" role="radio"
+      [attr.aria-checked]="state.delivery === 'Pick up'"
+      [class.gac-choice-selected]="state.delivery === 'Pick up'"
+      (click)="chooseDelivery('Pick up')">
+    <span class="material-icons gac-choice-icon" aria-hidden="true">storefront</span>
+    <span class="gac-choice-lines">
+      <span class="gac-choice-label" i18n>Pickup at my local library</span>
+      <span class="gac-choice-sub">
+        <ng-container i18n>(Available at any library location)</ng-container>
+      </span>
+    </span>
+    <span class="material-icons gac-choice-check" aria-hidden="true"
+        *ngIf="state.delivery === 'Pick up'">check_circle</span>
+  </button>
+
+  <!-- Kiosk registrations are pickup-only; cards can't be mailed. -->
+  <button type="button" class="gac-choice" role="radio"
+      *ngIf="!state.inKioskMode"
+      [attr.aria-checked]="state.delivery === 'Mail'"
+      [class.gac-choice-selected]="state.delivery === 'Mail'"
+      (click)="chooseDelivery('Mail')">
+    <span class="material-icons gac-choice-icon" aria-hidden="true">mail</span>
+    <span class="gac-choice-lines">
+      <span class="gac-choice-label" i18n>By mail</span>
+      <span class="gac-choice-sub" i18n>(Wait 1-2 weeks for your card to be mailed to your home address.)</span>
+    </span>
+    <span class="material-icons gac-choice-check" aria-hidden="true"
+        *ngIf="state.delivery === 'Mail'">check_circle</span>
+  </button>
+
+</div>

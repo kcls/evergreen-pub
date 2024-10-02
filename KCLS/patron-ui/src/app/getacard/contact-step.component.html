@@ -1,0 +1,103 @@
+<p class="gac-help" i18n>
+  Please share your communication preferences. This will be your
+  preferred method for staying connected with the library.
+</p>
+
+<form [formGroup]="state.contactForm">
+
+  <!-- Always-visible reminder; the field-level errors stay short so they
+       fit Material's one-line error area. -->
+  <p class="gac-help" *ngIf="state.accountType === 'full'" i18n>
+    All-access library cards require either a phone number or email address.
+  </p>
+
+  <div class="gac-grid-2">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Email Address</mat-label>
+      <input type="email" matInput #emailInput formControlName="email"/>
+      <mat-error *ngIf="ctrl('email').hasError('required')" i18n>
+        <ng-container *ngIf="state.accountType === 'ecard'">
+          Email is <strong>required</strong> to receive email notices.
+        </ng-container>
+        <ng-container *ngIf="state.accountType !== 'ecard'">
+          <ng-container *ngIf="state.wantsEmailNotices()">
+            Email is <b>required</b> for email notices.
+          </ng-container>
+          <ng-container *ngIf="!state.wantsEmailNotices()">
+            Email is <strong>required</strong>
+          </ng-container>
+        </ng-container>
+      </mat-error>
+      <mat-error *ngIf="ctrl('email').hasError('email')" i18n>
+        Email format is <strong>not valid</strong>
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Phone Number</mat-label>
+      <input type="tel" matInput formControlName="phone" autoPhoneDash/>
+      <mat-hint>111-222-3333</mat-hint>
+      <mat-error *ngIf="ctrl('phone').hasError('pattern')" i18n>
+        Phone Number format is <strong>111-222-3333</strong>
+      </mat-error>
+      <mat-error *ngIf="ctrl('phone').hasError('required')" i18n>
+        <ng-container *ngIf="state.wantsPhoneNotices()">
+          Phone Number is <b>required</b> for phone notices.
+        </ng-container>
+        <ng-container *ngIf="!state.wantsPhoneNotices()">
+          Phone Number is <strong>required</strong>
+        </ng-container>
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="gac-check-row">
+    <mat-checkbox formControlName="smsIsSame" i18n>
+      My text/SMS number is the same as my phone number.
+    </mat-checkbox>
+  </div>
+
+  <div class="gac-grid-2" *ngIf="!ctrl('smsIsSame').value">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>SMS/Text Number</mat-label>
+      <input matInput formControlName="smsNumber" type="text" autoPhoneDash/>
+      <mat-hint>111-222-3333</mat-hint>
+      <mat-error *ngIf="ctrl('smsNumber').hasError('required')" i18n>
+        SMS/Text Number is <strong>required</strong> to receive text notices.
+      </mat-error>
+      <mat-error *ngIf="ctrl('smsNumber').hasError('pattern')" i18n>
+        SMS/Text Number format is <strong>111-222-3333</strong>
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <ng-container *ngIf="state.accountType === 'full'">
+
+    <h3 class="gac-subhead" i18n>Notification Preferences</h3>
+    <div class="gac-check-col">
+      <mat-checkbox formControlName="allEmailNotices"
+          *ngIf="state.emailSettings.length > 0" i18n>Email Notices</mat-checkbox>
+      <mat-checkbox formControlName="allTextNotices"
+          *ngIf="state.textSettings.length > 0" i18n>Text Notices</mat-checkbox>
+      <mat-checkbox formControlName="allPhoneNotices"
+          *ngIf="state.phoneSettings.length > 0" i18n>Phone Notices</mat-checkbox>
+    </div>
+
+    <h3 class="gac-subhead" i18n>What library location would you like to receive your holds?</h3>
+    <div class="gac-grid-2">
+      <mat-form-field appearance="outline">
+        <mat-label i18n>Hold Pickup Library</mat-label>
+        <mat-select formControlName="pickupLib">
+          <mat-option [value]="org.id" *ngFor="let org of state.pickupLibs">{{org.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <!-- Kiosks show no links that navigate away from the app. -->
+    <p class="gac-note" *ngIf="!state.inKioskMode" i18n>
+      Not sure? Find your nearest library
+      <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
+    </p>
+
+  </ng-container>
+
+</form>

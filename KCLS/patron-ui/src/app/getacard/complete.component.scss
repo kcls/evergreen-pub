@@ -1,0 +1,73 @@
+/* Standalone page (outside the wizard shell), so the tokens are defined
+   here too. */
+:host {
+  --gac-blue: #003f6b;
+  --gac-tint-mid: rgba(0, 63, 107, 0.15);
+  --gac-wash: rgba(0, 63, 107, 0.03);
+  --gac-ink: #1a1a1a;
+  --gac-muted: #5f6b76;
+  --gac-radius: 8px;
+  --gac-shadow: 0 2px 12px rgba(0, 63, 107, 0.12);
+
+  display: block;
+  min-height: 100vh;
+  background: var(--gac-wash);
+}
+
+.gac-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.gac-overline {
+  color: var(--gac-blue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.gac-card {
+  background: #fff;
+  border-radius: var(--gac-radius);
+  box-shadow: var(--gac-shadow);
+  padding: 24px;
+
+  p {
+    margin: 0 0 16px;
+    color: var(--gac-ink);
+  }
+
+  ul {
+    list-style: disc;
+    margin: 0 0 16px;
+    padding-left: 24px;
+    color: var(--gac-ink);
+  }
+}
+
+.gac-title {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--gac-ink);
+  margin: 0 0 16px;
+}
+
+.gac-subhead {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gac-ink);
+  margin: 20px 0 12px;
+}
+
+.gac-italic {
+  font-style: italic;
+}
+
+.gac-hr {
+  border: 0;
+  border-top: 1px solid var(--gac-tint-mid);
+  margin: 20px 0;
+}

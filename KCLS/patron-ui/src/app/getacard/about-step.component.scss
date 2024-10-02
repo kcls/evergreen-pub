@@ -1,0 +1,36 @@
+.gac-help {
+  color: var(--gac-ink, #1a1a1a);
+  margin: 0 0 16px;
+}
+
+/* Two-up field rows that collapse on small screens; a lone field in a row
+   keeps the half width so columns align down the page. */
+.gac-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gac-check-row {
+  margin: 4px 0 16px;
+}
+
+/* Existing-account notice. */
+.gac-dupe {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+  border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  padding: 12px 16px;
+  margin-top: 8px;
+
+  .material-icons {
+    color: var(--gac-blue, #003f6b);
+  }
+}
