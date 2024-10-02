@@ -114,12 +114,12 @@ export class AppService {
             'open-ils.pcrud.search.aou',
             'ANONYMOUS',
             {parent_ou: null},
-            {flesh: -1, flesh_fields: {aou: ["children"]}}
+            {flesh: -1, flesh_fields: {aou: ["children", "ou_type"]}}
         ).then((tree: unknown) => {
             this.orgTree = tree as Hash;
 
             let flatten = (node: Hash) => {
-                this.orgHash[node.id as number] = node;
+                this.orgHash[Number(node.id)] = node;
                 (node.children as Hash[]).forEach(flatten);
             }
 

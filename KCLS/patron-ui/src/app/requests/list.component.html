@@ -60,13 +60,22 @@
             </ng-container>
           </ng-container>
         </div>
-        <div class="mt-2 p-2 border border-grey-500 rounded" *ngIf="request._status === 'ill-rejected'">
+
+        <div class="mt-2 p-2 border border-grey-500 rounded" 
+          *ngIf="request._status === 'ill-rejected'">
           {{request.ill_denial}}
+        </div>
+
+        <div class="mt-2 p-2 border border-grey-500 rounded" 
+          *ngIf="request._status === 'purchase-rejected'" i18n>
+          Thank you for your suggestion. Unfortunately, we’re unable
+          to purchase every request. We appreciate your understanding.
         </div>
 
       </mat-card-content>
 
-      <mat-card-actions *ngIf="!request.reject_date && !request.cancel_date && !request.claim_date">
+      <mat-card-actions 
+        *ngIf="!request.reject_date && !request.cancel_date && !request.claim_date && !request.hold">
         <hr class="mt-2 mb-2"/>
         <div class="p-1 flex w-full">
           <ng-container *ngIf="request.route_to === 'ill'" i18n>

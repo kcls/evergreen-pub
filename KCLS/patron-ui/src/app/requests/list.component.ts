@@ -43,7 +43,8 @@ export class RequestListComponent implements OnInit {
         {code: 'ill-review', label: $localize`Transferred to Interlibrary Loan`},
         {code: 'ill-requested', label: $localize`Interlibrary Loan Request Submitted`},
         {code: 'ill-rejected', label: $localize`Unable to Complete Interlibrary Loan`},
-        {code: 'hold-rejected', label: $localize`Unable to Place Hold`},
+        {code: 'hold-failed', label: $localize`Unable to Place Hold`},
+        {code: 'hold-canceled', label: $localize`Hold Canceled`},
         {code: 'hold-placed', label: $localize`Hold Placed`},
         {code: 'completed', label: $localize`Request Complete`}
     ];
@@ -64,8 +65,6 @@ export class RequestListComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        //this.controls.pendingCbox.setValue(true);
-        //this.controls.pendingCbox.valueChanges.subscribe(_ => this.load());
         this.controls.completedCbox.valueChanges.subscribe(_ => this.load());
 
         this.requests = [];
