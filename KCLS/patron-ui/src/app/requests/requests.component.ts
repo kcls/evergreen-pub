@@ -38,6 +38,15 @@ export class RequestsComponent implements OnInit {
                 this.tab = event.url.split("/").pop() || 'create';
                 if (this.tab !== 'list') {
                     this.tab = 'create';
+
+                    // Always clear the selected format when navigating
+                    // back to the create page.
+                    if (this.requests.selectedFormat) {
+                        this.requests.selectedFormat = null;
+                        this.controls.format.reset();
+                        this.resetForm();
+                        this.requests.formatChanged.emit();
+                    }
                 }
             }
         });
@@ -56,6 +65,11 @@ export class RequestsComponent implements OnInit {
 
         this.gateway.authSessionEnded.subscribe(() => this.reset());
         this.requests.formResetRequested.subscribe(() => this.resetForm());
+
+        // Not all actions require an auth session up front, but if we
+        // have a local auth token, we need to know so we can let the
+        // user know they are already authenticated.
+        this.app.fetchAuthSession();
     }
 
     resetForm() {
