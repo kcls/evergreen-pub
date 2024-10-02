@@ -10,6 +10,7 @@ import {AppService} from '../app.service';
 import {RequestsService} from './requests.service';
 import {MatCheckboxChange} from '@angular/material/checkbox';
 import {debounceTime} from 'rxjs/operators';
+import {Settings} from '../settings.service';
 
 const BC_URL = 'https://kcls.bibliocommons.com/item/show/';
 const BC_CODE = '082';
@@ -41,6 +42,7 @@ export class CreateRequestComponent implements OnInit {
     dupeTitleFound = false;
     dupeIdentFound = false;
     checkingDupes = false;
+    pickupLibs: Hash[] = [];
 
     languages = [
         $localize`English`,
@@ -77,6 +79,7 @@ export class CreateRequestComponent implements OnInit {
         publisher: new FormControl({value: '', disabled: true}),
         language: new FormControl({value: '', disabled: true}),
         notes: new FormControl({value: '', disabled: true}),
+        pickupLib: new FormControl(0),
     }
 
     constructor(
@@ -85,6 +88,7 @@ export class CreateRequestComponent implements OnInit {
         private snackBar: MatSnackBar,
         private gateway: Gateway,
         public app: AppService,
+        private settings: Settings,
         public requests: RequestsService
     ) { }
 
@@ -106,6 +110,51 @@ export class CreateRequestComponent implements OnInit {
         .subscribe(title => this.dupesLookup());
 
         this.requests.formatChanged.subscribe(_ => this.dupesLookup());
+
+        this.app.authSessionLoad.subscribe(() => this.getPatronPickupLib());
+
+        // Latch on to the in-progress session fetcher promise in
+        // case we already have a token, in wich case the above
+        // won't fire.
+        this.app.fetchAuthSession().then(_ => {
+            if (this.app.getAuthtoken()) {
+                this.getPatronPickupLib();
+            }
+        });
+
+        this.requests.loadPickupLibs().then(libs => this.pickupLibs = libs);
+    }
+
+    updatePickupLib(pl: number) {
+        if (Number(pl)) {
+            console.debug('Updating pickup lib to ', pl);
+
+            this.gateway.requestOne(
+                'open-ils.actor',
+                'open-ils.actor.patron.settings.update',
+                this.app.getAuthtoken(), null, {'opac.default_pickup_location': pl}
+            );
+        }
+    }
+
+    getPatronPickupLib() {
+        let ses = this.app.getAuthSession();
+        if (!ses) { return; } // make TS happy
+
+        this.gateway.requestOne(
+            'open-ils.actor',
+            'open-ils.actor.patron.settings.retrieve',
+            this.app.getAuthtoken(), null, 'opac.default_pickup_location')
+        .then(lib => {
+            lib = Number(lib) || 0;
+            if (lib === 0) {
+                lib = Number(ses.home_ou);
+            }
+            this.controls.pickupLib.setValue(lib);
+
+            // Watch for changes after we apply the initial value
+            this.controls.pickupLib.valueChanges.subscribe(pl => this.updatePickupLib(pl));
+        });
     }
 
     dupesLookup() {

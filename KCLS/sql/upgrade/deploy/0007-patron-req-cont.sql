@@ -1,4 +1,4 @@
-- - Deploy kcls-evergreen:XXXX-patron-req-cont to pg
+-- Deploy kcls-evergreen:XXXX-patron-req-cont to pg
 -- requires: 0004-damaged-item-letter
 
 BEGIN;
