@@ -295,29 +295,42 @@ sub request_status_impl {
         my $hold = $e->retrieve_action_hold_request($req->hold)
             or return $e->die_event;
 
-        if ($hold->fulfillment_time) {
+        if ($hold->shelf_time || $hold->cancel_time) {
+            # If we're on the hold shelf but we have not yet been
+            # marked as complete, go ahead and mark it while we're here.
+            # Note complete_time check above.
+            $req->complete_date($hold->shelf_time || $hold->cancel_time);
+            my $e2 = new_editor(xact => 1);
+            $e2->update_actor_user_item_request($req) or return $e2->die_event;
+            $e2->commit;
+            
             return {status => 'completed'}
-        } elsif ($hold->cancel_time) {
-            return {status => 'hold-canceled'};
         } else {
             return {status => 'hold-placed'};
         }
     }
 
     # TODO patron-pending? staff have questions for the patron.
-    # TODO hold-placed and hold-failed
 
     if ($req->route_to eq 'acq') {
         if ($req->lineitem) {
 
-            my $li = $e->retrieve_acq_lineitem($req->lineitem)
-                or return $e->die_event;
+            if (!$req->hold) {
+                return {status => 'hold-failed'};
+            }
+
+            # NOTE the rest of this if block will never occur in 
+            # practice, since the hold is placed at the same time
+            # the lin item is linked to the request.  Keeping 
+            # the code in place in case we change the behavior.
+            my $li = $e->retrieve_acq_lineitem($req->lineitem) or return $e->die_event;
 
             if ($li->state eq 'on-order') {
                 return {status => 'purchase-approved'};
             } else {
                 return {status => 'purchase-review'};
             }
+
         } elsif ($req->claim_date) {
             return {status => 'purchase-review'};
         }
