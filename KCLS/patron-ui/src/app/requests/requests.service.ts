@@ -10,6 +10,7 @@ export class RequestsService {
     requestsAllowed: boolean | null = null;
     activeRequestCount = 0;
     maxRequestCount = 0;
+    pickupLibs: Hash[] = [];
 
     // Emits after completion of every new patron auth+permission check.
     patronChecked: EventEmitter<void> = new EventEmitter<void>();
@@ -72,6 +73,34 @@ export class RequestsService {
     tooManyActiveRequests(): boolean {
         return this.activeRequestCount > 0 &&
             this.activeRequestCount >= this.maxRequestCount;
+    }
+
+    loadPickupLibs(): Promise<Hash[]> {
+        if (this.pickupLibs.length > 0) {
+            return Promise.resolve(this.pickupLibs);
+        }
+
+        // Users are allowed to select a hold pickup lib from the set of
+        // org units where the opac.holds.org_unit_not_pickup_lib setting
+        // is false/unset and the org unit is "can have users"
+        return this.app.getOrgTree().then(tree => {
+            return this.settings.settingValueForOrgs('opac.holds.org_unit_not_pickup_lib')
+            .then((list: Hash[]) => {
+                list.forEach(setting => {
+                    if (!(setting.summary as Hash).value) {
+                        let org = this.app.getOrgUnit(setting.org_unit as number);
+                        if (org && (org.ou_type as Hash).can_have_users === 't') {
+                            this.pickupLibs.push(org);
+                        }
+                    }
+                });
+
+                this.pickupLibs = this.pickupLibs.sort((a: Hash, b: Hash) =>
+                    (a.name as string) < (b.name as string) ? -1 : 1);
+
+                return this.pickupLibs;
+            });
+        });
     }
 }
 
