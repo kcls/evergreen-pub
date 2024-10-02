@@ -17,6 +17,11 @@
     "build-prod-all": "npm run create-index && npm run minify-index && ng build --configuration production --localize 2>&1 | egrep -v 'Generating localized bundles|No translation found' && npm run revert-index",
     "lint": "ng lint"
   },
+  "browserslist": [                                                            
+    "last 3 chrome version",                                                   
+    "last 3 firefox version",                                                  
+    "last 1 safari version"                                                    
+  ],  
   "private": true,
   "dependencies": {
     "@angular/cdk": "^18.2.5",
