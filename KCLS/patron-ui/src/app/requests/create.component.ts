@@ -157,8 +157,6 @@ export class CreateRequestComponent implements OnInit {
         });
     }
 
-    // TODO update pickup lib
-
     dupesLookup() {
         let title = this.controls.title.value;
         let ident = this.controls.identifier.value;

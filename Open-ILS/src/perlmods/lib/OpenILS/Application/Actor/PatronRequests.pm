@@ -305,19 +305,26 @@ sub request_status_impl {
     }
 
     # TODO patron-pending? staff have questions for the patron.
-    # TODO hold-placed and hold-failed
 
     if ($req->route_to eq 'acq') {
         if ($req->lineitem) {
 
-            my $li = $e->retrieve_acq_lineitem($req->lineitem)
-                or return $e->die_event;
+            if (!$req->hold) {
+                return {status => 'hold-failed'};
+            }
+
+            # NOTE the rest of this if block will never occur in 
+            # practice, since the hold is placed at the same time
+            # the lin item is linked to the request.  Keeping 
+            # the code in place in case we change the behavior.
+            my $li = $e->retrieve_acq_lineitem($req->lineitem) or return $e->die_event;
 
             if ($li->state eq 'on-order') {
                 return {status => 'purchase-approved'};
             } else {
                 return {status => 'purchase-review'};
             }
+
         } elsif ($req->claim_date) {
             return {status => 'purchase-review'};
         }
