@@ -109,23 +109,15 @@
 <div *ngIf="item && circ">
   <hr class="mb-2"/>
   <div class="row mb-2">
-    <div class="col-lg-3">
+    <div class="col-lg-4">
       <div class="form-group form-validated">
         <label for="alert-message" i18n>Item Alert Message:</label>
-        <textarea id="alert-message" [(ngModel)]="itemAlert" 
+        <textarea (ngModelChange)="alertMsgNeedsUpdating=true" 
+          id="alert-message" [(ngModel)]="itemAlert" 
           required rows="3" class="form-control"></textarea>
       </div>
-      <button class="btn btn-info mt-1" (click)="updateAlertMessage()" i18n>
-        Update Alert Message
-      </button>
-    </div>
-  </div>
-  <div class="row" *ngIf="!alertMsgUpdated">
-    <div class="col-lg-12">
-      <div class="alert alert-info" *ngIf="!alertMsgUpdated" i18n>
-        The letter may not be printed until the item alert message 
-        has been updated.
-      </div>
+      <button [disabled]="!alertMsgNeedsUpdating" class="btn btn-info mt-1" 
+        (click)="updateAlertMessage()" i18n>Update Alert Message</button>
     </div>
   </div>
 </div>

@@ -35,13 +35,15 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
     itemIsLost = false;
     itemAlert = '';
     updatingItemAlert = false;
+    alertMsgNeedsUpdating = false;
     circ: IdlObject;
     staffInitials = '';
     printPreviewHtml = '';
     expiredPatronAccount = null;
+    missingPiecesNote = '';
+    repairCost = '';
 
     autoRefundsActive = false;
-    alertMsgUpdated = false;
 
     @ViewChild('penaltyDialog')
     private penaltyDialog: PatronPenaltyDialogComponent;
@@ -159,8 +161,8 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
         this.circNotFound = false;
         this.processing = false;
         this.itemProcessed = false;
-        this.alertMsgUpdated = false;
         this.printPreviewHtml = '';
+        this.alertMsgNeedsUpdating = false;
 
         const node = document.getElementById('print-preview-pane');
         if (node) { node.innerHTML = ''; }
@@ -175,7 +177,6 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
 
         this.processing = true;
         this.circ = null;
-        this.alertMsgUpdated = false;
 
         this.net.request(
             'open-ils.circ',
@@ -200,24 +201,13 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
                 return;
             }
 
-            if (evt.textcode === 'ACTION_CIRCULATION_NOT_FOUND') {
+            const payload = evt.payload;
+
+            if (evt.textcode === 'ACTION_CIRCULATION_NOT_FOUND' || !payload.circ) {
                 this.circNotFound = true;
                 this.selectInput();
                 return;
             }
-
-            if (evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING') {
-                if (this.autoRefundsActive) {
-                    this.pauseRefundDialog.refundableXact = evt.payload.mrx;
-                    this.pauseRefundDialog.open()
-                    .subscribe(resp2 => this.processItem(resp2));
-                } else {
-                    this.processItem({no_pause_refund: true});
-                }
-                return;
-            }
-
-            const payload = evt.payload;
 
             if (payload.slip) {
                 this.printer.print({
@@ -233,24 +223,37 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
                 this.itemAlert = '';
             }
 
-            this.itemAlert += this.problemShelfNote();
+            this.circ = payload.circ;
 
-            if (payload.circ) {
-                this.circ = payload.circ;
+            this.costDialog.repairCost = Number(this.item.price()) || 0;
+            this.costDialog.missingPiecesNote = '';
+
+            this.costDialog.open({size: 'lg'}).subscribe(ok => {
+                let cost = this.costDialog.repairCost;
+                let dibs = this.costDialog.staffInitials;
+                let note = this.costDialog.missingPiecesNote;
+
+                if (!ok || (!cost && cost !== 0) || !dibs || !note) {
+                    this.selectInput();
+                    return;
+                }
+
+                this.repairCost = cost.toFixed(2);
+                this.missingPiecesNote = note;
+                let shelfNote = this.problemShelfNote();
+
+                this.penaltyDialog.startInitials = this.staffInitials = dibs;
                 this.penaltyDialog.defaultType = this.penaltyDialog.ALERT_NOTE;
                 this.penaltyDialog.patronId = payload.circ.usr();
-                this.penaltyDialog.startNoteText = this.problemShelfNote();
+                this.penaltyDialog.startNoteText = this.missingPiecesNote + '. ' + shelfNote;
+
+                this.itemAlert += `Damage: ${this.missingPiecesNote}. ${shelfNote}`;
+                this.itemAlert = this.staff.appendInitials(this.itemAlert, this.staffInitials);
+
                 this.penaltyDialog.open({size: 'lg'}).toPromise()
-                .then(penId => {
-                    // Pull initials from the penalty dialog so they
-                    // don't have to be entered again.
-                    this.staffInitials = this.penaltyDialog.initials;
-                    this.itemAlert = this.staff.appendInitials(this.itemAlert, this.staffInitials);
-                })
-                .finally(() => this.prepareLetter());
-            } else {
-                this.selectInput();
-            }
+                .then(_ => this.updateAlertMessage())
+                .then(() => this.prepareLetter());
+            });
         });
     }
 
@@ -275,41 +278,29 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
     prepareLetter() {
 
         this.printPreviewHtml = '';
-        this.costDialog.repairCost = Number(this.item.price()) || 0;
-        this.costDialog.staffInitials = this.staffInitials;
-        this.costDialog.missingPiecesNote = '';
 
-        this.costDialog.open().subscribe(ok => {
+        this.pcrud.retrieve( 'au', this.circ.usr(), {flesh: 1,
+            flesh_fields: {au: ['card', 'mailing_address', 'billing_address']}})
 
-            let cost = this.costDialog.repairCost;
-            let dibs = this.costDialog.staffInitials;
-            let note = this.costDialog.missingPiecesNote;
-
-            if (!ok || (!cost && cost !== 0) || !dibs || !note) { return; }
-
-            this.pcrud.retrieve( 'au', this.circ.usr(), {flesh: 1,
-                flesh_fields: {au: ['card', 'mailing_address', 'billing_address']}})
-
-            .toPromise().then(patron => {
-                return this.printer.compileRemoteTemplate({
-                    printContext: 'default',
-                    templateName: 'missing_pieces',
-                    contentType: 'text/html',
-                    contextData: {
-                        circulation: this.circ,
-                        copy: this.item,
-                        dibs: dibs,
-                        patron: patron,
-                        missing_pieces: note,
-                        cost: cost.toFixed(2),
-                        title: this.display('title_proper')
-                    }
-                });
-            })
-            .then(response => {
-                this.printPreviewHtml = response.content;
-                document.getElementById('print-preview-pane').innerHTML = response.content;
+        .toPromise().then(patron => {
+            return this.printer.compileRemoteTemplate({
+                printContext: 'default',
+                templateName: 'missing_pieces',
+                contentType: 'text/html',
+                contextData: {
+                    circulation: this.circ,
+                    copy: this.item,
+                    dibs: this.staffInitials,
+                    patron: patron,
+                    missing_pieces: this.missingPiecesNote,
+                    cost: this.repairCost,
+                    title: this.display('title_proper')
+                }
             });
+        })
+        .then(response => {
+            this.printPreviewHtml = response.content;
+            document.getElementById('print-preview-pane').innerHTML = response.content;
         });
     }
 
@@ -322,14 +313,14 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
         });
     }
 
-    updateAlertMessage() {
+    updateAlertMessage(): Promise<any> {
         if (!this.itemAlert) { return; }
 
         this.updatingItemAlert = true;
 
         const msg = this.itemAlert; // clobbered in getItemById
 
-        this.getItemById().then(_ => {
+        return this.getItemById().then(_ => {
 
             this.item.alert_message(this.itemAlert = msg);
 
@@ -340,7 +331,8 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
             return this.pcrud.update(this.item).toPromise()
             .then(
                 ok => {
-                    this.alertMsgUpdated = true;
+                    this.alertMsgNeedsUpdating = false;
+
                     this.strings.interpolate(
                         'cat.item.missing_pieces.update_alert.success')
                     .then(str => this.toast.success(str));
@@ -351,8 +343,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
                     .then(str => this.toast.danger(str));
                 }
             );
-        })
-        .finally(() => this.updatingItemAlert = false);
+        });
     }
 }
 
