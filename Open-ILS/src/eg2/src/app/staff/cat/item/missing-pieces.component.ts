@@ -245,7 +245,12 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
                 this.penaltyDialog.startInitials = this.staffInitials = dibs;
                 this.penaltyDialog.defaultType = this.penaltyDialog.ALERT_NOTE;
                 this.penaltyDialog.patronId = payload.circ.usr();
-                this.penaltyDialog.startNoteText = this.missingPiecesNote + '. ' + shelfNote;
+
+                this.penaltyDialog.startNoteText =
+                    this.display('title_proper') + ', ' +
+                    this.itemBarcode + ', ' +
+                    this.missingPiecesNote + '. ' +
+                    shelfNote;
 
                 this.itemAlert += `Damage: ${this.missingPiecesNote}. ${shelfNote}`;
                 this.itemAlert = this.staff.appendInitials(this.itemAlert, this.staffInitials);
