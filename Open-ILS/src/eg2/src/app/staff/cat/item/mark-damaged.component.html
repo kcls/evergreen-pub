@@ -139,12 +139,12 @@
         <eg-help-popover placement="right" 
           i18n-helpText helpText="Modify the item alert message">
         </eg-help-popover>
-        <textarea id="alert-message" [(ngModel)]="itemAlert" 
+        <textarea (ngModelChange)="alertMsgNeedsUpdating=true"
+          id="alert-message" [(ngModel)]="itemAlert" 
           required rows="3" class="form-control mt-2"></textarea>
       </div>
-      <button class="btn btn-info mt-2" (click)="updateAlertMessage()" i18n>
-        Update Alert Message
-      </button>
+      <button [disabled]="!alertMsgNeedsUpdating" class="btn btn-info mt-2" 
+        (click)="updateAlertMessage()" i18n>Update Alert Message</button>
     </div>
     <div class="col-lg-4">
       <label i18n>Damage Description for Letter</label> 

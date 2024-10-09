@@ -35,7 +35,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
     noSuchItem = false;
     itemBarcode = '';
     updatingItemAlert = false;
-    alertMsgUpdated = false;
+    alertMsgNeedsUpdating = false;
     itemAlert = '';
     billAmount: number = null;
 
@@ -254,7 +254,9 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
                     this.itemAlert = this.staff.appendInitials(this.itemAlert, this.dibs);
 
                     this.penaltyDialog.open({size: 'lg'}).toPromise()
-                    .finally(() => this.refreshPrintDetails());
+                    .then(_ => this.updateAlertMessage());
+                    // updateAlertMessage() will refresh the print details.
+                    //.finally(() => this.refreshPrintDetails());
 
                     return;
                 }
@@ -292,14 +294,14 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
         }
     }
 
-    updateAlertMessage() {
+    updateAlertMessage(): Promise<any> {
         if (!this.itemAlert) { return; }
 
         this.updatingItemAlert = true;
 
         const msg = this.itemAlert; // clobbered in getItemById
 
-        this.getItemData(true).then(_ => {
+        return this.getItemData(true).then(_ => {
 
             this.item.alert_message(this.itemAlert = msg);
 
@@ -310,7 +312,7 @@ export class MarkDamagedComponent implements OnInit, AfterViewInit {
             return this.pcrud.update(this.item).toPromise()
             .then(
                 ok => {
-                    this.alertMsgUpdated = true;
+                    this.alertMsgNeedsUpdating = false;
                     this.toast.success($localize`Alert Message Updated`);
                     this.refreshPrintDetails();
                 },
