@@ -304,6 +304,8 @@ sub request_status_impl {
         }
     }
 
+    # TODO lineitem->state eq 'received' and hold canceled?
+
     # TODO patron-pending? staff have questions for the patron.
 
     if ($req->route_to eq 'acq') {
