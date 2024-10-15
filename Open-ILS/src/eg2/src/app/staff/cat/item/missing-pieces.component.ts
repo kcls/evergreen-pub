@@ -247,6 +247,7 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
                 this.penaltyDialog.patronId = payload.circ.usr();
 
                 this.penaltyDialog.startNoteText =
+                    'PROB SHELF: ' +
                     this.display('title_proper') + ', ' +
                     this.itemBarcode + ', ' +
                     this.missingPiecesNote + '. ' +
