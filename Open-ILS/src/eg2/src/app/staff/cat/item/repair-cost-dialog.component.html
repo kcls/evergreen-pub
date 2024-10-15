@@ -24,9 +24,10 @@
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-lg-3" i18n>Missing Pieces: </div>
+      <div class="col-lg-3" i18n>Description of Missing Pieces: </div>
       <div class="col-lg-9">
         <textarea type="text" [required]="true" rows="3"
+          i18n-placeholder placeholder="e.g. Missing Disc 1"
           [(ngModel)]="missingPiecesNote" class="form-control">
         </textarea>
       </div>

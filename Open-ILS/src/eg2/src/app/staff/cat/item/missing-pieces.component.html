@@ -149,8 +149,7 @@
         <span>Update Letter</span>
         <span class="material-icons">refresh</span>
       </button>
-      <button [disabled]="!alertMsgUpdated" *ngIf="printPreviewHtml" 
-        (click)="printLetter()" 
+      <button *ngIf="printPreviewHtml" (click)="printLetter()" 
         class="btn btn-outline-success label-with-material-icon ms-3" i18n>
         <span>Print Letter</span>
         <span class="material-icons">print</span>
