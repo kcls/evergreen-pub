@@ -284,9 +284,10 @@ export class MarkItemMissingPiecesComponent implements AfterViewInit, OnInit {
 
         this.printPreviewHtml = '';
 
-        this.pcrud.retrieve( 'au', this.circ.usr(), {flesh: 1,
-            flesh_fields: {au: ['card', 'mailing_address', 'billing_address']}})
-
+        this.pcrud.retrieve('au', this.circ.usr(), {
+            flesh: 1,
+            flesh_fields: {au: ['card', 'mailing_address', 'billing_address']}}
+        )
         .toPromise().then(patron => {
             return this.printer.compileRemoteTemplate({
                 printContext: 'default',

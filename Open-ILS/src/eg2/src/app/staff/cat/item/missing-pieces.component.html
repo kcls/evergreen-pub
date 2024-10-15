@@ -119,6 +119,17 @@
       <button [disabled]="!alertMsgNeedsUpdating" class="btn btn-info mt-1" 
         (click)="updateAlertMessage()" i18n>Update Alert Message</button>
     </div>
+    <div class="col-lg-4">
+      <label i18n>Missing Pieces Description for Letter</label> 
+      <eg-help-popover placement="right" 
+        i18n-helpText helpText="Modify the message which displays in the printed letter">
+      </eg-help-popover>
+      <textarea class="form-control mt-2"
+        [(ngModel)]="missingPiecesNote" required rows="3"></textarea>
+      <button class="btn btn-info mt-2" (click)="prepareLetter()" i18n>
+        Update Missing Pieces Description
+      </button>
+    </div>
   </div>
 </div>
 
