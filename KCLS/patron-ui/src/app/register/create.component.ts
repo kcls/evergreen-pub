@@ -1,14 +1,29 @@
 import {Component, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {FormBuilder, FormControl, Validators, AbstractControl,
-    ValidationErrors, ValidatorFn} from '@angular/forms';
+    FormRecord, ValidationErrors, ValidatorFn} from '@angular/forms';
+import {tap} from 'rxjs/operators';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {RegisterService} from './register.service';
 
 const JUV_AGE = 18; // years
-const DEFAULT_STATE = 'Washington';
+const DEFAULT_STATE = 'WA';
+
+const COMMON_USER_SETTING_TYPES = [
+  'circ.holds_behind_desk',
+  'circ.autorenew.opt_in',
+  'opac.default_pickup_location',
+  'opac.default_sms_notify'
+];
+
+interface UserSettingType {
+    name: string;
+    label: string;
+    grp: string;
+}
+
 
 export const sameEmailValidator: ValidatorFn = (
   control: AbstractControl,
@@ -43,7 +58,12 @@ export class RegisterCreateComponent implements OnInit {
     formNeedsWork = false;
     homeOrgs: Hash[] = [];
 
-    formGroup = this.formBuilder.group({
+    emailSettings: UserSettingType[] = [];
+    phoneSettings: UserSettingType[] = [];
+    textSettings: UserSettingType[] = [];
+    printSettings: UserSettingType[] = [];
+
+    formGroup = this.formBuilder.record({
         design: ['', Validators.required],
         delivery: ['Mail', Validators.required],
         first: ['', Validators.required],
@@ -73,6 +93,7 @@ export class RegisterCreateComponent implements OnInit {
         mailingState: DEFAULT_STATE,
         mailingZipCode: '',
         termsOfService: false,
+        allEmailNotices: false,
     }, {validators: sameEmailValidator});
 
     states = [
@@ -165,6 +186,8 @@ export class RegisterCreateComponent implements OnInit {
             });
         });
 
+        this.getOptInSettings();
+
         this.formGroup.controls.dob.valueChanges.subscribe((dob: unknown) => {
             if ((dob as Date) > this.juvMinDob) {
                 this.isJuvenile = true;
@@ -188,6 +211,40 @@ export class RegisterCreateComponent implements OnInit {
                 this.formGroup.controls.mailingZipCode.setValidators([Validators.required, Validators.pattern(/\d{5/)]);
             }
         });
+    }
+
+    // Note: we could call this after the pickup lib has changed to
+    // ensure the setting types are correctly scoped to the org
+    // unit.  Not necessary for KCLS at the moment.
+    getOptInSettings(): Promise<any> {
+
+        this.emailSettings = [];
+        this.phoneSettings = [];
+        this.textSettings = [];
+        this.printSettings = [];
+
+        // Maybe sort the contents of each grouping...
+        return this.gateway.request(
+            'open-ils.actor',
+            'open-ils.actor.event_def.opt_in.settings.opac_visible'
+        ).pipe(tap(setting => {
+            let set = setting as UserSettingType;
+            let grp = set.grp as string;
+            let name = set.name as string;
+
+            if (grp.match(/email/)) {
+                this.emailSettings.push(set);
+            } else if (grp.match(/phone/)) {
+                this.phoneSettings.push(set);
+            } else if (grp.match(/text/)) {
+                this.textSettings.push(set);
+            } else if (grp.match(/print/)) {
+                this.printSettings.push(set);
+            }
+
+            this.formGroup.addControl(name, new FormControl(false));
+
+        })).toPromise();
     }
 
     // Avoid disabling the submit button for missing values.
@@ -223,8 +280,6 @@ export class RegisterCreateComponent implements OnInit {
                 return;
             }
         }
-
-        // if state == DEFAULT_STATE => WA
     }
 }
 
