@@ -211,10 +211,10 @@
      
   <hr/>
 
-  <div class="columns-1 mt-4">
+  <div class="columns-1 mt-4 banner rounded-lg">
     <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
     <div *ngIf="formGroup.controls.allEmailNotices.value">
-      <div *ngFor="let set of emailSettings">
+      <div class="ml-3" *ngFor="let set of emailSettings">
         <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
       </div>
     </div>
