@@ -207,6 +207,19 @@
     </div>
   </div>
 
+  <h2 i18n>Notification Preferences</h2>
+     
+  <hr/>
+
+  <div class="columns-1 mt-4">
+    <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
+    <div *ngIf="formGroup.controls.allEmailNotices.value">
+      <div *ngFor="let set of emailSettings">
+        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
+      </div>
+    </div>
+  </div>
+
   <h2 i18n>Contact Preferences</h2>
   <hr/>
 
@@ -261,7 +274,17 @@
       <mat-form-field class="w-full">
         <mat-label i18n>State</mat-label>
         <mat-select formControlName="state" [value]="formGroup.controls.state.value">
-          <mat-option *ngFor="let state of states" [value]="state">{{state}}</mat-option>
+          <!--  almsot all registrations will be in WA and that's the 
+                preferred address label.  For other states, store the
+                whole state name -->
+          <ng-container *ngFor="let state of states">
+            <ng-container *ngIf="state === 'Washington'">
+              <mat-option value="WA">{{state}}</mat-option>
+            </ng-container>
+            <ng-container *ngIf="state !== 'Washington'">
+              <mat-option [value]="state">{{state}}</mat-option>
+            </ng-container>
+          </ng-container>
         </mat-select>
         <mat-error *ngIf="formGroup.controls.state.hasError('required')" i18n>
             State is <strong>required</strong>
