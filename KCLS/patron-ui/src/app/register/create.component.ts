@@ -211,6 +211,12 @@ export class RegisterCreateComponent implements OnInit {
                 this.formGroup.controls.mailingZipCode.setValidators([Validators.required, Validators.pattern(/\d{5/)]);
             }
         });
+
+        this.formGroup.controls.allEmailNotices.valueChanges.subscribe(val => {
+            this.emailSettings.forEach(set => {
+                this.formGroup.controls[set.name].setValue(val);
+            });
+        });
     }
 
     // Note: we could call this after the pickup lib has changed to
