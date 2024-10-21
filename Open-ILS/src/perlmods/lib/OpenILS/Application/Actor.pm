@@ -4655,29 +4655,54 @@ __PACKAGE__->register_method(
     }
 );
 
+__PACKAGE__->register_method(
+    method    => "event_def_opt_in_settings",
+    api_name  => "open-ils.actor.event_def.opt_in.settings.opac_visible",
+    stream => 1,
+    signature => q/Same as open-ils.actor.event_def.opt_in.settings but
+        the result set is limited to opac_visible settings and
+        no authtoken checks are performed.
+    /
+);
+
 sub event_def_opt_in_settings {
     my($self, $conn, $auth, $org_id) = @_;
-    my $e = new_editor(authtoken => $auth);
-    return $e->event unless $e->checkauth;
 
-    if(defined $org_id and $org_id != $e->requestor->home_ou) {
-        return $e->event unless
-            $e->allowed(['VIEW_USER_SETTING_TYPE', 'ADMIN_USER_SETTING_TYPE'], $org_id);
+    my $opac_visible = ($self->api_name =~ /opac_visible$/) ? 1 : 0;
+
+    my $e;
+    if ($opac_visible) {
+        $e = new_editor();
+        $org_id = $U->get_org_tree->id unless $org_id;
     } else {
-        $org_id = $e->requestor->home_ou;
+        $e = new_editor(authtoken => $auth);
+        return $e->event unless $e->checkauth;
+
+        if(defined $org_id and $org_id != $e->requestor->home_ou) {
+            return $e->event unless
+                $e->allowed(['VIEW_USER_SETTING_TYPE', 'ADMIN_USER_SETTING_TYPE'], $org_id);
+        } else {
+            $org_id = $e->requestor->home_ou;
+        }
     }
 
-    # find all config.user_setting_type's related to event_defs for the requested org unit
-    my $types = $e->json_query({
+    my $query = {
         select => {cust => ['name']},
         from => {atevdef => 'cust'},
         where => {
             '+atevdef' => {
-                owner => $U->get_org_ancestors($org_id), # context org plus parents
-                active => 't'
+                owner => $U->get_org_ancestors($org_id),
+                active => 't',
             }
         }
-    });
+    };
+
+    if ($opac_visible) {
+        $query->{where}->{'+cust'} = {opac_visible => 't'};
+    }
+
+    # find all config.user_setting_type's related to event_defs for the requested org unit
+    my $types = $e->json_query($query);
 
     if(@$types) {
         $conn->respond($_) for
