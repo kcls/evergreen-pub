@@ -228,7 +228,7 @@
      
   <hr/>
 
-  <div class="columns-1 mt-4 banner rounded-lg">
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
     <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
     <div *ngIf="formGroup.controls.allEmailNotices.value">
       <div class="ml-3" *ngFor="let set of emailSettings">
@@ -236,7 +236,7 @@
       </div>
     </div>
   </div>
-  <div class="columns-1 mt-4 banner rounded-lg">
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
     <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
     <div class="mb-4" *ngIf="formGroup.controls.allTextNotices.value">
       <div class="ml-3" *ngFor="let set of textSettings">
@@ -244,7 +244,7 @@
       </div>
     </div>
   </div>
-  <div class="columns-1 mt-4 banner rounded-lg">
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
     <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
     <div class="mb-4" *ngIf="formGroup.controls.allPhoneNotices.value">
       <div class="ml-3" *ngFor="let set of phoneSettings">
@@ -252,7 +252,7 @@
       </div>
     </div>
   </div>
-  <div class="columns-1 mt-4 banner rounded-lg">
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
     <mat-checkbox formControlName="allPrintNotices" i18n>Print Notices</mat-checkbox>
     <div class="mb-4" *ngIf="formGroup.controls.allPrintNotices.value">
       <div class="ml-3" *ngFor="let set of printSettings">
