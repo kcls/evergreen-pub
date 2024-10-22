@@ -10,6 +10,8 @@ import {RegisterService} from './register.service';
 
 const JUV_AGE = 18; // years
 const DEFAULT_STATE = 'WA';
+const POST_CODE_REGEX = /\d{5}/;
+const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
 
 const COMMON_USER_SETTING_TYPES = [
   'circ.holds_behind_desk',
@@ -75,7 +77,7 @@ export class RegisterCreateComponent implements OnInit {
         legalLast: '',
         dob: ['', Validators.required],
         guardian: '',
-        phone: ['', [Validators.required, Validators.pattern(/\d{3}-\d{3}-\d{4}/)]],
+        phone: ['', [Validators.required, Validators.pattern(PHONE_REGEX)]],
         email: ['', Validators.email],
         email2: ['', Validators.email],
         homeOrg: ['', Validators.required],
@@ -85,7 +87,7 @@ export class RegisterCreateComponent implements OnInit {
         street2: '',
         city: ['', Validators.required],
         state: [DEFAULT_STATE, Validators.required],
-        zipCode: ['', [Validators.required, Validators.pattern(/\d{5}/)]],
+        zipCode: ['', [Validators.required, Validators.pattern(POST_CODE_REGEX)]],
         mailingIsSame: true,
         mailingStreet1: '',
         mailingStreet2: '',
@@ -202,30 +204,35 @@ export class RegisterCreateComponent implements OnInit {
             }
         });
 
+        // Make mailing address fields required if they are different
+        // from the billing address.
         this.formGroup.controls.mailingIsSame.valueChanges.subscribe(isSame => {
-            if (isSame) {
-                this.formGroup.controls.mailingStreet1.clearValidators();
-                this.formGroup.controls.mailingCity.clearValidators();
-                this.formGroup.controls.mailingState.clearValidators();
-                this.formGroup.controls.mailingZipCode.clearValidators();
-            } else {
-                this.formGroup.controls.mailingStreet1.setValidators(Validators.required);
-                this.formGroup.controls.mailingCity.setValidators(Validators.required);
-                this.formGroup.controls.mailingState.setValidators(Validators.required);
-                this.formGroup.controls.mailingZipCode.setValidators([Validators.required, Validators.pattern(/\d{5/)]);
-            }
+            ['mailingStreet1', 'mailingCity', 'mailingState', 'mailingZipCode'].forEach(field => {
+                let control = this.formGroup.controls[field];
+                if (isSame) {
+                    control.clearValidators();
+                } else {
+                    control.setValidators(Validators.required);
+                    if (field === 'mailingZipCode') {
+                        control.addValidators(Validators.pattern(POST_CODE_REGEX));
+                    }
+                }
+                control.updateValueAndValidity();
+            });
         });
 
         this.formGroup.controls.allEmailNotices.valueChanges.subscribe(val => {
             this.emailSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
+            this.checkNoticeRequiredFields();
         });
 
         this.formGroup.controls.allTextNotices.valueChanges.subscribe(val => {
             this.textSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
+            this.checkNoticeRequiredFields();
         });
 
         this.formGroup.controls.allPhoneNotices.valueChanges.subscribe(val => {
@@ -273,6 +280,30 @@ export class RegisterCreateComponent implements OnInit {
             this.formGroup.addControl(name, new FormControl(false));
 
         })).toPromise();
+    }
+
+    // Sets the email or sms field to required if any email/sms notices
+    // are active, or not-required otherwise.
+    checkNoticeRequiredFields() {
+        let ctl = this.formGroup.controls.email;
+        if (this.emailSettings
+            .filter(set => this.formGroup.controls[set.name].value).length > 0) {
+            // At least one email notice is enabled
+            if (!ctl.hasValidator(Validators.required)) {
+                ctl.addValidators(Validators.required);
+                ctl.updateValueAndValidity();
+            }
+        }
+
+        ctl = this.formGroup.controls.smsNumber;
+        if (this.textSettings
+            .filter(set => this.formGroup.controls[set.name].value).length > 0) {
+            // At least one text notice is enabled
+            if (!ctl.hasValidator(Validators.required)) {
+                ctl.addValidators(Validators.required);
+                ctl.updateValueAndValidity();
+            }
+        }
     }
 
     // Avoid disabling the submit button for missing values.
