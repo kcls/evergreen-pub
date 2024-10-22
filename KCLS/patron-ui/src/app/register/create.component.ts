@@ -94,6 +94,10 @@ export class RegisterCreateComponent implements OnInit {
         mailingZipCode: '',
         termsOfService: false,
         allEmailNotices: false,
+        allTextNotices: false,
+        allPhoneNotices: false,
+        allPrintNotices: false,
+        smsNumber: '',
     }, {validators: sameEmailValidator});
 
     states = [
@@ -214,6 +218,24 @@ export class RegisterCreateComponent implements OnInit {
 
         this.formGroup.controls.allEmailNotices.valueChanges.subscribe(val => {
             this.emailSettings.forEach(set => {
+                this.formGroup.controls[set.name].setValue(val);
+            });
+        });
+
+        this.formGroup.controls.allTextNotices.valueChanges.subscribe(val => {
+            this.textSettings.forEach(set => {
+                this.formGroup.controls[set.name].setValue(val);
+            });
+        });
+
+        this.formGroup.controls.allPhoneNotices.valueChanges.subscribe(val => {
+            this.phoneSettings.forEach(set => {
+                this.formGroup.controls[set.name].setValue(val);
+            });
+        });
+
+        this.formGroup.controls.allPrintNotices.valueChanges.subscribe(val => {
+            this.printSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
         });
