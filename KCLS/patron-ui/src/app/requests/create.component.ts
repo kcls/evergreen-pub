@@ -2,7 +2,6 @@ import {Component, OnInit} from '@angular/core';
 import {Observable} from 'rxjs';
 import {map, startWith} from 'rxjs/operators';
 import {Router} from '@angular/router';
-import {MatSnackBar} from '@angular/material/snack-bar';
 import {Title}  from '@angular/platform-browser';
 import {FormControl, Validators} from '@angular/forms';
 import {Gateway, Hash} from '../gateway.service';
@@ -31,7 +30,6 @@ interface SuggestedRecord {
 })
 export class CreateRequestComponent implements OnInit {
     patronBarcode = '';
-    requestSubmitted = false;
     requestSubmitError = false;
     suggestedRecords: SuggestedRecord[] = [];
     selectedRecord: SuggestedRecord | null = null;
@@ -85,7 +83,6 @@ export class CreateRequestComponent implements OnInit {
     constructor(
         private router: Router,
         private title: Title,
-        private snackBar: MatSnackBar,
         private gateway: Gateway,
         public app: AppService,
         private settings: Settings,
@@ -298,7 +295,7 @@ export class CreateRequestComponent implements OnInit {
         values.ill_opt_out = this.requests.illOptOut;
         values.id_matched = this.suggestedRecords.length > 0;
 
-        this.requestSubmitted = false;
+        this.requests.requestSubmitted = false;
         this.requestSubmitError = false;
 
         console.debug('Submitting request', values);
@@ -311,19 +308,8 @@ export class CreateRequestComponent implements OnInit {
             console.debug('Create request returned', resp);
 
             if (resp && (resp as Hash).request_id) {
-                this.requestSubmitted = true;
+                this.requests.requestSubmitted = true;
                 this.resetForm();
-
-                const ref = this.snackBar.open(
-                    $localize`Request Submitted`,
-                    $localize`View My Requests`
-                );
-
-                const sub = ref.onAction().subscribe(() => {
-                    sub.unsubscribe();
-                    this.router.navigate(['/requests/list'])
-                });
-
             } else {
                 this.requestSubmitError = true;
             }
