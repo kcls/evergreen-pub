@@ -293,6 +293,9 @@ export class RegisterCreateComponent implements OnInit {
                 ctl.addValidators(Validators.required);
                 ctl.updateValueAndValidity();
             }
+        } else {
+            ctl.clearValidators();
+            ctl.updateValueAndValidity();
         }
 
         ctl = this.formGroup.controls.smsNumber;
@@ -303,6 +306,9 @@ export class RegisterCreateComponent implements OnInit {
                 ctl.addValidators(Validators.required);
                 ctl.updateValueAndValidity();
             }
+        } else {
+            ctl.clearValidators();
+            ctl.updateValueAndValidity();
         }
     }
 
