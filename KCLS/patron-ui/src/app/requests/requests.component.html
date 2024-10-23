@@ -134,6 +134,14 @@
         See our FAQ (https://kcls.org/faq/interlibrary-loan-suggest-a-purchase/)
       </a>
     </div>
+
+    <div *ngIf="requests.requestSubmitted && !controls.format.value" 
+      class="mt-5 flex justify-center border rounded border-grey-400 p-4">
+      <div>
+        <p class="font-bold" i18n>Request successfully submitted.</p>
+        <p class="mt-3" i18n>View your requests <a routerLink="/requests/list">here</a>.</p>
+      </div>
+    </div>
   </div>
 
   <div class="flex-1"></div>

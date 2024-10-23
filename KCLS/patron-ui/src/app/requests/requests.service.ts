@@ -12,6 +12,8 @@ export class RequestsService {
     maxRequestCount = 0;
     pickupLibs: Hash[] = [];
 
+    requestSubmitted = false;
+
     // Emits after completion of every new patron auth+permission check.
     patronChecked: EventEmitter<void> = new EventEmitter<void>();
 
