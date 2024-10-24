@@ -8324,6 +8324,31 @@ SELECT  usr,
         </permacrud>
 	</class>
 
+	<class id="ccc" 
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::copy_color"
+		oils_persist:tablename="config.copy_color"
+		reporter:core="true" reporter:label="Copy Color">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.copy_color_id_seq">
+			<field reporter:label="Color ID" name="id" reporter:datatype="id"/>
+			<field reporter:label="Color Label" name="label" reporter:datatype="text" oils_persist:i18n="true"/>
+			<field reporter:label="Color Hex Code" name="hex_code" reporter:datatype="text"/>
+			<field reporter:label="Owning Lib" name="owning_lib" reporter:datatype="link"/>
+		</fields>
+		<links>
+			<link field="owning_lib" reltype="has_a" key="id" map="" class="aou"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_COPY_COLOR"/>
+				<retrieve/>
+				<update permission="ADMIN_COPY_COLOR"/>
+				<delete permission="ADMIN_COPY_COLOR"/>
+			</actions>
+		</permacrud>
+	</class>
+
+
 	<class id="aci" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="asset::copy_inventory" oils_persist:tablename="asset.copy_inventory" reporter:core="true" reporter:label="Copy Inventory">
 		<fields oils_persist:primary="id" oils_persist:sequence="asset.copy_inventory_id_seq">
 			<field reporter:label="Copy Inventory ID" name="id" reporter:datatype="id"/>

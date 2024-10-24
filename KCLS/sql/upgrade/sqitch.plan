@@ -9,3 +9,4 @@
 0004-damaged-item-letter [0003-patron-requests] 2024-02-22T15:19:56Z berick <berick@kcls-311> # Damaged Item Letter
 0005-pending-patrons-notice [0004-damaged-item-letter] 2024-06-07T13:56:14Z berick <berick@kcls-311> # all access email notice
 0006-sip-filters [0004-damaged-item-letter] 2024-06-13T14:06:40Z berick <berick@kcls-311> # SIP mediator filters
+copy-colors [0006-sip-filters] 2024-10-24T17:36:26Z berick <berick@kcls311> # Copy Colors
