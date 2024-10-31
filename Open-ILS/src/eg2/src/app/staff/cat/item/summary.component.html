@@ -287,8 +287,14 @@
       </ng-container>
     </div>
 
-    <div class="well-label"></div>
-    <div class="well-value"></div>
+    <div class="well-label" i18n>Color</div>
+    <div class="well-value">
+      <ng-container *ngIf="item.color()">
+        {{item.color().label()}}
+      </ng-container>
+    </div>
+
+
     <div class="well-label"></div>
     <div class="well-value"></div>
   </div>

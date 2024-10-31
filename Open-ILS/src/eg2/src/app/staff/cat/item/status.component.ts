@@ -393,7 +393,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
                 acp : [
                     'call_number', 'location', 'status', 'floating', 'circ_modifier',
                     'age_protect', 'circ_lib', 'copy_alerts', 'creator',
-                    'editor', 'circ_as_type', 'latest_inventory', 'floating'
+                    'editor', 'circ_as_type', 'latest_inventory', 'floating', 'color'
                 ],
                 acn : ['record', 'prefix', 'suffix', 'label_class', 'owning_lib'],
                 bre : ['simple_record', 'creator', 'editor'],
