@@ -58,27 +58,6 @@ my $VENDOR_KLUDGE_MAP = {
 };
 
 
-__PACKAGE__->register_method(
-    method    => 'retrieve',
-    api_name  => 'open-ils.acq.edi.retrieve',
-    authoritative => 1,
-    signature => {
-        desc   => 'Fetch incoming message(s) from EDI accounts.  ' .
-                  'Optional arguments to restrict to one vendor and/or a max number of messages.  ' .
-                  'Note that messages are not parsed or processed here, just fetched and translated.',
-        params => [
-            {desc => 'Authentication token',        type => 'string'},
-            {desc => 'Vendor ID (undef for "all")', type => 'number'},
-            {desc => 'Date Inactive Since',         type => 'string'},
-            {desc => 'Max Messages Retrieved',      type => 'number'}
-        ],
-        return => {
-            desc => 'List of new message IDs (empty if none)',
-            type => 'array'
-        }
-    }
-);
-
 sub retrieve_core {
     my ($self, $set, $max, $e, $test) = @_;    # $e is a working editor
 
@@ -192,6 +171,49 @@ sub retrieve_core {
         }
     }
     return \@return;
+}
+
+__PACKAGE__->register_method(
+    method    => 'process_edi_file',
+    api_name  => 'open-ils.acq.edi.file.process',
+    signature => {
+        desc   => 'Process a single EDI file',
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'EDI Account ID', type => 'number'},
+            {desc => 'Full path to EDI file', type => 'string'},
+        ],
+        return => {
+            desc => 'ID of the created acq.edi_message or undef if none is created',
+            type => 'number'
+        }
+    }
+);
+
+sub process_edi_file {
+    my ($self, $client, $auth, $account_id, $filename) = @_;
+    my $e = new_editor(authtoken => $auth);
+
+    return $e->event unless $e->checkauth;
+    return $e->event unless $e->allowed('PROCESS_EDI_FILE');
+
+    my $content = do {
+        local $/ = undef;
+
+        my $fh;
+        unless (open $fh, "<", $filename) {
+            $logger->error("Cannot open EDI file $filename: $!");
+            return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Could not open: $!");
+        }
+
+        <$fh>;
+    };
+
+    $logger->info("EDI processing file $filename [characters=" . length($content) . "]");
+
+    my $replies = __PACKAGE__->process_retrieval($content, $filename, undef, $account_id);
+
+    return $replies ? $replies->[0] : undef;
 }
 
 
