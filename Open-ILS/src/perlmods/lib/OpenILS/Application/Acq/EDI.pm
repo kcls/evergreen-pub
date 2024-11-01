@@ -181,7 +181,7 @@ __PACKAGE__->register_method(
         params => [
             {desc => 'Authentication token', type => 'string'},
             {desc => 'EDI Account ID', type => 'number'},
-            {desc => 'Full path to EDI file', type => 'string'},
+            {desc => 'Full path to local EDI file', type => 'string'},
         ],
         return => {
             desc => 'ID of the created acq.edi_message or undef if none is created',
@@ -191,7 +191,7 @@ __PACKAGE__->register_method(
 );
 
 sub process_edi_file {
-    my ($self, $client, $auth, $account_id, $filename) = @_;
+    my ($self, $client, $auth, $account_id, $local_file) = @_;
     my $e = new_editor(authtoken => $auth);
 
     return $e->event unless $e->checkauth;
@@ -201,17 +201,17 @@ sub process_edi_file {
         local $/ = undef;
 
         my $fh;
-        unless (open $fh, "<", $filename) {
-            $logger->error("Cannot open EDI file $filename: $!");
+        unless (open $fh, "<", $local_file) {
+            $logger->error("Cannot open EDI file $local_file: $!");
             return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Could not open: $!");
         }
 
         <$fh>;
     };
 
-    $logger->info("EDI processing file $filename [characters=" . length($content) . "]");
+    $logger->info("EDI processing file $local_file [characters=" . length($content) . "]");
 
-    my $replies = __PACKAGE__->process_retrieval($content, $filename, undef, $account_id);
+    my $replies = __PACKAGE__->process_retrieval($content, $local_file, undef, $account_id);
 
     return $replies ? $replies->[0] : undef;
 }
