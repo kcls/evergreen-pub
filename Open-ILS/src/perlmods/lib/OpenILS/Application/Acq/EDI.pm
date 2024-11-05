@@ -4,6 +4,7 @@ use base qw/OpenILS::Application/;
 use strict; use warnings;
 
 use IO::Scalar;
+use File::Basename;
 
 use OpenSRF::AppSession;
 use OpenSRF::EX qw/:try/;
@@ -24,6 +25,9 @@ use OpenILS::Utils::EDIReader;
 use Data::Dumper;
 $Data::Dumper::Indent = 0;
 our $verbose = 0;
+
+my $MAX_EDI_FILE_SIZE = 10485760; #10mb
+
 
 sub new {
     my($class, %args) = @_;
@@ -197,6 +201,11 @@ sub process_edi_file {
     return $e->event unless $e->checkauth;
     return $e->event unless $e->allowed('PROCESS_EDI_FILE');
 
+    my $filesize = -s $local_file;
+    if (!$filesize || $filesize > $MAX_EDI_FILE_SIZE) {
+        return OpenILS::Event->new('INVALID_EDI_FILE', desc => "Too big");
+    }
+
     my $content = do {
         local $/ = undef;
 
@@ -211,7 +220,9 @@ sub process_edi_file {
 
     $logger->info("EDI processing file $local_file [characters=" . length($content) . "]");
 
-    my $replies = __PACKAGE__->process_retrieval($content, $local_file, undef, $account_id);
+    my $file_name = fileparse($local_file);
+
+    my $replies = __PACKAGE__->process_retrieval($content, $file_name, undef, $account_id);
 
     return $replies ? $replies->[0] : undef;
 }
