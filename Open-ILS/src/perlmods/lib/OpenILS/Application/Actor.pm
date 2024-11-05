@@ -4305,6 +4305,10 @@ sub negative_balance_users {
     return $e->die_event unless $e->checkauth;
     return $e->die_event unless $e->allowed('VIEW_USER', $org_id);
 
+    my %where = $options->{any_negatives} ?
+        ('+mbts' => {balance_owed => {'<' => 0}}) :
+        ('+mous' => {balance_owed => {'<' => 0}});
+
     my $query = {
         select => {
             mous => ['usr', 'balance_owed'],
@@ -4330,7 +4334,7 @@ sub negative_balance_users {
         },
         where => {
             '+au' => {deleted => 'f'},
-            '+mous' => {balance_owed => {'<' => 0}}
+            %where
         },
         offset => $options->{offset},
         limit => $options->{limit},

@@ -24,6 +24,11 @@
   persistKey="admin.local.negative_balances"
   showFields="balance_owed,last_billing_activity,barcode,family_name,first_given_name,dob,barred">
 
+  <eg-grid-toolbar-checkbox 
+    [initialValue]="anyNegatives" (onChange)="anyNegsChanged($event)"
+    i18n-label label="Include Patrons with Any Negative Transactions">
+  </eg-grid-toolbar-checkbox>
+
   <eg-grid-column name="barcode" [cellTemplate]="barcodeTmpl"
     i18n-label label="Barcode"></eg-grid-column>
 
