@@ -99,31 +99,19 @@
 
     <ng-container *ngIf="typeCanBeRequested() || tab === 'list'">
       <ng-container *ngIf="app.getAuthSession()">
-        <ng-container *ngIf="!requests.requestsAllowed">
-          <div class="mt-5 flex justify-center border rounded border-orange-400 p-4">
-            <ng-container *ngIf="requests.tooManyActiveRequests()">
-              <p i18n>Patrons are allowed to have at most {{requests.maxRequestCount}} active requests.</p>
-            </ng-container>
-            <ng-container *ngIf="!requests.tooManyActiveRequests()">
-              <p i18n>This account does not have permission to create new requests.</p>
-            </ng-container>
+        <nav class="mt-10" mat-tab-nav-bar [tabPanel]="tabPanel">
+          <a mat-tab-link routerLink="/requests/create" [active]="tab === 'create'" i18n>
+            Create a New Request
+          </a>
+          <a mat-tab-link routerLink="/requests/list" [active]="tab === 'list'" i18n>
+            View My Requests
+          </a>
+        </nav>
+        <mat-tab-nav-panel #tabPanel>
+          <div class="mt-10">
+            <router-outlet></router-outlet>
           </div>
-        </ng-container>
-        <ng-container *ngIf="requests.requestsAllowed">
-          <nav class="mt-10" mat-tab-nav-bar [tabPanel]="tabPanel">
-            <a mat-tab-link routerLink="/requests/create" [active]="tab === 'create'" i18n>
-              Create a New Request
-            </a>
-            <a mat-tab-link routerLink="/requests/list" [active]="tab === 'list'" i18n>
-              View My Requests
-            </a>
-          </nav>
-          <mat-tab-nav-panel #tabPanel>
-            <div class="mt-10">
-              <router-outlet></router-outlet>
-            </div>
-          </mat-tab-nav-panel>
-        </ng-container>
+        </mat-tab-nav-panel>
       </ng-container>
     </ng-container>
 
