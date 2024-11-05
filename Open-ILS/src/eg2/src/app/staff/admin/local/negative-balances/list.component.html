@@ -22,10 +22,20 @@
 <eg-grid #grid idlClass="au" [dataSource]="dataSource"
   (onRowActivate)="rowActivated($event)"
   persistKey="admin.local.negative_balances"
-  showFields="balance_owed,last_billing_activity,barcode,family_name,first_given_name,dob,barred">
+  showFields="balance_owed,last_billing_activity,barcode,family_name,first_given_name,dob,barred,negative_transaction_total">
+
+  <eg-grid-toolbar-checkbox 
+    [initialValue]="anyNegatives" (onChange)="anyNegsChanged($event)"
+    i18n-label label="Include Patrons with Any Negative Transactions">
+  </eg-grid-toolbar-checkbox>
 
   <eg-grid-column name="barcode" [cellTemplate]="barcodeTmpl"
     i18n-label label="Barcode"></eg-grid-column>
+
+  <eg-grid-column name="negative_transaction_total" 
+    path="_extras.negative_transaction_total"
+    datatype="money" i18n-label label="Negative Transaction Total">
+  </eg-grid-column>
 
   <eg-grid-column name="balance_owed" path="_extras.balance_owed"
     datatype="money" i18n-label label="Balance Owed"></eg-grid-column>
@@ -33,6 +43,7 @@
   <eg-grid-column name="last_billing_activity" path="_extras.last_billing_activity"
     datatype="timestamp" [datePlusTime]="true" i18n-label label="Last Billing Activity">
   </eg-grid-column>
+
 </eg-grid>
 
 

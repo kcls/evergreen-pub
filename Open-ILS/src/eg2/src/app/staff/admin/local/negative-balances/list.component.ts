@@ -25,6 +25,7 @@ export class NegativeBalancesComponent implements OnInit {
     dataSource: GridDataSource = new GridDataSource();
     contextOrg: IdlObject;
     contextOrgLoaded = false;
+    anyNegatives = true;
 
     @ViewChild('grid') private grid: GridComponent;
 
@@ -53,13 +54,19 @@ export class NegativeBalancesComponent implements OnInit {
                 'open-ils.actor',
                 'open-ils.actor.users.negative_balance',
                 this.auth.token(), this.contextOrg.id(),
-                {limit: pager.limit, offset: pager.offset, org_descendants: true}
+                {
+                    limit: pager.limit,
+                    offset: pager.offset,
+                    org_descendants: true,
+                    any_negatives: this.anyNegatives
+                }
             ).pipe(map(data => {
 
                 const user = data.usr;
                 user._extras = {
                     balance_owed: data.balance_owed,
                     last_billing_activity: data.last_billing_activity,
+                    negative_transaction_total: data.negative_transaction_total,
                 };
 
                 return user;
@@ -72,6 +79,11 @@ export class NegativeBalancesComponent implements OnInit {
             this.contextOrg = org;
             this.grid.reload();
         }
+    }
+
+    anyNegsChanged(value: boolean) {
+        this.anyNegatives = value;
+        this.grid.reload();
     }
 
     rowActivated(patron: any) {
