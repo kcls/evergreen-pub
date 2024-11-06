@@ -67,7 +67,10 @@ export class ItemRequestComponent implements OnInit {
 
             if (sort.length) {
                 const field = this.idl.classes.auir.field_map[sort[0].name];
-                if (field && field.datatype === 'text') {
+
+                // 'route_to' is a database enum type and cannot be sorted on lowercase()
+                if (field && field.datatype === 'text' && field.name !== 'route_to') {
+
                     // When sorting on TEXT fields pass the value through the
                     // lowercase transform.
                     orderBy = [{
