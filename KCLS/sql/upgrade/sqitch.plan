@@ -13,3 +13,4 @@
 XXXX-transit-sips [0003-patron-requests] 2024-04-30T20:55:15Z berick <berick@kcls-311> # transit slips
 XXXX-checkout-emails [0004-damaged-item-letter] 2024-09-19T15:23:11Z berick <berick@kcls311> # Checkout Emails
 XXXX-phone-search-indexes [0007-patron-req-cont] 2024-10-31T15:03:48Z berick <berick@kcls311> # phone search index
+XXXX-pr-pickup-lib [0007-patron-req-cont] 2024-11-06T15:48:21Z berick <berick@kcls311> # pr pickup lib

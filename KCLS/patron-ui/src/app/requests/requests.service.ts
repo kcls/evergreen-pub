@@ -91,7 +91,10 @@ export class RequestsService {
                 list.forEach(setting => {
                     if (!(setting.summary as Hash).value) {
                         let org = this.app.getOrgUnit(setting.org_unit as number);
-                        if (org && (org.ou_type as Hash).can_have_users === 't') {
+                        if (org
+                            && org.opac_visible === 't'
+                            && (org.ou_type as Hash).can_have_users === 't') {
+                            org.id = Number(org.id);
                             this.pickupLibs.push(org);
                         }
                     }

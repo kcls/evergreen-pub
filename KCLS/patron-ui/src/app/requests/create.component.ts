@@ -77,7 +77,7 @@ export class CreateRequestComponent implements OnInit {
         publisher: new FormControl({value: '', disabled: true}),
         language: new FormControl({value: '', disabled: true}),
         notes: new FormControl({value: '', disabled: true}),
-        pickupLib: new FormControl(0),
+        pickup_lib: new FormControl(0),
     }
 
     constructor(
@@ -122,18 +122,6 @@ export class CreateRequestComponent implements OnInit {
         this.requests.loadPickupLibs().then(libs => this.pickupLibs = libs);
     }
 
-    updatePickupLib(pl: number) {
-        if (Number(pl)) {
-            console.debug('Updating pickup lib to ', pl);
-
-            this.gateway.requestOne(
-                'open-ils.actor',
-                'open-ils.actor.patron.settings.update',
-                this.app.getAuthtoken(), null, {'opac.default_pickup_location': pl}
-            );
-        }
-    }
-
     getPatronPickupLib() {
         let ses = this.app.getAuthSession();
         if (!ses) { return; } // make TS happy
@@ -147,10 +135,7 @@ export class CreateRequestComponent implements OnInit {
             if (lib === 0) {
                 lib = Number(ses.home_ou);
             }
-            this.controls.pickupLib.setValue(lib);
-
-            // Watch for changes after we apply the initial value
-            this.controls.pickupLib.valueChanges.subscribe(pl => this.updatePickupLib(pl));
+            this.controls.pickup_lib.setValue(lib);
         });
     }
 
