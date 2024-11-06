@@ -33,6 +33,11 @@ my @ILL_FORMATS = ('microfilm', 'article');
 sub apply_route_to {
     my ($request) = @_;
 
+    if ($U->is_true($request->ill_opt_out)) {
+        $request->route_to('acq');
+        return;
+    }
+
     # Avoid clobbering a route-to value which may have been applied
     # by staff.
     return if $request->route_to;
