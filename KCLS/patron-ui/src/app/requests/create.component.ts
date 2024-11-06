@@ -147,7 +147,7 @@ export class CreateRequestComponent implements OnInit {
         this.dupeTitleFound = false;
         this.dupeIdentFound = false;
 
-        if (!format || !(title || ident)) {
+        if (!format || (!title && !ident)) {
             return;
         }
 
