@@ -36,7 +36,9 @@ export class RequestsComponent implements OnInit {
         this.router.events.subscribe((event: Event) => {
             if (event instanceof NavigationEnd) {
                 this.tab = event.url.split("/").pop() || 'create';
-                if (this.tab !== 'list') {
+                if (this.tab === 'list') {
+                    this.requests.requestSubmitted = false;
+                } else {
                     this.tab = 'create';
 
                     // Always clear the selected format when navigating
