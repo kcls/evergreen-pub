@@ -103,6 +103,11 @@ export class ItemRequestDialogComponent extends DialogComponent {
         return from(this.loadRequest()).pipe(switchMap(_ => super.open(args)));
     }
 
+    orgSn(id: number): string {
+        let org = this.org.get(id);
+        return org ? org.shortname() : '';
+    }
+
     findPatron() {
         this.patronNotFound = false;
 

@@ -21,6 +21,7 @@ my @REQ_FIELDS = qw/
     notes
     ill_opt_out
     id_matched
+    pickup_lib
 /; 
 
 # "Books" whose publication date is older than this many years
@@ -503,15 +504,19 @@ sub apply_lineitem {
 
     $logger->info("Linking lineitem $lineitem_id to user request $req_id");
 
+    my $pickup_lib = $req->pickup_lib;
+
+    if (!$pickup_lib) {
+        my $set = $e->search_actor_user_setting({
+            usr => $req->usr->id,
+            name => 'opac.default_pickup_location'
+        })->[0];
+
+        $pickup_lib = $set ? 
+            OpenSRF::Utils::JSON->JSON2perl($set->value) : $req->usr->home_ou;
+    }
+
     # Lineitem linked; now create the hold request.
-
-    my $set = $e->search_actor_user_setting({
-        usr => $req->usr->id,
-        name => 'opac.default_pickup_location'
-    })->[0];
-
-    my $pickup_lib = $set ? 
-        OpenSRF::Utils::JSON->JSON2perl($set->value) : $req->usr->home_ou;
 
     my $args = {
         patronid => $req->usr->id,
