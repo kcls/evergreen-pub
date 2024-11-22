@@ -280,24 +280,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
         }
     }
 
-    createIll() {
-        this.save().then(_ => this.createIllRequest());
-    }
-
-    createIllRequest() {
-        let req = this.request;
-
-        let url = '/staff/cat/ill/track?';
-        url += `title=${encodeURIComponent(req.title())}`;
-        url += `&patronRequestId=${this.requestId}`;
-        url += `&patronBarcode=${encodeURIComponent(req.usr().card().barcode())}`;
-        url += `&illno=${encodeURIComponent(req.illno())}`;
-
-        url = this.ngLocation.prepareExternalUrl(url);
-
-        window.open(url);
-    }
-
     illDenialChanged(content) {
         this.request.ill_denial(content);
     }
