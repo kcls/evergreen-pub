@@ -15,6 +15,7 @@ my @REQ_FIELDS = qw/
     format
     language
     title
+    article
     author
     pubdate
     publisher

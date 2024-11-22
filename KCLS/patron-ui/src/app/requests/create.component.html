@@ -73,6 +73,13 @@
       <p i18n>A request for this item is already active on this account.</p>
     </div>
 
+    <div class="flex p-2" *ngIf="requests.selectedFormat === 'article'">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Article</mat-label>
+        <input type="text" [maxlength]="maxTextLength" matInput [formControl]="controls.article"/>
+      </mat-form-field>
+    </div>
+
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Author, Creator, Performer</mat-label>
