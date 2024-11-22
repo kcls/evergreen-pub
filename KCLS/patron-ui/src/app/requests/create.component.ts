@@ -71,6 +71,7 @@ export class CreateRequestComponent implements OnInit {
 
     controls: {[field: string]: FormControl} = {
         title: new FormControl({value: '', disabled: true}, [Validators.required]),
+        article: new FormControl({value: '', disabled: true}),
         author: new FormControl({value: '', disabled: true}),
         identifier: new FormControl(''),
         pubdate: new FormControl({value: '', disabled: true}, [Validators.pattern(/^\d{4}$/)]),
