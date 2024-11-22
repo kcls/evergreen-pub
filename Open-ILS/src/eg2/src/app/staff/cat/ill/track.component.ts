@@ -62,22 +62,6 @@ export class TrackIllComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        this.route.queryParamMap.subscribe(params => {
-            if (params.get('title')) {
-                this.title += params.get('title');
-            }
-
-            if (params.get('patronBarcode')) {
-                this.patronBarcode = params.get('patronBarcode');
-            }
-
-            if (params.get('illno')) {
-                this.callnumber = 'IL' + params.get('illno');
-            }
-
-            this.patronRequestId = params.get('patronRequestId');
-        });
-
         this.marcDoc = new DOMParser().parseFromString(STUB_MARC, "text/xml");
 
         this.serverStore.getItem('cat.copy.templates')
@@ -180,6 +164,20 @@ export class TrackIllComponent implements OnInit {
             note.value(this.lenderAddress);
 
             return this.pcrud.create(note).toPromise();
+        })
+        .then(_ => {
+            // Call number format is "IL12345..".  Everything after IL
+            // is the ILL number.
+            const illNumber = this.callnumber.replace('IL', '');
+
+            return this.pcrud.search('auir', {illno: illNumber})
+            .toPromise().then(req => {
+                if (req) {
+                    this.patronRequestId = req.id();
+                } else {
+                    console.warn('No request exists with ILL number ' + illNumber);
+                }
+            });
         })
         .then(_ => {
             return this.router.navigate(
