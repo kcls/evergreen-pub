@@ -476,6 +476,19 @@
           </li>
           <li class="divider"></li>
           <li>
+            <a href="/eg2/staff/cat/requests" target="_self">
+              <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+              [% l('Manage Patron Requests') %]
+            </a>
+          </li>
+          <li>
+            <a href="/eg2/staff/cat/ill/track" target="_self">
+              <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+              [% l('Create ILL Item') %]
+            </a>
+          </li>
+          <li class="divider"></li>
+          <li>
             <a href="/eg2/staff/acq/search/selectionlists" target="_self">
               <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
               [% l('Selection Lists') %]
