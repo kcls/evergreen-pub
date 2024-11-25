@@ -84,16 +84,14 @@ export class RequestsService {
 
         // Users are allowed to select a hold pickup lib from the set of
         // org units where the opac.holds.org_unit_not_pickup_lib setting
-        // is false/unset and the org unit is "can have users"
+        // is false/unset and the org unit is "opac visible"
         return this.app.getOrgTree().then(tree => {
             return this.settings.settingValueForOrgs('opac.holds.org_unit_not_pickup_lib')
             .then((list: Hash[]) => {
                 list.forEach(setting => {
                     if (!(setting.summary as Hash).value) {
                         let org = this.app.getOrgUnit(setting.org_unit as number);
-                        if (org
-                            && org.opac_visible === 't'
-                            && (org.ou_type as Hash).can_have_users === 't') {
+                        if (org && org.opac_visible === 't') {
                             org.id = Number(org.id);
                             this.pickupLibs.push(org);
                         }
