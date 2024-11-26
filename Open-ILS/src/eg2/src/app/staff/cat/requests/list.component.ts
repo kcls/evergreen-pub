@@ -86,7 +86,6 @@ export class ItemRequestComponent implements OnInit {
 
             // base query to grab everything
             let base: any = {
-                complete_date: null,
                 cancel_date: null,
                 '-or': []
             };
