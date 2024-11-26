@@ -12,3 +12,4 @@ XXXX-pending-patrons-notice [0004-damaged-item-letter] 2024-06-07T13:56:14Z beri
 XXXX-sip-filters [0004-damaged-item-letter] 2024-06-13T14:06:40Z berick <berick@kcls-311> # SIP mediator filters
 XXXX-patron-req-cont [0004-damaged-item-letter] 2024-06-24T23:17:07Z berick <berick@kcls-311> # patron requests continued
 XXXX-checkout-emails [0004-damaged-item-letter] 2024-09-19T15:23:11Z berick <berick@kcls311> # Checkout Emails
+XXXX-ang-patron-reg [0004-damaged-item-letter] 2024-11-26T22:21:55Z berick <berick@kcls24> # Patron Reg Angular
