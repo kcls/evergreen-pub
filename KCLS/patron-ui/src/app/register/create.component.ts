@@ -65,22 +65,24 @@ export class RegisterCreateComponent implements OnInit {
     textSettings: UserSettingType[] = [];
     printSettings: UserSettingType[] = [];
 
+    // Use Evergreen IDL field names below (e.g. pref_first_given_name)
+    // for ease of translation on the back-end.
     formGroup = this.formBuilder.record({
         design: ['', Validators.required],
         delivery: ['Mail', Validators.required],
-        first: ['', Validators.required],
-        middle: '',
-        last: ['', Validators.required],
+        first_given_name: ['', Validators.required],
+        second_given_name: '',
+        family_name: ['', Validators.required],
         legalIsSame: true,
-        legalFirst: '',
-        legalMiddle: '',
-        legalLast: '',
+        pref_first_given_name: '',
+        pref_second_given_name: '',
+        pref_family_name: '',
         dob: ['', Validators.required],
         guardian: '',
-        phone: ['', [Validators.required, Validators.pattern(PHONE_REGEX)]],
+        day_phone: ['', [Validators.required, Validators.pattern(PHONE_REGEX)]],
         email: ['', Validators.email],
         email2: ['', Validators.email],
-        homeOrg: ['', Validators.required],
+        home_ou: ['', Validators.required],
         wantsLibNews: false,
         wantsFoundationInfo: false,
         street1: ['', Validators.required],
@@ -89,11 +91,11 @@ export class RegisterCreateComponent implements OnInit {
         state: [DEFAULT_STATE, Validators.required],
         zipCode: ['', [Validators.required, Validators.pattern(POST_CODE_REGEX)]],
         mailingIsSame: true,
-        mailingStreet1: '',
-        mailingStreet2: '',
-        mailingCity: '',
-        mailingState: DEFAULT_STATE,
-        mailingZipCode: '',
+        mailing_street1: '',
+        mailing_street2: '',
+        mailing_city: '',
+        mailing_state: DEFAULT_STATE,
+        mailing_post_code: '',
         termsOfService: false,
         allEmailNotices: false,
         allTextNotices: false,
@@ -207,13 +209,13 @@ export class RegisterCreateComponent implements OnInit {
         // Make mailing address fields required if they are different
         // from the billing address.
         this.formGroup.controls.mailingIsSame.valueChanges.subscribe(isSame => {
-            ['mailingStreet1', 'mailingCity', 'mailingState', 'mailingZipCode'].forEach(field => {
+            ['mailing_street1', 'mailing_city', 'mailing_state', 'mailing_post_code'].forEach(field => {
                 let control = this.formGroup.controls[field];
                 if (isSame) {
                     control.clearValidators();
                 } else {
                     control.setValidators(Validators.required);
-                    if (field === 'mailingZipCode') {
+                    if (field === 'mailing_post_code') {
                         control.addValidators(Validators.pattern(POST_CODE_REGEX));
                     }
                 }
