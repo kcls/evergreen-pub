@@ -65,9 +65,8 @@ export class RegisterCreateComponent implements OnInit {
     textSettings: UserSettingType[] = [];
     printSettings: UserSettingType[] = [];
 
-    // Use Evergreen IDL field names below (e.g. first_given_name)
-    // for fields that map directly to EG fields for ease of translation
-    // on the back-end.
+    // Use Evergreen IDL field names below (e.g. pref_first_given_name)
+    // for ease of translation on the back-end.
     formGroup = this.formBuilder.record({
         design: ['', Validators.required],
         delivery: ['Mail', Validators.required],
@@ -348,13 +347,6 @@ export class RegisterCreateComponent implements OnInit {
                 return;
             }
         }
-
-        let values: Hash = {};
-        for (const field in this.formGroup.controls) {
-            values[field] = this.formGroup.controls[field].value;
-        }
-
-        console.debug('VALUES', values);
     }
 }
 
