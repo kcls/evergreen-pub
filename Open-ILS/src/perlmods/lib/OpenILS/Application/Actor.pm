@@ -34,6 +34,7 @@ use OpenILS::Application::Actor::Friends;
 use OpenILS::Application::Actor::Stage;
 use OpenILS::Application::Actor::Settings;
 use OpenILS::Application::Actor::PatronRequests;
+use OpenILS::Application::Actor::Register;
 
 use OpenILS::Utils::CStoreEditor qw/:funcs/;
 use OpenILS::Utils::Penalty;
