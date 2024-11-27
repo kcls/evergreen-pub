@@ -58,8 +58,8 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>First Name</mat-label>
-        <input type="text" matInput formControlName="first_given_name"/>
-        <mat-error *ngIf="formGroup.controls.first_given_name.hasError('required')" i18n>
+        <input type="text" matInput formControlName="first"/>
+        <mat-error *ngIf="formGroup.controls.first.hasError('required')" i18n>
             First Name <strong>required</strong>
         </mat-error>
       </mat-form-field>
@@ -67,7 +67,7 @@
     <div>
       <mat-form-field class="w-full pl-2">
         <mat-label i18n>Middle Name</mat-label>
-        <input type="text" matInput formControlName="second_given_name"/>
+        <input type="text" matInput formControlName="middle"/>
       </mat-form-field>
     </div>
   </div>
@@ -76,8 +76,8 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Last Name</mat-label>
-        <input type="text" matInput formControlName="family_name"/>
-        <mat-error *ngIf="formGroup.controls.family_name.hasError('required')" i18n>
+        <input type="text" matInput formControlName="last"/>
+        <mat-error *ngIf="formGroup.controls.last.hasError('required')" i18n>
             Last Name <strong>required</strong>
         </mat-error>
       </mat-form-field>
@@ -95,13 +95,13 @@
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>Legal First Name</mat-label>
-          <input type="text" matInput formControlName="pref_first_given_name"/>
+          <input type="text" matInput formControlName="legalFirst"/>
         </mat-form-field>
       </div>
       <div>
         <mat-form-field class="w-full pl-2">
           <mat-label i18n>Legal Middle Name</mat-label>
-          <input type="text" matInput formControlName="pref_second_given_name"/>
+          <input type="text" matInput formControlName="legalMiddle"/>
         </mat-form-field>
       </div>
     </div>
@@ -109,7 +109,7 @@
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>Legal Last Name</mat-label>
-          <input type="text" matInput formControlName="pref_family_name"/>
+          <input type="text" matInput formControlName="legalLast"/>
         </mat-form-field>
       </div>
     </div>
@@ -151,12 +151,12 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Phone Number</mat-label>
-        <input type="tel" matInput formControlName="day_phone"/>
+        <input type="tel" matInput formControlName="phone"/>
         <mat-hint>111-222-3333</mat-hint>
-        <mat-error *ngIf="formGroup.controls.day_phone.hasError('required')" i18n>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
             Phone Number <strong>required</strong>
         </mat-error>
-        <mat-error *ngIf="formGroup.controls.day_phone.hasError('pattern')" i18n>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
             Phone Number format is <strong>111-222-3333</strong>
         </mat-error>
       </mat-form-field>
@@ -216,7 +216,7 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Home Library</mat-label>
-        <mat-select formControlName="home_ou">
+        <mat-select formControlName="homeOrg">
           <mat-option [value]="org.id" *ngFor="let org of homeOrgs">{{org.name}}</mat-option>
         </mat-select>
         <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
@@ -363,8 +363,8 @@
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>Street Address</mat-label>
-          <input type="text" matInput formControlName="mailing_street1"/>
-          <mat-error *ngIf="formGroup.controls.mailing_street1.hasError('required')" i18n>
+          <input type="text" matInput formControlName="mailingStreet1"/>
+          <mat-error *ngIf="formGroup.controls.mailingStreet1.hasError('required')" i18n>
               Street address is <strong>required</strong>
           </mat-error>
         </mat-form-field>
@@ -375,14 +375,14 @@
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>Apartment or Unit</mat-label>
-          <input type="text" matInput formControlName="mailing_street2"/>
+          <input type="text" matInput formControlName="mailingStreet2"/>
         </mat-form-field>
       </div>
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>City</mat-label>
-          <input type="text" matInput formControlName="mailing_city"/>
-          <mat-error *ngIf="formGroup.controls.mailing_city.hasError('required')" i18n>
+          <input type="text" matInput formControlName="mailingCity"/>
+          <mat-error *ngIf="formGroup.controls.mailingCity.hasError('required')" i18n>
               City is <strong>required</strong>
           </mat-error>
         </mat-form-field>
@@ -393,10 +393,10 @@
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>State</mat-label>
-          <mat-select formControlName="mailing_state">
+          <mat-select formControlName="mailingState">
             <mat-option *ngFor="let state of states" [value]="state">{{state}}</mat-option>
           </mat-select>
-          <mat-error *ngIf="formGroup.controls.mailing_state.hasError('required')" i18n>
+          <mat-error *ngIf="formGroup.controls.mailingState.hasError('required')" i18n>
               State is <strong>required</strong>
           </mat-error>
         </mat-form-field>
@@ -404,11 +404,11 @@
       <div>
         <mat-form-field class="w-full">
           <mat-label i18n>Zip Code</mat-label>
-          <input type="text" matInput formControlName="mailing_post_code"/>
-          <mat-error *ngIf="formGroup.controls.mailing_post_code.hasError('required')" i18n>
+          <input type="text" matInput formControlName="mailingZipCode"/>
+          <mat-error *ngIf="formGroup.controls.mailingZipCode.hasError('required')" i18n>
               Zip Code is <strong>required</strong>
           </mat-error>
-          <mat-error *ngIf="formGroup.controls.mailing_post_code.hasError('pattern')" i18n>
+          <mat-error *ngIf="formGroup.controls.mailingZipCode.hasError('pattern')" i18n>
               Zip Code format is <strong>12345</strong>
           </mat-error>
         </mat-form-field>
