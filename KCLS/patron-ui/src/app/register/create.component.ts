@@ -13,6 +13,10 @@ const DEFAULT_STATE = 'WA';
 const POST_CODE_REGEX = /\d{5}/;
 const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
 
+const STAT_CAT_LIB_NEWS = 3;
+const STAT_CAT_FOUNDATION_NEWS = 4;
+const STAT_CAT_CARD_STYLE = 10;
+
 const COMMON_USER_SETTING_TYPES = [
   'circ.holds_behind_desk',
   'circ.autorenew.opt_in',
@@ -26,6 +30,15 @@ interface UserSettingType {
     grp: string;
 }
 
+
+interface ApiPayload {
+    delivery_method: string,
+    user: Hash,
+    billing_address: Hash,
+    mailing_address:  Hash,
+    settings: Hash[],
+    stat_cats: Hash[],
+}
 
 export const sameEmailValidator: ValidatorFn = (
   control: AbstractControl,
@@ -312,6 +325,10 @@ export class RegisterCreateComponent implements OnInit {
         }
     }
 
+    cancel() {
+        window.location.reload();
+    }
+
     // Avoid disabling the submit button for missing values.
     // See submit() for why.
     canSubmit(): boolean {
@@ -322,11 +339,8 @@ export class RegisterCreateComponent implements OnInit {
         return true;
     }
 
-    cancel() {
-        window.location.reload();
-    }
-
-    submit() {
+    // Returns true if submit can continue
+    preSubmit(): boolean {
         this.formNeedsWork = false;
 
         for (const field in this.formGroup.controls) {
@@ -337,14 +351,79 @@ export class RegisterCreateComponent implements OnInit {
 
             if ((this.formGroup.controls as any)[field].errors) {
                 this.formNeedsWork = true;
-                return;
+                return false;
             }
 
             if (this.formGroup.errors) {
                 this.formNeedsWork = true;
-                return;
+                return false;
             }
         }
+
+        return true;
+    }
+
+    // Map our values to what the API needs and post them to the API.
+    submit() {
+        if (!this.preSubmit()) {
+            return;
+        }
+
+        // Reminder that KCLS uses pref_* fields for the legal name
+        // when it differs from chosen name.
+        let ctls = this.formGroup.controls;
+
+        let payload: ApiPayload = {
+            delivery_method: '' + ctls.delivery.value,
+            user: {
+                first_given_name: ctls.first.value,
+                second_given_name: ctls.middle.value,
+                family_name: ctls.last.value,
+                pref_first_given_name: ctls.legalFirst.value,
+                pref_second_given_name: ctls.legalMiddle.value,
+                pref_family_name: ctls.legalLast.value,
+                dob: ctls.dob.value,
+                day_phone: ctls.phone.value,
+                email: ctls.email.value,
+                home_ou: ctls.homeOrg.value,
+                guardian: ctls.guardian.value,
+            },
+            billing_address: {
+                street1: ctls.street1.value,
+                street2: ctls.street2.value,
+                city: ctls.city.value,
+                state: ctls.state.value,
+                post_code: ctls.zipCode.value,
+            },
+            mailing_address:  {
+                street1: ctls.mailingStreet1.value,
+                street2: ctls.mailingStreet2.value,
+                city: ctls.mailingCity.value,
+                state: ctls.mailingState.value,
+                post_code: ctls.mailingZipCode.value,
+            },
+            settings: [
+                {name: 'opac.default_sms_notify', value: ctls.smsNumber},
+            ],
+            stat_cats: [
+                {stat_cat: STAT_CAT_LIB_NEWS,
+                    value: ctls.wantsLibNews.value ? 'Y' : 'N'},
+                {stat_cat: STAT_CAT_FOUNDATION_NEWS,
+                    value: ctls.wantsFoundationInfo.value ? 'Y' : 'N'},
+                {stat_cat: STAT_CAT_CARD_STYLE,
+                    value: ctls.design.value ? 'Y' : 'N'}
+            ]
+        };
+
+        // Propagate the notification settings
+        for (const field in ctls) {
+            if (field.startsWith('notification.')) {
+                if (ctls[field].value === true) {
+                    payload.settings.push({name: field, value: true});
+                }
+            }
+        }
+
+        console.debug(payload);
     }
 }
-
