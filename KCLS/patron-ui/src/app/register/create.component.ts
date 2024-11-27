@@ -32,12 +32,16 @@ interface UserSettingType {
 
 
 interface ApiPayload {
-    delivery_method: string,
     user: Hash,
     billing_address: Hash,
     mailing_address:  Hash,
     settings: Hash[],
     stat_cats: Hash[],
+}
+
+interface ApiResponse {
+    success: number, // Perl
+    error: string,
 }
 
 export const sameEmailValidator: ValidatorFn = (
@@ -77,6 +81,8 @@ export class RegisterCreateComponent implements OnInit {
     phoneSettings: UserSettingType[] = [];
     textSettings: UserSettingType[] = [];
     printSettings: UserSettingType[] = [];
+
+    registerSuccess = false;
 
     formGroup = this.formBuilder.record({
         design: ['', Validators.required],
@@ -365,28 +371,38 @@ export class RegisterCreateComponent implements OnInit {
 
     // Map our values to what the API needs and post them to the API.
     submit() {
+        this.registerSuccess = false;
+
         if (!this.preSubmit()) {
             return;
         }
 
-        // Reminder that KCLS uses pref_* fields for the legal name
-        // when it differs from chosen name.
         let ctls = this.formGroup.controls;
 
+        // DOB is just the date, but still needs to be in ISO format.
+        const dob = new Date(ctls.dob.value as string);
+        const dobstr =
+            dob.getFullYear() + '-' +
+            ((dob.getMonth() + 1) + '').padStart(2, '0') + '-' +
+            (dob.getDate() + '').padStart(2, '0');
+
+        // Reminder that KCLS uses pref_* fields for the legal name
+        // when it differs from chosen name.
+
         let payload: ApiPayload = {
-            delivery_method: '' + ctls.delivery.value,
             user: {
+                delivery_method: '' + ctls.delivery.value,
                 first_given_name: ctls.first.value,
                 second_given_name: ctls.middle.value,
                 family_name: ctls.last.value,
                 pref_first_given_name: ctls.legalFirst.value,
                 pref_second_given_name: ctls.legalMiddle.value,
                 pref_family_name: ctls.legalLast.value,
-                dob: ctls.dob.value,
+                dob: dobstr,
                 day_phone: ctls.phone.value,
                 email: ctls.email.value,
                 home_ou: ctls.homeOrg.value,
-                guardian: ctls.guardian.value,
+                ident_value2: ctls.guardian.value, // KCLS
             },
             billing_address: {
                 street1: ctls.street1.value,
@@ -403,7 +419,7 @@ export class RegisterCreateComponent implements OnInit {
                 post_code: ctls.mailingZipCode.value,
             },
             settings: [
-                {name: 'opac.default_sms_notify', value: ctls.smsNumber},
+                {name: 'opac.default_sms_notify', value: ctls.smsNumber.value},
             ],
             stat_cats: [
                 {stat_cat: STAT_CAT_LIB_NEWS,
@@ -424,6 +440,18 @@ export class RegisterCreateComponent implements OnInit {
             }
         }
 
-        console.debug(payload);
+        console.debug('PAYLOAD', payload);
+
+        return this.gateway.request(
+            'open-ils.actor',
+            'open-ils.actor.register',
+            payload
+        ).toPromise().then(r => {
+            const response = r as ApiResponse;
+
+            console.debug('RESPONSE', response);
+
+            this.registerSuccess = Number(response.success) > 0;
+        });
     }
 }
