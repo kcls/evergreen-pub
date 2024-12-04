@@ -108,6 +108,12 @@ export class ItemRequestDialogComponent extends DialogComponent {
         return org ? org.shortname() : '';
     }
 
+    orgName(id: number): string {
+        let org = this.org.get(id);
+        return org ? org.name() : '';
+    }
+
+
     findPatron() {
         this.patronNotFound = false;
 
