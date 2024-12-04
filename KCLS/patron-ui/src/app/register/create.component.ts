@@ -41,7 +41,6 @@ interface ApiPayload {
 
 interface ApiResponse {
     success: number, // Perl
-    error: string,
 }
 
 export const sameEmailValidator: ValidatorFn = (
@@ -440,7 +439,7 @@ export class RegisterCreateComponent implements OnInit {
             }
         }
 
-        console.debug('PAYLOAD', payload);
+        console.debug('SEND', payload);
 
         return this.gateway.request(
             'open-ils.actor',

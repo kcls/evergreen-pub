@@ -7,6 +7,7 @@ use OpenILS::Utils::CStoreEditor q/:funcs/;
 use OpenILS::Utils::Fieldmapper;
 use OpenSRF::Utils::JSON;
 use OpenILS::Event;
+use OpenILS::Utils::KCLSNormalize;
 use DateTime;
 my $U = "OpenILS::Application::AppUtils";
 
@@ -25,6 +26,8 @@ my @USER_FIELDS = (
     'ident_value2', # guardian
 );
 
+
+my @ALLOWED_STAT_CATS = (3, 4, 10);
 
 __PACKAGE__->register_method(
     method      => 'register',
@@ -46,8 +49,6 @@ sub register {
 
     return OpenILS::Event->new('BAD_PARAMS') unless ref $values eq 'HASH';
 
-    my $e = new_editor();
-
     my $user = Fieldmapper::staging::user_stage->new;
 
     # user
@@ -56,18 +57,152 @@ sub register {
         $user->$field($val);
     }
 
-    $e->xact_begin;
+    my ($bill_addr, $mail_addr) = handle_addresses($values);
+    my $stat_cats = handle_stat_cats($values);
 
-    $e->create_staging_user_stage($user) 
-        or return {success => 0, error => $e->die_event->{textcode}};
+    my $settings = handle_user_settings($values);
 
-    $e->commit;
+    my $response = {success => 0};
 
-    return {
-        success => 1,
-        error => '',
-    };
+    # user.stage.create will generate a temporary usrname and 
+    # link the user and address objects via this username in the DB.
+    my $resp = $U->simplereq(
+        'open-ils.actor', 
+        'open-ils.actor.user.stage.create',
+        $user, $mail_addr, $bill_addr, $stat_cats, $settings
+    );
+
+    if (!$resp or ref $resp) {
+        $logger->warn("Patron self-reg failed ".Dumper($resp));
+
+    } else {
+        $logger->info("Patron self-reg success; usrname $resp");
+        $response->{success} = 1;
+    }
+
+    return $response;
 }
+
+sub handle_user_settings {
+    my $values = shift;
+
+    my @settings;
+
+    for my $set (@{$values->{settings}}) {
+        my $setting = Fieldmapper::staging::setting_stage->new;
+        $setting->setting($set->{name});
+        $setting->value($set->{value});
+        push(@settings, $setting);
+    }
+
+    \@settings;
+}
+
+sub handle_addresses {
+    my $values = shift;
+    my $bill_addr;
+    my $mail_addr;
+
+    # billing ---
+    my $addr = $values->{billing_address};
+    for my $field (%$addr) {
+        my $val = normalize($addr->{$field}) or next; # skip empty strings
+        $bill_addr = Fieldmapper::staging::billing_address_stage->new unless $bill_addr;
+        $bill_addr->$field($val);
+    }
+
+    if ($bill_addr) {
+        # DB requires this field
+        $bill_addr->post_code('') unless $bill_addr->post_code;
+        # if no street1 is entered, don't create the addres
+        $bill_addr = undef unless $bill_addr->street1;
+    }
+
+    # mailing ---
+    $addr = $values->{mailing_address};
+    for my $field (%$addr) {
+        my $val = normalize($addr->{$field}) or next; # skip empty strings
+        $mail_addr = Fieldmapper::staging::mailing_address_stage->new unless $mail_addr;
+        $mail_addr->$field($val);
+    }
+   
+    if ($mail_addr) {
+        # DB requires this field
+        $mail_addr->post_code('') unless $mail_addr->post_code;
+        # if no street1 is entered, don't create the addres
+        $mail_addr = undef unless $mail_addr->street1;
+    }
+
+    # only create the mailing address if it differs from the billing
+    # (residential) address.  We know from the form data whether the
+    # user selected mailing-matches-billing, but make the comparison
+    # anyway in case the option was de-selected when the match anyway.
+    $mail_addr = undef if (
+        $bill_addr && 
+        $mail_addr && 
+        addrs_match($bill_addr, $mail_addr)
+    );
+
+    if ($bill_addr) {
+        my ($bstreet1, $bstreet2) = 
+            OpenILS::Utils::KCLSNormalize::normalize_address_street(
+                $bill_addr->street1, $bill_addr->street2);
+
+        $bill_addr->street1($bstreet1);
+        if ($bstreet2) {
+            $bill_addr->street2($bstreet2);
+        } else {
+            $bill_addr->clear_street2;
+        }
+    }
+
+    if ($mail_addr) {
+        my ($mstreet1, $mstreet2) = 
+            OpenILS::Utils::KCLSNormalize::normalize_address_street(
+                $mail_addr->street1, $mail_addr->street2);
+
+        $mail_addr->street1($mstreet1);
+        if ($mstreet2) {
+            $mail_addr->street2($mstreet2);
+        } else {
+            $mail_addr->clear_street2;
+        }
+    }
+
+    return ($bill_addr, $mail_addr);
+}
+
+# Create the stat cat entries.
+sub handle_stat_cats {
+    my $values = shift;
+
+    my $stat_cats = [];
+
+    # We only allow values for certain stat cats to be provided via this API.
+    for my $cat_id (@ALLOWED_STAT_CATS) {
+        if (my ($sc) = grep { $_->{stat_cat} == $cat_id } @{$values->{stat_cats}}) {
+            my $stat_cat = Fieldmapper::staging::statcat_stage->new;
+            $stat_cat->statcat($cat_id);
+            $stat_cat->value($sc->{value});
+            push(@$stat_cats, $stat_cat);
+        }
+    }
+
+    return $stat_cats;
+}
+
+
+# returns true if the addresses contain all of the same values.
+sub addrs_match {
+    my ($addr1, $addr2) = @_;
+    for my $field ($addr1->real_fields) {
+        $logger->info("comparing addr fields $field: " .
+            $addr1->$field() . " : " . $addr2->$field());
+        return 0 if ($addr1->$field() || '') ne ($addr2->$field() || '');
+    }
+    return 1;
+}
+
 
 sub normalize {
     my ($field, $value) = @_;
