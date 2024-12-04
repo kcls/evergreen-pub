@@ -107,7 +107,18 @@ export class CreateRequestComponent implements OnInit {
         this.controls.title.valueChanges.pipe(debounceTime(500))
         .subscribe(title => this.dupesLookup());
 
-        this.requests.formatChanged.subscribe(_ => this.dupesLookup());
+        if (this.requests.selectedFormat === 'article') {
+            this.controls.article.clearValidators();
+            this.controls.article.setValidators(Validators.required);
+        }
+
+        this.requests.formatChanged.subscribe(_ => {
+            this.controls.article.clearValidators();
+            if (this.requests.selectedFormat === 'article') {
+                this.controls.article.setValidators(Validators.required);
+            }
+            this.dupesLookup();
+        });
 
         this.app.authSessionLoad.subscribe(() => this.getPatronPickupLib());
 
