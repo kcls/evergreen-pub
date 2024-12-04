@@ -31,7 +31,9 @@ export class RequestListComponent implements OnInit {
 
     controls: {[field: string]: FormControl} = {
         //pendingCbox: new FormControl(''),
-        completedCbox: new FormControl('')
+        completedCbox: new FormControl(false),
+        routedToAcqCbox: new FormControl(false),
+        routedToIllCbox: new FormControl(false)
     };
 
     statuses: RequestStatus[] = [
@@ -66,6 +68,8 @@ export class RequestListComponent implements OnInit {
 
     ngOnInit() {
         this.controls.completedCbox.valueChanges.subscribe(_ => this.load());
+        this.controls.routedToAcqCbox.valueChanges.subscribe(_ => this.load());
+        this.controls.routedToIllCbox.valueChanges.subscribe(_ => this.load());
 
         this.requests = [];
         this.title.setTitle($localize`My Requests`);
@@ -81,8 +85,17 @@ export class RequestListComponent implements OnInit {
             api = 'open-ils.actor.patron-request.retrieve.all';
         }
 
-        this.gateway.requestOne('open-ils.actor', api, this.app.getAuthtoken())
-        .then((list: unknown) => {
+        let filters = {
+            limit_to_acq: this.controls.routedToAcqCbox.value,
+            limit_to_ill: this.controls.routedToIllCbox.value,
+        };
+
+        this.gateway.requestOne(
+            'open-ils.actor',
+            api,
+            this.app.getAuthtoken(),
+            filters
+        ).then((list: unknown) => {
             this.requests = (list as Hash[]).map((hash: Hash) => {
                 let request = hash["request"] as Request;
                 request._status = (hash["status"] as Hash)["status"] as string;

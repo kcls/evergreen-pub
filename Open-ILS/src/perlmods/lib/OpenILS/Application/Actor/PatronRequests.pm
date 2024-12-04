@@ -180,6 +180,7 @@ __PACKAGE__->register_method (
 
 sub get_requests {
     my ($self, $client, $auth, $options) = @_;
+    $options ||= {};
 
     my $e = new_editor(authtoken => $auth);
 
@@ -193,6 +194,16 @@ sub get_requests {
     if ($self->api_name =~ /pending/) {
         $filter->{cancel_date} = undef;
         $filter->{complete_date} = undef;
+    }
+
+    if ($options->{limit_to_acq}) {
+        if ($options->{limit_to_ill}) {
+            # nothing
+        } else {
+            $filter->{route_to} = 'acq';
+        }
+    } elsif ($options->{limit_to_ill}) {
+        $filter->{route_to} = 'ill';
     }
 
     my $requests = $e->search_actor_user_item_request([

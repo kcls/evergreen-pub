@@ -1,5 +1,7 @@
 <ng-container *ngIf="app.getAuthSession()">
   <mat-checkbox [formControl]="controls.completedCbox">Include Completed Requests</mat-checkbox>
+  <mat-checkbox [formControl]="controls.routedToAcqCbox">Item for Purchase</mat-checkbox>
+  <mat-checkbox [formControl]="controls.routedToIllCbox">Item for Interlibrary Loan</mat-checkbox>
 
   <div class="flex justify-center mt-4 p-2 border rounded" *ngIf="requests.length === 0" i18n>
     You Have No Requests
