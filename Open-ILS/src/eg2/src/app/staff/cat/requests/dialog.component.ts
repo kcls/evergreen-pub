@@ -7,8 +7,8 @@ import {ToastService} from '@eg/share/toast/toast.service';
 import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {OrgService} from '@eg/core/org.service';
-import {switchMap} from 'rxjs/operators';
-import {Observable, from, throwError} from 'rxjs';
+import {switchMap, concatMap} from 'rxjs/operators';
+import {Observable, tap, from, throwError} from 'rxjs';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
@@ -27,14 +27,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
     // For creating mediated requests
     patronBarcode = '';
     patronNotFound = false;
-
-    statuses: ComboboxEntry[]  = [
-        {id: 'pending',    label: $localize`Pending`},
-        {id: 'processing', label: $localize`In Process`},
-        {id: 'complete',   label: $localize`Complete`},
-        {id: 'canceled',   label: $localize`Canceled`},
-        {id: 'rejected',   label: $localize`Rejected`},
-    ]
 
     languages = [
         $localize`English`,
@@ -154,6 +146,13 @@ export class ItemRequestDialogComponent extends DialogComponent {
         .toPromise().then(req => {
             this.request = req;
             this.sourceRequest = this.idl.clone(req);
+
+            return this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.patron-request.status',
+                this.auth.token(), req.id())
+            .pipe(tap(stat => req._status = stat.status))
+            .toPromise()
         });
     }
 
@@ -242,22 +241,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
     }
 
     getStatus(): string {
-        let code = 'pending';
-
-        let req = this.request;
-        if (req) {
-            if (req.cancel_date()) {
-                code = 'canceled';
-            } else if (req.reject_date()) {
-                code = 'rejected';
-            } else if (req.claim_date()) {
-                code = 'processing';
-            } else if (req.complete_date()) {
-                code = 'complete';
-            }
-        }
-
-        return this.statuses.filter(s => s.id === code)[0].label;
+        return this.request._status;
     }
 
     setStatus(code: string) {
