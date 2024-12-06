@@ -198,9 +198,6 @@
       <div class="col-4">{{getStatus()}}</div>
       <div class="col-6 d-flex">
         <div class="flex-1"></div>
-        <button class="btn btn-outline-dark" 
-          [disabled]="request.complete_date()"
-          (click)="setStatus('complete')" i18n>Set as Complete</button>
         <button class="btn btn-outline-dark ms-2" 
           [disabled]="request.reject_date() || request.complete_date()"
           (click)="setStatus('rejected')" i18n>Set as Rejected</button>
