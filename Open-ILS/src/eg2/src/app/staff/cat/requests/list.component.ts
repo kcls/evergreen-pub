@@ -129,7 +129,9 @@ export class ItemRequestComponent implements OnInit {
                     auir: ['usr', 'claimed_by'],
                     au: ['card', 'profile', 'stat_cat_entries']
                 },
-                order_by: orderBy
+                order_by: orderBy,
+                limit: pager.limit,
+                offset: pager.offset,
             };
 
             return this.pcrud.search('auir', query, flesh)
