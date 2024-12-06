@@ -32,16 +32,16 @@
   <eg-grid-column name="barcode" [cellTemplate]="barcodeTmpl"
     i18n-label label="Barcode"></eg-grid-column>
 
+  <eg-grid-column name="negative_transaction_total" 
+    path="_extras.negative_transaction_total"
+    datatype="money" i18n-label label="Negative Transaction Total">
+  </eg-grid-column>
+
   <eg-grid-column name="balance_owed" path="_extras.balance_owed"
     datatype="money" i18n-label label="Balance Owed"></eg-grid-column>
 
   <eg-grid-column name="last_billing_activity" path="_extras.last_billing_activity"
     datatype="timestamp" [datePlusTime]="true" i18n-label label="Last Billing Activity">
-  </eg-grid-column>
-
-  <eg-grid-column name="negative_transaction_total" 
-    path="_extras.negative_transaction_total"
-    datatype="money" i18n-label label="Negative Transaction Total">
   </eg-grid-column>
 
 </eg-grid>
