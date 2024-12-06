@@ -66,6 +66,7 @@ export class NegativeBalancesComponent implements OnInit {
                 user._extras = {
                     balance_owed: data.balance_owed,
                     last_billing_activity: data.last_billing_activity,
+                    negative_transaction_total: data.negative_transaction_total,
                 };
 
                 return user;

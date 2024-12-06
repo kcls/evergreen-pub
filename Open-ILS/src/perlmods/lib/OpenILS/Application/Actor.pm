@@ -4348,10 +4348,25 @@ sub negative_balance_users {
     my $list = $e->json_query($query, {timeout => 600});
 
     for my $data (@$list) {
+
+        my $neg_balance = $e->json_query({
+            select => {mobts => [{
+                column => 'balance_owed', 
+                transform => 'sum', 
+                aggregate => 1
+            }]},
+            from => 'mobts',
+            where => {
+                usr => $data->{usr},
+                balance_owed => {'<' => 0}
+            }
+        })->[0]->{balance_owed} || 0;
+
         $conn->respond({
             usr => $e->retrieve_actor_user([$data->{usr}, {flesh => 1, flesh_fields => {au => ['card']}}]),
             balance_owed => $data->{balance_owed},
-            last_billing_activity => max($data->{last_billing_ts}, $data->{last_payment_ts})
+            last_billing_activity => max($data->{last_billing_ts}, $data->{last_payment_ts}),
+            negative_transaction_total => $neg_balance
         });
     }
 
