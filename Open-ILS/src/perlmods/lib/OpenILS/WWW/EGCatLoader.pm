@@ -202,15 +202,20 @@ sub load {
     if($path =~ m|opac/login_oa|) {
         return $self->load_login_oa unless $self->editor->requestor; # already logged in?
 
+
         # This will be less confusing to users than to be shown a login form
         # when they're already logged in.
-        return $self->generic_redirect(
-            sprintf(
-                "%s://%s%s/myopac/main",
-                $self->ctx->{proto},
-                $self->ctx->{hostname}, $self->ctx->{opac_root}
-            )
-        );
+#        return $self->generic_redirect(
+#            sprintf(
+#                "%s://%s%s/myopac/main",
+#                $self->ctx->{proto},
+#                $self->ctx->{hostname}, $self->ctx->{opac_root}
+#            )
+#        );
+        
+        # If we end up here, it's likely becuase someone navigated backward,
+        # likely expecting to be returnd to the database page.  Send them there.
+        return $self->generic_redirect('https://kcls.org/databases');
     }
 
 
