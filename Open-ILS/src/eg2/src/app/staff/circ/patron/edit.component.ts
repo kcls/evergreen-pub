@@ -279,6 +279,7 @@ export class EditComponent implements OnInit {
         .then(_ => this.getFieldDocs())
         .then(_ => this.setSurveys())
         .then(_ => this.loadPatron())
+        .then(_ => this.setOptInSettings())
         .then(_ => this.getCloneUser())
         .then(_ => this.getStageUser())
         .then(_ => this.getSecondaryGroups())
@@ -286,7 +287,6 @@ export class EditComponent implements OnInit {
         .then(_ => this.setEditProfiles())
         .then(_ => this.setIdentTypes())
         .then(_ => this.setInetLevels())
-        .then(_ => this.setOptInSettings())
         .then(_ => this.setSmsCarriers())
         .then(_ => this.setFieldPatterns())
         .then(_ => this.showForm = true)
@@ -488,8 +488,16 @@ export class EditComponent implements OnInit {
         }
 
         stageData.settings.forEach(setting => {
-            this.userSettings[setting.setting()] = Boolean(setting.value());
+            let value = setting.value();
+            if (this.userSettingTypes[setting.setting()].datatype() === 'bool') {
+                value = value === 'f' ? false : true;
+            }
+            this.userSettings[setting.setting()] = value;
         });
+
+        // If all opt-ins for a notification settings group are active,
+        // activate the group as well.
+        this.applyGroupedSettingValues();
 
         stageData.statcats.forEach(entry => {
 
