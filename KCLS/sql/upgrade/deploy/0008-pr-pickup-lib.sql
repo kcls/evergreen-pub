@@ -4,6 +4,7 @@
 BEGIN;
 
 ALTER TABLE actor.usr_item_request
+    ADD COLUMN article TEXT,
     ADD COLUMN pickup_lib INTEGER REFERENCES actor.org_unit(id);
 
 COMMIT;

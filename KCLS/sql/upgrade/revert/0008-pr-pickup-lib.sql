@@ -2,6 +2,6 @@
 
 BEGIN;
 
-ALTER TABLE actor.usr_item_request DROP COLUMN pickup_lib;
+ALTER TABLE actor.usr_item_request DROP COLUMN article, DROP COLUMN pickup_lib;
 
 COMMIT;
