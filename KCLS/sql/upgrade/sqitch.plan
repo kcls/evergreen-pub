@@ -11,3 +11,4 @@
 0006-sip-filters [0004-damaged-item-letter] 2024-06-13T14:06:40Z berick <berick@kcls-311> # SIP mediator filters
 0007-patron-req-cont [0004-damaged-item-letter] 2024-06-24T23:17:07Z berick <berick@kcls-311> # patron requests continued
 0008-pr-pickup-lib [0007-patron-req-cont] 2024-11-06T15:48:21Z berick <berick@kcls311> # pr pickup lib
+0009-phone-settings-index [0008-pr-pickup-lib] 2024-12-09T14:55:17Z berick <berick@kcls311> # phone settings indexes
