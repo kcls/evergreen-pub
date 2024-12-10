@@ -29,7 +29,7 @@ BEGIN
                 JOIN authority.control_set_auth_field_metabib_field_map_refs map
                     ON (ash.atag = map.authority_field)
                 WHERE mbeshm.entry = entry_id
-j       )x
+        )x
     )
     WHERE id = entry_id;
 
@@ -38,9 +38,9 @@ j       )x
     -- have already been removed.
     IF TG_OP = 'DELETE' THEN
         SELECT INTO keep_entry EXISTS (
-            SELECT TRUE FROM metabib.browse_entry_def_map WHERE entry = entry_id LIMIT 1
+            SELECT TRUE FROM metabib.browse_entry_def_map WHERE entry = entry_id
             UNION
-            SELECT TRUE FROM metabib.browse_entry_simple_heading_map WHERE entry = entry_id LIMIT 1
+            SELECT TRUE FROM metabib.browse_entry_simple_heading_map WHERE entry = entry_id
         );
         IF NOT keep_entry THEN
             DELETE FROM metabib.browse_entry WHERE id = entry_id;
