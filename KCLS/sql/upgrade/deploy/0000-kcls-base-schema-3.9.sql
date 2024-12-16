@@ -79999,7 +79999,7 @@ CREATE UNIQUE INDEX circ_parent_idx ON action.circulation USING btree (parent_ci
 -- Name: circ_start_idx; Type: INDEX; Schema: action; Owner: evergreen
 --
 
-CREATE INDEX circ_start_idx ON action.circulation USING btree (((timezone('us/pacific'::text, xact_start))::date));
+CREATE INDEX circ_start_idx ON action.circulation USING btree (((timezone('America/Los_Angeles'::text, xact_start))::date));
 
 
 --
