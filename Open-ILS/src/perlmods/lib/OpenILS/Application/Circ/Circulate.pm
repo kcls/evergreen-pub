@@ -3186,10 +3186,19 @@ sub do_checkin {
 
     $self->finish_fines_and_voiding;
 
-    if ($self->confirmed_lostpaid_checkin && !$self->lostpaid_checkin_skip_processing) {
-        # Lost/Paid checkin and the user has confirmed we should continue.
-        my $evt = $self->process_lostpaid_checkin;
-        $self->bail_on_events($evt) if $evt;
+    if ($self->confirmed_lostpaid_checkin) {
+        if ($self->lostpaid_checkin_skip_processing) {
+            if (!$self->editor->allowed('CHECKIN_BYPASS_REFUND')) {
+                # Make sure the perm error is the only event so the
+                # client can handle it appropriately.
+                $self->events([]);
+                return $self->bail_on_events($self->editor->event);
+            }
+        } else {
+            # Lost/Paid checkin and the user has confirmed we should continue.
+            my $evt = $self->process_lostpaid_checkin;
+            $self->bail_on_events($evt) if $evt;
+        }
     }
 
     OpenILS::Utils::Penalty->calculate_penalties(
