@@ -4306,14 +4306,14 @@ sub negative_balance_users {
     return $e->die_event unless $e->allowed('VIEW_USER', $org_id);
 
     my %where = $options->{any_negatives} ?
-        ('+mbts' => {balance_owed => {'<' => 0}}) :
+        ('+mobts' => {balance_owed => {'<' => 0}}) :
         ('+mous' => {balance_owed => {'<' => 0}});
 
     my $query = {
         select => {
             mous => ['usr', 'balance_owed'],
             au => ['home_ou'],
-            mbts => [
+            mobts => [
                 {column => 'last_billing_ts', transform => 'max', aggregate => 1},
                 {column => 'last_payment_ts', transform => 'max', aggregate => 1},
             ]
@@ -4324,7 +4324,7 @@ sub negative_balance_users {
                     fkey => 'usr',
                     field => 'id',
                     join => {
-                        mbts => {
+                        mobts => {
                             key => 'id',
                             field => 'usr'
                         }
