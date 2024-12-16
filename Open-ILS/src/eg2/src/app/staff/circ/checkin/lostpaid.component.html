@@ -207,8 +207,7 @@
 
     <div class="row" *ngIf="!checkinComplete">
       <div class="col-6">
-        <button [disabled]="!hasCheckinBypassPerms" type="button" class="btn btn-danger" 
-          (click)="checkin(true)" i18n>
+        <button type="button" class="btn btn-danger" (click)="checkin(true)" i18n>
             Standard Checkin / No Extra Processing
         </button>
       </div>
