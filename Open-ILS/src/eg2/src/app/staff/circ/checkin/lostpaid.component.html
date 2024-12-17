@@ -239,6 +239,9 @@
         </div>
       </div>
     </div>
+    <div class="row" *ngIf="!checkinComplete">
+      <div class="col-12" class="text-danger" i18n>(Requires Supervisor)</div>
+    </div>
   </div>
 </div>
 
