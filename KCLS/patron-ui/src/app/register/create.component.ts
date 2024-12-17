@@ -220,6 +220,8 @@ export class RegisterCreateComponent implements OnInit {
                 this.isJuvenile = false;
                 this.formGroup.controls.guardian.clearValidators();
             }
+
+            this.formGroup.controls.guardian.updateValueAndValidity();
         });
 
         // Make mailing address fields required if they are different
@@ -354,12 +356,16 @@ export class RegisterCreateComponent implements OnInit {
             // fields will appear as errors in the form.
             (this.formGroup.controls as any)[field].markAsTouched();
 
-            if ((this.formGroup.controls as any)[field].errors) {
+            let fieldErrs = (this.formGroup.controls as any)[field].errors;
+
+            if (fieldErrs) {
+                console.debug(field + ' errors:', fieldErrs);
                 this.formNeedsWork = true;
                 return false;
             }
 
             if (this.formGroup.errors) {
+                console.debug('Form group errors: ', this.formGroup.errors);
                 this.formNeedsWork = true;
                 return false;
             }
