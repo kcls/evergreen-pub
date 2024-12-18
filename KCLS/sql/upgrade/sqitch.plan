@@ -13,3 +13,4 @@
 0008-pr-pickup-lib [0007-patron-req-cont] 2024-11-06T15:48:21Z berick <berick@kcls311> # pr pickup lib
 0009-phone-settings-index [0008-pr-pickup-lib] 2024-12-09T14:55:17Z berick <berick@kcls311> # phone settings indexes
 0010-metabib-browse-cache-fix [0009-phone-settings-index] 2024-12-06T17:56:36Z berick <berick@kcls311> # browse cache fix
+vandelay-match-speed [0010-metabib-browse-cache-fix] 2024-12-18T17:01:19Z berick <berick@kcls311> # vandelay
