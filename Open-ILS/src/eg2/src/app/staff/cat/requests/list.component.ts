@@ -15,25 +15,35 @@ import {Pager} from '@eg/share/util/pager';
 import {PromptDialogComponent} from '@eg/share/dialog/prompt.component';
 import {SelectDialogComponent} from '@eg/share/dialog/select.component';
 import {ItemRequestDialogComponent} from './dialog.component';
+import {ServerStoreService} from '@eg/core/server-store.service';
 
 const LIB_RESIDENCE_STAT_CAT = 12;
+
+interface GridFilters {
+    route_to_acq?: boolean,
+    route_to_ill?: boolean,
+    claimed_by_me?: boolean,
+    include_rejected?: boolean,
+    include_completed?: boolean,
+}
 
 @Component({
   templateUrl: 'list.component.html'
 })
 export class ItemRequestComponent implements OnInit {
     gridDataSource: GridDataSource = new GridDataSource();
-    showRouteToIll = true;
-    showRouteToAcq = true;
     showRouteToNull = true;
-    showRejected = false;
-    showCompleted = false;
-    showClaimedByMe = false;
+
     cellTextGenerator: GridCellTextGenerator;
     routeToOptions = [
         {label: $localize`ILL`, value: 'ill'},
         {label: $localize`Acquisitions`, value: 'acq'}
     ];
+
+    gridFilters: GridFilters = {
+        route_to_acq: true,
+        route_to_ill: true,
+    };
 
     illDenialOptions: IdlObject[] = [];
 
@@ -50,6 +60,7 @@ export class ItemRequestComponent implements OnInit {
         private net: NetService,
         private pcrud: PcrudService,
         private auth: AuthService,
+        private serverStore: ServerStoreService,
     ) {}
 
     ngOnInit() {
@@ -57,6 +68,13 @@ export class ItemRequestComponent implements OnInit {
             patron_barcode: r => r.usr().card() ? r.usr().card().barcode() : '',
             route_to: r => r.route_to(),
         };
+
+        this.serverStore.getItem('eg.acq.request.list.filters')
+        .then(filters => {
+            if (filters) {
+                this.gridFilters = filters;
+            }
+        });
 
         // Pre-cache these
         this.pcrud.retrieveAll('cirr', {order_by: {cirr: 'label'}}).subscribe(
@@ -90,19 +108,19 @@ export class ItemRequestComponent implements OnInit {
                 '-or': []
             };
 
-            if (!this.showRejected) {
+            if (!this.gridFilters.include_rejected) {
                 base.reject_date = null;
             }
-            if (!this.showCompleted) {
+            if (!this.gridFilters.include_completed) {
                 base.complete_date = null;
             }
-            if (this.showClaimedByMe) {
+            if (this.gridFilters.claimed_by_me) {
                 base.claimed_by = this.auth.user().id();
             }
-            if (this.showRouteToIll) {
+            if (this.gridFilters.route_to_ill) {
                 base['-or'].push({route_to: 'ill'});
             }
-            if (this.showRouteToAcq) {
+            if (this.gridFilters.route_to_acq) {
                 base['-or'].push({route_to: 'acq'});
             }
             if (this.showRouteToNull) {
@@ -153,27 +171,32 @@ export class ItemRequestComponent implements OnInit {
     }
 
     toggleClaimedByMe() {
-        this.showClaimedByMe = !this.showClaimedByMe;
+        this.gridFilters.claimed_by_me = !this.gridFilters.claimed_by_me;
+        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
         this.grid.reload();
     }
 
     toggleShowRejected() {
-        this.showRejected = !this.showRejected;
+        this.gridFilters.include_rejected = !this.gridFilters.include_rejected;
+        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
         this.grid.reload();
     }
 
     toggleShowCompleted() {
-        this.showCompleted = !this.showCompleted;
+        this.gridFilters.include_completed = !this.gridFilters.include_completed;
+        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
         this.grid.reload();
     }
 
     toggleRouteToIll() {
-        this.showRouteToIll = !this.showRouteToIll;
+        this.gridFilters.route_to_ill = !this.gridFilters.route_to_ill;
+        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
         this.grid.reload();
     }
 
     toggleRouteToAcq() {
-        this.showRouteToAcq = !this.showRouteToAcq;
+        this.gridFilters.route_to_acq = !this.gridFilters.route_to_acq;
+        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
         this.grid.reload();
     }
 
