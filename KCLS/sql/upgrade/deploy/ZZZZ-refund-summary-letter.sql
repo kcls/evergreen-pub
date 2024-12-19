@@ -42,7 +42,7 @@ Dear Patron,
 <br/>
 
 <br/>
-We are happy to inform you that the following item previously billed as lost was returned:
+We are happy to inform you that an item previously billed as lost was returned:
 <br/>
 <br/>
 
@@ -57,7 +57,7 @@ We are happy to inform you that the following item previously billed as lost was
 </div>
 
 <br/>
-<span>The following refundable payments were made for the returned lost item:</span>
+<span>The following refundable payments were made for the item:</span>
 <br/>
 <br/>
 
@@ -74,7 +74,20 @@ We are happy to inform you that the following item previously billed as lost was
       </tr>
       <tr>
         <td>Last Payment Type:</td>
-        <td>[% ref_pay.payment.payment_type %]</td>
+        <td>
+        [% 
+            SET ptype = ref_pay.payment.payment_type;
+            IF ptype == 'cash_payment';
+                'Cash';
+            ELSIF ptype == 'check_payment';
+                'Check';
+            ELSIF ptype == 'credit_card_payment';
+                'Credit Card';
+            ELSE;
+                ptype;
+            END;
+        %]
+        </td>
       </tr>
       <tr>
         <td>Amount:</td>
@@ -93,7 +106,7 @@ We are happy to inform you that the following item previously billed as lost was
   [% IF loopfirst; loopfirst = 0; %]
     <br/>
     <span>
-      The refund was applied to the following existing charge(s) on your account:
+      The refund was applied to an existing charge on your account:
     </span>
     <br/>
     <br/>
@@ -130,7 +143,20 @@ We are happy to inform you that the following item previously billed as lost was
       </tr>
       <tr>
         <td>Last Payment Type: </td>
-        <td>[% xact.summary.last_payment_type %]
+        <td>
+        [% 
+            SET ptype = xact.summary.last_payment_type;
+            IF ptype == 'cash_payment';
+                'Cash';
+            ELSIF ptype == 'check_payment';
+                'Check';
+            ELSIF ptype == 'credit_card_payment';
+                'Credit Card';
+            ELSE;
+                ptype;
+            END;
+        %]
+        </td>
       </tr>
       <tr>
         <td>Last Payment Date: </td>
@@ -150,6 +176,7 @@ We are happy to inform you that the following item previously billed as lost was
 [% END %]
 
 <div>Remaining Refund Due: <b>[% money(refundable_xact.refund_amount) %]</b></div>
+<br/>
 
 [% IF refundable_xact.refund_amount > 0 %]
   [% FOR ref_pay IN refundable_xact.refundable_payments %]
