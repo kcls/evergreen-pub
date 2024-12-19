@@ -1,5 +1,6 @@
 <nav id="staff-navbar" aria-label="Main Navigation" i18n-aria-label 
-  class="navbar fixed-top navbar-expand navbar-default">
+  class="navbar fixed-top navbar-expand navbar-default"
+  [ngClass]="{'staff-navbar-server-alert': hostname === 'evgstaging.kcls.org' || hostname === 'evgtesting.kcls.org'}">
   <div class="collapse navbar-collapse">
     <div class="navbar-nav">
       <div class="nav-item">

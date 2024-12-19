@@ -11,6 +11,10 @@
     padding: 0 0.5rem;
 }
 
+.staff-navbar-server-alert {
+  border: 3px solid orange;
+}
+
 #staff-navbar .navbar-nav {
     padding: 4px 0;
     margin: 0 1px;
