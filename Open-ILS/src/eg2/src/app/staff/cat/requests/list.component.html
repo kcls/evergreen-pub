@@ -27,27 +27,27 @@
 <div class="mb-3 p-2 border rounded border-secondary">
   <div class="form-check form-check-inline">
     <input class="form-check-input" type="checkbox" (click)="toggleRouteToAcq()" 
-      [(ngModel)]="showRouteToAcq" id="acq-cbox"/>
+      [(ngModel)]="gridFilters.route_to_acq" id="acq-cbox"/>
     <label class="form-check-label" for="acq-cbox" i18n>Purchasing</label>
   </div>
   <div class="form-check form-check-inline">
     <input class="form-check-input" type="checkbox" (click)="toggleRouteToIll()" 
-      [(ngModel)]="showRouteToIll" id="ill-cbox"/>
+      [(ngModel)]="gridFilters.route_to_ill" id="ill-cbox"/>
     <label class="form-check-label" for="ill-cbox" i18n>ILL</label>
   </div>
   <div class="form-check form-check-inline">
     <input class="form-check-input" type="checkbox" (click)="toggleClaimedByMe()" 
-      [(ngModel)]="showClaimedByMe" id="claimed-cbox"/>
+      [(ngModel)]="gridFilters.claimed_by_me" id="claimed-cbox"/>
     <label class="form-check-label" for="claimed-cbox" i18n>Claimed by Me</label>
   </div>
   <div class="form-check form-check-inline">
     <input class="form-check-input" type="checkbox" (click)="toggleShowRejected()"
-      [(ngModel)]="showRejected" id="rejected-cbox"/>
+      [(ngModel)]="gridFilters.include_rejected" id="rejected-cbox"/>
     <label class="form-check-label" for="rejected-cbox" i18n>Include Rejected</label>
   </div>
   <div class="form-check form-check-inline">
     <input class="form-check-input" type="checkbox" (click)="toggleShowCompleted()"
-      [(ngModel)]="showCompleted" id="completed-cbox"/>
+      [(ngModel)]="gridFilters.include_completed" id="completed-cbox"/>
     <label class="form-check-label" for="completed-cbox" i18n>Include Completed</label>
   </div>
 </div>
