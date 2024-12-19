@@ -37,7 +37,7 @@
       <div class="col-lg-3 d-flex">
         <div class="flex-1"></div>
         <a target="_blank"
-          routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/bills">
+          routerLink="/staff/circ/patron/{{patronId}}/bills">
           <button class="btn btn-sm btn-primary label-with-material-icon" i18n>
             <span class="pe-2">Open Patron</span>
             <span class="material-icons">north_east</span>
@@ -281,7 +281,7 @@
         <span class="material-icons">print</span>
       </button>
       <a target="_blank" class="ms-3"
-        routerLink="/staff/circ/patron/{{checkinResult.patron.id()}}/bills">
+        routerLink="/staff/circ/patron/{{patronId}}/bills">
         <button class="btn btn-primary label-with-material-icon" i18n>
           <span class="pe-2">Open Patron</span>
           <span class="material-icons">north_east</span>

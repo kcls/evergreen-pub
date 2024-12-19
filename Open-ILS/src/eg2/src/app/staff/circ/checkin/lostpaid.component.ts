@@ -32,7 +32,7 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     checkinResult: CheckinResult = null;
     invalidCheckin = false;
     printPreviewHtml = '';
-    refundActionss: any[] = [];
+    patronId: number | null = null;
 
     printNeeded = false;
     hasPrinted = false;
@@ -132,7 +132,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
         // reports about the item.
         this.circ.applySettings()
             .then(_ => this.circ.checkin(this.checkinParams))
-            .then(res => this.checkinResult = res)
+            .then(res => {
+                this.checkinResult = res;
+                this.patronId = Number(res.patron.id());
+            })
             .then(_ => this.loadRefundDryRun())
             .then(_ => {
                 // Watch for address, etc. updates to our patron in another tab
@@ -317,6 +320,8 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
                 alert(evt);
                 return;
             }
+
+            this.patronId = Number(data.refundable_xact.usr().id());
 
             const printDetails = {
                 templateName: 'refund_summary',
