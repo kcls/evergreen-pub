@@ -70,7 +70,11 @@ export class ItemRequestComponent implements OnInit {
         };
 
         this.serverStore.getItem('eg.acq.request.list.filters')
-        .then(filters => this.gridFilters = filters || {});
+        .then(filters => {
+            if (filters) {
+                this.gridFilters = filters;
+            }
+        });
 
         // Pre-cache these
         this.pcrud.retrieveAll('cirr', {order_by: {cirr: 'label'}}).subscribe(
