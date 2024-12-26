@@ -257,10 +257,11 @@
 
     <div class="alert alert-warning mt-2" *ngIf="damageCharge > 0">
       <p>
-        This patron made a partial payment of {{lostAmountPaid | currency}}
-        toward the lost charge of {{lostAmountCharged | currency}}.  An 
-        additional damaged item charge of {{damageCharge | currency}} was
-        added to the account since the item was not returned in good condition.
+        This patron made a partial payment of {{lostAmountPaid | currency}} 
+        toward the lost charge of {{lostAmountCharged | currency}}. The 
+        remaining {{damageCharge | currency}} has been added as a damaged 
+        item charge on the account because the item was not returned in 
+        circulating condition.
       </p>
     </div>
   </div>
