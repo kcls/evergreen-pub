@@ -3293,8 +3293,8 @@ sub process_lostpaid_checkin {
 
                 return $evt if $evt;
 
-                $logger->info("circulator: refund result: " . 
-                    OpenSRF::Utils::JSON->perl2JSON($results));
+                $logger->info(
+                    "circulator: refund result: " . OpenSRF::Utils::JSON->perl2JSON($results));
 
                 $self->lostpaid_checkin_result({
                     refunded_xact => $circ->id, 
@@ -3367,6 +3367,51 @@ sub process_lostpaid_checkin {
         $self->editor->retrieve_money_billable_transaction_summary($circ->id);
 
     $self->lostpaid_checkin_result($result);
+
+    if (!$self->lostpaid_item_condition_ok) {
+        # Lost item was returned damaged and only partially paid.  Now
+        # that we've zero'd the lost charge, assess a new damaged item
+        # charge to cover the difference, i.e. the unpaid amount.
+
+        my $lost_billing = $e->search_money_billing({xact => $circ->id, btype => 3})->[0];
+
+        # Really shouldn't happen.
+        return undef unless $lost_billing;
+
+        # The amount originally assessed as the lost charge is the same amount
+        # the patron is expected to pay if the item was returned damaged.
+        my $lost_charge = $lost_billing->amount;
+        my $total_paid = $sum->total_paid;
+
+        # The damaged charge is assessed as the difference between the
+        # original lost charge and the total amount paid toward the transaction 
+        #
+        # XXX if a transaction has ad-hoc bills that were paid for this
+        # logic could result in unexpected amounts for the damaged charge.
+        my $damage_charge = $U->fpdiff($lost_charge, $total_paid);
+
+        if ($damage_charge <= 0) {
+            $logger->info("circulator: NOT applying damaged charge amount of $damage_charge");
+            return undef;
+        }
+
+        $logger->info("circulator: applying damaged item charge of ".
+            "$damage_charge for lost+returned damaged item");
+
+        $result->{damaged_charge} = $damage_charge;
+
+        my $evt = OpenILS::Application::Circ::CircCommon->create_bill(
+            $e, $damage_charge, 7, 'Damaged Item', $circ->id, 'Lost Item Returned Damaged');
+
+        return $evt if $evt;
+
+        # Adding the damaged item charge may result in having to reopen
+        # the transaction.  This is a NO-OP if the transaction does not
+        # require re-opening.
+        $evt = OpenILS::Application::Circ::CircCommon->reopen_xact($e, $circ->id);
+
+        return $evt if $evt;
+    }
 
     return undef;
 }
