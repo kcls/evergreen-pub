@@ -3386,8 +3386,9 @@ sub process_lostpaid_checkin {
         # The damaged charge is assessed as the difference between the
         # original lost charge and the total amount paid toward the transaction 
         #
-        # XXX if a transaction has ad-hoc bills that were paid for this
-        # logic could result in unexpected amounts for the damaged charge.
+        # This assumes that any money paid toward the transaction are
+        # applied toward the lost charge and not any potential (though
+        # unlikely) additional ad-hoc charges.
         my $damage_charge = $U->fpdiff($lost_charge, $total_paid);
 
         if ($damage_charge <= 0) {
@@ -3398,7 +3399,12 @@ sub process_lostpaid_checkin {
         $logger->info("circulator: applying damaged item charge of ".
             "$damage_charge for lost+returned damaged item");
 
-        $result->{damaged_charge} = $damage_charge;
+        # Give the UI some data for a summary display.
+        $result->{damage_charge} = $damage_charge;
+        $result->{lost_charge} = $lost_charge;
+        $result->{total_paid} = $total_paid;
+
+        $self->lostpaid_checkin_result($result);
 
         my $evt = OpenILS::Application::Circ::CircCommon->create_bill(
             $e, $damage_charge, 7, 'Damaged Item', $circ->id, 'Lost Item Returned Damaged');

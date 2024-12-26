@@ -52,6 +52,10 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
     makingPrintPreview = false;
     skipRefund = false;
 
+    lostAmountCharged = 0;
+    lostAmountPaid = 0;
+    damageCharge = 0;
+
     sourceWindow = 0;
 
     // affects display if trying to print a non-refunded circ
@@ -255,6 +259,9 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
             this.exceedsReturnDate = false;
             this.xactWasZeroed = false;
             this.itemWasDiscarded = false;
+            this.lostAmountCharged = 0;
+            this.lostAmountPaid = 0;
+            this.damageCharge = 0;
 
             console.debug('Lost/Paid checkin returned: ', result);
 
@@ -274,6 +281,17 @@ export class CheckinLostPaidComponent implements OnInit, AfterViewInit {
             if (!lpr) { return; }
 
             this.refundedCircId = lpr.refunded_xact;
+
+            if (lpr.damage_charge) {
+                // An additional damaged charge was added to the
+                // transaction to cover the difference between the lost
+                // amount originally charged and the amount paid toward
+                // the transaction.
+
+                this.lostAmountCharged = lpr.lost_charge;
+                this.lostAmountPaid = lpr.total_paid;
+                this.damageCharge = lpr.damage_charge;
+            }
 
             if (lpr.refund_actions) {
                 this.printNeeded = true;

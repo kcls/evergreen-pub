@@ -254,6 +254,15 @@
       <div *ngIf="itemWasDiscarded" class="mt-2" i18n>Damaged item was set to Discard/Weed status</div>
       <div *ngIf="circWasNotRefunded" class="mt-2" i18n>No refund was applied to the circulation</div>
     </div>
+
+    <div class="alert alert-warning mt-2" *ngIf="damageCharge > 0">
+      <p>
+        This patron made a partial payment of {{lostAmountPaid | currency}}
+        toward the lost charge of {{lostAmountCharged | currency}}.  An 
+        additional damaged item charge of {{damageCharge | currency}} was
+        added to the account since the item was not returned in good condition.
+      </p>
+    </div>
   </div>
 </div>
 
