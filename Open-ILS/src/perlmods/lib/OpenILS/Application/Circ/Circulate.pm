@@ -3430,7 +3430,9 @@ sub lostpaid_checkin_needs_confirmation {
         # but they have also indicate the item is no longer in good
         # condition.  Set noop=true to avoid hold targeting or transiting
         # of the item going forward.
-        $self->noop(!$self->lostpaid_item_condition_ok);
+        # NOTE noop may already be set, don't clobber it.
+        $self->noop(1) unless $self->lostpaid_item_condition_ok;
+
         return 0;
     }
 
