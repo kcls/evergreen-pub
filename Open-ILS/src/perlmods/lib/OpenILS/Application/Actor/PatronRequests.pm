@@ -10,6 +10,8 @@ use OpenILS::Event;
 use DateTime;
 my $U = "OpenILS::Application::AppUtils";
 
+use constant DISTRICT_OF_RESIDENCE_STAT_CAT => 12;
+
 my @REQ_FIELDS = qw/
     identifier
     format
@@ -647,6 +649,41 @@ sub search_dupes {
 }
 
 
+__PACKAGE__->register_method(
+    method   => 'patron_in_service_area',
+    api_name => 'open-ils.actor.patron.patron-request.ill-allowed',
+    signature => {
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Patron ID / Optional', type => 'number'},
+        ],
+        desc => q/True if the patron is considered in the service area/,
+    }
+);
+
+sub patron_in_service_area {
+    my ($self, $conn, $auth, $patron_id) = @_;
+    my $e = new_editor(authtoken => $auth);
+
+    return $e->die_event unless $e->checkauth;
+    $patron_id ||= $e->requestor->id;
+
+    if ($patron_id != $e->requestor->id) {
+        return $e->event unless $e->allowed('VIEW_USER');
+    }
+
+    my $stat = $e->search_actor_stat_cat_entry_user_map({
+        target_usr => $patron_id, 
+        stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
+    })->[0];
+
+    # This treats lack of a stat-cat value as in-area.
+    my $val = $stat ? lc($stat->stat_cat_entry) : 'kcls';
+
+    $val =~ s/^\s+|\s+$//g ; # Perl.trim()
+
+    return ($val =~ /^(kcls|_property owner|unset|)$/) ? 1 : 0;
+}
 
 
 

@@ -49,6 +49,14 @@
       </div>
     </div>
 
+    <div i18n *ngIf="!requests.illRequestsAllowed"
+      class="mt-2 flex justify-center border rounded border-orange-400 p-4">
+      Interlibrary Loan Service is not available for this library
+      card type. We are only able to offer ILL service to full
+      access King County Library System cardholders in good
+      standing. (Need help? Contact ASK KCLS)
+    </div>
+
     <div *ngIf="tab === 'create'" class="flex p-2 mt-4">
       <mat-form-field class="flex-1">
         <mat-label i18n>Select a Format</mat-label>

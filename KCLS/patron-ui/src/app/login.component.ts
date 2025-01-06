@@ -87,7 +87,7 @@ export class LoginComponent implements OnInit {
     }
 
     logout() {
-        this.app.clearAuth();
+        this.gateway.authSessionEnded.emit();
         this.resetForm();
     }
 }
