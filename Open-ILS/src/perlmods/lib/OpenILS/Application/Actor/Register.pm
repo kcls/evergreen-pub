@@ -49,6 +49,8 @@ sub register {
 
     return OpenILS::Event->new('BAD_PARAMS') unless ref $values eq 'HASH';
 
+    $logger->info("Patron self-reg: " . OpenSRF::Utils::JSON->perl2JSON($values));
+
     my $user = Fieldmapper::staging::user_stage->new;
 
     # user
@@ -106,7 +108,7 @@ sub handle_addresses {
     # billing ---
     my $addr = $values->{billing_address};
     for my $field (%$addr) {
-        my $val = normalize($addr->{$field}) or next; # skip empty strings
+        my $val = normalize($field, $addr->{$field}) or next; # skip empty strings
         $bill_addr = Fieldmapper::staging::billing_address_stage->new unless $bill_addr;
         $bill_addr->$field($val);
     }
@@ -121,7 +123,7 @@ sub handle_addresses {
     # mailing ---
     $addr = $values->{mailing_address};
     for my $field (%$addr) {
-        my $val = normalize($addr->{$field}) or next; # skip empty strings
+        my $val = normalize($field, $addr->{$field}) or next; # skip empty strings
         $mail_addr = Fieldmapper::staging::mailing_address_stage->new unless $mail_addr;
         $mail_addr->$field($val);
     }
@@ -149,6 +151,8 @@ sub handle_addresses {
                 $bill_addr->street1, $bill_addr->street2);
 
         $bill_addr->street1($bstreet1);
+
+        # Normalization can result in the loss of the street2 value.
         if ($bstreet2) {
             $bill_addr->street2($bstreet2);
         } else {
@@ -162,6 +166,8 @@ sub handle_addresses {
                 $mail_addr->street1, $mail_addr->street2);
 
         $mail_addr->street1($mstreet1);
+
+        # Normalization can result in the loss of the street2 value.
         if ($mstreet2) {
             $mail_addr->street2($mstreet2);
         } else {
