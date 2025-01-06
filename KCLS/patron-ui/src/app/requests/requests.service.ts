@@ -11,6 +11,7 @@ export class RequestsService {
     activeRequestCount = 0;
     maxRequestCount = 0;
     pickupLibs: Hash[] = [];
+    illRequestsAllowed = true;
 
     requestSubmitted = false;
 
@@ -33,6 +34,7 @@ export class RequestsService {
     reset() {
         this.selectedFormat = null;
         this.requestsAllowed = null;
+        this.illRequestsAllowed = true;
     }
 
     checkRequestPerms() {
@@ -45,6 +47,14 @@ export class RequestsService {
             this.app.getAuthtoken()
         ).then((r: unknown) => {
             this.requestsAllowed = Number(r) === 1;
+        }).then(() => {
+            return this.gateway.requestOne(
+                'open-ils.actor',
+                'open-ils.actor.patron.patron-request.ill-allowed',
+                this.app.getAuthtoken()
+            )
+        }).then((r: unknown) => {
+            this.illRequestsAllowed = Number(r) === 1;
         }).then(() => {
             return this.settings.getServerSetting('patron_requests.max_active')
             .then(r => {

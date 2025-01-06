@@ -12,6 +12,9 @@ use DateTime::Format::ISO8601;
 use OpenILS::Utils::DateTime qw/:datetime/;
 my $U = "OpenILS::Application::AppUtils";
 
+use constant DISTRICT_OF_RESIDENCE_STAT_CAT => 12;
+use constant LIMITED_CHECKOUT_PROFILE => 17;
+
 my @REQ_FIELDS = qw/
     identifier
     format
@@ -646,6 +649,62 @@ sub search_dupes {
 }
 
 
+__PACKAGE__->register_method(
+    method   => 'ill_requests_allowed',
+    api_name => 'open-ils.actor.patron.patron-request.ill-allowed',
+    signature => {
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Patron ID / Optional', type => 'number'},
+        ],
+        desc => q/True if the user is allowed to make ILL requests/,
+    }
+);
+
+# Some of this could be accomplished by adding a CREATE_ILL_REQUESTS
+# permission.  The residency check complicates that.  If that changes,
+# reasses just adding a permission.
+sub ill_requests_allowed {
+    my ($self, $conn, $auth, $patron_id) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+
+    $patron_id ||= $e->requestor->id;
+
+    if ($patron_id != $e->requestor->id) {
+        return $e->event unless $e->allowed('VIEW_USER');
+    }
+
+    my $user = $e->retrieve_actor_user($patron_id) or return 0;
+
+    # 1. Limited Checkout patrons are not permitted.
+
+    return 0 if $user->profile == LIMITED_CHECKOUT_PROFILE;
+
+    # 2. All staff are permitted regardless of residency status.
+
+    # So the perm check runs against the user and not (potentially) the 
+    # staff account making this call on behalf of a patron.
+    $e->requestor($user);
+
+    return 1 if $e->allowed('STAFF_LOGIN');
+
+    # 3. Patrons must be in the service area to request ILLs.
+
+    my $stat = $e->search_actor_stat_cat_entry_user_map({
+        target_usr => $patron_id, 
+        stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
+    })->[0];
+
+    # This treats lack of a stat-cat value as in-area.
+    my $val = $stat ? lc($stat->stat_cat_entry) : 'kcls';
+
+    $val =~ s/^\s+|\s+$//g ; # Perl.trim()
+
+    # The stat cat values indicate a patron is in the service area.
+    return ($val =~ /^(kcls|_property owner|unset|)$/) ? 1 : 0;
+}
 
 
 

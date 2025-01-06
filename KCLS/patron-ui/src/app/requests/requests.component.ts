@@ -68,6 +68,14 @@ export class RequestsComponent implements OnInit {
         this.gateway.authSessionEnded.subscribe(() => this.reset());
         this.requests.formResetRequested.subscribe(() => this.resetForm());
 
+        // Patrons out of service area are not permitted to create ILL requests.
+        this.requests.patronChecked.subscribe(() => {
+            if (!this.requests.illRequestsAllowed) {
+                this.controls.ill_opt_out.setValue(true);
+                this.controls.ill_opt_out.disable();
+            }
+        });
+
         // Not all actions require an auth session up front, but if we
         // have a local auth token, we need to know so we can let the
         // user know they are already authenticated.
@@ -76,6 +84,13 @@ export class RequestsComponent implements OnInit {
 
     resetForm() {
         for (const field in this.controls) {
+
+            if (field === 'ill_opt_out' && !this.requests.illRequestsAllowed) {
+                // This option remains disabled for the duration of the
+                // patron session.
+                continue;
+            }
+
             this.controls[field].reset();
             this.controls[field].markAsPristine();
             this.controls[field].markAsUntouched();
@@ -85,7 +100,8 @@ export class RequestsComponent implements OnInit {
     reset() {
         this.tab = 'create';
         this.requests.reset();
-        this.controls.format.reset();
+        this.resetForm();
+        this.controls.ill_opt_out.enable();
         this.router.navigate(['/requests/create']); // in case
     }
 
