@@ -8,6 +8,8 @@ use OpenILS::Utils::Fieldmapper;
 use OpenSRF::Utils::JSON;
 use OpenILS::Event;
 use DateTime;
+use DateTime::Format::ISO8601;
+use OpenILS::Utils::DateTime qw/:datetime/;
 my $U = "OpenILS::Application::AppUtils";
 
 my @REQ_FIELDS = qw/
@@ -447,6 +449,14 @@ sub create_allowed {
 
     my $user = $e->requestor;
     $org_id ||= $user->home_ou;
+
+    my $expire = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($user->expire_date));
+
+    if ($expire < DateTime->now) {
+        $logger->info("PR denied because account is expired");
+        return 0;
+    };
 
     my $penalties = $e->json_query({
         select => {ausp => ['id']},
