@@ -47,6 +47,7 @@ export class CreateRequestComponent implements OnInit {
         $localize`አማርኛ / Amharic`,
         $localize`عربي / Arabic`,
         $localize`中文 / Chinese`,
+        $localize`Français / French`,
         $localize`Deutsch / German`,
         $localize`ગુજરાતી / Gujarati`,
         $localize`עִברִית / Hebrew`,
