@@ -33,6 +33,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         $localize`አማርኛ / Amharic`,
         $localize`عربي / Arabic`,
         $localize`中文 / Chinese`,
+        $localize`Français / French`,
         $localize`Deutsch / German`,
         $localize`ગુજરાતી / Gujarati`,
         $localize`עִברִית / Hebrew`,
