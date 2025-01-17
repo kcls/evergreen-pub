@@ -293,6 +293,15 @@ export class CreateRequestComponent implements OnInit {
         values.ill_opt_out = this.requests.illOptOut;
         values.id_matched = this.suggestedRecords.length > 0;
 
+        // If an identifier looks like a 13-digit ISBN, remove dashes.
+        let ident = values.identifier + '';
+        if (ident) {
+            let scrubbed = ident.replace(/-/g, '');
+            if (scrubbed.match(/^\d{13}$/)) {
+                values.identifier = scrubbed;
+            }
+        }
+
         this.requests.requestSubmitted = false;
         this.requestSubmitError = false;
 
