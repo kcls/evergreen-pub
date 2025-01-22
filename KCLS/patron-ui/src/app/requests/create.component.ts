@@ -42,6 +42,12 @@ export class CreateRequestComponent implements OnInit {
     checkingDupes = false;
     pickupLibs: Hash[] = [];
 
+    audiences = [
+        $localize`Adult`,
+        $localize`Teen`,
+        $localize`Children`
+    ];
+
     languages = [
         $localize`English`,
         $localize`አማርኛ / Amharic`,
@@ -73,6 +79,7 @@ export class CreateRequestComponent implements OnInit {
     controls: {[field: string]: FormControl} = {
         title: new FormControl({value: '', disabled: true}, [Validators.required]),
         article: new FormControl({value: '', disabled: true}),
+        audience: new FormControl(''),
         author: new FormControl({value: '', disabled: true}),
         identifier: new FormControl(''),
         pubdate: new FormControl({value: '', disabled: true}, [Validators.pattern(/^\d{4}$/)]),
@@ -117,6 +124,9 @@ export class CreateRequestComponent implements OnInit {
             this.controls.article.clearValidators();
             if (this.requests.selectedFormat === 'article') {
                 this.controls.article.setValidators(Validators.required);
+            }
+            if (!this.isPrintBook()) {
+                this.controls.audience.reset();
             }
             this.dupesLookup();
         });
@@ -279,6 +289,13 @@ export class CreateRequestComponent implements OnInit {
             return false;
         }
         return true;
+    }
+
+    isPrintBook(): boolean {
+        return (
+            this.requests.selectedFormat === 'book' ||
+            this.requests.selectedFormat === 'large-print'
+        );
     }
 
     submitRequest(): boolean {

@@ -21,6 +21,7 @@ my @REQ_FIELDS = qw/
     language
     title
     article
+    audience
     author
     pubdate
     publisher
