@@ -90,6 +90,17 @@
       </mat-form-field>
     </div>
 
+    <div class="flex p-2" *ngIf="isPrintBook()">
+      <mat-form-field class="flex-1">
+        <mat-label i18n>Select an Audience</mat-label>
+        <mat-select [formControl]="controls.audience">
+          <mat-option *ngFor="let audience of audiences" value="{{audience}}">
+            {{audience}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
     <div class="flex p-2">
       <mat-form-field class="flex-1">
         <mat-label i18n>Publication Year</mat-label>

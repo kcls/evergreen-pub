@@ -28,6 +28,12 @@ export class ItemRequestDialogComponent extends DialogComponent {
     patronBarcode = '';
     patronNotFound = false;
 
+    audiences = [
+        $localize`Adult`,
+        $localize`Teen`,
+        $localize`Children`
+    ];
+
     languages = [
         $localize`English`,
         $localize`አማርኛ / Amharic`,
