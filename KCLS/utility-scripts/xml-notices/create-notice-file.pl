@@ -289,7 +289,7 @@ sub collect_events {
             '+atev' => {
                 event_def => $event_def,
                 state => 'complete',
-                run_time => {'between' => [$start_date, $end_date]}
+                complete_time => {'between' => [$start_date, $end_date]}
             }
         },
         order_by => [
