@@ -143,6 +143,7 @@ sub do_checkin {
 
     $self->item->destination_loc($resp->{org}) if $resp->{org};
 
+
     if ($txt eq 'ROUTE_ITEM') {
         # Note, this alert_type will be overridden below if this is a hold transit
         $self->alert_type('04'); # send to other branch
@@ -213,7 +214,20 @@ sub do_checkin {
 
     $self->alert(1) if defined $self->alert_type;  # alert_type could be "00", hypothetically
 
-    if ( $circ ) {
+    if ($txt eq 'LOSTPAID_CHECKIN') {
+        # The if($circ) logic below means even failed checkins can
+        # return a checkin success message.  Presumably, this is not a
+        # problem for other scenarios or we would have heard about it
+        # by now, but it's def. not OK with LOSTPAID_CHECKIN.  Adding a
+        # check specifically for this event so any quirks related to the
+        # existing logic remain unchanged.
+        syslog('LOG_INFO', "OILS: Checkin not OK (event=$txt) for " . $args->{barcode});
+
+        $self->ok(0);
+        $self->alert(1);
+        $self->alert_type('00') unless $self->alert_type;
+
+    } elsif ( $circ ) {
         $self->{circ_user_id} = $circ->usr;
         $self->ok(1);
     } elsif ($txt eq 'NO_CHANGE' or $txt eq 'SUCCESS' or $txt eq 'ROUTE_ITEM') {
