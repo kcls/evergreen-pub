@@ -228,6 +228,14 @@ sub do_checkin {
         $self->alert_type('00') unless $self->alert_type;
 
     } elsif ( $circ ) {
+
+        if ($txt ne 'SUCCESS' && $txt ne 'NO_CHANGE' && $txt ne 'ROUTE_ITEM') {
+            syslog('LOG_INFO', 
+                "OILS: Checkin succeeded with unexpected event ($txt) for " . 
+                $args->{barcode} . " at location=$phys_location"
+            );
+        }
+
         $self->{circ_user_id} = $circ->usr;
         $self->ok(1);
     } elsif ($txt eq 'NO_CHANGE' or $txt eq 'SUCCESS' or $txt eq 'ROUTE_ITEM') {
