@@ -16118,6 +16118,7 @@ SELECT  usr,
 			<field reporter:label="Pickup Lib" name="pickup_lib" reporter:datatype="link"/>
 			<field reporter:label="Article" name="article" reporter:datatype="text"/>
 			<field reporter:label="Audience" name="audience" reporter:datatype="text"/>
+			<field reporter:label="Hold Date" name="hold_date" reporter:datatype="timestamp"/>
 		</fields>
 		<links>
 			<link field="usr" reltype="has_a" key="id" map="" class="au"/>
