@@ -334,6 +334,21 @@ sub request_status_impl {
         }
     }
 
+    if ($req->hold_date) {
+        # Hold was successfully placed, but the request never moved from
+        # 'hold-placed' to 'complete' before the hold was aged+purged.
+        # This likely cannot happen in practice, but maybe...
+        #
+        # Consider this request completed.
+        $req->complete_date($req->hold_date);
+
+        my $e2 = new_editor(xact => 1);
+        $e2->update_actor_user_item_request($req) or return $e2->die_event;
+        $e2->commit;
+
+        return {status => 'completed'}
+    }
+
     # TODO patron-pending? staff have questions for the patron.
 
     if ($req->route_to eq 'acq') {
@@ -567,6 +582,7 @@ sub apply_lineitem {
 
             $logger->info("User request $req_id successfully created hold");
             $req->hold(ref $resp ? $resp->{result} : $resp);
+            $req->hold_date('now');
 
             # TODO action trigger event for user request hold placed.
             # see also apply_hold();
@@ -602,6 +618,7 @@ sub apply_hold {
         or return $e->die_event;
 
     $request->hold($hold_id);
+    $request->hold_date('now');
 
     # Will fail if the hold id is not valid.
     return $e->die_event unless $e->update_actor_user_item_request($request);
