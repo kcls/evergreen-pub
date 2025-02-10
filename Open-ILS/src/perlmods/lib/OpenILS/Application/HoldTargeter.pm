@@ -12,8 +12,9 @@ __PACKAGE__->register_method(
     api_level => 1,
     argc      => 1,
     stream    => 1,
-    # Caller is given control over how often to receive responses.
-    max_chunk_size => 0,
+    # The caller tells us how often they want to receive responses via 
+    # 'return_throttle', so flush the outbound queue with each response.
+    max_bundle_count => 1,
     signature => {
         desc     => q/Batch or single hold targeter./,
         params   => [
