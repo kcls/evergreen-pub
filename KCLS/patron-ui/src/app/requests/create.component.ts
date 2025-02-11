@@ -155,7 +155,7 @@ export class CreateRequestComponent implements OnInit {
             this.app.getAuthtoken(), null, 'opac.default_pickup_location')
         .then(lib => {
             lib = Number(lib) || 0;
-            if (lib === 0) {
+            if (lib === 0 && ses) {
                 lib = Number(ses.home_ou);
             }
             this.controls.pickup_lib.setValue(lib);
