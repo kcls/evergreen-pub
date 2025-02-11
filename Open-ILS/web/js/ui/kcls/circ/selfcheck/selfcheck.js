@@ -1324,7 +1324,7 @@ SelfCheckManager.prototype.handleXactResult = function(action, item, result, isB
 
                     var isHoldTransit = false;
 
-                    let hold = copyDetails.hold;
+                    var hold = copyDetails.hold;
 
                     if (hold) {
                         if (hold.transit()) {
