@@ -10,7 +10,7 @@
       i18n-aria-label aria-label="Close" (click)="close()"></button>
   </div>
   <div class="modal-body">
-    <div class="row d-flex p-3" *ngIf="dataLoaded">
+    <div class="row d-flex p-3" *ngIf="dataLoaded && patron">
       <span i18n>
         Apply penalty to patron <b>{{patron.family_name()}}, {{patron.first_given_name()}}</b>
       </span>

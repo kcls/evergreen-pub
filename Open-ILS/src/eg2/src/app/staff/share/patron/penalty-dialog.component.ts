@@ -1,5 +1,5 @@
 import {Component, OnInit, Input, Output, ViewChild} from '@angular/core';
-import {merge, from, Observable} from 'rxjs';
+import {of, merge, from, Observable} from 'rxjs';
 import {tap, take, switchMap} from 'rxjs/operators';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
 import {OrgService} from '@eg/core/org.service';
@@ -32,6 +32,9 @@ export class PatronPenaltyDialogComponent
 
     @Input() patronId: number;
     @Input() penaltyNote = '';
+
+    // If true, avoid applying the new penalty.  Just create and return it.
+    @Input() externalCreate = false;
 
     ALERT_NOTE = 20;
     SILENT_NOTE = 21;
@@ -112,10 +115,20 @@ export class PatronPenaltyDialogComponent
         this.store.getItem('ui.staff.require_initials.patron_standing_penalty')
         .then(require => this.requireInitials = require);
 
-        const obs1 = this.pcrud.retrieve('au', this.patronId)
-            .pipe(tap(usr => this.patron = usr));
+        let obs1;
 
-        if (this.penaltyTypes) { return obs1; }
+        if (this.patronId) {
+            obs1 = this.pcrud.retrieve('au', this.patronId)
+                .pipe(tap(usr => this.patron = usr));
+        } else {
+            // EMPTY won't do because it never gets switchMap'ed.
+            obs1 = of(true);
+        }
+
+        if (this.penaltyTypes) {
+            this.setInitialPatronMessage();
+            return obs1;
+        }
 
         return obs1
         .pipe(switchMap(_ => {
@@ -136,23 +149,29 @@ export class PatronPenaltyDialogComponent
                     return m1.weight() < m2.weight() ? -1 : 1;
                 });
 
-                if (this.startPatronMessage) {
-                    const m = messages.filter(
-                        m => Number(m.id()) === Number(this.startPatronMessage))[0];
-                    if (m) {
-                        this.noteText = m.message();
-                        if (this.appendToPatronMessage) {
-                            this.noteText += " " + this.appendToPatronMessage;
-
-                            const matches = this.noteText.match(/\n/g);
-                            if (matches && matches.length > this.noteRows) {
-                                this.noteRows = matches.length;
-                            }
-                        }
-                    }
-                }
+                this.setInitialPatronMessage();
             }));
         }));
+    }
+
+    // Set the load-time message text if startup values are provided.
+    setInitialPatronMessage() {
+        if (!this.startPatronMessage) { return; }
+
+        const m = this.patronMessages.filter(
+            m => Number(m.id()) === Number(this.startPatronMessage))[0];
+
+        if (!m) { return; }
+
+        this.noteText = m.message();
+        if (this.appendToPatronMessage) {
+            this.noteText += " " + this.appendToPatronMessage;
+
+            const matches = this.noteText.match(/\n/g);
+            if (matches && matches.length > this.noteRows) {
+                this.noteRows = matches.length;
+            }
+        }
     }
 
     setPenaltyType() {
@@ -234,7 +253,7 @@ export class PatronPenaltyDialogComponent
             return;
         }
 
-        // Determin the context org unit of the applied penalty.
+        // Determine the context org unit of the applied penalty.
         const ptypeId = Number(this.penaltyTypeFromSelect || this.penaltyTypeFromButton);
         const ptype = this.penaltyTypes.filter(pt => Number(pt.id()) === ptypeId)[0];
         const ptypeDepth = ptype.org_depth() || 0;
@@ -254,6 +273,11 @@ export class PatronPenaltyDialogComponent
                 this.noteText,
             pub: false
         };
+
+        if (this.externalCreate) {
+            this.close({penalty: pen, message: msg});
+            return;
+        }
 
         this.net.request(
             'open-ils.actor',
