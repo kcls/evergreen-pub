@@ -45,7 +45,7 @@ interface OrgDisplay {
 export class OrgSelectComponent implements OnInit {
     static domId = 0;
 
-    showCombinedNames = false; // Managed via user/workstation setting
+    showCombinedNames = true; // Managed via user/workstation setting
 
     _selected: OrgDisplay;
     set selected(s: OrgDisplay) {
@@ -198,8 +198,12 @@ export class OrgSelectComponent implements OnInit {
             this.getFromSetting() : Promise.resolve(null);
 
         promise = promise.then(startupOrg => {
-            return this.serverStore.getItem('eg.orgselect.show_combined_names')
-            .then(show => {
+            return this.serverStore.getItem('eg.orgselect.show_short_names')
+            .then(hide => {
+                // hide == hide long names
+                // We're reversing the stock behavior here.
+                let show = !hide;
+
                 const sortField = show ? 'name' : this.displayField;
 
                 // Sort the tree and reabsorb to propagate the sorted

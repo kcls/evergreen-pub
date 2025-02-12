@@ -86,10 +86,15 @@
         <div class="col-md-12">
           <div class="checkbox">
             <label>
-              <input type="checkbox" ng-model="orgselect_combo_names"
-                  ng-change="apply_orgselect_combob_names()">
-                [% l('Include Full Library Names in Library Selector?') %]
+              <input type="checkbox" ng-model="orgselect_short_names"
+                  ng-change="apply_orgselect_short_names()">
+                [% l('Use Short Codes in Library Selector?') %]
             </label>
+            <br/>
+            <br/>
+            <p>
+              [% l('Logging out and back in may be required to take full effect after changing settings.') %]
+            </p>
           </div>
         </div>
       </div>
