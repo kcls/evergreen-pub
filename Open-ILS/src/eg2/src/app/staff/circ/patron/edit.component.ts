@@ -27,6 +27,11 @@ import {BroadcastService} from '@eg/share/util/broadcast.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {WorkLogService} from '@eg/staff/share/worklog/worklog.service';
 import {StaffService} from '@eg/staff/share/staff.service';
+import {PatronPenaltyDialogComponent
+    } from '@eg/staff/share/patron/penalty-dialog.component';
+
+const LIMITED_CHECKOUT_PROFILE = 17;
+const LIMITED_CHECKOUT_PENALTY_MESSAGE = 7;
 
 const PATRON_FLESH_FIELDS = [
     'cards',
@@ -151,6 +156,8 @@ export class EditComponent implements OnInit {
         private addrRequiredAlert: AlertDialogComponent;
     @ViewChild('xactCollisionAlert')
         private xactCollisionAlert: AlertDialogComponent;
+    @ViewChild('limitedCkoDialog')
+        private limitedCkoDialog: PatronPenaltyDialogComponent;
 
 
     autoId = -1;
@@ -192,6 +199,10 @@ export class EditComponent implements OnInit {
     stageUser: IdlObject;
     stageUserRequestor: IdlObject;
     waiverName: string;
+
+    // Penalty created by the patron penalty dialog because the
+    // patron was added to the Limited Checkout profile group.
+    limitedCkoPenalty: {penalty: IdlObject, message: any}  | null = null;
 
     fieldPatterns: {[cls: string]: {[field: string]: RegExp}} = {
         au: {},
@@ -993,6 +1004,8 @@ export class EditComponent implements OnInit {
 
             const invalidInput = document.querySelector('.ng-invalid');
 
+            console.debug(document.querySelector('.ng-invalid'));
+
             const canSave = (
                 invalidInput === null
                 && !this.dupeBarcode
@@ -1117,6 +1130,7 @@ export class EditComponent implements OnInit {
 
             case 'profile':
                 this.setExpireDate();
+                this.checkLimitedCko();
                 break;
 
             case 'day_phone':
@@ -1415,6 +1429,62 @@ export class EditComponent implements OnInit {
           .map(org => org.id());
     }
 
+
+    // Show the patron penalty dialog when the 'Limited Checkout' profile
+    // is used so staff can annotate the reason.
+    checkLimitedCko() {
+        this.limitedCkoPenalty = null;
+
+        const profile = this.profileSelect.profiles[this.patron.profile()];
+        if (!profile || Number(profile.id()) !== LIMITED_CHECKOUT_PROFILE) {
+            return;
+        }
+
+        // We have a limited cko patron.  Ask staff to create a penalty.
+        this.limitedCkoDialog.externalCreate = true;
+        this.limitedCkoDialog.startPatronMessage = LIMITED_CHECKOUT_PENALTY_MESSAGE;
+
+        if (!this.patron.isnew()) {
+            this.limitedCkoDialog.patronId = this.patron.id();
+        }
+
+        this.limitedCkoDialog.open({size: 'lg'}).subscribe(msg => {
+            this.limitedCkoPenalty = msg;
+
+            // Re-check the validity of our inputs after the
+            // dialog has closed so we're not including, e.g. a
+            // not-yet-entered-but-require staff initials field in the
+            // validity check.
+            this.emitSaveState();
+        });
+    }
+
+    applyLimitedCkoPenalty(): Promise<any> {
+        if (!this.limitedCkoPenalty) {
+            return Promise.resolve();
+        }
+
+        console.debug('Applying limited CKO penalty');
+
+        // May not have an ID until after the patron is created.
+        this.limitedCkoPenalty.penalty.usr(this.modifiedPatron.id());
+
+        return this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.user.penalty.apply',
+            this.auth.token(),
+            this.limitedCkoPenalty.penalty,
+            this.limitedCkoPenalty.message
+        ).toPromise().then(resp => {
+            console.debug('Limited CKO penalty create returned: ', resp);
+
+            const e = this.evt.parse(resp);
+            if (e) {
+                alert(e);
+            }
+        });
+    }
+
     setExpireDate(noPending?: boolean) {
         const profile = this.profileSelect.profiles[this.patron.profile()];
         if (!profile) { return; }
@@ -1635,6 +1705,7 @@ export class EditComponent implements OnInit {
 
         return this.saveUser()
         .then(_ => this.saveUserSettings())
+        .then(_ => this.applyLimitedCkoPenalty())
         // .then(_ => this.updateHoldPrefs()) // KCLS does not need
         .then(_ => this.removeStagedUser())
         .then(_ => this.postSaveRedirect(clone));
