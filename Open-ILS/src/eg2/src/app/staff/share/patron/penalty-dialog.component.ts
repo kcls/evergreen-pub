@@ -125,7 +125,10 @@ export class PatronPenaltyDialogComponent
             obs1 = of(true);
         }
 
-        if (this.penaltyTypes) { return obs1; }
+        if (this.penaltyTypes) {
+            this.setInitialPatronMessage();
+            return obs1;
+        }
 
         return obs1
         .pipe(switchMap(_ => {
@@ -146,23 +149,29 @@ export class PatronPenaltyDialogComponent
                     return m1.weight() < m2.weight() ? -1 : 1;
                 });
 
-                if (this.startPatronMessage) {
-                    const m = messages.filter(
-                        m => Number(m.id()) === Number(this.startPatronMessage))[0];
-                    if (m) {
-                        this.noteText = m.message();
-                        if (this.appendToPatronMessage) {
-                            this.noteText += " " + this.appendToPatronMessage;
-
-                            const matches = this.noteText.match(/\n/g);
-                            if (matches && matches.length > this.noteRows) {
-                                this.noteRows = matches.length;
-                            }
-                        }
-                    }
-                }
+                this.setInitialPatronMessage();
             }));
         }));
+    }
+
+    // Set the load-time message text if startup values are provided.
+    setInitialPatronMessage() {
+        if (!this.startPatronMessage) { return; }
+
+        const m = this.patronMessages.filter(
+            m => Number(m.id()) === Number(this.startPatronMessage))[0];
+
+        if (!m) { return; }
+
+        this.noteText = m.message();
+        if (this.appendToPatronMessage) {
+            this.noteText += " " + this.appendToPatronMessage;
+
+            const matches = this.noteText.match(/\n/g);
+            if (matches && matches.length > this.noteRows) {
+                this.noteRows = matches.length;
+            }
+        }
     }
 
     setPenaltyType() {

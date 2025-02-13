@@ -31,6 +31,7 @@ import {PatronPenaltyDialogComponent
     } from '@eg/staff/share/patron/penalty-dialog.component';
 
 const LIMITED_CHECKOUT_PROFILE = 17;
+const RECIP_LIMIT_HOLDS_AND_CKO_PROFILE = 23;
 const LIMITED_CHECKOUT_PENALTY_MESSAGE = 7;
 
 const PATRON_FLESH_FIELDS = [
@@ -203,6 +204,7 @@ export class EditComponent implements OnInit {
     // Penalty created by the patron penalty dialog because the
     // patron was added to the Limited Checkout profile group.
     limitedCkoPenalty: {penalty: IdlObject, message: any}  | null = null;
+    previousProfile: number | null = null;
 
     fieldPatterns: {[cls: string]: {[field: string]: RegExp}} = {
         au: {},
@@ -1004,8 +1006,6 @@ export class EditComponent implements OnInit {
 
             const invalidInput = document.querySelector('.ng-invalid');
 
-            console.debug(document.querySelector('.ng-invalid'));
-
             const canSave = (
                 invalidInput === null
                 && !this.dupeBarcode
@@ -1096,6 +1096,10 @@ export class EditComponent implements OnInit {
         // Exit early in that case so we don't mark the form as dirty.
         const oldValue = this.getFieldValue(path, index, field);
         if (oldValue === value) { return; }
+
+        if (field === 'profile' && oldValue) {
+            this.previousProfile = oldValue;
+        }
 
         if (field === 'email' && value) {
             // KCLS wants lower case email
@@ -1436,7 +1440,10 @@ export class EditComponent implements OnInit {
         this.limitedCkoPenalty = null;
 
         const profile = this.profileSelect.profiles[this.patron.profile()];
-        if (!profile || Number(profile.id()) !== LIMITED_CHECKOUT_PROFILE) {
+        if (!profile || (
+                Number(profile.id()) !== LIMITED_CHECKOUT_PROFILE &&
+                Number(profile.id()) !== RECIP_LIMIT_HOLDS_AND_CKO_PROFILE)
+        ) {
             return;
         }
 
@@ -1448,8 +1455,18 @@ export class EditComponent implements OnInit {
             this.limitedCkoDialog.patronId = this.patron.id();
         }
 
-        this.limitedCkoDialog.open({size: 'lg'}).subscribe(msg => {
-            this.limitedCkoPenalty = msg;
+        this.limitedCkoDialog.open({size: 'lg'}).toPromise().then(msg => {
+            if (msg) {
+                this.limitedCkoPenalty = msg;
+            } else if (this.previousProfile) {
+                console.debug('Reverting to previous profile on penalty cancel');
+
+                this.profileSelect.cbox.selectedId = this.previousProfile;
+                this.fieldValueChange(null, null, 'profile', this.previousProfile);
+                this.afterFieldChange(null, null, 'profile');
+
+                this.previousProfile = null;
+            }
 
             // Re-check the validity of our inputs after the
             // dialog has closed so we're not including, e.g. a
