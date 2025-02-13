@@ -1458,7 +1458,7 @@ export class EditComponent implements OnInit {
         this.limitedCkoDialog.open({size: 'lg'}).toPromise().then(msg => {
             if (msg) {
                 this.limitedCkoPenalty = msg;
-            } else if (this.previousProfile) {
+            } else {
                 console.debug('Reverting to previous profile on penalty cancel');
 
                 this.profileSelect.cbox.selectedId = this.previousProfile;
