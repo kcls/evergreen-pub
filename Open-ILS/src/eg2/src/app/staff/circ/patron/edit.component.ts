@@ -1450,6 +1450,7 @@ export class EditComponent implements OnInit {
         // We have a limited cko patron.  Ask staff to create a penalty.
         this.limitedCkoDialog.externalCreate = true;
         this.limitedCkoDialog.startPatronMessage = LIMITED_CHECKOUT_PENALTY_MESSAGE;
+        this.limitedCkoDialog.defaultType = this.limitedCkoDialog.ALERT_NOTE;
 
         if (!this.patron.isnew()) {
             this.limitedCkoDialog.patronId = this.patron.id();
