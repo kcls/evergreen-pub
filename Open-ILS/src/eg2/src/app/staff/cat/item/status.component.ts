@@ -66,10 +66,12 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
 
     currentItemId: number;
     itemBarcode: string;
-    noSuchItem: string = null;
     item: IdlObject;
     tab: string;
     preloadCopyIds: number[];
+    fetchingItems = false;
+
+    notFoundBarcodes: string[] = [];
 
     // Open the detail page for the first item in the list when the
     // list view is selected with a set of preloaded copy IDs.
@@ -294,6 +296,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
     fileSelected($event) {
         const file: File = $event.target.files[0];
         const reader = new FileReader();
+        this.notFoundBarcodes = [];
 
         reader.onload = e => {
             const list = e.target.result as string;
@@ -328,13 +331,16 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
             if (bc) { barcodes.push(bc); }
         });
 
+        // Clear the backlog for manual scans.
+        this.notFoundBarcodes = [];
+
         return this.getItemsFromBarcodes(barcodes)
         .then(_ => this.selectInput());
     }
 
     getItemsFromBarcodes(barcodes: string[]): Promise<any> {
         let index = 0;
-        this.noSuchItem = null;
+        this.fetchingItems = true;
 
         return from(barcodes).pipe(concatMap(bc => {
 
@@ -355,7 +361,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
 
             return from(promise);
 
-        })).toPromise();
+        })).toPromise().finally(() => this.fetchingItems = false);
     }
 
     getOneItemFromBarcode(barcode: string): Promise<any> {
@@ -364,7 +370,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
             if (!res) {
                 // Dialog was canceled, nothing to do
             } else if (!res.id) {
-                this.noSuchItem = barcode;
+                this.notFoundBarcodes.push(barcode);
             } else {
                 this.itemBarcode = null;
                 if (this.tab === 'list') {
@@ -1006,6 +1012,23 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
         // Force a full reload to reset everything.
         const url = this.ngLocation.prepareExternalUrl(`/staff/cat/item/list`);
         location.href = url;
+    }
+
+    copyNotFoundBarcodes() {
+        const node = document.getElementById('not-found-barcodes-copy') as HTMLTextAreaElement;
+        if (node === null) { return; }
+
+        node.style.visibility = 'visible';
+        node.style.display = 'block';
+        node.focus();
+        node.select();
+
+        if (!document.execCommand('copy')) {
+            console.error('Copy command failed');
+        }
+
+        node.style.visibility = 'hidden';
+        node.style.display = 'none';
     }
 
     printList() {
