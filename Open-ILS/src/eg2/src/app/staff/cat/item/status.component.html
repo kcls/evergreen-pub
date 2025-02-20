@@ -227,12 +227,24 @@
   </div>
 </div>
 
-<div class="row" *ngIf="noSuchItem">
-  <div class="col-lg-6 offset-lg-3 alert alert-danger" i18n>
-    Item not found: <b>{{noSuchItem}}</b>
+<div *ngIf="notFoundBarcodes.length > 0">
+  <div class="d-flex mb-2 bg-warning p-1 rounded">
+    <div class="me-3 fw-bold pt-2" i18n>Not found: </div>
+    <div class="me-3" >
+      <button [disabled]="fetchingItems" 
+        (click)="copyNotFoundBarcodes()" class="btn btn-outline-dark" i18n>Copy</button>
+    </div>
+    <div class="flex-1 me-3" style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden">
+      {{notFoundBarcodes.join(' ')}}
+    </div>
+    <div>
+      <button [disabled]="fetchingItems"
+        (click)="notFoundBarcodes = []" class="btn btn-outline-dark" i18n>Clear</button>
+    </div>
   </div>
+  <textarea id="not-found-barcodes-copy" 
+    style="display:none;visibility:hidden">{{notFoundBarcodes.join('\n') + '\n'}}</textarea>
 </div>
-
 
 <ng-template #callNumberTemplate let-r="row">
   {{r.call_number().prefix().label()}}
