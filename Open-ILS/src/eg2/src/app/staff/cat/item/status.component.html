@@ -227,7 +227,16 @@
   </div>
 </div>
 
-<div class="row" *ngIf="noSuchItem">
+<div class="row alert alert-danger" *ngIf="notFoundBarcodes.length > 1">
+  <div class="col-lg-11" i18n>
+    Items not found: <b>{{notFoundBarcodes.join(', ')}}</b>
+  </div>
+  <div class="col-lg-1">
+    <button class="btn btn-outline-dark" i18n>Clear</button>
+  </div>
+</div>
+
+<div class="row" *ngIf="noSuchItem && notFoundBarcodes.length <= 1">
   <div class="col-lg-6 offset-lg-3 alert alert-danger" i18n>
     Item not found: <b>{{noSuchItem}}</b>
   </div>

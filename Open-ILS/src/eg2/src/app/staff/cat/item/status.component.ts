@@ -71,6 +71,8 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
     tab: string;
     preloadCopyIds: number[];
 
+    notFoundBarcodes: string[] = [];
+
     // Open the detail page for the first item in the list when the
     // list view is selected with a set of preloaded copy IDs.
     routeToDetails = false;
@@ -365,6 +367,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
                 // Dialog was canceled, nothing to do
             } else if (!res.id) {
                 this.noSuchItem = barcode;
+                this.notFoundBarcodes.push(barcode);
             } else {
                 this.itemBarcode = null;
                 if (this.tab === 'list') {
