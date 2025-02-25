@@ -347,7 +347,7 @@ a:hover {
         community library
         [% ELSE %]
         community library or visit 
-        <a href="https://kcls.org/accessibility/">https://kcls.org/accessibility/</a>
+        <a href="https://kcls.org/accessibility/">our accessibility page</a>
         [% END %]
         to request accommodation. 
       </p>
@@ -526,7 +526,13 @@ a:hover {
             [% END %]
           </div>
           <div class="grid-clear"></div>
-          <div>[% l('Some libraries may have additional library card selections.') %]</div>
+          <div>
+            [% IF NOT kiosk %]
+            <a href="https://kcls.org/library-card-artists/">
+              Learn about the artists who created these new designs.
+            </a>
+            [% END %]
+          </div>
         </li>
 
         <li>
