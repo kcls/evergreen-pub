@@ -521,7 +521,7 @@ a:hover {
           <div class="grid-clear"></div>
           <div>
             [% IF NOT kiosk %]
-            <a href="https://kcls.org/library-card-artists/">
+            <a target="_blank" href="https://kcls.org/library-card-artists/">
               Learn about the artists who created these new designs.
             </a>
             [% END %]
