@@ -48,18 +48,11 @@ wallet_cards = [
 keychain_cards = [
   '2025-Barry-Johnson',
   '2025-Bethany-Fackrell',
+  '2025-Don-Clark',
   '2025-Hernan-Paganini',
-  '2025-Invisible-Creature',
   '2025-Marisol-Ortega',
   '2025-Stacy-Nguyen',
   '2025-Stevie-Shao',
-
-#  '2019_Dog_Combo', 
-#  '2018_Pride_Combo', 
-#  '2019_Sasquatch_Combo', 
-#  '2019_Red_Combo',
-#  '2018_Slug',
-#  '2021_Baby_Yoda'
 ];
 
 MACRO input_field(fclass, fname, label, type, css_class, value) BLOCK;
