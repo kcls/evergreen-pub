@@ -84,7 +84,7 @@ export class RegisterCreateComponent implements OnInit {
     cardOptions = [
         '2025-Barry-Johnson',
         '2025-Bethany-Fackrell',
-        '2025-Don-Clark',
+        '2025-Invisible-Creature',
         '2025-Hernan-Paganini',
         '2025-Marisol-Ortega',
         '2025-Stacy-Nguyen',
