@@ -81,6 +81,16 @@ export class RegisterCreateComponent implements OnInit {
     textSettings: UserSettingType[] = [];
     printSettings: UserSettingType[] = [];
 
+    cardOptions = [
+        '2025-Barry-Johnson',
+        '2025-Bethany-Fackrell',
+        '2025-Don-Clark',
+        '2025-Hernan-Paganini',
+        '2025-Marisol-Ortega',
+        '2025-Stacy-Nguyen',
+        '2025-Stevie-Shao',
+    ];
+
     registerSuccess = false;
 
     formGroup = this.formBuilder.record({
@@ -458,5 +468,9 @@ export class RegisterCreateComponent implements OnInit {
 
             this.registerSuccess = Number(response.success) > 0;
         });
+    }
+
+    cardOptionUrl(name: string): string {
+        return `/images/patron_cards/${name}.png`;
     }
 }

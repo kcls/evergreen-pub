@@ -4,33 +4,20 @@
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 
   <mat-radio-group i18n-aria-label aria-label="Card Design" formControlName="design">
-    <div>
-      <mat-radio-button value="2019_Dog_Combo" i18n-aria-label aria-label="Dog">
-        <img class="card-image-horiz" src="/images/patron_cards/2019_Dog_Combo.png" i18n-alt alt="Dog"/>
-      </mat-radio-button>
-      <mat-radio-button value="2018_Pride_Combo" i18n-aria-label aria-label="Pride">
-        <img class="card-image-horiz" src="/images/patron_cards/2018_Pride_Combo.png" i18n-alt alt="Pride"/>
-      </mat-radio-button>
-    </div>
-    <div class="mt-3">
-      <mat-radio-button value="2019_Sasquatch_Combo" i18n-aria-label aria-label="Sasquatch">
-        <img class="card-image-vert " src="/images/patron_cards/2019_Sasquatch_Combo.png" i18n-alt alt="Sasquatch"/>
-      </mat-radio-button>
-      <mat-radio-button value="2019_Red_Combo" i18n-aria-label aria-label="Red">
-        <img class="card-image-vert " src="/images/patron_cards/2019_Red_Combo.png" i18n-alt alt="Red"/>
-      </mat-radio-button>
-    </div>
-    <div class="mt-3">
-      <mat-radio-button value="2018_Slug" i18n-aria-label aria-label="Slug">
-        <img class="card-image-vert" src="/images/patron_cards/2018_Slug.png" i18n-alt alt="Slug"/>
-      </mat-radio-button>
-      <mat-radio-button value="2021_Baby_Yoda" i18n-aria-label aria-label="Baby Yoda">
-        <img class="card-image-vert" src="/images/patron_cards/2021_Baby_Yoda.png" i18n-alt alt="Baby Yoda"/>
-      </mat-radio-button>
+    <div class="grid grid-cols-2 xs:grid-cols-1">
+      <div *ngFor="let card of cardOptions" class="mb-3">
+        <mat-radio-button [value]="card" aria-label="{{card}}">
+          <img class="card-image-horiz p-3" [src]="cardOptionUrl(card)" alt="{{card}}"/>
+        </mat-radio-button>
+      </div>
     </div>
   </mat-radio-group>
 
-  <p class="mt-1 mb-2" i18n>Some libraries may have additional library card selections.</p>
+  <p class="mt-1 mb-2" *ngIf="!register.inKioskMode">
+    <a href="https://kcls.org/library-card-artists/" i18n>
+      Learn about the artists who created these new designs.
+    </a>
+  </p>
 
   <h3 i18n>Choose How To Receive Your Card</h3>
 
