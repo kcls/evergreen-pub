@@ -1011,6 +1011,23 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
         location.href = url;
     }
 
+    copyNotFoundBarcodes() {
+        const node = document.getElementById('not-found-barcodes-copy') as HTMLTextAreaElement;
+        if (node === null) { return; }
+
+        node.style.visibility = 'visible';
+        node.style.display = 'block';
+        node.focus();
+        node.select();
+
+        if (!document.execCommand('copy')) {
+            console.error('Copy command failed');
+        }
+
+        node.style.visibility = 'hidden';
+        node.style.display = 'none';
+    }
+
     printList() {
 
         // Beware adhoc properties (e.g. item._circ) added to IDL objects
