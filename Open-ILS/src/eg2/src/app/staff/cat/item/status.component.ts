@@ -70,6 +70,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
     item: IdlObject;
     tab: string;
     preloadCopyIds: number[];
+    fetchingItems = false;
 
     notFoundBarcodes: string[] = [];
 
@@ -337,6 +338,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
     getItemsFromBarcodes(barcodes: string[]): Promise<any> {
         let index = 0;
         this.noSuchItem = null;
+        this.fetchingItems = true;
 
         return from(barcodes).pipe(concatMap(bc => {
 
@@ -357,7 +359,7 @@ export class ItemStatusComponent implements OnInit, AfterViewInit {
 
             return from(promise);
 
-        })).toPromise();
+        })).toPromise().finally(() => this.fetchingItems = false);
     }
 
     getOneItemFromBarcode(barcode: string): Promise<any> {
