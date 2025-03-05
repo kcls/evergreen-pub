@@ -1,10 +1,12 @@
 import {Component, OnInit} from '@angular/core';
 import {Router, Event, NavigationEnd} from '@angular/router';
-import {Title}  from '@angular/platform-browser';
+import {Title, Meta}  from '@angular/platform-browser';
 import {AppService} from '../app.service';
 import {FormControl} from '@angular/forms';
 import {RequestsService} from './requests.service';
 import {Gateway} from '../gateway.service';
+
+const META_DESC = $localize`Request an item you would like to borrow from our library or through interlibrary loan. Use a form to make requests or check request status.`;
 
 @Component({
   templateUrl: './requests.component.html',
@@ -21,6 +23,7 @@ export class RequestsComponent implements OnInit {
     constructor(
         private router: Router,
         private title: Title,
+        private meta: Meta,
         private gateway: Gateway,
         public app: AppService,
         public requests: RequestsService,
@@ -28,6 +31,9 @@ export class RequestsComponent implements OnInit {
 
     ngOnInit() {
         this.title.setTitle($localize`Request an Item`);
+
+        this.meta.addTag({description: META_DESC});
+
         this.tab = this.router.url.split("/").pop() || 'requests';
 
         if (this.tab === 'requests') {
