@@ -1,6 +1,5 @@
 import {Component, OnInit} from '@angular/core';
 import {FormControl, Validators} from '@angular/forms';
-import {Title} from '@angular/platform-browser';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 
@@ -59,7 +58,6 @@ export class RequestListComponent implements OnInit {
     };
 
     constructor(
-        private title: Title,
         private gateway: Gateway,
         public app: AppService
     ) { }
@@ -68,7 +66,6 @@ export class RequestListComponent implements OnInit {
         this.controls.completedCbox.valueChanges.subscribe(_ => this.load());
 
         this.requests = [];
-        this.title.setTitle($localize`My Requests`);
         this.app.authSessionLoad.subscribe(() => this.load());
         this.load();
     }

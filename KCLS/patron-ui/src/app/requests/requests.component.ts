@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {Router, Event, NavigationEnd} from '@angular/router';
+import {Title}  from '@angular/platform-browser';
 import {AppService} from '../app.service';
 import {FormControl} from '@angular/forms';
 import {RequestsService} from './requests.service';
@@ -19,12 +20,14 @@ export class RequestsComponent implements OnInit {
 
     constructor(
         private router: Router,
+        private title: Title,
         private gateway: Gateway,
         public app: AppService,
         public requests: RequestsService,
     ) {}
 
     ngOnInit() {
+        this.title.setTitle($localize`Request an Item`);
         this.tab = this.router.url.split("/").pop() || 'requests';
 
         if (this.tab === 'requests') {
@@ -38,7 +41,9 @@ export class RequestsComponent implements OnInit {
                 this.tab = event.url.split("/").pop() || 'create';
                 if (this.tab === 'list') {
                     this.requests.requestSubmitted = false;
+                    this.title.setTitle($localize`My Requests`);
                 } else {
+                    this.title.setTitle($localize`Request an Item`);
                     this.tab = 'create';
 
                     // Always clear the selected format when navigating
