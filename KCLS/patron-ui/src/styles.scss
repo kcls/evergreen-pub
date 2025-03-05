@@ -34,6 +34,13 @@ body {
   z-index: 0;
 }
 
+/* BC header navigation stays collapsed for some reason */
+/* min-width may need some adjusting */
+@media screen and (min-width: 1024px) {
+  nav:has(> #header_main_nav) { visibility: visible; }                         
+}
+
+
 /* this will likely go away once we setup our material theme */
 a, a:visited {
   color: #02729e;

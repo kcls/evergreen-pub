@@ -69,6 +69,11 @@
           to purchase every request. We appreciate your understanding.
         </div>
 
+        <div *ngIf="cancelRequested === request.id" i18n
+          class="mt-2 p-2 border border-grey-500 rounded flex justify-center">
+          Are you sure you want to cancel this request?
+        </div>
+
       </mat-card-content>
 
       <mat-card-actions 
@@ -85,7 +90,7 @@
           </ng-container>
           <ng-container *ngIf="cancelRequested === request.id">
             <button mat-raised-button color="primary" (click)="cancelRequested = null" i18n>
-              Never Mind
+              Go Back
             </button>
             <div class="flex-1"></div>
             <button mat-raised-button color="accent" (click)="cancel(request)" i18n>

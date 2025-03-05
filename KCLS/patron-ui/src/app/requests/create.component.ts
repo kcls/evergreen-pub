@@ -2,7 +2,6 @@ import {Component, OnInit} from '@angular/core';
 import {Observable} from 'rxjs';
 import {map, startWith} from 'rxjs/operators';
 import {Router} from '@angular/router';
-import {Title}  from '@angular/platform-browser';
 import {FormControl, Validators} from '@angular/forms';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
@@ -91,7 +90,6 @@ export class CreateRequestComponent implements OnInit {
 
     constructor(
         private router: Router,
-        private title: Title,
         private gateway: Gateway,
         public app: AppService,
         private settings: Settings,
@@ -99,7 +97,6 @@ export class CreateRequestComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-        this.title.setTitle($localize`Request an Item`);
         this.requests.patronChecked.subscribe(() => this.activateForm());
 
         // patronChecked is only called if a session retrieval is made,
