@@ -29,7 +29,7 @@
         </p>
         <p class="mt-3" i18n>
           Holds will be placed on items we are able to buy or borrow
-          through Interlibrary Loan (ILL) for pick up at your preferred
+          through interlibrary loan for pickup at your preferred
           library location. The status of item requests is available
           under <a routerLink="/requests/list">Check My Requests</a>.
         </p>
@@ -44,7 +44,7 @@
         <p class="mt-3">
           <mat-checkbox [formControl]="controls.ill_opt_out" i18n>
             Opt out: I would like this item considered only for purchase. 
-            Please do not attempt to borrow through Interlibrary Loan if 
+            Please do not attempt to borrow through interlibrary loan if 
             not available for purchase.
           </mat-checkbox>
         </p>
@@ -53,10 +53,11 @@
 
     <div i18n *ngIf="!requests.illRequestsAllowed"
       class="mt-2 flex justify-center border rounded border-orange-400 p-4">
-      Interlibrary Loan Service is not available for this library
-      card type. We are only able to offer ILL service to full
-      access King County Library System cardholders in good
-      standing. (Need help? Contact ASK KCLS)
+      Interlibrary loan service is not available for this library
+      card type. We are only able to offer interlibrary loan service
+      to full access King County Library System cardholders in good
+      standing. Need help? 
+      <a target="_blank" href="https://kcls.org/ask/">Contact ASK KCLS</a>.
     </div>
 
     <div *ngIf="tab === 'create'" class="flex p-2 mt-4">
@@ -68,7 +69,7 @@
           <mat-option value="audiobook" i18n>Audiobook</mat-option>
           <mat-option value="cd" i18n>Music CD</mat-option>
           <mat-option value="dvd" i18n>DVD</mat-option>
-          <mat-option value="ebook-eaudio" i18n>eBook or eAudio</mat-option>
+          <mat-option value="ebook-eaudio" i18n>eBook or Downloadable Audiobook</mat-option>
           <mat-option value="article" i18n>Magazine, Newspaper, or Journal Article</mat-option>
           <mat-option value="subscription" i18n>Magazine or Newspaper Subscription</mat-option>
           <mat-option value="microfilm" i18n>Microfilm</mat-option>
@@ -83,8 +84,7 @@
         <a target="_blank" href="https://libbyapp.com/library/kcls">Libby</a>
         to suggest an eBook downloadable audiobook purchase. Need help? 
         <a href="https://kcls.org/faqs/how-do-i-suggest-an-ebook-for-purchase/">
-          Read our FAQ
-        </a>.
+          Read our FAQ</a>.
       </p>
     </div>
 
