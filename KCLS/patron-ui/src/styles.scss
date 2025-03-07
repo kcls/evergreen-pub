@@ -65,8 +65,11 @@ $kcls-link-color: #012168;
 $kcls-bg-color: #FFF;
 $kcls-warning-color: #D3441C;
 
-a, 
-a:visited,
+a, a:visited {
+  /* avoid !important here because it can affect the BC wrapper */
+  color: $kcls-link-color;
+}
+
 .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
   color: $kcls-link-color !important;
 }
