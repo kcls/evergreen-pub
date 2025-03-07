@@ -46,13 +46,13 @@ wallet_cards = [
 # changes for wallet-key combo below.
 #keychain_cards = ['Keychain_red']; 
 keychain_cards = [
-  '2025-Barry-Johnson',
-  '2025-Bethany-Fackrell',
-  '2025-Invisible-Creature',
-  '2025-Hernan-Paganini',
-  '2025-Marisol-Ortega',
-  '2025-Stacy-Nguyen',
-  '2025-Stevie-Shao',
+  ['2025-Barry-Johnson', 'Boy Reading (Barry Johnson)'],
+  ['2025-Bethany-Fackrell', 'Five Salmon (Bethany Fackrell)'],
+  ['2025-Invisible-Creature', 'Sasquatch Reading (Don Clark/Invisible Creature)'],
+  ['2025-Hernan-Paganini', 'Blue Abstract (Hernan Paganini)'],
+  ['2025-Marisol-Ortega', 'Geometric Tiles (Marisol Ortega)'],
+  ['2025-Stacy-Nguyen', 'Dogs Camping (Stacy Nguyen)'],
+  ['2025-Stevie-Shao', 'Two Birds (Stevie Shao)'],
 ];
 
 MACRO input_field(fclass, fname, label, type, css_class, value) BLOCK;
@@ -506,14 +506,14 @@ a:hover {
                 [% END %]
                 [% card_idx = card_idx + 1; %]
             <div class="grid-cell">
-              <div><img class="card-img" src="[% card_url _ ctype _ '.png' %]"
-                alt="Card Option [% ctype %]"
-                onclick="select_card('[% ctype %]')"/></div>
-              <label hidden id='card-option-[% ctype %]'>[% ctype %]</label>
+              <div><img class="card-img" src="[% card_url _ ctype.0 _ '.png' %]"
+                alt="Card Option [% ctype.1 %]"
+                onclick="select_card('[% ctype.1 %]')"/></div>
+              <label hidden id='card-option-[% ctype.0 %]'>[% ctype.1 %]</label>
               <div class="card-style-option">
                 <input [% IF loop.first %]id='first-keychain-card'[% END %]
-                  aria-labelledby='card-choice-2 card-option-[% ctype %]'
-                  type="radio" name="stgsc.10" value="[% ctype %]"/>
+                  aria-labelledby='card-choice-2 card-option-[% ctype.0 %]'
+                  type="radio" name="stgsc.10" value="[% ctype.1 %]"/>
               </div>
             </div>
             [% END %]
