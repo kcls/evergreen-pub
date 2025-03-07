@@ -89,11 +89,11 @@
             <button mat-raised-button (click)="cancel(request)" i18n>Cancel Request</button>
           </ng-container>
           <ng-container *ngIf="cancelRequested === request.id">
-            <button mat-raised-button color="primary" (click)="cancelRequested = null" i18n>
+            <button mat-raised-button (click)="cancelRequested = null" i18n>
               Go Back
             </button>
             <div class="flex-1"></div>
-            <button mat-raised-button color="accent" (click)="cancel(request)" i18n>
+            <button mat-raised-button class="kcls-raised-button-warning" (click)="cancel(request)" i18n>
               Confirm Request Cancellation
             </button>
           </ng-container>
