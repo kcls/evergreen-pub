@@ -1,5 +1,6 @@
-@import "tailwindcss/base";
-@import "tailwindcss/utilities";
+@use "tailwindcss/base";
+@use "tailwindcss/utilities";
+
 
 @layer base {
   h1 {
@@ -13,18 +14,14 @@
   }
 }
 
-/*
-KCLS link/button colors -- when the time comes.
-$color-dark: #003F6B;
-$color-light: #FFF;
-*/
-
 html, body { height: 100%; }
 body { 
   margin: 0; 
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1rem;
 }
+
+// --mdc-filled-text-field-error-label-text-color: #F6323E;
 
 /* BC screen reader links are not correctly hidden via their API. */
 .screen_reader_nav {
@@ -41,12 +38,6 @@ body {
 }
 
 
-/* this will likely go away once we setup our material theme */
-a, a:visited {
-  color: #02729e;
-}
-
-
 
 /* EXAMPLE:
 <a routerLink="/requests/list" class="mat-icon-plus-text" i18n>
@@ -59,3 +50,42 @@ a, a:visited {
   align-items: center;
   justify-content: center;
 }
+
+
+/* 
+ * Local theming.  
+ *
+ * TODO: Use Angular theming overrides instead of direct style overrides.
+ * https://github.com/angular/components/blob/main/guides/theming.md
+ *
+ * See also https://kclsorg.sharepoint.com/Departments/CommunityRelationsGraphics/GraphicsShare/Forms/AllItems.aspx?ga=1&id=%2FDepartments%2FCommunityRelationsGraphics%2FGraphicsShare%2FKCLS%20Branding%2F10%2D2024%20Brand%20Style%20Sheet%2Epdf&parent=%2FDepartments%2FCommunityRelationsGraphics%2FGraphicsShare%2FKCLS%20Branding
+ */
+
+$kcls-link-color: #012168;
+$kcls-bg-color: #FFF;
+$kcls-warning-color: #D3441C;
+
+a, a:visited {
+  /* avoid !important here because it can affect the BC wrapper */
+  color: $kcls-link-color;
+}
+
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: $kcls-link-color !important;
+}
+
+.mat-mdc-form-field-error,
+.mdc-text-field--filled:not(.mdc-text-field--disabled).mdc-text-field--invalid .mdc-floating-label {
+  color: #F6323E !important;
+}
+
+.mat-mdc-raised-button:not(:disabled) {
+  background: $kcls-link-color !important;
+  color: $kcls-bg-color !important;
+}
+
+.kcls-raised-button-warning:not(:disabled) {
+  background: $kcls-warning-color !important;
+  color: $kcls-bg-color !important;
+}
+
