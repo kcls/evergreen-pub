@@ -214,7 +214,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
                 if (!this.patronIllAllowed) {
                     this.request.ill_opt_out(true);
-                    this.request.route_to('acq');
                 }
             });
         });

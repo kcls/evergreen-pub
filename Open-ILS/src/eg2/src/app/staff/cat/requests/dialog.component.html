@@ -163,17 +163,22 @@
     <div class="row mt-3">
       <div class="col-2" i18n>Route To</div>
       <div class="col-4">
-        <eg-combobox 
-          [disabled]="!patronIllAllowed"
-          [startId]="request.route_to()"
-          [selectedId]="request.route_to()"
-          (onChange)="request.route_to($event ? $event.id : null)"
-          i18n-placeholder placeholder="Route To...">
-          <eg-combobox-entry entryId="acq" entryLabel="Acquisitions" 
-            i18n-entryLabel></eg-combobox-entry>
-          <eg-combobox-entry entryId="ill" entryLabel="ILL"
-            i18n-entryLabel></eg-combobox-entry>
-        </eg-combobox>
+        <ng-container *ngIf="mode === 'create'">
+          <span class="fst-italic" i18n>Pending...</span>
+        </ng-container>
+        <ng-container *ngIf="mode !== 'create'">
+          <eg-combobox 
+            [disabled]="!patronIllAllowed"
+            [startId]="request.route_to()"
+            [selectedId]="request.route_to()"
+            (onChange)="request.route_to($event ? $event.id : null)"
+            i18n-placeholder placeholder="Route To...">
+            <eg-combobox-entry entryId="acq" entryLabel="Acquisitions" 
+              i18n-entryLabel></eg-combobox-entry>
+            <eg-combobox-entry entryId="ill" entryLabel="ILL"
+              i18n-entryLabel></eg-combobox-entry>
+          </eg-combobox>
+        </ng-container>
       </div>
       <ng-container *ngIf="request.route_to() === 'ill'">
         <div class="col-2" i18n>ILL #</div>
