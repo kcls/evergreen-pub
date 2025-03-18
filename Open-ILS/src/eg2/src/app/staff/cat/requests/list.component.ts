@@ -297,10 +297,10 @@ export class ItemRequestComponent implements OnInit {
         });
     }
 
-    // may not need this.
     showRequestDialog(req: IdlObject) {
         this.requestDialog.illDenialOptions = this.illDenialOptions;
         this.requestDialog.requestId = req.id();
+        this.requestDialog.mode = 'edit';
         this.requestDialog.open({size: 'xl'})
         .subscribe(changesMade => {
             if (changesMade) {

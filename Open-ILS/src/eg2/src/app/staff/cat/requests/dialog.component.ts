@@ -28,6 +28,12 @@ export class ItemRequestDialogComponent extends DialogComponent {
     patronBarcode = '';
     patronNotFound = false;
 
+    disabledPickupOrgs = [];
+    illDenialSelectorVal = '';
+    illDenialOptions: IdlObject[] = [];
+    patronIllAllowed = true;
+    patronRequestsAllowed = true;
+
     audiences = [
         $localize`Adult`,
         $localize`Teen`,
@@ -62,9 +68,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
         $localize`Tiếng Việt / Vietnamese`,
     ];
 
-    illDenialSelectorVal = '';
-    illDenialOptions: IdlObject[] = [];
-
     @Input() mode: 'edit' | 'create' = 'edit';
 
     constructor(
@@ -85,12 +88,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.sourceRequest = null;
         this.patronBarcode = null;
 
-        console.log(this.idl.classes['auir']);
-
         if (this.mode === 'create') {
-            this.request = this.idl.create('auir');
-            this.sourceRequest = this.idl.clone(this.request);
-            return super.open(args);
+            this.resetCreate();
+            return from(this.applyPickupOrgs()).pipe(switchMap(_ => super.open(args)));
         }
 
         if (!this.requestId) {
@@ -100,6 +100,33 @@ export class ItemRequestDialogComponent extends DialogComponent {
         // Fire data loading observable and replace results with
         // dialog opener observable.
         return from(this.loadRequest()).pipe(switchMap(_ => super.open(args)));
+    }
+
+    applyPickupOrgs(): Promise<any> {
+        if (this.disabledPickupOrgs.length > 0) {
+            return Promise.resolve();
+        }
+
+		return this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.settings.value_for_all_orgs.atomic',
+            this.auth.token(),
+            'opac.holds.org_unit_not_pickup_lib'
+        ).toPromise().then(list => {
+            list.forEach(setting => {
+                if (setting.summary.value) {
+                    this.disabledPickupOrgs.push(setting.org_unit);
+                }
+            });
+
+            // Now add the org units where can_have_vols is false
+            // dupes are fine.
+            this.org.list().forEach(org => {
+                if (org.ou_type().can_have_vols() === 'f') {
+                    this.disabledPickupOrgs.push(org.id());
+                }
+            });
+        });
     }
 
     orgSn(id: number): string {
@@ -112,9 +139,22 @@ export class ItemRequestDialogComponent extends DialogComponent {
         return org ? org.name() : '';
     }
 
+    resetCreate() {
+        this.patronNotFound = false;
+        this.patronIllAllowed = true;
+        this.patronRequestsAllowed = true;
+
+        this.request = this.idl.create('auir');
+
+        this.request.route_to(null);
+        this.request.ill_opt_out(null);
+        this.request.pickup_lib(null);
+
+        this.sourceRequest = this.idl.clone(this.request);
+    }
 
     findPatron() {
-        this.patronNotFound = false;
+        this.resetCreate();
 
         if (!this.patronBarcode) {
             return;
@@ -137,7 +177,47 @@ export class ItemRequestDialogComponent extends DialogComponent {
             patron.card(card);
 
             this.request.usr(patron);
-        })
+
+            return patron;
+        }).then(patron => {
+            if (!patron) { return null; }
+
+            return this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.patron.settings.retrieve',
+                this.auth.token(), patron.id(), 'opac.default_pickup_location'
+            ).toPromise().then(orgId => {
+                this.request.pickup_lib(orgId || patron.home_ou());
+                return patron;
+            });
+
+        }).then(patron => {
+            if (!patron) { return null; }
+/* TODO needs API
+            return this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.patron-request.create.allowed',
+                this.auth.token(), patron.id()
+            ).toPromise().then(allowed => {
+                this.patronRequestsAllowed = Number(allowed) === 1;
+                return patron;
+            });
+        }).then(patron => {
+            if (!patron) { return null; }
+*/
+            return this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.patron.patron-request.ill-allowed',
+                this.auth.token(), patron.id()
+            ).toPromise().then(allowed => {
+                this.patronIllAllowed = Number(allowed) === 1;
+
+                if (!this.patronIllAllowed) {
+                    this.request.ill_opt_out(true);
+                    this.request.route_to('acq');
+                }
+            });
+        });
     }
 
     loadRequest(): Promise<void> {
@@ -279,6 +359,21 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
     illDenialChanged(content) {
         this.request.ill_denial(content);
+    }
+
+    disableSave(): boolean {
+        if (!this.request) { return true; }
+        if (!this.request.usr()) { return true; }
+        if (!this.request.title()) { return true; }
+        if (!this.request.format()) { return true; }
+
+        if (this.mode === 'create') {
+            // Is this required in the patron form?
+            // Should it be editable in 'edit' mode?
+            if (!this.request.pickup_lib()) { return true; }
+        }
+
+        return false;
     }
 }
 

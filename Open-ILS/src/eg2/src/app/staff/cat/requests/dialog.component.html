@@ -5,11 +5,18 @@
       i18n-aria-label aria-label="Close" (click)="close(false)"> </button>
   </div>
   <div class="modal-body form-validated" *ngIf="request">
+
     <div class="row" *ngIf="mode === 'create'">
       <div class="col-2" i18n>Patron Barcode</div>
       <div class="col-4">
         <input required class="form-control" type="text" 
           [(ngModel)]="patronBarcode" (change)="findPatron()"/>
+      </div>
+    </div>
+
+    <div class="row mt-3" *ngIf="!patronIllAllowed">
+      <div class="col-12 alert alert-warning" i18n>
+        Interlibrary loan service is not available for this library card type.
       </div>
     </div>
 
@@ -51,7 +58,7 @@
       </div>
     </div>
 
-    <div class="row mt-3" *ngIf="mode !== 'create'">
+    <div class="row mt-3">
       <ng-container *ngIf="mode !== 'create'">
         <div class="col-2" i18n>Format</div>
         <div class="col-4">{{request.format()}}</div>
@@ -126,13 +133,24 @@
         <eg-bool [value]="request.ill_opt_out()"></eg-bool>
       </div>
     </div>
-    <div class="row mt-3" *ngIf="mode !== 'create'">
+    <div class="row mt-3">
       <div class="col-2" i18n>Pickup Lib</div>
-      <div class="col-4">
-        <ng-container *ngIf="request.pickup_lib()" i18n>
-          {{orgName(request.pickup_lib())}} ({{orgSn(request.pickup_lib())}})
-        </ng-container>
-      </div>
+      <ng-container *ngIf="mode !== 'create'">
+        <div class="col-4">
+          <ng-container *ngIf="request.pickup_lib()" i18n>
+            {{orgName(request.pickup_lib())}} ({{orgSn(request.pickup_lib())}})
+          </ng-container>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="mode === 'create'">
+        <div class="col-4">
+          <eg-org-select [required]="true"
+            [disableOrgs]="disabledPickupOrgs"
+            [applyOrgId]="request.pickup_lib()"
+            (onChange)="request.pickup_lib($event ? $event.id() : null)">
+          </eg-org-select>
+        </div>
+      </ng-container>
       <div class="col-2" i18n>Audience</div>
       <div class="col-4">
         <select class="form-select"
@@ -146,7 +164,9 @@
       <div class="col-2" i18n>Route To</div>
       <div class="col-4">
         <eg-combobox 
+          [disabled]="!patronIllAllowed"
           [startId]="request.route_to()"
+          [selectedId]="request.route_to()"
           (onChange)="request.route_to($event ? $event.id : null)"
           i18n-placeholder placeholder="Route To...">
           <eg-combobox-entry entryId="acq" entryLabel="Acquisitions" 
@@ -262,10 +282,10 @@
     <button type="button" class="btn btn-warning"
       (click)="close(false)" i18n>Cancel</button>
 
-    <button type="button" class="btn btn-success ms-2" [disabled]="!request.usr()"
+    <button type="button" class="btn btn-success ms-2" [disabled]="disableSave()"
       (click)="save()" i18n>Save</button>
 
-    <button type="button" class="btn btn-primary ms-2" [disabled]="!request.usr()"
+    <button type="button" class="btn btn-primary ms-2" [disabled]="disableSave()"
       (click)="save(true)" i18n>Save &amp; Claim</button>
   </div>
 </ng-template>
