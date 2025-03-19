@@ -12,6 +12,7 @@ import {Observable, tap, from, throwError} from 'rxjs';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
+import {ServerStoreService} from '@eg/core/server-store.service';
 
 @Component({
   selector: 'eg-item-request-dialog',
@@ -33,6 +34,10 @@ export class ItemRequestDialogComponent extends DialogComponent {
     illDenialOptions: IdlObject[] = [];
     patronIllAllowed = true;
     patronRequestsAllowed = true;
+    maxRequestsAllowed: number | null = null;
+    patronActiveRequestCount = 0;
+    patronHasMasRequests = false;
+    patronHasOverdueIll = false;
 
     audiences = [
         $localize`Adult`,
@@ -79,7 +84,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
         private evt: EventService,
         private pcrud: PcrudService,
         private org: OrgService,
-        private auth: AuthService) {
+        private auth: AuthService,
+        private serverStore: ServerStoreService
+    ) {
         super(modal); // required for subclassing
     }
 
@@ -87,10 +94,10 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.request = null;
         this.sourceRequest = null;
         this.patronBarcode = null;
+        this.resetCreate();
 
         if (this.mode === 'create') {
-            this.resetCreate();
-            return from(this.applyPickupOrgs()).pipe(switchMap(_ => super.open(args)));
+            return from(this.loadCreateData()).pipe(switchMap(_ => super.open(args)));
         }
 
         if (!this.requestId) {
@@ -100,6 +107,19 @@ export class ItemRequestDialogComponent extends DialogComponent {
         // Fire data loading observable and replace results with
         // dialog opener observable.
         return from(this.loadRequest()).pipe(switchMap(_ => super.open(args)));
+    }
+
+
+    loadCreateData(): Promise<any> {
+        return this.setMaxRequests().then(_ => this.applyPickupOrgs());
+    }
+
+    setMaxRequests(): Promise<any> {
+        if (this.maxRequestsAllowed !== null) {
+            return Promise.resolve();
+        }
+        return this.serverStore.getItem('patron_requests.max_active')
+        .then(count => this.maxRequestsAllowed = count ? Number(count) : 20);
     }
 
     applyPickupOrgs(): Promise<any> {
@@ -143,6 +163,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.patronNotFound = false;
         this.patronIllAllowed = true;
         this.patronRequestsAllowed = true;
+        this.patronHasMasRequests = false;
+        this.patronHasOverdueIll = false;
 
         this.request = this.idl.create('auir');
 
@@ -184,37 +206,23 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
             return this.net.request(
                 'open-ils.actor',
-                'open-ils.actor.patron.settings.retrieve',
-                this.auth.token(), patron.id(), 'opac.default_pickup_location'
-            ).toPromise().then(orgId => {
-                this.request.pickup_lib(orgId || patron.home_ou());
-                return patron;
-            });
+                'open-ils.actor.patron.patron-request.access',
+                this.auth.token(), patron.id()
+            ).toPromise().then(access => {
+                console.debug('Access: ', access);
 
-        }).then(patron => {
-            if (!patron) { return null; }
-/* TODO needs API
-            return this.net.request(
-                'open-ils.actor',
-                'open-ils.actor.patron-request.create.allowed',
-                this.auth.token(), patron.id()
-            ).toPromise().then(allowed => {
-                this.patronRequestsAllowed = Number(allowed) === 1;
-                return patron;
-            });
-        }).then(patron => {
-            if (!patron) { return null; }
-*/
-            return this.net.request(
-                'open-ils.actor',
-                'open-ils.actor.patron.patron-request.ill-allowed',
-                this.auth.token(), patron.id()
-            ).toPromise().then(allowed => {
-                this.patronIllAllowed = Number(allowed) === 1;
+                this.request.pickup_lib(access.pickup_lib);
+
+                this.patronRequestsAllowed = Number(access.create_allowed) === 1;
+                this.patronActiveRequestCount = Number(access.active_request_count);
+                this.patronHasOverdueIll = Number(access.has_overdue_ill) == 1;
+                this.patronIllAllowed = Number(access.ill_allowed) === 1;
 
                 if (!this.patronIllAllowed) {
                     this.request.ill_opt_out(true);
                 }
+
+                return patron;
             });
         });
     }
@@ -372,7 +380,15 @@ export class ItemRequestDialogComponent extends DialogComponent {
             if (!this.request.pickup_lib()) { return true; }
         }
 
-        return false;
+        return this.patronHasBlocks();
+    }
+
+    patronHasBlocks(): boolean {
+        return (
+            !this.patronRequestsAllowed ||
+            !this.patronIllAllowed ||
+            this.patronHasMasRequests
+        );
     }
 }
 
