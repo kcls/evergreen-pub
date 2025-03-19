@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <div i18n *ngIf="!requests.illRequestsAllowed"
+    <div i18n *ngIf="requests.requestsAllowed && !requests.illRequestsAllowed"
       class="mt-2 border rounded border-orange-400 p-4">
       Interlibrary loan service is not available for this library
       card type. We are only able to offer interlibrary loan service
