@@ -460,17 +460,21 @@ __PACKAGE__->register_method(
     /
 );
 
+# TODO deprecate
 sub create_allowed {
     my ($self, $conn, $auth, $org_id) = @_;
 
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
 
-    my $user = $e->requestor;
-    $org_id ||= $user->home_ou;
+    return create_allowed_impl($e, $e->requestor, $org_id);
+}
+
+sub create_allowed_impl {
+    my ($e, $patron) = @_;
 
     my $expire = DateTime::Format::ISO8601->new
-        ->parse_datetime(clean_ISO8601($user->expire_date));
+        ->parse_datetime(clean_ISO8601($patron->expire_date));
 
     if ($expire < DateTime->now) {
         $logger->info("PR denied because account is expired");
@@ -482,12 +486,12 @@ sub create_allowed {
         from => {ausp => 'csp'},
         where => {
             '+ausp' => {
-                usr => $user->id,
+                usr => $patron->id,
                 '-or' => [
                     {stop_date => undef},
                     {stop_date => {'>' => 'now'}}
                 ],
-                org_unit => $U->get_org_full_path($org_id),
+                org_unit => $U->get_org_full_path($patron->home_ou)
             },
             '+csp' => {
                 '-not' => {
@@ -500,7 +504,7 @@ sub create_allowed {
         }
     });
 
-    # As of writing, requests are allowed if the user can login
+    # As of writing, requests are allowed if the patron can login
     # and has no blocking penalties.  (Note auth prevents login of 
     # barred accounts).
     return @$penalties == 0;
@@ -696,22 +700,30 @@ sub ill_requests_allowed {
 
     my $user = $e->retrieve_actor_user($patron_id) or return 0;
 
+    return ill_requests_allowed_impl($e, $user);
+}
+
+sub ill_requests_allowed_impl {
+    my ($e, $patron) = @_;
+
     # 1. Limited Checkout patrons are not permitted.
 
-    return 0 if $user->profile == LIMITED_CHECKOUT_PROFILE;
+    # TODO check other profiles here.
+    return 0 if $patron->profile == LIMITED_CHECKOUT_PROFILE;
 
-    # 2. All staff are permitted regardless of residency status.
+    # 2. Staff accounts and staff patron accounts are permitted 
+    # regardless of residency status.
 
-    # So the perm check runs against the user and not (potentially) the 
+    # So the perm check runs against the patron and not (potentially) the 
     # staff account making this call on behalf of a patron.
-    $e->requestor($user);
+    $e->requestor($patron);
 
     return 1 if $e->allowed('STAFF_LOGIN');
 
     # 3. Patrons must be in the service area to request ILLs.
 
-    my $stat = $e->search_actor_stat_cat_entry_user_map({
-        target_usr => $patron_id, 
+    my $stat = $e->search_actor_stat_cat_entry_patron_map({
+        target_usr => $patron->id, 
         stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
     })->[0];
 
@@ -724,6 +736,69 @@ sub ill_requests_allowed {
     return ($val =~ /^(kcls|_property owner|unset|)$/) ? 1 : 0;
 }
 
+
+
+__PACKAGE__->register_method(
+    method   => 'request_permissions',
+    api_name => 'open-ils.actor.patron.patron-request.permissions',
+    signature => {
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Patron ID / Optional', type => 'number'},
+        ],
+        desc => q/Details on what access the patron has and any limits exceeded/,
+    }
+);
+
+sub request_permissions {
+    my ($self, $client, $auth, $patron_id) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+
+    my $response = {
+        create_allowed => 0,
+        ill_allowed => 0,
+        active_request_count => 0,
+        max_allowed => 0,
+        at_max_requests => 0,
+    };
+
+    $patron_id ||= $e->requestor->id;
+
+    my $patron;
+    if ($patron_id == $e->requestor->id) {
+        $patron = $e->requestor;
+    } else {
+        return $e->event unless $e->allowed('VIEW_USER');
+        $patron = $e->retrieve_actor_user($patron_id) or return $response;
+    } 
+
+    $response->{create_allowed} = create_allowed_impl($e, $patron);
+
+    return $response unless $response->{create_allowed};
+
+    $response->{ill_allowed} = ill_requests_allowed_impl($e, $patron);
+
+    my $active = $e->search_actor_user_item_request(
+        {   usr => $patron->id,
+            cancel_date => undef,
+            complete_date => undef
+        }, {idlist => 1}
+    );
+
+    $response->{active_request_count} = scalar(@$active);
+
+    my $max_allowed = 
+        $U->ou_ancestor_setting_value($patron->home_ou, 'patron_requests.max_active', $e)
+        || 20; # meh
+
+    $response->{at_max_requests} = $response->{active_request_count} >= $max_allowed;
+
+    $response->{max_allowed} = $max_allowed;
+
+    return $response;
+}
 
 
 1;

@@ -12,6 +12,7 @@ import {Observable, tap, from, throwError} from 'rxjs';
 import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
+import {ServerStoreService} from '@eg/core/server-store.service';
 
 @Component({
   selector: 'eg-item-request-dialog',
@@ -33,6 +34,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
     illDenialOptions: IdlObject[] = [];
     patronIllAllowed = true;
     patronRequestsAllowed = true;
+    maxRequestsAllowed: number | null = null;
+    patronActiveRequestCount = 0;
 
     audiences = [
         $localize`Adult`,
@@ -79,7 +82,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
         private evt: EventService,
         private pcrud: PcrudService,
         private org: OrgService,
-        private auth: AuthService) {
+        private auth: AuthService,
+        private serverStore: ServerStoreService
+    ) {
         super(modal); // required for subclassing
     }
 
@@ -90,7 +95,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         if (this.mode === 'create') {
             this.resetCreate();
-            return from(this.applyPickupOrgs()).pipe(switchMap(_ => super.open(args)));
+            return from(this.loadCreateData()).pipe(switchMap(_ => super.open(args)));
         }
 
         if (!this.requestId) {
@@ -100,6 +105,19 @@ export class ItemRequestDialogComponent extends DialogComponent {
         // Fire data loading observable and replace results with
         // dialog opener observable.
         return from(this.loadRequest()).pipe(switchMap(_ => super.open(args)));
+    }
+
+
+    loadCreateData(): Promise<any> {
+        return this.setMaxRequests().then(_ => this.applyPickupOrgs());
+    }
+
+    setMaxRequests(): Promise<any> {
+        if (this.maxRequestsAllowed !== null) {
+            return Promise.resolve();
+        }
+        return this.serverStore.getItem('patron_requests.max_active')
+        .then(count => this.maxRequestsAllowed = count ? Number(count) : 20);
     }
 
     applyPickupOrgs(): Promise<any> {
@@ -193,7 +211,6 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         }).then(patron => {
             if (!patron) { return null; }
-/* TODO needs API
             return this.net.request(
                 'open-ils.actor',
                 'open-ils.actor.patron-request.create.allowed',
@@ -204,7 +221,22 @@ export class ItemRequestDialogComponent extends DialogComponent {
             });
         }).then(patron => {
             if (!patron) { return null; }
-*/
+
+            return this.pcrud.search('auir',
+                {   usr: patron.id(),
+                    cancel_date: null,
+                    complete_date: null
+                },
+                {},
+                {idlist: true}
+            ).toPromise().then(list => {
+                this.patronActiveRequestCount = list;
+                return patron;
+            })
+
+        }).then(patron => {
+            if (!patron) { return null; }
+
             return this.net.request(
                 'open-ils.actor',
                 'open-ils.actor.patron.patron-request.ill-allowed',
