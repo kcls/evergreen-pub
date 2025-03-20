@@ -1,6 +1,10 @@
 <ng-template #dialogContent>
   <div class="modal-header">
-    <h4 class="modal-title"><span i18n>Item Request</span></h4>
+    <h4 class="modal-title">
+      <span i18n>
+        Item Request<ng-container *ngIf="requestId"> #{{requestId}}</ng-container>
+      </span>
+    </h4>
     <button type="button" class="btn-close btn-close-white" 
       i18n-aria-label aria-label="Close" (click)="close(false)"> </button>
   </div>
@@ -14,9 +18,17 @@
       </div>
     </div>
 
-    <div class="row mt-3" *ngIf="!patronIllAllowed">
-      <div class="col-12 alert alert-warning" i18n>
-        Interlibrary loan service is not available for this library card type.
+    <div class="row mt-3" *ngIf="patronHasBlocks()">
+      <div class="col-12 alert alert-warning">
+        <ng-container *ngIf="patronHasMasRequests; else checkAllowed" i18n>
+          Patron has reached the maximum number of allowed open requests.
+        </ng-container>
+        <ng-container #checkAllowed *ngIf="!patronRequestsAllowed; else checkIll" i18n>
+          This account does not have permission to create new requests.
+        </ng-container>
+        <ng-container #checkIll *ngIf="!patronIllAllowed" i18n>
+          Interlibrary loan service is not available for this library card type.
+        </ng-container>
       </div>
     </div>
 

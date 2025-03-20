@@ -36,6 +36,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
     patronRequestsAllowed = true;
     maxRequestsAllowed: number | null = null;
     patronActiveRequestCount = 0;
+    patronHasMasRequests = false;
 
     audiences = [
         $localize`Adult`,
@@ -161,6 +162,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.patronNotFound = false;
         this.patronIllAllowed = true;
         this.patronRequestsAllowed = true;
+        this.patronHasMasRequests = false;
 
         this.request = this.idl.create('auir');
 
@@ -205,56 +207,18 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 'open-ils.actor.patron.patron-request.access',
                 this.auth.token(), patron.id()
             ).toPromise().then(access => {
-                console.debug('ACCESS', access);
-                return patron;
-            });
-        }).then(patron => {
-            return this.net.request(
-                'open-ils.actor',
-                'open-ils.actor.patron.settings.retrieve',
-                this.auth.token(), patron.id(), 'opac.default_pickup_location'
-            ).toPromise().then(orgId => {
-                this.request.pickup_lib(orgId || patron.home_ou());
-                return patron;
-            });
-        }).then(patron => {
-            if (!patron) { return null; }
-            return this.net.request(
-                'open-ils.actor',
-                'open-ils.actor.patron-request.create.allowed',
-                this.auth.token(), patron.id()
-            ).toPromise().then(allowed => {
-                this.patronRequestsAllowed = Number(allowed) === 1;
-                return patron;
-            });
-        }).then(patron => {
-            if (!patron) { return null; }
+                console.debug('Access: ', access);
 
-            return this.pcrud.search('auir',
-                {   usr: patron.id(),
-                    cancel_date: null,
-                    complete_date: null
-                },
-                {},
-                {idlist: true}
-            ).toPromise().then(list => {
-                this.patronActiveRequestCount = list;
-                return patron;
-            })
-
-        }).then(patron => {
-            if (!patron) { return null; }
-
-            return this.net.request(
-                'open-ils.actor',
-                'open-ils.actor.patron.patron-request.ill-allowed',
-                this.auth.token(), patron.id()
-            ).toPromise().then(allowed => {
-                this.patronIllAllowed = Number(allowed) === 1;
+                this.patronRequestsAllowed = Number(access.create_allowed) === 1;
+                this.patronActiveRequestCount = Number(access.active_request_count);
+                this.request.pickup_lib(access.pickup_lib);
+                this.patronIllAllowed = Number(access.ill_allowed) === 1;
 
                 if (!this.patronIllAllowed) {
                     this.request.ill_opt_out(true);
                 }
+
+                return patron;
             });
         });
     }
@@ -412,7 +376,15 @@ export class ItemRequestDialogComponent extends DialogComponent {
             if (!this.request.pickup_lib()) { return true; }
         }
 
-        return false;
+        return this.patronHasBlocks();
+    }
+
+    patronHasBlocks(): boolean {
+        return (
+            !this.patronRequestsAllowed ||
+            !this.patronIllAllowed ||
+            this.patronHasMasRequests
+        );
     }
 }
 
