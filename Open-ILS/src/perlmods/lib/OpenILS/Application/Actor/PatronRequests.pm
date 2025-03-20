@@ -507,7 +507,7 @@ sub create_allowed_impl {
     # As of writing, requests are allowed if the patron can login
     # and has no blocking penalties.  (Note auth prevents login of 
     # barred accounts).
-    return @$penalties == 0;
+    return int(@$penalties == 0);
 }
 
 __PACKAGE__->register_method(
@@ -714,15 +714,17 @@ sub ill_requests_allowed_impl {
     # 2. Staff accounts and staff patron accounts are permitted 
     # regardless of residency status.
 
+    my $perm_org = $e->requestor->ws_ou || $patron->home_ou;
+
     # So the perm check runs against the patron and not (potentially) the 
     # staff account making this call on behalf of a patron.
     $e->requestor($patron);
 
-    return 1 if $e->allowed('STAFF_LOGIN');
+    return 1 if $e->allowed('STAFF_LOGIN', $perm_org);
 
     # 3. Patrons must be in the service area to request ILLs.
 
-    my $stat = $e->search_actor_stat_cat_entry_patron_map({
+    my $stat = $e->search_actor_stat_cat_entry_user_map({
         target_usr => $patron->id, 
         stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
     })->[0];
@@ -732,6 +734,8 @@ sub ill_requests_allowed_impl {
 
     $val =~ s/^\s+|\s+$//g ; # Perl.trim()
 
+    # TODO just KCLS
+
     # The stat cat values indicate a patron is in the service area.
     return ($val =~ /^(kcls|_property owner|unset|)$/) ? 1 : 0;
 }
@@ -740,7 +744,7 @@ sub ill_requests_allowed_impl {
 
 __PACKAGE__->register_method(
     method   => 'request_permissions',
-    api_name => 'open-ils.actor.patron.patron-request.permissions',
+    api_name => 'open-ils.actor.patron.patron-request.access',
     signature => {
         params => [
             {desc => 'Authtoken', type => 'string'},
@@ -762,6 +766,7 @@ sub request_permissions {
         active_request_count => 0,
         max_allowed => 0,
         at_max_requests => 0,
+        pickup_lib => 0,
     };
 
     $patron_id ||= $e->requestor->id;
@@ -793,9 +798,20 @@ sub request_permissions {
         $U->ou_ancestor_setting_value($patron->home_ou, 'patron_requests.max_active', $e)
         || 20; # meh
 
-    $response->{at_max_requests} = $response->{active_request_count} >= $max_allowed;
+    if (my $count = $response->{active_request_count}) {
+        $response->{at_max_requests} = $count >= $max_allowed ? 1 : 0;
+    }
 
     $response->{max_allowed} = $max_allowed;
+
+    my $setting = $e->search_actor_user_setting(
+        {usr => $patron_id, name => 'opac.default_pickup_location'})->[0];
+
+    $response->{pickup_lib} = $setting->value ?
+        OpenSRF::Utils::JSON->JSON2perl($setting->value) :
+        $patron->home_ou;
+
+    $response->{pickup_lib} = int($response->{pickup_lib});
 
     return $response;
 }

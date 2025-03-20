@@ -202,13 +202,21 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
             return this.net.request(
                 'open-ils.actor',
+                'open-ils.actor.patron.patron-request.access',
+                this.auth.token(), patron.id()
+            ).toPromise().then(access => {
+                console.debug('ACCESS', access);
+                return patron;
+            });
+        }).then(patron => {
+            return this.net.request(
+                'open-ils.actor',
                 'open-ils.actor.patron.settings.retrieve',
                 this.auth.token(), patron.id(), 'opac.default_pickup_location'
             ).toPromise().then(orgId => {
                 this.request.pickup_lib(orgId || patron.home_ou());
                 return patron;
             });
-
         }).then(patron => {
             if (!patron) { return null; }
             return this.net.request(
