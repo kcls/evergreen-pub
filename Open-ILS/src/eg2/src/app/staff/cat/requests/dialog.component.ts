@@ -37,6 +37,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
     maxRequestsAllowed: number | null = null;
     patronActiveRequestCount = 0;
     patronHasMasRequests = false;
+    patronHasOverdueIll = false;
 
     audiences = [
         $localize`Adult`,
@@ -93,9 +94,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.request = null;
         this.sourceRequest = null;
         this.patronBarcode = null;
+        this.resetCreate();
 
         if (this.mode === 'create') {
-            this.resetCreate();
             return from(this.loadCreateData()).pipe(switchMap(_ => super.open(args)));
         }
 
@@ -163,6 +164,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.patronIllAllowed = true;
         this.patronRequestsAllowed = true;
         this.patronHasMasRequests = false;
+        this.patronHasOverdueIll = false;
 
         this.request = this.idl.create('auir');
 
@@ -209,9 +211,11 @@ export class ItemRequestDialogComponent extends DialogComponent {
             ).toPromise().then(access => {
                 console.debug('Access: ', access);
 
+                this.request.pickup_lib(access.pickup_lib);
+
                 this.patronRequestsAllowed = Number(access.create_allowed) === 1;
                 this.patronActiveRequestCount = Number(access.active_request_count);
-                this.request.pickup_lib(access.pickup_lib);
+                this.patronHasOverdueIll = Number(access.has_overdue_ill) == 1;
                 this.patronIllAllowed = Number(access.ill_allowed) === 1;
 
                 if (!this.patronIllAllowed) {

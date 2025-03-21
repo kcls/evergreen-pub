@@ -31,7 +31,10 @@ export class Gateway {
     // returns the contents of the array via an observable, one emission
     // per array value.
     request(service: string, method: string, ...params: unknown[]): Observable<unknown> {
-        console.debug(`Gateway service=${service}\n  method=${method}\n  paramCount=${params.length}`);
+        // Useful for debugging but potentially shows excess info to end
+        // users poking around in the console (even though the same info
+        // could be derived from reading the code).
+        // console.debug(`Gateway service=${service}\n  method=${method}\n  paramCount=${params.length}`);
 
         service = encodeURIComponent(service);
         method = encodeURIComponent(method);

@@ -3,17 +3,28 @@ import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 
+interface PatronAccess {
+    create_allowed: boolean,
+    has_overdue_ill: boolean,
+    ill_allowed: boolean,
+    active_request_count: number,
+    max_allowed: number,
+    at_max_requests: boolean,
+    pickup_lib: boolean,
+}
+
 @Injectable()
 export class RequestsService {
     selectedFormat: string | null = null;
-    illOptOut = false;
     requestsAllowed: boolean | null = null;
     activeRequestCount = 0;
     maxRequestCount = 0;
     pickupLibs: Hash[] = [];
     illRequestsAllowed = true;
+    illOptOut = false;
 
     requestSubmitted = false;
+    patronAccess: PatronAccess | null = null;
 
     // Emits after completion of every new patron auth+permission check.
     patronChecked: EventEmitter<void> = new EventEmitter<void>();
@@ -23,12 +34,13 @@ export class RequestsService {
     formResetRequested: EventEmitter<void> = new EventEmitter<void>();
 
     formatChanged: EventEmitter<void> = new EventEmitter<void>();
+    patronAccessLoaded: EventEmitter<PatronAccess> = new EventEmitter<PatronAccess>();
 
     constructor(
         private app: AppService,
         private settings: Settings,
         private gateway: Gateway) {
-        app.authSessionLoad.subscribe(() => this.checkRequestPerms());
+        app.authSessionLoad.subscribe(() => this.loadPatronAccess());
     }
 
     reset() {
@@ -37,54 +49,33 @@ export class RequestsService {
         this.illRequestsAllowed = true;
     }
 
-    checkRequestPerms() {
-        this.requestsAllowed = null;
-        this.activeRequestCount = 0;
+    loadPatronAccess(): Promise<PatronAccess> {
+        this.patronAccess = null;
 
-        this.gateway.requestOne(
+        return this.gateway.requestOne(
             'open-ils.actor',
-            'open-ils.actor.patron-request.create.allowed',
+            'open-ils.actor.patron.patron-request.access',
             this.app.getAuthtoken()
-        ).then((r: unknown) => {
-            this.requestsAllowed = Number(r) === 1;
-        }).then(() => {
-            return this.gateway.requestOne(
-                'open-ils.actor',
-                'open-ils.actor.patron.patron-request.ill-allowed',
-                this.app.getAuthtoken()
-            )
-        }).then((r: unknown) => {
-            this.illRequestsAllowed = Number(r) === 1;
-        }).then(() => {
-            return this.settings.getServerSetting('patron_requests.max_active')
-            .then(r => {
-              this.maxRequestCount = Number(r);
-              if (this.maxRequestCount === 0) {
-                  // If the setting has no value.
-                  this.maxRequestCount = 20;
-              }
-            });
-        }).then(() => {
-            if (!this.requestsAllowed) {
-                return Promise.resolve([]);
-            }
-            return this.gateway.requestOne(
-                'open-ils.actor',
-                'open-ils.actor.patron-request.retrieve.pending',
-                this.app.getAuthtoken()
-            );
-        }).then((r: unknown) => {
-            this.activeRequestCount = (r as Hash[]).length;
-            if (this.tooManyActiveRequests()) {
-                this.requestsAllowed = false;
-            }
+        ).then((a: unknown) => {
+            const access = a as PatronAccess;
+            console.debug('patron access:', access);
+
+            this.requestsAllowed = Number(access.create_allowed) === 1;
+            this.activeRequestCount = Number(access.active_request_count);
+            this.maxRequestCount = Number(access.max_allowed);
+            this.illRequestsAllowed = Number(access.ill_allowed) === 1;
+
+            this.patronAccess = access;
+
             this.patronChecked.emit();
+            this.patronAccessLoaded.emit(access);
+
+            return access;
         });
     }
 
     tooManyActiveRequests(): boolean {
-        return this.activeRequestCount > 0 &&
-            this.activeRequestCount >= this.maxRequestCount;
+        return this.patronAccess !== null && this.patronAccess.at_max_requests;
     }
 
     loadPickupLibs(): Promise<Hash[]> {

@@ -18,6 +18,12 @@
       </div>
     </div>
 
+    <div class="row mt-3" *ngIf="patronHasOverdueIll">
+      <div class="col-12 alert alert-warning" i18n>
+        This patron has overdue ILL items.
+      </div>
+    </div>
+
     <div class="row mt-3" *ngIf="patronHasBlocks()">
       <div class="col-12 alert alert-warning">
         <ng-container *ngIf="patronHasMasRequests; else checkAllowed" i18n>

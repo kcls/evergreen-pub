@@ -14,6 +14,10 @@ my $U = "OpenILS::Application::AppUtils";
 
 use constant DISTRICT_OF_RESIDENCE_STAT_CAT => 12;
 use constant LIMITED_CHECKOUT_PROFILE => 17;
+use constant KCLS_STAFF_PATRON_PROFILE => 38;
+
+# There are other ILL types, but they are unused or in-house only.
+use constant ILL_CIRC_MOD => '24';
 
 my @REQ_FIELDS = qw/
     identifier
@@ -269,7 +273,7 @@ sub request_status {
     my ($self, $client, $auth, $req_id) = @_;
     my $e = new_editor(authtoken => $auth);
 
-    return $e->die unless $e->checkauth;
+    return $e->event unless $e->checkauth;
 
     my $req = $e->retrieve_actor_user_item_request($req_id) 
         or return {status => 'not-found'};
@@ -452,65 +456,6 @@ sub record_search {
 }
 
 __PACKAGE__->register_method(
-    method   => 'create_allowed',
-    api_name => 'open-ils.actor.patron-request.create.allowed',
-    signature => q/
-        Returns true if the user (by auth token) has permission
-        to create item requests.
-    /
-);
-
-# TODO deprecate
-sub create_allowed {
-    my ($self, $conn, $auth, $org_id) = @_;
-
-    my $e = new_editor(authtoken => $auth);
-    return $e->event unless $e->checkauth;
-
-    return create_allowed_impl($e, $e->requestor, $org_id);
-}
-
-sub create_allowed_impl {
-    my ($e, $patron) = @_;
-
-    my $expire = DateTime::Format::ISO8601->new
-        ->parse_datetime(clean_ISO8601($patron->expire_date));
-
-    if ($expire < DateTime->now) {
-        $logger->info("PR denied because account is expired");
-        return 0;
-    };
-
-    my $penalties = $e->json_query({
-        select => {ausp => ['id']},
-        from => {ausp => 'csp'},
-        where => {
-            '+ausp' => {
-                usr => $patron->id,
-                '-or' => [
-                    {stop_date => undef},
-                    {stop_date => {'>' => 'now'}}
-                ],
-                org_unit => $U->get_org_full_path($patron->home_ou)
-            },
-            '+csp' => {
-                '-not' => {
-                    '-or' => [
-                        {block_list => ''},
-                        {block_list => undef}
-                    ]
-                }
-            }
-        }
-    });
-
-    # As of writing, requests are allowed if the patron can login
-    # and has no blocking penalties.  (Note auth prevents login of 
-    # barred accounts).
-    return int(@$penalties == 0);
-}
-
-__PACKAGE__->register_method(
     method   => 'apply_lineitem',
     api_name => 'open-ils.actor.patron-request.lineitem.apply',
     signature => q/
@@ -672,77 +617,6 @@ sub search_dupes {
 
 
 __PACKAGE__->register_method(
-    method   => 'ill_requests_allowed',
-    api_name => 'open-ils.actor.patron.patron-request.ill-allowed',
-    signature => {
-        params => [
-            {desc => 'Authtoken', type => 'string'},
-            {desc => 'Patron ID / Optional', type => 'number'},
-        ],
-        desc => q/True if the user is allowed to make ILL requests/,
-    }
-);
-
-# Some of this could be accomplished by adding a CREATE_ILL_REQUESTS
-# permission.  The residency check complicates that.  If that changes,
-# reasses just adding a permission.
-sub ill_requests_allowed {
-    my ($self, $conn, $auth, $patron_id) = @_;
-
-    my $e = new_editor(authtoken => $auth);
-    return $e->event unless $e->checkauth;
-
-    $patron_id ||= $e->requestor->id;
-
-    if ($patron_id != $e->requestor->id) {
-        return $e->event unless $e->allowed('VIEW_USER');
-    }
-
-    my $user = $e->retrieve_actor_user($patron_id) or return 0;
-
-    return ill_requests_allowed_impl($e, $user);
-}
-
-sub ill_requests_allowed_impl {
-    my ($e, $patron) = @_;
-
-    # 1. Limited Checkout patrons are not permitted.
-
-    # TODO check other profiles here.
-    return 0 if $patron->profile == LIMITED_CHECKOUT_PROFILE;
-
-    # 2. Staff accounts and staff patron accounts are permitted 
-    # regardless of residency status.
-
-    my $perm_org = $e->requestor->ws_ou || $patron->home_ou;
-
-    # So the perm check runs against the patron and not (potentially) the 
-    # staff account making this call on behalf of a patron.
-    $e->requestor($patron);
-
-    return 1 if $e->allowed('STAFF_LOGIN', $perm_org);
-
-    # 3. Patrons must be in the service area to request ILLs.
-
-    my $stat = $e->search_actor_stat_cat_entry_user_map({
-        target_usr => $patron->id, 
-        stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
-    })->[0];
-
-    # This treats lack of a stat-cat value as in-area.
-    my $val = $stat ? lc($stat->stat_cat_entry) : 'kcls';
-
-    $val =~ s/^\s+|\s+$//g ; # Perl.trim()
-
-    # TODO just KCLS
-
-    # The stat cat values indicate a patron is in the service area.
-    return ($val =~ /^(kcls|_property owner|unset|)$/) ? 1 : 0;
-}
-
-
-
-__PACKAGE__->register_method(
     method   => 'request_permissions',
     api_name => 'open-ils.actor.patron.patron-request.access',
     signature => {
@@ -762,6 +636,7 @@ sub request_permissions {
 
     my $response = {
         create_allowed => 0,
+        has_overdue_ill => 0,
         ill_allowed => 0,
         active_request_count => 0,
         max_allowed => 0,
@@ -813,7 +688,105 @@ sub request_permissions {
 
     $response->{pickup_lib} = int($response->{pickup_lib});
 
+    my $ill_overdues = $e->json_query({
+        select => {circ => ['id']},
+        from => {circ => 'acp'},
+        where => {
+            '+circ' => {
+                usr => $patron_id,
+                due_date => {'<' => 'now'},
+                '-or' => [ 
+                    {stop_fines => undef },
+                    {stop_fines => ['LOST', 'CLAIMSRETURNED']}
+                ],
+            },
+            '+acp' => {circ_modifier => ILL_CIRC_MOD}
+        }
+    });
+
+    $response->{has_overdue_ill} = @$ill_overdues > 0 ? 1 : 0;
+
     return $response;
+}
+
+sub create_allowed_impl {
+    my ($e, $patron) = @_;
+
+    my $expire = DateTime::Format::ISO8601->new
+        ->parse_datetime(clean_ISO8601($patron->expire_date));
+
+    if ($expire < DateTime->now) {
+        $logger->info("PR denied because account is expired");
+        return 0;
+    };
+
+    my $penalties = $e->json_query({
+        select => {ausp => ['id']},
+        from => {ausp => 'csp'},
+        where => {
+            '+ausp' => {
+                usr => $patron->id,
+                '-or' => [
+                    {stop_date => undef},
+                    {stop_date => {'>' => 'now'}}
+                ],
+                org_unit => $U->get_org_full_path($patron->home_ou)
+            },
+            '+csp' => {
+                # Any block type prevents creating requests
+                '-not' => {
+                    '-or' => [
+                        {block_list => ''},
+                        {block_list => undef}
+                    ]
+                }
+            }
+        }
+    });
+
+    # As of writing, requests are allowed if the patron can login and
+    # has no blocking penalties.  (Note: auth prevents login of barred
+    # and ecard accounts... anyone what does not have OPAC_LOGIN perm).
+    return int(@$penalties == 0);
+}
+
+sub ill_requests_allowed_impl {
+    my ($e, $patron) = @_;
+
+    # 1. Limited Checkout patrons are not permitted.
+
+    # TODO check other profiles here?
+    return 0 if $patron->profile == LIMITED_CHECKOUT_PROFILE;
+
+    # 2. Staff accounts and staff patron accounts are permitted 
+    #   regardless of residency status.
+    return 1 if $patron->profile == KCLS_STAFF_PATRON_PROFILE;
+
+    my $perm_org = $e->requestor->ws_ou || $patron->home_ou;
+
+    # So the perm check runs against the patron and not (potentially) the 
+    # staff account making this request on behalf of a patron.
+    
+    # Avoid mucking with the source editor.
+    my $e2 = new_editor(); 
+
+    $e2->requestor($patron);
+
+    return 1 if $e2->allowed('STAFF_LOGIN', $perm_org);
+
+    # 3. Patrons must be in the service area to request ILLs.
+
+    my $stat = $e2->search_actor_stat_cat_entry_user_map({
+        target_usr => $patron->id, 
+        stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
+    })->[0];
+
+    # This treats lack of a stat-cat value as in-area.
+    my $val = $stat ? lc($stat->stat_cat_entry) : 'kcls';
+
+    $val =~ s/^\s+|\s+$//g ; # Perl.trim()
+
+    return $val eq 'kcls';
 }
 
 

@@ -128,35 +128,9 @@ export class CreateRequestComponent implements OnInit {
             this.dupesLookup();
         });
 
-        this.app.authSessionLoad.subscribe(() => this.getPatronPickupLib());
-
-        // Latch on to the in-progress session fetcher promise in
-        // case we already have a token, in wich case the above
-        // won't fire.
-        this.app.fetchAuthSession().then(_ => {
-            if (this.app.getAuthtoken()) {
-                this.getPatronPickupLib();
-            }
-        });
-
         this.requests.loadPickupLibs().then(libs => this.pickupLibs = libs);
-    }
-
-    getPatronPickupLib() {
-        let ses = this.app.getAuthSession();
-        if (!ses) { return; } // make TS happy
-
-        this.gateway.requestOne(
-            'open-ils.actor',
-            'open-ils.actor.patron.settings.retrieve',
-            this.app.getAuthtoken(), null, 'opac.default_pickup_location')
-        .then(lib => {
-            lib = Number(lib) || 0;
-            if (lib === 0 && ses) {
-                lib = Number(ses.home_ou);
-            }
-            this.controls.pickup_lib.setValue(lib);
-        });
+        this.requests.patronAccessLoaded.subscribe(access =>
+            this.controls.pickup_lib.setValue(access.pickup_lib));
     }
 
     dupesLookup() {
