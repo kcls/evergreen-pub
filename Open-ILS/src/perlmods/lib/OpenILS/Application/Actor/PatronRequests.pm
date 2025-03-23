@@ -599,7 +599,7 @@ sub search_dupes {
     my $query = {
         select => {auir => ['id']},
         from => 'auir',
-        where => {'+auir' => {format => $format}}
+        where => {'+auir' => {format => $format, usr => $patron_id}}
     };
 
     # Favor ident searches over title searches since they're more strict.
