@@ -51,14 +51,23 @@
       </div>
     </div>
 
-    <div i18n *ngIf="requests.requestsAllowed && !requests.illRequestsAllowed"
-      class="mt-2 border rounded border-orange-400 p-4">
-      Interlibrary loan service is not available for this library
-      card type. We are only able to offer interlibrary loan service
-      to full access King County Library System cardholders in good
-      standing. Need help? 
-      <a target="_blank" href="https://kcls.org/ask/">Contact ASK KCLS</a>.
-    </div>
+    <ng-container *ngIf="requests.requestsAllowed">
+      <ng-container *ngIf="requests.hasOverdueIll">
+        <div class="mt-2 border rounded border-orange-400 p-4" i18n>
+          Interlibrary loan service is not available for accounts
+          with overdue Interlibrary loan items.
+        </div>
+      </ng-container>
+      <ng-container *ngIf="!requests.hasOverdueIll && !requests.illRequestsAllowed">
+        <div class="mt-2 border rounded border-orange-400 p-4" i18n>
+          Interlibrary loan service is not available for this library
+          card type. We are only able to offer interlibrary loan service
+          to full access King County Library System cardholders in good
+          standing. Need help? 
+          <a target="_blank" href="https://kcls.org/ask/">Contact ASK KCLS</a>.
+        </div>
+      </ng-container>
+    </ng-container>
 
     <div *ngIf="tab === 'create'" class="flex p-2 mt-4">
       <mat-form-field class="flex-1">

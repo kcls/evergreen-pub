@@ -81,7 +81,7 @@ export class RequestsComponent implements OnInit {
 
         // Patrons out of service area are not permitted to create ILL requests.
         this.requests.patronChecked.subscribe(() => {
-            if (!this.requests.illRequestsAllowed) {
+            if (!this.requests.illRequestsAllowed || this.requests.hasOverdueIll) {
                 this.controls.ill_opt_out.setValue(true);
                 this.controls.ill_opt_out.disable();
             }
@@ -96,7 +96,8 @@ export class RequestsComponent implements OnInit {
     resetForm() {
         for (const field in this.controls) {
 
-            if (field === 'ill_opt_out' && !this.requests.illRequestsAllowed) {
+            if (field === 'ill_opt_out' && (
+                !this.requests.illRequestsAllowed || this.requests.hasOverdueIll)) {
                 // This option remains disabled for the duration of the
                 // patron session.
                 continue;

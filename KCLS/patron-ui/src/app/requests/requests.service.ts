@@ -10,7 +10,7 @@ interface PatronAccess {
     active_request_count: number,
     max_allowed: number,
     at_max_requests: boolean,
-    pickup_lib: boolean,
+    pickup_lib: number,
 }
 
 @Injectable()
@@ -21,10 +21,20 @@ export class RequestsService {
     maxRequestCount = 0;
     pickupLibs: Hash[] = [];
     illRequestsAllowed = true;
+    hasOverdueIll = false;
     illOptOut = false;
 
     requestSubmitted = false;
-    patronAccess: PatronAccess | null = null;
+
+    patronAccess: PatronAccess = {
+        create_allowed: true,
+        has_overdue_ill: false,
+        ill_allowed: true,
+        active_request_count: 0,
+        max_allowed: 0,
+        at_max_requests: false,
+        pickup_lib: 0,
+    }
 
     // Emits after completion of every new patron auth+permission check.
     patronChecked: EventEmitter<void> = new EventEmitter<void>();
@@ -47,11 +57,10 @@ export class RequestsService {
         this.selectedFormat = null;
         this.requestsAllowed = null;
         this.illRequestsAllowed = true;
+        this.hasOverdueIll = false;
     }
 
     loadPatronAccess(): Promise<PatronAccess> {
-        this.patronAccess = null;
-
         return this.gateway.requestOne(
             'open-ils.actor',
             'open-ils.actor.patron.patron-request.access',
@@ -63,6 +72,7 @@ export class RequestsService {
             this.requestsAllowed = Number(access.create_allowed) === 1;
             this.activeRequestCount = Number(access.active_request_count);
             this.maxRequestCount = Number(access.max_allowed);
+            this.hasOverdueIll = Number(access.has_overdue_ill) === 1;
             this.illRequestsAllowed = Number(access.ill_allowed) === 1;
 
             this.patronAccess = access;
@@ -73,6 +83,7 @@ export class RequestsService {
             return access;
         });
     }
+
 
     tooManyActiveRequests(): boolean {
         return this.patronAccess !== null && this.patronAccess.at_max_requests;
