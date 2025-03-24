@@ -218,8 +218,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 this.patronHasOverdueIll = Number(access.has_overdue_ill) == 1;
                 this.patronIllAllowed = Number(access.ill_allowed) === 1;
 
-                if (!this.patronIllAllowed) {
+                if (!this.patronIllAllowed || this.patronHasOverdueIll) {
                     this.request.ill_opt_out(true);
+                    this.request.route_to('acq');
                 }
 
                 return patron;
@@ -387,6 +388,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         return (
             !this.patronRequestsAllowed ||
             !this.patronIllAllowed ||
+            this.patronHasOverdueIll ||
             this.patronHasMasRequests
         );
     }
