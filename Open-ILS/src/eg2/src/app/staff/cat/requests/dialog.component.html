@@ -18,23 +18,20 @@
       </div>
     </div>
 
-    <div class="row mt-3" *ngIf="patronHasOverdueIll">
-      <div class="col-12 alert alert-warning" i18n>
-        This patron has overdue ILL items.
-      </div>
-    </div>
-
     <div class="row mt-3" *ngIf="patronHasBlocks()">
-      <div class="col-12 alert alert-warning">
-        <ng-container *ngIf="patronHasMasRequests; else checkAllowed" i18n>
+      <div class="col-12 alert alert-warning p-1">
+        <div class="mt-1" *ngIf="patronHasMasRequests" i18n>
           Patron has reached the maximum number of allowed open requests.
-        </ng-container>
-        <ng-container #checkAllowed *ngIf="!patronRequestsAllowed; else checkIll" i18n>
+        </div>
+        <div class="mt-1" #checkAllowed *ngIf="!patronRequestsAllowed" i18n>
           This account does not have permission to create new requests.
-        </ng-container>
-        <ng-container #checkIll *ngIf="!patronIllAllowed" i18n>
+        </div>
+        <div class="mt-1" #checkIll *ngIf="!patronIllAllowed" i18n>
           Interlibrary loan service is not available for this library card type.
-        </ng-container>
+        </div>
+        <div class="mt-1" *ngIf="patronHasOverdueIll" i18n>
+          This patron has overdue ILL items.
+        </div>
       </div>
     </div>
 
@@ -181,12 +178,12 @@
     <div class="row mt-3">
       <div class="col-2" i18n>Route To</div>
       <div class="col-4">
-        <ng-container *ngIf="mode === 'create'">
+        <ng-container *ngIf="request.route_to() === null">
           <span class="fst-italic" i18n>Pending...</span>
         </ng-container>
-        <ng-container *ngIf="mode !== 'create'">
+        <ng-container *ngIf="request.route_to() !== null || mode !== 'create'">
           <eg-combobox 
-            [disabled]="!patronIllAllowed"
+            [disabled]="!patronIllAllowed || !patronHasOverdueIll"
             [startId]="request.route_to()"
             [selectedId]="request.route_to()"
             (onChange)="request.route_to($event ? $event.id : null)"
