@@ -228,14 +228,13 @@
 </div>
 
 <div *ngIf="notFoundBarcodes.length > 0">
-  <div class="d-flex mb-2 bg-danger p-1 rounded">
-    <div class="me-3 fw-bold pt-2" i18n>Not found: </div>
+  <div class="d-flex mb-2 alert alert-danger p-1 rounded">
     <div class="me-3" >
       <button [disabled]="fetchingItems" 
         (click)="copyNotFoundBarcodes()" class="btn btn-outline-dark" i18n>Copy</button>
     </div>
-    <div class="flex-1 me-3" style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden">
-      {{notFoundBarcodes.join(' ')}}
+    <div class="flex-1 me-3 pt-2" style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden">
+      Not Found: <span class="fw-bold">{{notFoundBarcodes.join(' ')}}</span>
     </div>
     <div>
       <button [disabled]="fetchingItems"
