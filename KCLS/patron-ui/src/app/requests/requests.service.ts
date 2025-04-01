@@ -67,7 +67,7 @@ export class RequestsService {
             this.app.getAuthtoken()
         ).then((a: unknown) => {
             const access = a as PatronAccess;
-            console.debug('patron access:', access);
+            //console.debug('patron access:', access);
 
             this.requestsAllowed = Number(access.create_allowed) === 1;
             this.activeRequestCount = Number(access.active_request_count);
