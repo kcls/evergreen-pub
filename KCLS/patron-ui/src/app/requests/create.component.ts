@@ -187,7 +187,7 @@ export class CreateRequestComponent implements OnInit {
             this.app.getAuthtoken(), {identifier: ident}
 
         ).then((results: unknown) => {
-            console.debug('Suggested records', results);
+            // console.debug('Suggested records', results);
             const res = results as SuggestedRecord[];
             this.searchingRecords = false;
             this.suggestedRecords = res;
@@ -293,14 +293,14 @@ export class CreateRequestComponent implements OnInit {
         this.requests.requestSubmitted = false;
         this.requestSubmitError = false;
 
-        console.debug('Submitting request', values);
+        // console.debug('Submitting request', values);
 
         this.gateway.requestOne(
             'open-ils.actor',
             'open-ils.actor.patron-request.create',
             this.app.getAuthtoken(), values
         ).then((resp: unknown) => {
-            console.debug('Create request returned', resp);
+            // console.debug('Create request returned', resp);
 
             if (resp && (resp as Hash).request_id) {
                 this.requests.requestSubmitted = true;

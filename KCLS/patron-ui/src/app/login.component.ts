@@ -45,7 +45,7 @@ export class LoginComponent implements OnInit {
 
     login(): boolean {
         this.loginFailed = false;
-        this.app.setAuthtoken(null);
+        this.app.clearAuthtoken();
 
         this.gateway.requestOne(
             'open-ils.auth',
@@ -58,14 +58,15 @@ export class LoginComponent implements OnInit {
             if (r) {
                 const evt = r as Hash;
                 if (evt.textcode === 'SUCCESS') {
-                    this.app.setAuthtoken((evt.payload as Hash).authtoken as string);
+                    const h = evt.payload as Hash;
+                    this.app.setAuthtoken(h.authtoken as string, Number(h.authtime));
                     this.app.fetchAuthSession().then(() => this.resetForm());
                     return;
                 }
             }
 
             this.loginFailed = true;
-            this.app.setAuthtoken(null);
+            this.app.clearAuthtoken();
             // Leave the usrname intact for follow up login attempt.
             this.resetForm(true)
         });
@@ -87,8 +88,8 @@ export class LoginComponent implements OnInit {
     }
 
     logout() {
-        this.gateway.authSessionEnded.emit();
         this.resetForm();
+        this.app.logout();
     }
 }
 
