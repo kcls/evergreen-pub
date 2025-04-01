@@ -290,7 +290,9 @@
     <button type="button" class="btn btn-success ms-2" [disabled]="disableSave()"
       (click)="save()" i18n>Save</button>
 
-    <button type="button" class="btn btn-primary ms-2" [disabled]="disableSave()"
-      (click)="save(true)" i18n>Save &amp; Claim</button>
+    <ng-container *ngIf="mode !== 'create'">
+      <button type="button" class="btn btn-primary ms-2" [disabled]="disableSave()"
+        (click)="save(true)" i18n>Save &amp; Claim</button>
+    </ng-container>
   </div>
 </ng-template>
