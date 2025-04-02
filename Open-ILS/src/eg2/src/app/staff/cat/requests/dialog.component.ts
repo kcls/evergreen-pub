@@ -36,7 +36,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
     patronRequestsAllowed = true;
     maxRequestsAllowed: number | null = null;
     patronActiveRequestCount = 0;
-    patronHasMasRequests = false;
+    patronHasMaxRequests = false;
     patronHasOverdueIll = false;
 
     audiences = [
@@ -163,7 +163,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.patronNotFound = false;
         this.patronIllAllowed = true;
         this.patronRequestsAllowed = true;
-        this.patronHasMasRequests = false;
+        this.patronHasMaxRequests = false;
         this.patronHasOverdueIll = false;
 
         this.request = this.idl.create('auir');
@@ -203,28 +203,31 @@ export class ItemRequestDialogComponent extends DialogComponent {
             return patron;
         }).then(patron => {
             if (!patron) { return null; }
+            return this.loadPatronAccess(patron.id());
+        });
+    }
 
-            return this.net.request(
-                'open-ils.actor',
-                'open-ils.actor.patron.patron-request.access',
-                this.auth.token(), patron.id()
-            ).toPromise().then(access => {
-                console.debug('Access: ', access);
+    // Load info about what this user can access.
+    loadPatronAccess(patronId: number): Promise<void> {
+        return this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.patron.patron-request.access',
+            this.auth.token(), patronId,
+        ).toPromise().then(access => {
 
+            this.patronRequestsAllowed = Number(access.create_allowed) === 1;
+            this.patronActiveRequestCount = Number(access.active_request_count);
+            this.patronHasOverdueIll = Number(access.has_overdue_ill) == 1;
+            this.patronIllAllowed = Number(access.ill_allowed) === 1;
+
+            if (this.mode === 'create') {
                 this.request.pickup_lib(access.pickup_lib);
-
-                this.patronRequestsAllowed = Number(access.create_allowed) === 1;
-                this.patronActiveRequestCount = Number(access.active_request_count);
-                this.patronHasOverdueIll = Number(access.has_overdue_ill) == 1;
-                this.patronIllAllowed = Number(access.ill_allowed) === 1;
 
                 if (!this.patronIllAllowed || this.patronHasOverdueIll) {
                     this.request.ill_opt_out(true);
                     this.request.route_to('acq');
                 }
-
-                return patron;
-            });
+            }
         });
     }
 
@@ -241,6 +244,10 @@ export class ItemRequestDialogComponent extends DialogComponent {
         .toPromise().then(req => {
             this.request = req;
             this.sourceRequest = this.idl.clone(req);
+
+            // IF staff want to see info on the patron while editing
+            // existing requests, add this to the promise chain.
+            // return this.loadPatronAccess(req.usr().id()) ...
 
             return this.net.request(
                 'open-ils.actor',
@@ -376,20 +383,26 @@ export class ItemRequestDialogComponent extends DialogComponent {
         if (!this.request.format()) { return true; }
 
         if (this.mode === 'create') {
-            // Is this required in the patron form?
-            // Should it be editable in 'edit' mode?
-            if (!this.request.pickup_lib()) { return true; }
+            return (
+                !this.request.pickup_lib() ||
+                !this.patronRequestsAllowed ||
+                this.patronHasMaxRequests
+            );
         }
 
-        return this.patronHasBlocks();
+        // In edit mode, avoid disabling save for existing requests just
+        // because of patron blocks. Let staff decide how to handle those cases.
+        return false;
     }
 
+    // True if the UI should indicate something about the patron, but
+    // not necessarily if all actions should be blocked.
     patronHasBlocks(): boolean {
         return (
             !this.patronRequestsAllowed ||
             !this.patronIllAllowed ||
             this.patronHasOverdueIll ||
-            this.patronHasMasRequests
+            this.patronHasMaxRequests
         );
     }
 }
