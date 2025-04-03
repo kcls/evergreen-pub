@@ -15,6 +15,7 @@ my $U = "OpenILS::Application::AppUtils";
 use constant DISTRICT_OF_RESIDENCE_STAT_CAT => 12;
 use constant LIMITED_CHECKOUT_PROFILE => 17;
 use constant KCLS_STAFF_PATRON_PROFILE => 38;
+use constant PATRON_EXCEEDS_FINES => 1;
 
 # There are other ILL types, but they are unused or in-house only.
 use constant ILL_CIRC_MOD => '24';
@@ -655,9 +656,6 @@ sub request_permissions {
     } 
 
     $response->{create_allowed} = create_allowed_impl($e, $patron);
-
-    return $response unless $response->{create_allowed};
-
     $response->{ill_allowed} = ill_requests_allowed_impl($e, $patron);
 
     my $active = $e->search_actor_user_item_request(
@@ -722,7 +720,7 @@ sub create_allowed_impl {
 
     my $penalties = $e->json_query({
         select => {ausp => ['id']},
-        from => {ausp => 'csp'},
+        from => 'ausp',
         where => {
             '+ausp' => {
                 usr => $patron->id,
@@ -730,16 +728,8 @@ sub create_allowed_impl {
                     {stop_date => undef},
                     {stop_date => {'>' => 'now'}}
                 ],
-                org_unit => $U->get_org_full_path($patron->home_ou)
-            },
-            '+csp' => {
-                # Any block type prevents creating requests
-                '-not' => {
-                    '-or' => [
-                        {block_list => ''},
-                        {block_list => undef}
-                    ]
-                }
+                org_unit => $U->get_org_full_path($patron->home_ou),
+                standing_penalty => PATRON_EXCEEDS_FINES
             }
         }
     });
