@@ -152,21 +152,33 @@ export class ItemRequestComponent implements OnInit {
                 offset: pager.offset,
             };
 
+            let requests = {};
+
             return this.pcrud.search('auir', query, flesh)
-            .pipe(tap(req => {
-                req.usr()._residence =
-                    req.usr().stat_cat_entries()
-                    .filter(entry => Number(entry.stat_cat()) === LIB_RESIDENCE_STAT_CAT)
-                    .map(entry => entry.stat_cat_entry())[0];
-            }))
-            .pipe(concatMap(req => {
-                return this.net.request(
-                    'open-ils.actor',
-                    'open-ils.actor.patron-request.status',
-                    this.auth.token(), req.id())
-                .pipe(tap(stat => req._status = stat.status))
-                .pipe(map(_ => req));
-            }));
+            .pipe(tap(
+                req => {
+                    req.usr()._residence =
+                        req.usr().stat_cat_entries()
+                        .filter(entry => Number(entry.stat_cat()) === LIB_RESIDENCE_STAT_CAT)
+                        .map(entry => entry.stat_cat_entry())[0];
+
+                    requests[req.id()] = req;
+                    return req;
+                },
+                _ => {},
+                () => {
+                    // After all of the reqs have been fetched, go back
+                    // and grab all of the requests statuses in a batch.
+                    this.net.request(
+                        'open-ils.actor',
+                        'open-ils.actor.patron-request.status.batch',
+                        this.auth.token(),
+                        Object.keys(requests)
+                    ).subscribe(stat => {
+                        requests[stat.request_id]._status = stat.status;
+                    });
+                }
+            ));
         };
     }
 

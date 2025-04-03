@@ -252,6 +252,7 @@ sub cancel_request {
 __PACKAGE__->register_method (
     method      => 'request_status',
     api_name    => 'open-ils.actor.patron-request.status',
+    stream => 1,
     signature => {
         desc => q/Get the status code for a request/,
         params => [
@@ -265,21 +266,45 @@ __PACKAGE__->register_method (
     }
 );
 
+__PACKAGE__->register_method (
+    method      => 'request_status',
+    api_name    => 'open-ils.actor.patron-request.status.batch',
+    stream => 1,
+);
+
 sub request_status {
-    my ($self, $client, $auth, $req_id) = @_;
+    my ($self, $client, $auth, $req_ids) = @_;
     my $e = new_editor(authtoken => $auth);
 
-    return $e->die unless $e->checkauth;
+    $req_ids = [$req_ids] unless ref $req_ids eq 'ARRAY';
 
-    my $req = $e->retrieve_actor_user_item_request($req_id) 
-        or return {status => 'not-found'};
+    return $e->event unless $e->checkauth;
 
-    if ($req->usr ne $e->requestor->id) {
-        # Patrons are allowed to see their own requests
-        return $e->event unless $e->allowed('VIEW_USER');
+    # We only need to check the VIEW_USER perm once.
+    my $perm_checked = 0;
+
+    for my $req_id (@$req_ids) {
+
+        my $req = $e->retrieve_actor_user_item_request($req_id) 
+            or $client->respond({status => 'not-found'});
+    
+        if ($req->usr ne $e->requestor->id) {
+
+            if (!$perm_checked) {
+                # Patrons are allowed to see their own requests
+                return $e->event unless $e->allowed('VIEW_USER');
+                $perm_checked = 1;
+            }
+        }
+
+        my $stat = request_status_impl($e, $req);
+
+        $stat->{request_id} = $req_id unless $U->is_event($stat);
+
+        $client->respond($stat);
     }
 
-    return request_status_impl($e, $req);
+    return undef;
 }
 
 sub request_status_impl {
