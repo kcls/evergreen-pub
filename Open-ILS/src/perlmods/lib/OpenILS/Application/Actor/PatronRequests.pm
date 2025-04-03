@@ -587,19 +587,27 @@ sub apply_lineitem {
             'open-ils.circ.holds.test_and_create.batch',
              $auth, $args, [$bre_id]);
 
-        if ($U->event_code($resp)) {
-
+        if (!$resp || $U->event_code($resp)) {
             $logger->info("User request $req_id hold placement failed: " . 
                 OpenSRF::Utils::JSON->perl2JSON($resp));
+        }
 
-        } else {
+        my $result = $resp->{result};
 
-            $logger->info("User request $req_id successfully created hold");
-            $req->hold(ref $resp ? $resp->{result} : $resp);
+        if (int($result) > 0) {
+            # Successful hold results in a hold ID value within resp.result.
+            my $hold_id = int($result);
+
+            $logger->info("User request $req_id successfully created hold $hold_id");
+            $req->hold($hold_id);
             $req->hold_date('now');
 
             # TODO action trigger event for user request hold placed.
             # see also apply_hold();
+
+        } else {
+            $logger->info("User request $req_id hold placement failed: " . 
+                OpenSRF::Utils::JSON->perl2JSON($result));
         }
     }
 
