@@ -219,6 +219,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
             this.patronActiveRequestCount = Number(access.active_request_count);
             this.patronHasOverdueIll = Number(access.has_overdue_ill) == 1;
             this.patronIllAllowed = Number(access.ill_allowed) === 1;
+            this.patronHasMaxRequests = Number(access.at_max_requests) === 1;
 
             if (this.mode === 'create') {
                 this.request.pickup_lib(access.pickup_lib);
