@@ -32,6 +32,9 @@
         <div class="mt-1" *ngIf="patronHasOverdueIll" i18n>
           This patron has overdue ILL items.
         </div>
+        <div class="mt-1" *ngIf="patronHasMaxRequests" i18n>
+          This patron has reached the maxiumum active requests limit.
+        </div>
       </div>
     </div>
 
