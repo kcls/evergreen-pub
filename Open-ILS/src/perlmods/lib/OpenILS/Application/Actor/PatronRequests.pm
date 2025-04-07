@@ -13,8 +13,6 @@ use OpenILS::Utils::DateTime qw/:datetime/;
 my $U = "OpenILS::Application::AppUtils";
 
 use constant DISTRICT_OF_RESIDENCE_STAT_CAT => 12;
-use constant LIMITED_CHECKOUT_PROFILE => 17;
-use constant KCLS_STAFF_PATRON_PROFILE => 38;
 use constant PATRON_EXCEEDS_FINES => 1;
 
 # There are other ILL types, but they are unused or in-house only.
@@ -776,29 +774,18 @@ sub create_allowed_impl {
 sub ill_requests_allowed_impl {
     my ($e, $patron) = @_;
 
-    # 1. Limited Checkout patrons are not permitted.
-
-    # TODO check other profiles here?
-    return 0 if $patron->profile == LIMITED_CHECKOUT_PROFILE;
-
-    # 2. Staff accounts and staff patron accounts are permitted 
-    #   regardless of residency status.
-    return 1 if $patron->profile == KCLS_STAFF_PATRON_PROFILE;
-
     my $perm_org = $e->requestor->ws_ou || $patron->home_ou;
 
-    # So the perm check runs against the patron and not (potentially) the 
-    # staff account making this request on behalf of a patron.
-    
     # Avoid mucking with the source editor.
     my $e2 = new_editor(); 
 
+    # So the perm check runs against the patron and not (potentially) the 
+    # staff account making this request on behalf of a patron.
     $e2->requestor($patron);
 
-    return 1 if $e2->allowed('STAFF_LOGIN', $perm_org);
+    return 0 unless $e2->allowed('REQUEST_ILL_ITEMS', $perm_org);
 
-    # 3. Patrons must be in the service area to request ILLs.
-
+    # Patrons must be in the service area to request ILLs.
     my $stat = $e2->search_actor_stat_cat_entry_user_map({
         target_usr => $patron->id, 
         stat_cat => DISTRICT_OF_RESIDENCE_STAT_CAT
