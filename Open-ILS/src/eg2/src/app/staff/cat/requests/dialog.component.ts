@@ -38,6 +38,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
     patronActiveRequestCount = 0;
     patronHasMaxRequests = false;
     patronHasOverdueIll = false;
+    formats: IdlObject[] = [];
 
     audiences = [
         $localize`Adult`,
@@ -97,7 +98,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.resetCreate();
 
         if (this.mode === 'create') {
-            return from(this.loadCreateData()).pipe(switchMap(_ => super.open(args)));
+            return from(this.loadFormats().then(_ => this.loadCreateData())).pipe(switchMap(_ => super.open(args)));
         }
 
         if (!this.requestId) {
@@ -106,9 +107,21 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         // Fire data loading observable and replace results with
         // dialog opener observable.
-        return from(this.loadRequest()).pipe(switchMap(_ => super.open(args)));
+        return from(this.loadFormats().then(_ => this.loadRequest())).pipe(switchMap(_ => super.open(args)));
     }
 
+    // TODO
+    loadFormats(): Promise<any> {
+        if (this.formats.length > 0) {
+            return Promise.resolve();
+        }
+
+        return this.pcrud.retrieveAll(
+            'cuirf',
+            {order_by: {cuirf: 'position'}},
+            {atomic: true}
+        ).toPromise().then(formats => this.formats = formats);
+    }
 
     loadCreateData(): Promise<any> {
         return this.setMaxRequests().then(_ => this.applyPickupOrgs());
@@ -232,11 +245,15 @@ export class ItemRequestDialogComponent extends DialogComponent {
         });
     }
 
+    setFormat(code: string) {
+        this.request.format(this.formats.filter(f => f.code() === code)[0]);
+    }
+
     loadRequest(): Promise<void> {
         const flesh = {
             flesh: 2,
             flesh_fields: {
-                auir: ['usr', 'claimed_by'],
+                auir: ['usr', 'claimed_by', 'format'],
                 au: ['card']
             }
         };

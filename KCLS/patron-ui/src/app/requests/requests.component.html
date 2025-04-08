@@ -73,15 +73,9 @@
       <mat-form-field class="flex-1">
         <mat-label i18n>Select a Format</mat-label>
         <mat-select [formControl]="controls.format">
-          <mat-option value="book" i18n>Book</mat-option>
-          <mat-option value="large-print" i18n>Large Print</mat-option>
-          <mat-option value="audiobook" i18n>Audiobook</mat-option>
-          <mat-option value="cd" i18n>Music CD</mat-option>
-          <mat-option value="dvd" i18n>DVD</mat-option>
-          <mat-option value="ebook-eaudio" i18n>eBook or Downloadable Audiobook</mat-option>
-          <mat-option value="article" i18n>Magazine, Newspaper, or Journal Article</mat-option>
-          <mat-option value="subscription" i18n>Magazine or Newspaper Subscription</mat-option>
-          <mat-option value="microfilm" i18n>Microfilm</mat-option>
+          <mat-option [value]="format.code" *ngFor="let format of requests.formats">
+            {{format.label}}
+          </mat-option>
         </mat-select>
       </mat-form-field>
     </div>

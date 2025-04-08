@@ -15,6 +15,7 @@ interface PatronAccess {
 
 @Injectable()
 export class RequestsService {
+    formats: Array<Hash> = [];
     selectedFormat: string | null = null;
     requestsAllowed = true;
     activeRequestCount = 0;
@@ -60,6 +61,20 @@ export class RequestsService {
         this.illRequestsAllowed = true;
         this.hasOverdueIll = false;
         this.atMaxRequests = false;
+    }
+
+    loadFormats(): Promise<any> {
+        if (this.formats.length > 0) {
+            return Promise.resolve();
+        }
+
+        return this.gateway.requestOne(
+            'open-ils.pcrud',
+            'open-ils.pcrud.search.cuirf.atomic',
+            'ANONYMOUS', // field safe
+            {'code':{'<>':null}},
+            {'order_by': {'cuirf': 'position'}}
+        ).then(formats => this.formats = formats as Hash[]);
     }
 
     loadPatronAccess(): Promise<PatronAccess> {
