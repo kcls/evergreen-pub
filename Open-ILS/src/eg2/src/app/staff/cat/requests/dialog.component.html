@@ -79,23 +79,17 @@
     <div class="row mt-3">
       <ng-container *ngIf="mode !== 'create'">
         <div class="col-2" i18n>Format</div>
-        <div class="col-4">{{request.format()}}</div>
+        <div class="col-4">{{request.format().label()}}</div>
       </ng-container>
 
       <ng-container *ngIf="mode === 'create'">
         <div class="col-2" i18n>Format</div>
         <div class="col-4">
-          <select (ngModelChange)="request.format($event)" required
-            [ngModel]="request.format()" class="form-select">
-            <option value="book" i18n>Book</option>
-            <option value="large-print" i18n>Large Print</option>
-            <option value="audiobook" i18n>Audiobook</option>
-            <option value="cd" i18n>Music CD</option>
-            <option value="dvd" i18n>DVD</option>
-            <option value="ebook-eaudio" i18n>eBook or Downloadable Audiobook</option>
-            <option value="article" i18n>Magazine, Newspaper, or Journal Article</option>
-            <option value="subscription" i18n>Magazine or Newspaper Subscription</option>
-            <option value="microfilm" i18n>Microfilm</option>
+          <select (ngModelChange)="setFormat($event)" required
+            [ngModel]="request.format()?.code()" class="form-select">
+            <option *ngFor="let format of formats" [value]="format.code()">
+              {{format.label()}}
+            </option>
           </select>
         </div>
       </ng-container>
@@ -116,9 +110,9 @@
       <div class="col-2" i18n>Language</div>
       <div class="col-4">
         <select class="form-select"
-          (ngModelChange)="request.language($event)"
-          [ngModel]="request.language()">
-          <option *ngFor="let lang of languages" [value]="lang">{{lang}}</option>
+          (ngModelChange)="setLanguage($event)"
+          [ngModel]="request.language()?.code()">
+          <option *ngFor="let lang of languages" [value]="lang.code()">{{lang.label()}}</option>
         </select>
       </div>
     </div>
@@ -172,9 +166,11 @@
       <div class="col-2" i18n>Audience</div>
       <div class="col-4">
         <select class="form-select"
-          (ngModelChange)="request.audience($event)"
-          [ngModel]="request.audience()">
-          <option *ngFor="let audience of audiences" [value]="audience">{{audience}}</option>
+          (ngModelChange)="setAudience($event)"
+          [ngModel]="request.audience()?.code()">
+          <option *ngFor="let audience of audiences" [value]="audience.code()">
+            {{audience.label()}}
+          </option>
         </select>
       </div>
     </div>
