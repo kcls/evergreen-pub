@@ -79,23 +79,17 @@
     <div class="row mt-3">
       <ng-container *ngIf="mode !== 'create'">
         <div class="col-2" i18n>Format</div>
-        <div class="col-4">{{request.format()}}</div>
+        <div class="col-4">{{request.format().label()}}</div>
       </ng-container>
 
       <ng-container *ngIf="mode === 'create'">
         <div class="col-2" i18n>Format</div>
         <div class="col-4">
-          <select (ngModelChange)="request.format($event)" required
-            [ngModel]="request.format()" class="form-select">
-            <option value="book" i18n>Book</option>
-            <option value="large-print" i18n>Large Print</option>
-            <option value="audiobook" i18n>Audiobook</option>
-            <option value="cd" i18n>Music CD</option>
-            <option value="dvd" i18n>DVD</option>
-            <option value="ebook-eaudio" i18n>eBook or Downloadable Audiobook</option>
-            <option value="article" i18n>Magazine, Newspaper, or Journal Article</option>
-            <option value="subscription" i18n>Magazine or Newspaper Subscription</option>
-            <option value="microfilm" i18n>Microfilm</option>
+          <select (ngModelChange)="setFormat($event)" required
+            [ngModel]="request.format() ? request.format().code() : ''" class="form-select">
+            <option *ngFor="let format of formats" [value]="format.code()">
+              {{format.label()}}
+            </option>
           </select>
         </div>
       </ng-container>

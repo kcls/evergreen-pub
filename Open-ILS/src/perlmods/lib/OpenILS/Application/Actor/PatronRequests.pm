@@ -41,6 +41,8 @@ my $ILL_ROUTE_AGE_YEARS = 2;
 # These format salways go to ILL.                                                     
 my @ILL_FORMATS = ('microfilm', 'article');
 
+# TODO check the ill_only flag on usr_item_format_request.
+
 sub apply_route_to {
     my ($request) = @_;
 
@@ -205,7 +207,11 @@ sub get_requests {
     }
 
     my $requests = $e->search_actor_user_item_request([
-        $filter, {order_by => {auir => 'create_date DESC'}}
+        $filter, {
+            flesh => 1,
+            flesh_fields => {'auir' => ['format']},
+            order_by => {auir => 'create_date DESC'}
+        }
     ]);
 
     return [

@@ -16088,7 +16088,7 @@ SELECT  usr,
 			<field reporter:label="Request ID" name="id" reporter:datatype="id" />
 			<field reporter:label="User" name="usr" reporter:datatype="link"/>
 			<field reporter:label="Identifier" name="identifier" reporter:datatype="text"/>
-			<field reporter:label="Format" name="format" reporter:datatype="text"/>
+			<field reporter:label="Format" name="format" reporter:datatype="link"/>
 			<field reporter:label="Title" name="title" reporter:datatype="text"/>
 			<field reporter:label="Author" name="author" reporter:datatype="text"/>
 			<field reporter:label="Publisher" name="publisher" reporter:datatype="text"/>
@@ -16127,6 +16127,7 @@ SELECT  usr,
 			<link field="lineitem" reltype="has_a" key="id" map="" class="jub"/>
 			<link field="hold" reltype="has_a" key="id" map="" class="ahr"/>
 			<link field="pickup_lib" reltype="has_a" key="id" map="" class="aou"/>
+			<link field="format" reltype="has_a" key="code" map="" class="cuirf"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
@@ -16139,6 +16140,28 @@ SELECT  usr,
 				<retrieve permission="VIEW_USER">
 					<context link="usr" field="home_ou"/>
 				</retrieve>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cuirf" 
+		oils_persist:field_safe="true"
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::user_item_request_format" 
+		oils_persist:tablename="config.usr_item_request_format" 
+		reporter:label="User Item request Format">
+		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_format_code_seq">
+			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
+			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Position" name="position" reporter:datatype="number" oils_obj:required="true"/>
+			<field reporter:label="ILL Only" name="ill_only" reporter:datatype="bool" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_USER_ITEM_REQUEST_FORMAT"/>
+				<retrieve/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_FORMAT"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_FORMAT"/>
 			</actions>
 		</permacrud>
 	</class>

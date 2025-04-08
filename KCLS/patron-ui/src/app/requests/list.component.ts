@@ -15,7 +15,7 @@ interface RequestStatus {
 
 // Define create_date as a string so it can be used
 // in the Date pipe in the template.
-type Request = Hash & {id: number, create_date: string, _status: string};
+type Request = Hash & {id: number, create_date: string, format: Hash, _status: string};
 
 @Component({
   selector: 'app-patron-request-list',
@@ -83,7 +83,6 @@ export class RequestListComponent implements OnInit {
             this.requests = (list as Hash[]).map((hash: Hash) => {
                 let request = hash["request"] as Request;
                 request._status = (hash["status"] as Hash)["status"] as string;
-                console.log('fetched requet with status ', request._status);
                 return request;
             });
         });
@@ -105,21 +104,6 @@ export class RequestListComponent implements OnInit {
             this.load();
         });
     }
-
-
-    /* Status Movement
-		submitted
-
-		purchase-review
-		purchase-rejected / purchase-approved
-        hold-placed (todo)
-        hold-rejected (todo)
-
-		ill-review
-		ill-rejected / ill-requested
-
-		complete
-	*/
 
     // Render a status as completed, rejected, or pending, depending on
     // the status of the request.
