@@ -31,8 +31,9 @@ export class RequestsComponent implements OnInit {
 
     ngOnInit() {
         this.title.setTitle($localize`Request an Item`);
-
         this.meta.addTag({description: META_DESC});
+
+        this.requests.loadOptions();
 
         this.tab = this.router.url.split("/").pop() || 'requests';
 

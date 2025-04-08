@@ -41,40 +41,6 @@ export class CreateRequestComponent implements OnInit {
     checkingDupes = false;
     pickupLibs: Hash[] = [];
 
-    audiences = [
-        $localize`Adult`,
-        $localize`Teen`,
-        $localize`Children`
-    ];
-
-    languages = [
-        $localize`English`,
-        $localize`አማርኛ / Amharic`,
-        $localize`عربي / Arabic`,
-        $localize`中文 / Chinese`,
-        $localize`Français / French`,
-        $localize`Deutsch / German`,
-        $localize`ગુજરાતી / Gujarati`,
-        $localize`עִברִית / Hebrew`,
-        $localize`हिंदी  / Hindi`,
-        $localize`italiano / Italian`,
-        $localize`日本語 / Japanese`,
-        $localize`한국어 / Korean`,
-        $localize`मराठी  / Marathi`,
-        $localize`Kajin M̧ajeļ / Marshallese`,
-        $localize`ਪੰਜਾਬੀ  / Punjabi/Panjabi`,
-        $localize`فارسی / Persian`,
-        $localize`Português / Portuguese`,
-        $localize`Pусский / Russian`,
-        $localize`Soomaali / Somali`,
-        $localize`Español / Spanish`,
-        $localize`Tagalog`,
-        $localize`தமிழ்  / Tamil`,
-        $localize`తెలుగు  / Telugu`,
-        $localize`Українська / Ukrainian`,
-        $localize`Tiếng Việt / Vietnamese`,
-    ];
-
     controls: {[field: string]: FormControl} = {
         title: new FormControl({value: '', disabled: true}, [Validators.required]),
         article: new FormControl({value: '', disabled: true}),
@@ -166,11 +132,6 @@ export class CreateRequestComponent implements OnInit {
 
             this.checkingDupes = false;
         });
-    }
-
-    filterLangs(value: string): string[] {
-        const val = value.toLowerCase();
-        return this.languages.filter(lang => lang.toLowerCase().includes(val));
     }
 
     identLookup(ident: string): Promise<void> {
