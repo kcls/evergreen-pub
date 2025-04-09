@@ -16,11 +16,12 @@ interface PatronAccess {
 @Injectable()
 export class RequestsService {
     selectedFormat: string | null = null;
-    requestsAllowed: boolean | null = null;
+    requestsAllowed = true;
     activeRequestCount = 0;
     maxRequestCount = 0;
     pickupLibs: Hash[] = [];
     illRequestsAllowed = true;
+    atMaxRequests = false;
     hasOverdueIll = false;
     illOptOut = false;
 
@@ -55,9 +56,10 @@ export class RequestsService {
 
     reset() {
         this.selectedFormat = null;
-        this.requestsAllowed = null;
+        this.requestsAllowed = true;
         this.illRequestsAllowed = true;
         this.hasOverdueIll = false;
+        this.atMaxRequests = false;
     }
 
     loadPatronAccess(): Promise<PatronAccess> {
@@ -74,6 +76,7 @@ export class RequestsService {
             this.maxRequestCount = Number(access.max_allowed);
             this.hasOverdueIll = Number(access.has_overdue_ill) === 1;
             this.illRequestsAllowed = Number(access.ill_allowed) === 1;
+            this.atMaxRequests = Number(access.at_max_requests) === 1;
 
             this.patronAccess = access;
 
@@ -86,7 +89,7 @@ export class RequestsService {
 
 
     tooManyActiveRequests(): boolean {
-        return this.patronAccess !== null && this.patronAccess.at_max_requests;
+        return this.atMaxRequests;
     }
 
     loadPickupLibs(): Promise<Hash[]> {

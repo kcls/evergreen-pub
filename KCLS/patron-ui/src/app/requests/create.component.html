@@ -1,16 +1,16 @@
 <ng-container *ngIf="app.getAuthSession() && !requests.requestsAllowed">
   <div class="mt-5 flex justify-center border rounded border-orange-400 p-4">
-    <ng-container *ngIf="requests.tooManyActiveRequests()">
-      <p i18n>Patrons are allowed to have at most {{requests.maxRequestCount}} active requests.</p>
-    </ng-container>
-    <ng-container *ngIf="!requests.tooManyActiveRequests()">
-      <p i18n>This account does not have permission to create new requests.</p>
-    </ng-container>
+    <p i18n>This account does not have permission to create new requests.</p>
   </div>
 </ng-container>
 
-<ng-container *ngIf="app.getAuthSession() && requests.requestsAllowed">
+<ng-container *ngIf="requests.atMaxRequests">
+  <div class="mt-5 flex justify-center border rounded border-orange-400 p-4">
+    <p i18n>Patrons are allowed to have at most {{requests.maxRequestCount}} active requests.</p>
+  </div>
+</ng-container>
 
+<ng-container *ngIf="app.getAuthSession() && requests.requestsAllowed && !requests.atMaxRequests">
   <form role="form" class="mt-4">
     <div class="flex p-2" *ngIf="requests.selectedFormat !== 'article'">
       <mat-form-field class="flex-1">
