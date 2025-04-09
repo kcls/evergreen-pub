@@ -308,6 +308,9 @@ export class CreateRequestComponent implements OnInit {
             } else {
                 this.requestSubmitError = true;
             }
+
+            // Refresh patron access info after each new request.
+            this.requests.loadPatronAccess();
         });
 
         return false;
