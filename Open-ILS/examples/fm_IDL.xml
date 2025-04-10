@@ -16093,7 +16093,7 @@ SELECT  usr,
 			<field reporter:label="Author" name="author" reporter:datatype="text"/>
 			<field reporter:label="Publisher" name="publisher" reporter:datatype="text"/>
 			<field reporter:label="Pubdate" name="pubdate" reporter:datatype="int"/>
-			<field reporter:label="Language" name="language" reporter:datatype="text"/>
+			<field reporter:label="Language" name="language" reporter:datatype="link"/>
 			<field reporter:label="Notes" name="notes" reporter:datatype="text"/>
 			<field reporter:label="Request Date" name="create_date" reporter:datatype="timestamp"/>
 			<field reporter:label="Route To" name="route_to" reporter:datatype="text"/>
@@ -16117,7 +16117,7 @@ SELECT  usr,
 			<field reporter:label="Hold ID" name="hold" reporter:datatype="link"/>
 			<field reporter:label="Pickup Lib" name="pickup_lib" reporter:datatype="link"/>
 			<field reporter:label="Article" name="article" reporter:datatype="text"/>
-			<field reporter:label="Audience" name="audience" reporter:datatype="text"/>
+			<field reporter:label="Audience" name="audience" reporter:datatype="link"/>
 			<field reporter:label="Hold Date" name="hold_date" reporter:datatype="timestamp"/>
 		</fields>
 		<links>
@@ -16128,6 +16128,8 @@ SELECT  usr,
 			<link field="hold" reltype="has_a" key="id" map="" class="ahr"/>
 			<link field="pickup_lib" reltype="has_a" key="id" map="" class="aou"/>
 			<link field="format" reltype="has_a" key="code" map="" class="cuirf"/>
+			<link field="audience" reltype="has_a" key="code" map="" class="cuira"/>
+			<link field="language" reltype="has_a" key="code" map="" class="cuirl"/>
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
@@ -16176,7 +16178,6 @@ SELECT  usr,
 			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
 			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
 			<field reporter:label="Position" name="position" reporter:datatype="number" oils_obj:required="true"/>
-			<field reporter:label="ILL Only" name="ill_only" reporter:datatype="bool" oils_obj:required="true"/>
 		</fields>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>

@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {FormControl, Validators} from '@angular/forms';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
+import {RequestsService} from './requests.service';
 
 interface StatusDisposition {
     icon: string,
@@ -15,7 +16,14 @@ interface RequestStatus {
 
 // Define create_date as a string so it can be used
 // in the Date pipe in the template.
-type Request = Hash & {id: number, create_date: string, format: Hash, _status: string};
+type Request = Hash & {
+    id: number,
+    create_date: string,
+    format: Hash,
+    language: Hash | null,
+    audience: Hash | null,
+    _status: string
+};
 
 @Component({
   selector: 'app-patron-request-list',
@@ -29,7 +37,6 @@ export class RequestListComponent implements OnInit {
     showRequestDetails: {[id: number]: boolean} = {};
 
     controls: {[field: string]: FormControl} = {
-        //pendingCbox: new FormControl(''),
         completedCbox: new FormControl('')
     };
 
@@ -59,7 +66,8 @@ export class RequestListComponent implements OnInit {
 
     constructor(
         private gateway: Gateway,
-        public app: AppService
+        public app: AppService,
+        public requestSvc: RequestsService
     ) { }
 
     ngOnInit() {
@@ -85,7 +93,8 @@ export class RequestListComponent implements OnInit {
                 request._status = (hash["status"] as Hash)["status"] as string;
                 return request;
             });
-        });
+        })
+        .then(_ => this.requestSvc.loadPatronAccess());
     }
 
     cancel(request: Request) {
@@ -99,7 +108,7 @@ export class RequestListComponent implements OnInit {
             'open-ils.actor.patron-request.cancel',
             this.app.getAuthtoken(), request.id
         ).then(resp => {
-            console.debug('Cancel returned', resp);
+            //console.debug('Cancel returned', resp);
             this.cancelRequested = null;
             this.load();
         });

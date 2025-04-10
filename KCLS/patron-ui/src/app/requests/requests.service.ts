@@ -16,6 +16,9 @@ interface PatronAccess {
 @Injectable()
 export class RequestsService {
     formats: Array<Hash> = [];
+    languages: Array<Hash> = [];
+    audiences: Array<Hash> = [];
+
     selectedFormat: string | null = null;
     requestsAllowed = true;
     activeRequestCount = 0;
@@ -63,7 +66,7 @@ export class RequestsService {
         this.atMaxRequests = false;
     }
 
-    loadFormats(): Promise<any> {
+    loadOptions(): Promise<any> {
         if (this.formats.length > 0) {
             return Promise.resolve();
         }
@@ -74,7 +77,35 @@ export class RequestsService {
             'ANONYMOUS', // field safe
             {'code':{'<>':null}},
             {'order_by': {'cuirf': 'position'}}
-        ).then(formats => this.formats = formats as Hash[]);
+        ).then(formats => this.formats = formats as Hash[])
+        .then(_ => {
+            return this.gateway.requestOne(
+                'open-ils.pcrud',
+                'open-ils.pcrud.search.cuira.atomic',
+                'ANONYMOUS', // field safe
+                {'code':{'<>':null}},
+                {'order_by': {'cuirf': 'position'}}
+            ).then(audiences => this.audiences = audiences as Hash[])
+        })
+        .then(_ => {
+            return this.gateway.requestOne(
+                'open-ils.pcrud',
+                'open-ils.pcrud.search.cuirl.atomic',
+                'ANONYMOUS', // field safe
+                {'code':{'<>':null}},
+                {'order_by': {'cuirf': 'label'}}
+            ).then(languages => {
+                let langs = languages as Hash[];
+                // Move the default language to the front of the list
+                const index = langs.findIndex(l => l.is_default === 't');
+                if (index > -1) {
+                    const lang = langs[index];
+                    langs.splice(index, 1);
+                    langs.unshift(lang);
+                }
+                this.languages = langs;
+            });
+        })
     }
 
     loadPatronAccess(): Promise<PatronAccess> {
@@ -101,7 +132,6 @@ export class RequestsService {
             return access;
         });
     }
-
 
     tooManyActiveRequests(): boolean {
         return this.atMaxRequests;

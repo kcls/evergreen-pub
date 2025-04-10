@@ -209,7 +209,7 @@ sub get_requests {
     my $requests = $e->search_actor_user_item_request([
         $filter, {
             flesh => 1,
-            flesh_fields => {'auir' => ['format']},
+            flesh_fields => {'auir' => ['format', 'language', 'audience']},
             order_by => {auir => 'create_date DESC'}
         }
     ]);

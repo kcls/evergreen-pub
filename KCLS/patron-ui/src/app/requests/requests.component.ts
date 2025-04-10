@@ -33,7 +33,7 @@ export class RequestsComponent implements OnInit {
         this.title.setTitle($localize`Request an Item`);
         this.meta.addTag({description: META_DESC});
 
-        this.requests.loadFormats();
+        this.requests.loadOptions();
 
         this.tab = this.router.url.split("/").pop() || 'requests';
 
