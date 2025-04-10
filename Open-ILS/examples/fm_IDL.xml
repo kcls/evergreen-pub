@@ -16149,7 +16149,7 @@ SELECT  usr,
 		controller="open-ils.cstore open-ils.pcrud" 
 		oils_obj:fieldmapper="config::user_item_request_format" 
 		oils_persist:tablename="config.usr_item_request_format" 
-		reporter:label="User Item request Format">
+		reporter:label="User Item Request Format">
 		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_format_code_seq">
 			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
 			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
@@ -16158,10 +16158,53 @@ SELECT  usr,
 		</fields>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
-				<create permission="ADMIN_USER_ITEM_REQUEST_FORMAT"/>
+				<create permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
 				<retrieve/>
-				<update permission="ADMIN_USER_ITEM_REQUEST_FORMAT"/>
-				<delete permission="ADMIN_USER_ITEM_REQUEST_FORMAT"/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cuira" 
+		oils_persist:field_safe="true"
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::user_item_request_audience" 
+		oils_persist:tablename="config.usr_item_request_audience" 
+		reporter:label="User Item Request Audience">
+		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_audience_code_seq">
+			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
+			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Position" name="position" reporter:datatype="number" oils_obj:required="true"/>
+			<field reporter:label="ILL Only" name="ill_only" reporter:datatype="bool" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<retrieve/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+			</actions>
+		</permacrud>
+	</class>
+
+	<class id="cuirl" 
+		oils_persist:field_safe="true"
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="config::user_item_request_lang" 
+		oils_persist:tablename="config.usr_item_request_lang" 
+		reporter:label="User Item Request Language">
+		<fields oils_persist:primary="code" oils_persist:sequence="config.usr_item_request_lang_code_seq">
+			<field reporter:label="Code" name="code" reporter:datatype="text"  oils_obj:required="true" oils_persist:i18n="true" reporter:selector="label"/>
+			<field reporter:label="Label" name="label" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Default" name="is_default" reporter:datatype="bool" oils_obj:required="true"/>
+		</fields>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<retrieve/>
+				<update permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
+				<delete permission="ADMIN_USER_ITEM_REQUEST_OPTIONS"/>
 			</actions>
 		</permacrud>
 	</class>
