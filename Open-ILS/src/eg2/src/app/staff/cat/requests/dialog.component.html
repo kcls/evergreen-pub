@@ -86,7 +86,7 @@
         <div class="col-2" i18n>Format</div>
         <div class="col-4">
           <select (ngModelChange)="setFormat($event)" required
-            [ngModel]="request.format() ? request.format().code() : ''" class="form-select">
+            [ngModel]="request.format()?.code()" class="form-select">
             <option *ngFor="let format of formats" [value]="format.code()">
               {{format.label()}}
             </option>
@@ -110,9 +110,9 @@
       <div class="col-2" i18n>Language</div>
       <div class="col-4">
         <select class="form-select"
-          (ngModelChange)="request.language($event)"
-          [ngModel]="request.language()">
-          <option *ngFor="let lang of languages" [value]="lang">{{lang}}</option>
+          (ngModelChange)="setLanguage($event)"
+          [ngModel]="request.language()?.code()">
+          <option *ngFor="let lang of languages" [value]="lang.code()">{{lang.label()}}</option>
         </select>
       </div>
     </div>
@@ -166,9 +166,11 @@
       <div class="col-2" i18n>Audience</div>
       <div class="col-4">
         <select class="form-select"
-          (ngModelChange)="request.audience($event)"
-          [ngModel]="request.audience()">
-          <option *ngFor="let audience of audiences" [value]="audience">{{audience}}</option>
+          (ngModelChange)="setAudience($event)"
+          [ngModel]="request.audience()?.code()">
+          <option *ngFor="let audience of audiences" [value]="audience.code()">
+            {{audience.label()}}
+          </option>
         </select>
       </div>
     </div>

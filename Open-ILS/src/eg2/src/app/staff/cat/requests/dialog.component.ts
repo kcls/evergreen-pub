@@ -38,41 +38,10 @@ export class ItemRequestDialogComponent extends DialogComponent {
     patronActiveRequestCount = 0;
     patronHasMaxRequests = false;
     patronHasOverdueIll = false;
+
     formats: IdlObject[] = [];
-
-    audiences = [
-        $localize`Adult`,
-        $localize`Teen`,
-        $localize`Children`
-    ];
-
-    languages = [
-        $localize`English`,
-        $localize`አማርኛ / Amharic`,
-        $localize`عربي / Arabic`,
-        $localize`中文 / Chinese`,
-        $localize`Français / French`,
-        $localize`Deutsch / German`,
-        $localize`ગુજરાતી / Gujarati`,
-        $localize`עִברִית / Hebrew`,
-        $localize`हिंदी  / Hindi`,
-        $localize`italiano / Italian`,
-        $localize`日本語 / Japanese`,
-        $localize`한국어 / Korean`,
-        $localize`मराठी  / Marathi`,
-        $localize`Kajin M̧ajeļ / Marshallese`,
-        $localize`ਪੰਜਾਬੀ  / Punjabi/Panjabi`,
-        $localize`فارسی / Persian`,
-        $localize`Português / Portuguese`,
-        $localize`Pусский / Russian`,
-        $localize`Soomaali / Somali`,
-        $localize`Español / Spanish`,
-        $localize`Tagalog`,
-        $localize`தமிழ்  / Tamil`,
-        $localize`తెలుగు  / Telugu`,
-        $localize`Українська / Ukrainian`,
-        $localize`Tiếng Việt / Vietnamese`,
-    ];
+    audiences: IdlObject[] = [];
+    languages: IdlObject[] = [];
 
     @Input() mode: 'edit' | 'create' = 'edit';
 
@@ -98,7 +67,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         this.resetCreate();
 
         if (this.mode === 'create') {
-            return from(this.loadFormats().then(_ => this.loadCreateData())).pipe(switchMap(_ => super.open(args)));
+            return from(this.loadOptions().then(_ => this.loadCreateData())).pipe(switchMap(_ => super.open(args)));
         }
 
         if (!this.requestId) {
@@ -107,11 +76,11 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         // Fire data loading observable and replace results with
         // dialog opener observable.
-        return from(this.loadFormats().then(_ => this.loadRequest())).pipe(switchMap(_ => super.open(args)));
+        return from(this.loadOptions().then(_ => this.loadRequest())).pipe(switchMap(_ => super.open(args)));
     }
 
     // TODO
-    loadFormats(): Promise<any> {
+    loadOptions(): Promise<any> {
         if (this.formats.length > 0) {
             return Promise.resolve();
         }
@@ -120,7 +89,33 @@ export class ItemRequestDialogComponent extends DialogComponent {
             'cuirf',
             {order_by: {cuirf: 'position'}},
             {atomic: true}
-        ).toPromise().then(formats => this.formats = formats);
+        ).toPromise()
+        .then(formats => this.formats = formats)
+        .then(_ => {
+            return this.pcrud.retrieveAll(
+                'cuira',
+                {order_by: {cuirf: 'position'}},
+                {atomic: true}
+            ).toPromise()
+            .then(audiences => this.audiences = audiences);
+        })
+        .then(_ => {
+            return this.pcrud.retrieveAll(
+                'cuirl',
+                {order_by: {cuirf: 'position'}},
+                {atomic: true}
+            ).toPromise()
+        })
+        .then(langs => {
+            // Move the default language to the front of the list
+            const index = langs.findIndex(l => l.is_default() === 't');
+            if (index > -1) {
+                const lang = langs[index];
+                langs.splice(index, 1);
+                langs.unshift(lang);
+            }
+            this.languages = langs;
+        });
     }
 
     loadCreateData(): Promise<any> {
@@ -248,12 +243,18 @@ export class ItemRequestDialogComponent extends DialogComponent {
     setFormat(code: string) {
         this.request.format(this.formats.filter(f => f.code() === code)[0]);
     }
+    setAudience(code: string) {
+        this.request.audience(this.audiences.filter(f => f.code() === code)[0]);
+    }
+    setLanguage(code: string) {
+        this.request.language(this.languages.filter(f => f.code() === code)[0]);
+    }
 
     loadRequest(): Promise<void> {
         const flesh = {
             flesh: 2,
             flesh_fields: {
-                auir: ['usr', 'claimed_by', 'format'],
+                auir: ['usr', 'claimed_by', 'format', 'language', 'audience'],
                 au: ['card']
             }
         };
@@ -325,10 +326,15 @@ export class ItemRequestDialogComponent extends DialogComponent {
             });
         } else {
             return promise.then(_ => {
-                this.request.usr(this.request.usr().id());
-                this.request.requestor(this.auth.user().id());
+                const req = this.idl.clone(this.request);
 
-                return this.pcrud.create(this.request).toPromise()
+                req.usr(this.request.usr().id());
+                req.requestor(this.auth.user().id());
+                req.format(this.request.format()?.code());
+                req.language(this.request.language()?.code());
+                req.audience(this.request.audience()?.code());
+
+                return this.pcrud.create(req).toPromise()
                 .then(_ => this.close(true))
             });
         }
