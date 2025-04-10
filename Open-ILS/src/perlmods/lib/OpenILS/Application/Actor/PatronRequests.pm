@@ -13,6 +13,7 @@ use OpenILS::Utils::DateTime qw/:datetime/;
 my $U = "OpenILS::Application::AppUtils";
 
 use constant DISTRICT_OF_RESIDENCE_STAT_CAT => 12;
+use constant KCLS_STAFF_PATRON_PROFILE => 38;
 use constant PATRON_EXCEEDS_FINES => 1;
 
 # There are other ILL types, but they are unused or in-house only.
@@ -784,6 +785,9 @@ sub ill_requests_allowed_impl {
     $e2->requestor($patron);
 
     return 0 unless $e2->allowed('REQUEST_ILL_ITEMS', $perm_org);
+
+    # 'KCLS Staff' patron accounts are permitted regardless of residency status.
+    return 1 if $patron->profile == KCLS_STAFF_PATRON_PROFILE;
 
     # Patrons must be in the service area to request ILLs.
     my $stat = $e2->search_actor_stat_cat_entry_user_map({
