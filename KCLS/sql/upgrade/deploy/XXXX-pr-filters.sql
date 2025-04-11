@@ -96,7 +96,7 @@ ALTER TABLE actor.usr_item_request
 
 UPDATE config.usr_item_request_lang SET is_default = TRUE WHERE code = 'english';
 
-UPDATE actor.usr_item_request SET language = 'english' WHERE (language = 'English' OR language IS NULL OR language = '');
+UPDATE actor.usr_item_request SET language = 'english' WHERE language = 'English';
 UPDATE actor.usr_item_request SET language = 'amharic' WHERE language = 'አማርኛ / Amharic';
 UPDATE actor.usr_item_request SET language = 'arabic' WHERE language = 'ﻉﺮﺒﻳ / Arabic';
 UPDATE actor.usr_item_request SET language = 'chinese' WHERE language = '中文 / Chinese';
