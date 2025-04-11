@@ -95,6 +95,10 @@ export class CreateRequestComponent implements OnInit {
         });
 
         this.requests.loadPickupLibs().then(libs => this.pickupLibs = libs);
+
+        // Preloaded
+        this.controls.pickup_lib.setValue(this.requests.patronAccess.pickup_lib);
+
         this.requests.patronAccessLoaded.subscribe(access =>
             this.controls.pickup_lib.setValue(access.pickup_lib));
     }
