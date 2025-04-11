@@ -126,7 +126,10 @@
 
 
     <!-- QUIPU JS -->
+    <script type="text/javascript" src="https://ecard.quipugroup.net/js/jquery-3.3.1.min.js"></script>
+    <!--
     <script type="text/javascript" src="https://ecard.quipugroup.net/js/jquery-1.11.1.min.js"></script>
+    -->
     <script src="[% ctx.media_prefix %]/js/ui/default/opac/handlebars-v4.7.7.js"></script>
     <script type="text/javascript" src="https://ecard.quipugroup.net/js/jqueryUI/js/jquery-ui-1.10.4.custom.min.js"></script>
     <script type="text/javascript" src="https://ecard.quipugroup.net/js/jquery.xdomainrequest.min.js"></script>
