@@ -181,12 +181,12 @@
     <div class="row mt-3">
       <div class="col-2" i18n>Route To</div>
       <div class="col-4">
-        <ng-container *ngIf="request.route_to() === null">
+        <ng-container *ngIf="mode === 'create'">
           <span class="fst-italic" i18n>Pending...</span>
         </ng-container>
-        <ng-container *ngIf="request.route_to() !== null || mode !== 'create'">
+        <ng-container *ngIf="mode !== 'create'">
           <eg-combobox 
-            [disabled]="!patronIllAllowed || !patronHasOverdueIll"
+            [disabled]="!patronIllAllowed || patronHasOverdueIll"
             [startId]="request.route_to()"
             [selectedId]="request.route_to()"
             (onChange)="request.route_to($event ? $event.id : null)"
@@ -263,6 +263,10 @@
         <button class="btn btn-outline-dark ms-2" 
           [disabled]="!request.reject_date() && !request.complete_date()"
           (click)="setStatus('active')" i18n>Re-Activate</button>
+
+        <button class="btn btn-outline-dark ms-2" 
+          [disabled]="!canBeSetComplete()"
+          (click)="setStatus('complete')" i18n>Set as Complete</button>
       </div>
     </div>
     <div class="row mt-3" *ngIf="request.route_to() === 'acq' && request.reject_date()">
