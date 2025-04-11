@@ -355,6 +355,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 this.request.rejected_by(null);
                 this.request.reject_reason(null);
                 this.request.complete_date('now');
+                this.request._status = 'complete';
                 break;
 
             case 'rejected':
@@ -362,6 +363,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 this.request.reject_date('now');
                 this.request.rejected_by(this.auth.user().id());
                 this.request.complete_date(null);
+                this.request._status = 'rejected';
                 break;
 
             case 'active':
@@ -369,8 +371,22 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 this.request.reject_date(null);
                 this.request.rejected_by(null);
                 this.request.complete_date(null);
+                this.request._status = 'submitted';
                 break;
         }
+    }
+
+    canBeSetComplete() {
+        if (this.request) {
+            if (this.mode !== 'create') {
+                const stat = this.request._status;
+                if (stat !== 'complete' && !stat.startsWith('hold')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     illDenialChanged(content) {
