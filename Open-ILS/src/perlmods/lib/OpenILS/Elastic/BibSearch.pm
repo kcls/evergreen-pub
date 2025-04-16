@@ -82,6 +82,11 @@ my $INDEX_CLASS = 'bib-search';
 # the 'text' varieties. The selected limit is arbitrary.
 my $IGNORE_ABOVE = 256;
 
+# MARC searches on large keyword values (e.g. prefix) are more common than
+# keyword, title, etc.  Use a separate limit to help restrain the data size 
+# overall.
+my $IGNORE_ABOVE_MARC = 4096;
+
 # Individual characters of some values like sorters provide less and less
 # value as the length of the text gets longer and longer.  Unlike
 # $IGNORE_ABOVE, this only trims the string, it does not prevent it from
@@ -209,7 +214,7 @@ my $BASE_PROPERTIES = {
             },
             value => {
                 type => 'keyword',
-                ignore_above => $IGNORE_ABOVE,
+                ignore_above => $IGNORE_ABOVE_MARC,
                 normalizer => 'custom_lowercase',
                 fields => {
                     text => {type => 'text'},
