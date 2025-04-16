@@ -80,7 +80,7 @@ my $INDEX_CLASS = 'bib-search';
 # Useful for ignoring excessively long filters and facets.
 # Only applied to the keyword variation of each index.  Does not affect
 # the 'text' varieties. The selected limit is arbitrary.
-my $IGNORE_ABOVE = 256;
+my $IGNORE_ABOVE = 1024;
 
 # Individual characters of some values like sorters provide less and less
 # value as the length of the text gets longer and longer.  Unlike
