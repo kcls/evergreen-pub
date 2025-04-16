@@ -88,13 +88,6 @@ my $IGNORE_ABOVE = 256;
 # getting indexed in the first place.  The selected limit is arbitrary.
 my $TRIM_ABOVE = 512;
 
-my %TEXT_PRHASE_PREFIX = (
-    text_phrase_prefix => {
-        type => 'text', 
-        analyzer => 'lowercase'
-    }
-);
-
 my $BASE_INDEX_SETTINGS = {
     analysis => {
         analyzer => {
@@ -135,16 +128,11 @@ my $BASE_INDEX_SETTINGS = {
                 filter => ['lowercase'],
                 tokenizer => 'standard'
             },
-            trigram => {
-                type => 'custom',
-                tokenizer => 'standard',
-                filter => ['lowercase', 'shingle']
-            },
-            lowercase => {
-                type => 'custom',
-                tokenizer => 'standard',
-                filter => ['lowercase']
-            }
+			trigram => {
+				type => 'custom',
+				tokenizer => 'standard',
+				filter => ['lowercase', 'shingle']
+			}
         },
         normalizer =>  {
             custom_lowercase => {
@@ -156,13 +144,13 @@ my $BASE_INDEX_SETTINGS = {
                 char_filter => ['stripfinalpunc']
             }
         },
-        filter => {
-            shingle => {
-                type => 'shingle',
-                min_shingle_size => 2,
-                max_shingle_size => 3
-            }
-        },
+		filter => {
+			shingle => {
+				type => 'shingle',
+				min_shingle_size => 2,
+				max_shingle_size => 3
+			}
+		},
         char_filter => {
             stripapos => {
                 type => 'mapping',
@@ -226,8 +214,7 @@ my $BASE_PROPERTIES = {
                 fields => {
                     text => {type => 'text'},
                     text_folded => {type => 'text', analyzer => 'folding'},
-                    text_icu_folded => {type => 'text', analyzer => 'icu_folding'},
-                    %TEXT_PRHASE_PREFIX
+                    text_icu_folded => {type => 'text', analyzer => 'icu_folding'}
                 }
             }
         }
@@ -255,7 +242,6 @@ my $BASE_PROPERTIES = {
             text_stripapos => {type => 'text', analyzer => 'stripapos'},
             text_stripapos_folded => {type => 'text', analyzer => 'stripapos_folded'},
             text_stripcomma => {type => 'text', analyzer => 'stripcomma'},
-            %TEXT_PRHASE_PREFIX,
             trigram => {type => 'text', analyzer => 'trigram'}
         }
     },
@@ -272,7 +258,6 @@ my $BASE_PROPERTIES = {
             text_stripapos => {type => 'text', analyzer => 'stripapos'},
             text_stripapos_folded => {type => 'text', analyzer => 'stripapos_folded'},
             text_stripcomma => {type => 'text', analyzer => 'stripcomma'},
-            %TEXT_PRHASE_PREFIX,
             trigram => {type => 'text', analyzer => 'trigram'}
         }
     },
@@ -286,7 +271,6 @@ my $BASE_PROPERTIES = {
             text_icu_folded => {type => 'text', analyzer => 'icu_folding'},
             text_spacedots => {type => 'text', analyzer => 'spacedots'},
             text_stripdots => {type => 'text', analyzer => 'stripdots'},
-            %TEXT_PRHASE_PREFIX,
             trigram => {type => 'text', analyzer => 'trigram'}
         }
     },
@@ -303,7 +287,6 @@ my $BASE_PROPERTIES = {
             text_stripapos => {type => 'text', analyzer => 'stripapos'},
             text_stripapos_folded => {type => 'text', analyzer => 'stripapos_folded'},
             text_stripcomma => {type => 'text', analyzer => 'stripcomma'},
-            %TEXT_PRHASE_PREFIX,
             trigram => {type => 'text', analyzer => 'trigram'}
         }
     },

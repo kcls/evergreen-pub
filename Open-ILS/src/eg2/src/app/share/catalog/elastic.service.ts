@@ -6,7 +6,7 @@ import {NetService} from '@eg/core/net.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {CatalogSearchContext} from './search-context';
 import {RequestBodySearch, MatchQuery, MultiMatchQuery, TermsQuery, Query, Sort,
-    MatchPhrasePrefixQuery, PrefixQuery, NestedQuery, BoolQuery, TermQuery, WildcardQuery, RangeQuery,
+    PrefixQuery, NestedQuery, BoolQuery, TermQuery, WildcardQuery, RangeQuery,
     RegexpQuery, QueryStringQuery, PhraseSuggester} from 'elastic-builder';
 
 const INDEX_SHORTCUTS_MAP = {
@@ -372,7 +372,7 @@ export class ElasticService {
                 return;
 
             case 'starts':
-                query = new MatchPhrasePrefixQuery(`${termIndex}.text_phrase_prefix`, value);
+                query = new PrefixQuery(termIndex, value);
                 boolNode.must(query);
                 return;
 
