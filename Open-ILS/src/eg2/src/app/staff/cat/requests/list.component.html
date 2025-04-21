@@ -148,7 +148,7 @@
     (onClick)="addPatronVisibleNote($event)">
   </eg-grid-toolbar-action>
 
-  <eg-grid-column i18n-label label="Request ID" path="id" [hidden]="true" [required]="true">
+  <eg-grid-column i18n-label label="Request ID" path="id" [hidden]="true" [required]="true" [sortable]="true">
   </eg-grid-column>
   <eg-grid-column i18n-label label="Status" path="_status">
   </eg-grid-column>
@@ -162,35 +162,35 @@
   </eg-grid-column>
   <eg-grid-column i18n-label [cellTemplate]="routeToTemplate" label="Route To" name="route_to">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Format" path="format.label">
+  <eg-grid-column i18n-label label="Format" path="format.label" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="ISBN, etc." name="identifier">
+  <eg-grid-column i18n-label label="ISBN, etc." name="identifier" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Title" name="title">
+  <eg-grid-column i18n-label label="Title" name="title" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Author" name="author">
+  <eg-grid-column i18n-label label="Author" name="author" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Publisher" name="publisher">
+  <eg-grid-column i18n-label label="Publisher" name="publisher" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Pubdate" name="pubdate">
+  <eg-grid-column i18n-label label="Pubdate" name="pubdate" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Language" path="language.label">
+  <eg-grid-column i18n-label label="Language" path="language.label" [sortable]="true">
   </eg-grid-column>
   <eg-grid-column i18n-label label="Patron Notes" name="notes">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Request Date" name="create_date">
+  <eg-grid-column i18n-label label="Request Date" name="create_date" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="ILL Opt-Out" name="ill_opt_out">
+  <eg-grid-column i18n-label label="ILL Opt-Out" name="ill_opt_out" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="ID Matched" name="id_matched">
+  <eg-grid-column i18n-label label="ID Matched" name="id_matched" [sortable]="true">
   </eg-grid-column>
   <eg-grid-column i18n-label label="Claimed By" path="claimed_by.usrname">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Claim Date" name="claim_date">
+  <eg-grid-column i18n-label label="Claim Date" name="claim_date" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Vendor" name="vendor">
+  <eg-grid-column i18n-label label="Vendor" name="vendor" [sortable]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Audience" path="audience.label">
+  <eg-grid-column i18n-label label="Audience" path="audience.label" [sortable]="true">
   </eg-grid-column>
 </eg-grid>
 

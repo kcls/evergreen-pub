@@ -100,28 +100,31 @@ export class ItemRequestComponent implements OnInit {
             reason => this.illDenialOptions.push(reason));
 
         this.gridDataSource.getRows = (pager: Pager, sort: GridColumnSort[]) => {
-            /* TODO
-            let orderBy: any = {ausp: 'create_date'};
+            let orderBy: any = {auir: ['create_date']};
 
             if (sort.length) {
-                const field = this.idl.classes.auir.field_map[sort[0].name];
+                let fieldName = sort[0].name;
+
+                if (fieldName.match(/\.label/)) {
+                    // Some fields are paths to a label, whose FK values
+                    // also happen to be stored in sortable text codes
+                    // (in English, anyway).
+                    fieldName = fieldName.replace(/\.label/, '');
+                }
+
+                const field = this.idl.classes.auir.field_map[fieldName];
+
+                orderBy.auir = {};
+                orderBy.auir[fieldName] = {direction: sort[0].dir};
 
                 // 'route_to' is a database enum type and cannot be sorted on lowercase()
-                if (field && field.datatype === 'text' && field.name !== 'route_to') {
-
-                    // When sorting on TEXT fields pass the value through the
-                    // lowercase transform.
-                    orderBy = [{
-                        class: "auir",
-                        field: field.name,
-                        transform: "evergreen.lowercase",
-                        direction: sort[0].dir
-                    }];
-                } else {
-                    orderBy.auir = sort[0].name + ' ' + sort[0].dir
+                if (field && field.datatype === 'text' && fieldName !== 'route_to') {
+                    // Lowercase sorted text fields
+                    orderBy.auir[fieldName].transform = 'evergreen.lowercase';
                 }
             }
-            */
+
+            console.log(orderBy);
 
             let filters = {
                 claimed_by_me: this.newGridFilters.claimedByMe,
@@ -140,7 +143,7 @@ export class ItemRequestComponent implements OnInit {
             return this.net.request(
                 'open-ils.actor',
                 'open-ils.actor.patron.patron-request.search',
-                this.auth.token(), filters
+                this.auth.token(), filters, orderBy
             ).pipe(map(reqData => {
                 let req = reqData.request;
                 req._status = reqData.status;

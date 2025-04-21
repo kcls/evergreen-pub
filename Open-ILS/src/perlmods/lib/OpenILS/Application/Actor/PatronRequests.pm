@@ -824,8 +824,10 @@ __PACKAGE__->register_method(
 );
 
 sub search_requests {
-    my ($self, $client, $auth, $filters) = @_;
+    my ($self, $client, $auth, $filters, $order_by) = @_;
+
     return undef unless $filters;
+    $order_by ||= {auir => ['create_date']};
 
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
@@ -838,7 +840,7 @@ sub search_requests {
         select => {auir => ['id']},
         from => {auir => 'au'},
         where => $where,
-        order_by => {auir => ['create_date']}
+        order_by => $order_by,
     };
 
     if ($filters->{claimed_by_me}) {
