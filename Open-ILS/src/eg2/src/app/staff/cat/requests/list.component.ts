@@ -124,8 +124,6 @@ export class ItemRequestComponent implements OnInit {
                 }
             }
 
-            console.log(orderBy);
-
             let filters = {
                 claimed_by_me: this.newGridFilters.claimedByMe,
                 is_claimed: this.newGridFilters.isClaimed,
@@ -143,7 +141,7 @@ export class ItemRequestComponent implements OnInit {
             return this.net.request(
                 'open-ils.actor',
                 'open-ils.actor.patron.patron-request.search',
-                this.auth.token(), filters, orderBy
+                this.auth.token(), filters, orderBy, pager.limit, pager.offset
             ).pipe(map(reqData => {
                 let req = reqData.request;
                 req._status = reqData.status;

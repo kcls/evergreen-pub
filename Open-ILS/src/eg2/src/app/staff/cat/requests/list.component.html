@@ -25,74 +25,26 @@
 <!-- Grid Filters -->
 
 <div class="mb-3 p-1 border-bottom border-top d-flex">
-  <!--
   <div class="border border-2 rounded p-1">
-    <input class="btn-check" type="radio" name="show-active-radio"
-      (click)="toggleIsActive()"
-      [disabled]="newGridFilters.isActive"
-      [checked]="newGridFilters.isActive" id="show-active-yes"/>
-    <label class="btn btn-primary" for="show-active-yes" i18n>Active</label>
-
-    <input class="btn-check" type="radio" name="show-active-radio"
-      (click)="toggleIsActive()"
-      [disabled]="!newGridFilters.isActive"
-      [checked]="!newGridFilters.isActive" id="show-active-no"/>
-    <label class="ms-2 btn btn-primary" for="show-active-no" i18n>Complete</label>
-  </div>
-  -->
-
-  <div class="border border-2 rounded p-1">
-    <input class="btn-check" type="radio" name="show-active-radio"
-      (click)="toggleIsActive()"
-      [disabled]="newGridFilters.isActive"
-      [checked]="newGridFilters.isActive" id="show-active-yes"/>
-    <label class="btn btn-primary" for="show-active-yes" i18n>Active</label>
-
-    <input class="btn-check" type="radio" name="show-active-radio"
-      (click)="toggleIsActive()"
-      [disabled]="!newGridFilters.isActive"
-      [checked]="!newGridFilters.isActive" id="show-active-no"/>
-    <label class="ms-2 btn btn-primary" for="show-active-no" i18n>Complete</label>
+    <button class="btn btn-primary" (click)="toggleIsActive()"
+      [disabled]="newGridFilters.isActive" i18n>Active</button>
+    <button class="btn btn-primary ms-2" (click)="toggleIsActive()"
+      [disabled]="!newGridFilters.isActive" i18n>Other</button>
   </div>
 
   <div class="border border-2 rounded p-1 ms-2">
-    <!--
-    <input class="btn-check" type="radio" name="show-claimed-radio"
-      (click)="toggleIsClaimed()"
-      [disabled]="!newGridFilters.isClaimed || newGridFilters.claimedByMe"
-      [checked]="!newGridFilters.isClaimed" id="show-claimed-no"/>
-    <label class="btn btn-primary" for="show-claimed-no" i18n>Un-Claimed</label>
-
-    <input class="btn-check" type="radio" name="show-claimed-radio"
-      (click)="toggleIsClaimed()"
-      [disabled]="newGridFilters.isClaimed || newGridFilters.claimedByMe"
-      [checked]="newGridFilters.isClaimed" id="show-claimed-yes"/>
-    <label class="ms-2 btn btn-primary" for="show-claimed-yes" i18n>Claimed</label>
-    -->
-
     <button class="btn btn-primary" (click)="toggleIsClaimed()"
       [disabled]="!newGridFilters.isClaimed && !newGridFilters.claimedByMe" i18n>
       Unclaimed
     </button>
-
     <button class="btn btn-primary ms-2" (click)="toggleIsClaimed()"
       [disabled]="newGridFilters.isClaimed" i18n>
       Claimed
     </button>
-
     <button class="btn btn-primary ms-2" (click)="toggleClaimedByMe()"
       [disabled]="newGridFilters.claimedByMe" i18n>
       Mine
     </button>
-
-
-    <!--
-    <input class="btn-check" type="radio" name="show-claimed-radio"
-      (click)="toggleIsClaimed()"
-      [disabled]="newGridFilters.claimedByMe"
-      [checked]="newGridFilters.claimedByMe" id="show-claimed-me"/>
-    <label class="ms-2 btn btn-primary" for="show-claimed-me" i18n>Claimed by Me</label>
-    -->
   </div>
 
   <div class="border border-2 rounded p-1 ms-2 d-flex">
