@@ -79,8 +79,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
         return from(this.loadOptions().then(_ => this.loadRequest())).pipe(switchMap(_ => super.open(args)));
     }
 
-    // TODO
-    loadOptions(): Promise<any> {
+   // TODO Move this to a shared service.
+   loadOptions(): Promise<any> {
         if (this.formats.length > 0) {
             return Promise.resolve();
         }
