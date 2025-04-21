@@ -29,7 +29,8 @@ interface GridFilters {
 
 interface NewGridFilters {
     isActive: boolean,
-    isClaimed: boolean
+    isClaimed: boolean,
+    claimedByMe: boolean
 }
 
 @Component({
@@ -59,7 +60,8 @@ export class ItemRequestComponent implements OnInit {
     // TODO persist
     newGridFilters: NewGridFilters = {
         isActive: true,
-        isClaimed: false
+        isClaimed: false,
+        claimedByMe: false
     };
 
     illDenialOptions: IdlObject[] = [];
@@ -122,6 +124,7 @@ export class ItemRequestComponent implements OnInit {
             */
 
             let filters = {
+                claimed_by_me: this.newGridFilters.claimedByMe,
                 is_claimed: this.newGridFilters.isClaimed,
                 is_unclaimed: !this.newGridFilters.isClaimed,
                 is_active: this.newGridFilters.isActive,
@@ -155,8 +158,9 @@ export class ItemRequestComponent implements OnInit {
     }
 
     resetFilters() {
-        this.newGridFilters.isClaimed = false;
         this.newGridFilters.isActive = true;
+        this.newGridFilters.isClaimed = false;
+        this.newGridFilters.claimedByMe = false;
         this.searchFamilyName = null;
         this.searchTitle = null;
         this.searchAuthor = null;
@@ -170,7 +174,14 @@ export class ItemRequestComponent implements OnInit {
     }
 
     toggleIsClaimed() {
+        this.newGridFilters.claimedByMe = false;
         this.newGridFilters.isClaimed = !this.newGridFilters.isClaimed;
+        this.grid.reload();
+    }
+
+    toggleClaimedByMe() {
+        this.newGridFilters.claimedByMe = !this.newGridFilters.claimedByMe;
+        this.newGridFilters.isClaimed = false;
         this.grid.reload();
     }
 

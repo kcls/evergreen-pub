@@ -823,7 +823,6 @@ __PACKAGE__->register_method(
     }
 );
 
-# TODO add status lookup
 sub search_requests {
     my ($self, $client, $auth, $filters) = @_;
     return undef unless $filters;
@@ -842,11 +841,13 @@ sub search_requests {
         order_by => {auir => ['create_date']}
     };
 
-    if ($filters->{is_claimed}) {
+    if ($filters->{claimed_by_me}) {
+        $auir_where->{claimed_by} = $e->requestor->id;
+    } elsif ($filters->{is_claimed}) {
         $auir_where->{claim_date} = {'<>' => undef};
-    } elsif($filters->{is_unclaimed}) {
+    } elsif ($filters->{is_unclaimed}) {
         $auir_where->{claim_date} = undef;
-    }
+    } 
 
     if ($filters->{is_active} && !$filters->{is_complete}) {
         $auir_where->{reject_date} = undef;
