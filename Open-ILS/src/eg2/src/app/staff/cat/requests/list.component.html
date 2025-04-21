@@ -24,51 +24,75 @@
 
 <!-- Grid Filters -->
 
-<div class="mb-3 p-1 border-bottom border-top d-flex">
-  <div class="border border-2 rounded p-1">
-    <button class="btn btn-primary" (click)="toggleIsActive()"
-      [disabled]="newGridFilters.isActive" i18n>Active</button>
-    <button class="btn btn-primary ms-2" (click)="toggleIsActive()"
-      [disabled]="!newGridFilters.isActive" i18n>Other</button>
+<div class="mb-3 p-1 border-bottom border-top">
+  <div class="d-flex">
+    <div class="border border-2 rounded p-1">
+      <button class="btn btn-primary" (click)="toggleIsActive()"
+        [disabled]="newGridFilters.isActive" i18n>Active</button>
+      <button class="btn btn-primary ms-2" (click)="toggleIsActive()"
+        [disabled]="!newGridFilters.isActive" i18n>Other</button>
+    </div>
+
+    <div class="border border-2 rounded p-1 ms-2">
+      <button class="btn btn-primary" (click)="toggleIsClaimed()"
+        [disabled]="!newGridFilters.isClaimed && !newGridFilters.claimedByMe" i18n>
+        Unclaimed
+      </button>
+      <button class="btn btn-primary ms-2" (click)="toggleIsClaimed()"
+        [disabled]="newGridFilters.isClaimed" i18n>
+        Claimed
+      </button>
+      <button class="btn btn-primary ms-2" (click)="toggleClaimedByMe()"
+        [disabled]="newGridFilters.claimedByMe" i18n>
+        Mine
+      </button>
+    </div>
+    <div class="_border _border-2 _rounded p-2 ms-2 d-flex">
+      <input type="text" class="form-control" [(ngModel)]="searchTitle" 
+        (keyup.enter)="grid.reload()"
+        placeholder="Title..." i18n-placeholder/>
+      <input type="text" class="form-control ms-2" [(ngModel)]="searchAuthor" 
+        (keyup.enter)="grid.reload()"
+        placeholder="Author..." i18n-placeholder/>
+      <input type="text" class="form-control ms-2" [(ngModel)]="searchIsbn" 
+        (keyup.enter)="grid.reload()"
+        placeholder="ISBN..." i18n-placeholder/>
+      <input type="text" class="form-control ms-2" [(ngModel)]="searchFamilyName" 
+        (keyup.enter)="grid.reload()"
+        placeholder="Last Name..." i18n-placeholder/>
+    </div>
+
+    <div class="ms-auto p-2">
+      <button class="btn btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
+    </div>
   </div>
-
-  <div class="border border-2 rounded p-1 ms-2">
-    <button class="btn btn-primary" (click)="toggleIsClaimed()"
-      [disabled]="!newGridFilters.isClaimed && !newGridFilters.claimedByMe" i18n>
-      Unclaimed
-    </button>
-    <button class="btn btn-primary ms-2" (click)="toggleIsClaimed()"
-      [disabled]="newGridFilters.isClaimed" i18n>
-      Claimed
-    </button>
-    <button class="btn btn-primary ms-2" (click)="toggleClaimedByMe()"
-      [disabled]="newGridFilters.claimedByMe" i18n>
-      Mine
-    </button>
+  <div class="d-flex mt-2">
+    <div>
+      <select [(ngModel)]="formatFilter" class="form-select" (change)="grid.reload()">
+        <option value="" i18n>All Formats</option>
+        <option *ngFor="let format of formats" [value]="format.code()">
+          {{format.label()}}
+        </option>
+      </select>
+    </div>
+    <div class="ms-2">
+      <select [(ngModel)]="audienceFilter" class="form-select" (change)="grid.reload()" >
+        <option value="" i18n>All Audiences</option>
+        <option *ngFor="let audience of audiences" [value]="audience.code()">
+          {{audience.label()}}
+        </option>
+      </select>
+    </div>
+    <div class="ms-2">
+      <select [(ngModel)]="languageFilter" class="form-select" (change)="grid.reload()">
+        <option value="" i18n>All Languages</option>
+        <option *ngFor="let language of languages" [value]="language.code()">
+          {{language.label()}}
+        </option>
+      </select>
+    </div>
+    <div class="flex-1"></div>
   </div>
-
-  <div class="border border-2 rounded p-1 ms-2 d-flex">
-    <input type="text" class="form-control" [(ngModel)]="searchTitle" 
-      (keyup.enter)="grid.reload()"
-      placeholder="Title..." i18n-placeholder/>
-
-    <input type="text" class="form-control ms-2" [(ngModel)]="searchAuthor" 
-      (keyup.enter)="grid.reload()"
-      placeholder="Author..." i18n-placeholder/>
-
-    <input type="text" class="form-control ms-2" [(ngModel)]="searchIsbn" 
-      (keyup.enter)="grid.reload()"
-      placeholder="ISBN..." i18n-placeholder/>
-
-    <input type="text" class="form-control ms-2" [(ngModel)]="searchFamilyName" 
-      (keyup.enter)="grid.reload()"
-      placeholder="Last Name..." i18n-placeholder/>
-  </div>
-
-  <div class="ms-auto p-2">
-    <button class="btn btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
-  </div>
-
 </div>
 
 <eg-grid #grid idlClass="auir" [dataSource]="gridDataSource" pageSize="50"

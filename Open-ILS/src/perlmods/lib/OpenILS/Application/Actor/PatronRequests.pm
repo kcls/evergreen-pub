@@ -836,6 +836,11 @@ sub search_requests {
     return $e->event unless $e->allowed('STAFF_LOGIN');
 
     my $auir_where = {};
+
+    $auir_where->{format} = $filters->{format} if $filters->{format};
+    $auir_where->{language} = $filters->{language} if $filters->{language};
+    $auir_where->{audience} = $filters->{audience} if $filters->{audience};
+
     my $where = {'+auir' => $auir_where};
 
     my $query = {

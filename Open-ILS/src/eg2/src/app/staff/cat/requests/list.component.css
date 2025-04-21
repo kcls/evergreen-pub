@@ -1,4 +1,4 @@
 
-input[type="text"] {
-  width: 11em;
+input[type="text"], select {
+  max-width: 12em;
 }

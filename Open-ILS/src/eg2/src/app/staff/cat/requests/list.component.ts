@@ -46,6 +46,14 @@ export class ItemRequestComponent implements OnInit {
     searchAuthor: string | null = null;
     searchIsbn: string | null = null;
 
+    formatFilter = '';
+    audienceFilter = '';
+    languageFilter = '';
+
+    formats: IdlObject[] = [];
+    audiences: IdlObject[] = [];
+    languages: IdlObject[] = [];
+
     cellTextGenerator: GridCellTextGenerator;
     routeToOptions = [
         {label: $localize`ILL`, value: 'ill'},
@@ -83,6 +91,8 @@ export class ItemRequestComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        this.loadOptions();
+
         this.cellTextGenerator = {
             patron_barcode: r => r.usr().card() ? r.usr().card().barcode() : '',
             route_to: r => r.route_to(),
@@ -124,7 +134,7 @@ export class ItemRequestComponent implements OnInit {
                 }
             }
 
-            let filters = {
+            let filters: any = {
                 claimed_by_me: this.newGridFilters.claimedByMe,
                 is_claimed: this.newGridFilters.isClaimed,
                 is_unclaimed: !this.newGridFilters.isClaimed,
@@ -134,6 +144,16 @@ export class ItemRequestComponent implements OnInit {
                 title: this.searchTitle,
                 author: this.searchAuthor,
                 isbn: this.searchIsbn,
+            }
+
+            if (this.formatFilter !== '') {
+                filters.format = this.formatFilter;
+            }
+            if (this.audienceFilter !== '') {
+                filters.audience = this.audienceFilter;
+            }
+            if (this.languageFilter !== '') {
+                filters.language = this.languageFilter;
             }
 
             let requests = {};
@@ -158,6 +178,46 @@ export class ItemRequestComponent implements OnInit {
         };
     }
 
+    // TODO this was copied from dialog.component :|
+    // Move this to a shared service.
+    loadOptions(): Promise<any> {
+        if (this.formats.length > 0) {
+            return Promise.resolve();
+        }
+
+        return this.pcrud.retrieveAll(
+            'cuirf',
+            {order_by: {cuirf: 'position'}},
+            {atomic: true}
+        ).toPromise()
+        .then(formats => this.formats = formats)
+        .then(_ => {
+            return this.pcrud.retrieveAll(
+                'cuira',
+                {order_by: {cuirf: 'position'}},
+                {atomic: true}
+            ).toPromise()
+            .then(audiences => this.audiences = audiences);
+        })
+        .then(_ => {
+            return this.pcrud.retrieveAll(
+                'cuirl',
+                {order_by: {cuirf: 'position'}},
+                {atomic: true}
+            ).toPromise()
+        })
+        .then(langs => {
+            // Move the default language to the front of the list
+            const index = langs.findIndex(l => l.is_default() === 't');
+            if (index > -1) {
+                const lang = langs[index];
+                langs.splice(index, 1);
+                langs.unshift(lang);
+            }
+            this.languages = langs;
+        });
+    }
+
     resetFilters() {
         this.newGridFilters.isActive = true;
         this.newGridFilters.isClaimed = false;
@@ -166,6 +226,11 @@ export class ItemRequestComponent implements OnInit {
         this.searchTitle = null;
         this.searchAuthor = null;
         this.searchIsbn = null;
+
+        this.formatFilter = '';
+        this.audienceFilter = '';
+        this.languageFilter = '';
+
         this.grid.reload();
     }
 
