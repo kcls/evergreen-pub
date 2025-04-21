@@ -27,12 +27,23 @@ interface GridFilters {
     include_completed?: boolean,
 }
 
+interface NewGridFilters {
+    isActive: boolean,
+    isClaimed: boolean
+}
+
 @Component({
-  templateUrl: 'list.component.html'
+  templateUrl: 'list.component.html',
+  styleUrls: ['list.component.css']
 })
 export class ItemRequestComponent implements OnInit {
     gridDataSource: GridDataSource = new GridDataSource();
     showRouteToNull = true;
+
+    searchFamilyName: string | null = null;
+    searchTitle: string | null = null;
+    searchAuthor: string | null = null;
+    searchIsbn: string | null = null;
 
     cellTextGenerator: GridCellTextGenerator;
     routeToOptions = [
@@ -43,6 +54,12 @@ export class ItemRequestComponent implements OnInit {
     gridFilters: GridFilters = {
         route_to_acq: true,
         route_to_ill: true,
+    };
+
+    // TODO persist
+    newGridFilters: NewGridFilters = {
+        isActive: true,
+        isClaimed: false
     };
 
     illDenialOptions: IdlObject[] = [];
@@ -81,6 +98,7 @@ export class ItemRequestComponent implements OnInit {
             reason => this.illDenialOptions.push(reason));
 
         this.gridDataSource.getRows = (pager: Pager, sort: GridColumnSort[]) => {
+            /* TODO
             let orderBy: any = {ausp: 'create_date'};
 
             if (sort.length) {
@@ -101,102 +119,58 @@ export class ItemRequestComponent implements OnInit {
                     orderBy.auir = sort[0].name + ' ' + sort[0].dir
                 }
             }
+            */
 
-            // base query to grab everything
-            let base: any = {
-                cancel_date: null,
-                '-or': []
-            };
-
-            if (!this.gridFilters.include_rejected) {
-                base.reject_date = null;
+            let filters = {
+                is_claimed: this.newGridFilters.isClaimed,
+                is_unclaimed: !this.newGridFilters.isClaimed,
+                is_active: this.newGridFilters.isActive,
+                is_complete: !this.newGridFilters.isActive,
+                patron_family_name: this.searchFamilyName,
+                title: this.searchTitle,
+                author: this.searchAuthor,
+                isbn: this.searchIsbn,
             }
-            if (!this.gridFilters.include_completed) {
-                base.complete_date = null;
-            }
-            if (this.gridFilters.claimed_by_me) {
-                base.claimed_by = this.auth.user().id();
-            }
-            if (this.gridFilters.route_to_ill) {
-                base['-or'].push({route_to: 'ill'});
-            }
-            if (this.gridFilters.route_to_acq) {
-                base['-or'].push({route_to: 'acq'});
-            }
-            if (this.showRouteToNull) {
-                base['-or'].push({route_to: null});
-            }
-            if (base['-or'].length === 0) {
-                delete base['-or'];
-            }
-
-            const query: any = new Array();
-            query.push(base);
-
-            // and add any filters
-            const filters = this.gridDataSource.filters;
-            Object.keys(filters).forEach(key => {
-                Object.keys(filters[key]).forEach(key2 => {
-                    query.push(filters[key][key2]);
-                });
-            });
-
-            const flesh = {
-                flesh: 2,
-                flesh_fields: {
-                    auir: ['usr', 'claimed_by', 'format', 'audience', 'language'],
-                    au: ['card', 'profile', 'stat_cat_entries']
-                },
-                order_by: orderBy,
-                limit: pager.limit,
-                offset: pager.offset,
-            };
 
             let requests = {};
 
-            return this.pcrud.search('auir', query, flesh)
-            .pipe(tap(
-                req => {
-                    req.usr()._residence =
-                        req.usr().stat_cat_entries()
-                        .filter(entry => Number(entry.stat_cat()) === LIB_RESIDENCE_STAT_CAT)
-                        .map(entry => entry.stat_cat_entry())[0];
+            return this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.patron.patron-request.search',
+                this.auth.token(), filters
+            ).pipe(map(reqData => {
+                let req = reqData.request;
+                req._status = reqData.status;
 
-                    requests[req.id()] = req;
-                    return req;
-                },
-                _ => {},
-                () => {
-                    // After all of the reqs have been fetched, go back
-                    // and grab all of the requests statuses in a batch.
-                    this.net.request(
-                        'open-ils.actor',
-                        'open-ils.actor.patron-request.status.batch',
-                        this.auth.token(),
-                        Object.keys(requests)
-                    ).subscribe(stat => {
-                        requests[stat.request_id]._status = stat.status;
-                    });
-                }
-            ));
+                req.usr()._residence =
+                    req.usr().stat_cat_entries()
+                    .filter(entry => Number(entry.stat_cat()) === LIB_RESIDENCE_STAT_CAT)
+                    .map(entry => entry.stat_cat_entry())[0];
+
+                requests[req.id()] = req;
+
+                return req;
+            }));
         };
     }
 
-    toggleClaimedByMe() {
-        this.gridFilters.claimed_by_me = !this.gridFilters.claimed_by_me;
-        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
+    resetFilters() {
+        this.newGridFilters.isClaimed = false;
+        this.newGridFilters.isActive = true;
+        this.searchFamilyName = null;
+        this.searchTitle = null;
+        this.searchAuthor = null;
+        this.searchIsbn = null;
         this.grid.reload();
     }
 
-    toggleShowRejected() {
-        this.gridFilters.include_rejected = !this.gridFilters.include_rejected;
-        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
+    toggleIsActive() {
+        this.newGridFilters.isActive = !this.newGridFilters.isActive;
         this.grid.reload();
     }
 
-    toggleShowCompleted() {
-        this.gridFilters.include_completed = !this.gridFilters.include_completed;
-        this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
+    toggleIsClaimed() {
+        this.newGridFilters.isClaimed = !this.newGridFilters.isClaimed;
         this.grid.reload();
     }
 

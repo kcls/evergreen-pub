@@ -810,4 +810,121 @@ sub ill_requests_allowed_impl {
 }
 
 
+__PACKAGE__->register_method(
+    method   => 'search_requests',
+    api_name => 'open-ils.actor.patron.patron-request.search',
+    stream => 1,
+    signature => {
+        params => [
+            {desc => 'Authtoken', type => 'string'},
+            {desc => 'Query', type => 'hash'},
+        ],
+        desc => q/Search for requests/
+    }
+);
+
+# TODO add status lookup
+sub search_requests {
+    my ($self, $client, $auth, $filters) = @_;
+    return undef unless $filters;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+    return $e->event unless $e->allowed('STAFF_LOGIN');
+
+    my $auir_where = {};
+    my $where = {'+auir' => $auir_where};
+
+    my $query = {
+        select => {auir => ['id']},
+        from => {auir => 'au'},
+        where => $where,
+        order_by => {auir => ['create_date']}
+    };
+
+    if ($filters->{is_claimed}) {
+        $auir_where->{claim_date} = {'<>' => undef};
+    } elsif($filters->{is_unclaimed}) {
+        $auir_where->{claim_date} = undef;
+    }
+
+    if ($filters->{is_active} && !$filters->{is_complete}) {
+        $auir_where->{reject_date} = undef;
+
+        $auir_where->{'-or'} = [
+            {route_to => undef},
+            {'-and' => [{route_to => 'ill'}, {illno => undef}]},
+            {'-and' => [{route_to => 'acq'}, {lineitem => undef}]}
+        ];
+
+    } elsif ($filters->{is_complete} && !$filters->{is_active}) {
+        $auir_where->{'-or'} = [
+            {reject_date => {'<>' => undef}},
+            {lineitem => {'<>' => undef}},
+            {'-and' => [{route_to => 'ill'}, {complete_date => {'<>' => undef}}]}
+        ];
+    }
+
+    if ($filters->{route_to_acq}) {
+        $auir_where->{route_to} = 'acq';
+    }
+
+    if ($filters->{route_to_ill}) {
+        $auir_where->{route_to} = 'ill';
+    }
+
+    if ($filters->{is_canceled}) {
+        $auir_where->{cancel_date} = {'<>' => undef};
+    }
+
+    if (my $title = $filters->{title}) {
+        $auir_where->{title} = {ilike => "$title%"};
+    }
+
+    if (my $author = $filters->{author}) {
+        $auir_where->{author} = {ilike => "$author%"};
+    }
+
+    if (my $isbn = $filters->{isbn}) {
+        $auir_where->{isbn} = {ilike => "$isbn%"};
+    }
+
+    if (my $name = $filters->{patron_family_name}) {
+        $where->{'+au'} = {
+            '-or' => [
+                {family_name => {ilike => "$name%"}},
+                {pref_family_name => {'ilike' => "$name%"}}
+            ]
+        };
+    }
+
+    my $ids = $e->json_query($query);
+
+    for my $id (map {$_->{id}} @$ids) {
+
+        my $req = $e->retrieve_actor_user_item_request([
+            $id, {
+                flesh => 2,
+                flesh_fields => {
+                    auir => ['usr', 'format', 'language', 'audience'],
+                    au => ['card', 'profile', 'stat_cat_entries']
+                }
+            }
+        ]);
+
+        if ($req->claimed_by) {
+            # avoid fleshing multiple 'au' values above.
+            $req->claimed_by($e->retrieve_actor_user($req->claimed_by));
+        }
+
+        my $stat = request_status_impl($e, $req);
+
+        $client->respond({request => $req, status => $stat->{status}});
+    }
+
+    return undef;
+}
+
+
+
 1;

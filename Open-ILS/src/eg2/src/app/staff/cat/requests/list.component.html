@@ -24,38 +24,79 @@
 
 <!-- Grid Filters -->
 
-<div class="mb-3 p-2 border rounded border-secondary">
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="checkbox" (click)="toggleRouteToAcq()" 
-      [(ngModel)]="gridFilters.route_to_acq" id="acq-cbox"/>
-    <label class="form-check-label" for="acq-cbox" i18n>Purchasing</label>
+<div class="mb-3 p-1 border-bottom border-top d-flex">
+  <!--
+  <div class="border border-2 rounded p-1">
+    <input class="btn-check" type="radio" name="show-active-radio"
+      (click)="toggleIsActive()"
+      [disabled]="newGridFilters.isActive"
+      [checked]="newGridFilters.isActive" id="show-active-yes"/>
+    <label class="btn btn-primary" for="show-active-yes" i18n>Active</label>
+
+    <input class="btn-check" type="radio" name="show-active-radio"
+      (click)="toggleIsActive()"
+      [disabled]="!newGridFilters.isActive"
+      [checked]="!newGridFilters.isActive" id="show-active-no"/>
+    <label class="ms-2 btn btn-primary" for="show-active-no" i18n>Complete</label>
   </div>
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="checkbox" (click)="toggleRouteToIll()" 
-      [(ngModel)]="gridFilters.route_to_ill" id="ill-cbox"/>
-    <label class="form-check-label" for="ill-cbox" i18n>ILL</label>
+  -->
+
+  <div class="border border-2 rounded p-1">
+    <input class="btn-check" type="radio" name="show-active-radio"
+      (click)="toggleIsActive()"
+      [disabled]="newGridFilters.isActive"
+      [checked]="newGridFilters.isActive" id="show-active-yes"/>
+    <label class="btn btn-primary" for="show-active-yes" i18n>Active</label>
+
+    <input class="btn-check" type="radio" name="show-active-radio"
+      (click)="toggleIsActive()"
+      [disabled]="!newGridFilters.isActive"
+      [checked]="!newGridFilters.isActive" id="show-active-no"/>
+    <label class="ms-2 btn btn-primary" for="show-active-no" i18n>Complete</label>
   </div>
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="checkbox" (click)="toggleClaimedByMe()" 
-      [(ngModel)]="gridFilters.claimed_by_me" id="claimed-cbox"/>
-    <label class="form-check-label" for="claimed-cbox" i18n>Claimed by Me</label>
+
+  <div class="border border-2 rounded p-1 ms-2">
+    <input class="btn-check" type="radio" name="show-claimed-radio"
+      (click)="toggleIsClaimed()"
+      [disabled]="!newGridFilters.isClaimed"
+      [checked]="!newGridFilters.isClaimed" id="show-claimed-no"/>
+    <label class="btn btn-primary" for="show-claimed-no" i18n>Un-Claimed</label>
+
+    <input class="btn-check" type="radio" name="show-claimed-radio"
+      (click)="toggleIsClaimed()"
+      [disabled]="newGridFilters.isClaimed"
+      [checked]="newGridFilters.isClaimed" id="show-claimed-yes"/>
+    <label class="ms-2 btn btn-primary" for="show-claimed-yes" i18n>Claimed</label>
   </div>
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="checkbox" (click)="toggleShowRejected()"
-      [(ngModel)]="gridFilters.include_rejected" id="rejected-cbox"/>
-    <label class="form-check-label" for="rejected-cbox" i18n>Include Rejected</label>
+
+  <div class="border border-2 rounded p-1 ms-2 d-flex">
+    <input type="text" class="form-control" [(ngModel)]="searchTitle" 
+      (keyup.enter)="grid.reload()"
+      placeholder="Title..." i18n-placeholder/>
+
+    <input type="text" class="form-control ms-2" [(ngModel)]="searchAuthor" 
+      (keyup.enter)="grid.reload()"
+      placeholder="Author..." i18n-placeholder/>
+
+    <input type="text" class="form-control ms-2" [(ngModel)]="searchIsbn" 
+      (keyup.enter)="grid.reload()"
+      placeholder="ISBN..." i18n-placeholder/>
+
+    <input type="text" class="form-control ms-2" [(ngModel)]="searchFamilyName" 
+      (keyup.enter)="grid.reload()"
+      placeholder="Last Name..." i18n-placeholder/>
   </div>
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="checkbox" (click)="toggleShowCompleted()"
-      [(ngModel)]="gridFilters.include_completed" id="completed-cbox"/>
-    <label class="form-check-label" for="completed-cbox" i18n>Include Completed</label>
+
+  <div class="ms-auto p-2">
+    <button class="btn btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
   </div>
+
 </div>
 
 <eg-grid #grid idlClass="auir" [dataSource]="gridDataSource" pageSize="50"
   persistKey="staff.cat.requests" (onRowActivate)="showRequestDialog($event)"
   [cellTextGenerator]="cellTextGenerator"
-  [showDeclaredFieldsOnly]="true" [filterable]="true">
+  [showDeclaredFieldsOnly]="true">
 
   <eg-grid-toolbar-button i18n-label label="New Request"
     (onClick)="newRequest()">
@@ -81,56 +122,49 @@
     (onClick)="addPatronVisibleNote($event)">
   </eg-grid-toolbar-action>
 
-
-  <!--
-  <eg-grid-toolbar-action i18n-label label="Create ILL Request"
-    (onClick)="createIllRequest($event)">
-  </eg-grid-toolbar-action>
-  -->
-
   <eg-grid-column i18n-label label="Request ID" path="id" [hidden]="true" [required]="true">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Status" path="_status" [filterable]="false">
+  <eg-grid-column i18n-label label="Status" path="_status">
   </eg-grid-column>
-  <eg-grid-column path="usr.family_name" label="Patron Last Name" i18n-label [filterable]="false">
+  <eg-grid-column path="usr.family_name" label="Patron Last Name" i18n-label>
   </eg-grid-column>
-  <eg-grid-column name="patron_barcode" [cellTemplate]="patronBarcodeTemplate" label="Patron Card" i18n-label [filterable]="false">
+  <eg-grid-column name="patron_barcode" [cellTemplate]="patronBarcodeTemplate" label="Patron Card" i18n-label>
   </eg-grid-column>
-  <eg-grid-column path="usr.profile.name" label="Patron Profile" i18n-label [filterable]="false">
+  <eg-grid-column path="usr.profile.name" label="Patron Profile" i18n-label>
   </eg-grid-column>
-  <eg-grid-column path="usr._residence" label="District of Residence" i18n-label [filterable]="false">
+  <eg-grid-column path="usr._residence" label="District of Residence" i18n-label>
   </eg-grid-column>
-  <eg-grid-column i18n-label [cellTemplate]="routeToTemplate" label="Route To" name="route_to" [sortable]="true">
+  <eg-grid-column i18n-label [cellTemplate]="routeToTemplate" label="Route To" name="route_to">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Format" path="format.label" [sortable]="true">
+  <eg-grid-column i18n-label label="Format" path="format.label">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="ISBN, etc." name="identifier" [sortable]="true">
+  <eg-grid-column i18n-label label="ISBN, etc." name="identifier">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Title" name="title" [sortable]="true">
+  <eg-grid-column i18n-label label="Title" name="title">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Author" name="author" [sortable]="true">
+  <eg-grid-column i18n-label label="Author" name="author">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Publisher" name="publisher" [sortable]="true">
+  <eg-grid-column i18n-label label="Publisher" name="publisher">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Pubdate" name="pubdate" [sortable]="true">
+  <eg-grid-column i18n-label label="Pubdate" name="pubdate">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Language" path="language.label" [sortable]="true">
+  <eg-grid-column i18n-label label="Language" path="language.label">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Patron Notes" name="notes" [sortable]="true">
+  <eg-grid-column i18n-label label="Patron Notes" name="notes">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Request Date" name="create_date" [sortable]="true">
+  <eg-grid-column i18n-label label="Request Date" name="create_date">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="ILL Opt-Out" name="ill_opt_out" [sortable]="true">
+  <eg-grid-column i18n-label label="ILL Opt-Out" name="ill_opt_out">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="ID Matched" name="id_matched" [sortable]="true">
+  <eg-grid-column i18n-label label="ID Matched" name="id_matched">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Claimed By" name="claimed_by" [sortable]="true">
+  <eg-grid-column i18n-label label="Claimed By" path="claimed_by.usrname">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Claim Date" name="claim_date" [sortable]="true">
+  <eg-grid-column i18n-label label="Claim Date" name="claim_date">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Vendor" name="vendor" [sortable]="true">
+  <eg-grid-column i18n-label label="Vendor" name="vendor">
   </eg-grid-column>
-  <eg-grid-column i18n-label label="Audience" path="audience.label" [sortable]="true">
+  <eg-grid-column i18n-label label="Audience" path="audience.label">
   </eg-grid-column>
 </eg-grid>
 
