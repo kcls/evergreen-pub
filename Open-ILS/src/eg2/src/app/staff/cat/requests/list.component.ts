@@ -16,6 +16,7 @@ import {PromptDialogComponent} from '@eg/share/dialog/prompt.component';
 import {SelectDialogComponent} from '@eg/share/dialog/select.component';
 import {ItemRequestDialogComponent} from './dialog.component';
 import {ServerStoreService} from '@eg/core/server-store.service';
+import {DateUtil} from '@eg/share/util/date';
 
 const LIB_RESIDENCE_STAT_CAT = 12;
 
@@ -27,14 +28,10 @@ interface GridFilters {
     include_completed?: boolean,
 }
 
-// hm, tried an enum, but it weird fast.
-const CLAIM_STATE_UNCLAIMED = 1;
-const CLAIM_STATE_CLAIMED = 2;
-const CLAIM_STATE_MINE = 3;
-
 interface NewGridFilters {
     isActive: boolean,
     claimState: number,
+    routeToAcq: boolean,
 }
 
 @Component({
@@ -42,6 +39,11 @@ interface NewGridFilters {
   styleUrls: ['list.component.css']
 })
 export class ItemRequestComponent implements OnInit {
+    // hm, tried an enum, but it weird fast.
+    CLAIM_STATE_UNCLAIMED = 1;
+    CLAIM_STATE_CLAIMED = 2;
+    CLAIM_STATE_MINE = 3;
+
     gridDataSource: GridDataSource = new GridDataSource();
     showRouteToNull = true;
 
@@ -49,6 +51,7 @@ export class ItemRequestComponent implements OnInit {
     searchTitle: string | null = null;
     searchAuthor: string | null = null;
     searchIsbn: string | null = null;
+    createDateFilter: string | null = null;
 
     formatFilter = '';
     audienceFilter = '';
@@ -72,7 +75,8 @@ export class ItemRequestComponent implements OnInit {
     // TODO persist
     newGridFilters: NewGridFilters = {
         isActive: true,
-        claimState: CLAIM_STATE_UNCLAIMED
+        routeToAcq: true,
+        claimState: this.CLAIM_STATE_UNCLAIMED
     };
 
     illDenialOptions: IdlObject[] = [];
@@ -137,13 +141,27 @@ export class ItemRequestComponent implements OnInit {
                 }
             }
 
+            // Translate the create date filter into a full ISO date
+            // so the API has a time zone to reference.
+            let createDateYmd = this.createDateFilter;
+            if (createDateYmd !== null) {
+                let localDate = DateUtil.localDateFromYmd(createDateYmd);
+                localDate.setSeconds(0);
+                localDate.setMinutes(0);
+                localDate.setHours(0);
+                createDateYmd = localDate.toISOString();
+            }
+
             let filters: any = {
-                claimed_by_me: this.newGridFilters.claimState === CLAIM_STATE_UNCLAIMED,
-                is_claimed: this.newGridFilters.claimState === CLAIM_STATE_CLAIMED,
-                is_unclaimed: this.newGridFilters.claimState === CLAIM_STATE_MINE,
-                is_active: this.newGridFilters.isActive,
-                is_complete: !this.newGridFilters.isActive,
+                claimed_by_me: this.newGridFilters.claimState === this.CLAIM_STATE_MINE,
+                is_claimed: this.newGridFilters.claimState === this.CLAIM_STATE_CLAIMED,
+                is_unclaimed: this.newGridFilters.claimState === this.CLAIM_STATE_UNCLAIMED,
+                is_staff_active: this.newGridFilters.isActive,
+                is_staff_complete: !this.newGridFilters.isActive,
+                route_to_acq: this.newGridFilters.routeToAcq,
+                route_to_ill: !this.newGridFilters.routeToAcq, // binary
                 patron_family_name: this.searchFamilyName,
+                create_date: createDateYmd,
                 title: this.searchTitle,
                 author: this.searchAuthor,
                 isbn: this.searchIsbn,
@@ -222,7 +240,8 @@ export class ItemRequestComponent implements OnInit {
     }
 
     resetFilters() {
-        this.newGridFilters.claimState = CLAIM_STATE_UNCLAIMED;
+        this.newGridFilters.claimState = this.CLAIM_STATE_UNCLAIMED;
+        this.createDateFilter = null;
         this.searchFamilyName = null;
         this.searchTitle = null;
         this.searchAuthor = null;
@@ -235,16 +254,27 @@ export class ItemRequestComponent implements OnInit {
         this.grid.reload();
     }
 
+    applyDateFilter(ymd: string | null) {
+        this.createDateFilter = ymd;
+        this.grid.reload();
+    }
+
     toggleIsActive() {
         this.newGridFilters.isActive = !this.newGridFilters.isActive;
         this.grid.reload();
     }
 
-    setClaimFilter(claimState: number) {
+    setClaimStateFilter(claimState: number) {
         this.newGridFilters.claimState = claimState;
         this.grid.reload();
     }
 
+    toggleRouteToFilter() {
+        this.newGridFilters.routeToAcq = !this.newGridFilters.routeToAcq;
+        this.grid.reload();
+    }
+
+    /*
     toggleRouteToIll() {
         this.gridFilters.route_to_ill = !this.gridFilters.route_to_ill;
         this.serverStore.setItem('eg.acq.request.list.filters', this.gridFilters);
@@ -261,6 +291,7 @@ export class ItemRequestComponent implements OnInit {
         this.showRouteToNull = !this.showRouteToNull;
         this.grid.reload();
     }
+    */
 
     claimItems(reqs: IdlObject[]) {
         reqs.forEach(r => {

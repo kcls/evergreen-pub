@@ -33,20 +33,61 @@
         [disabled]="!newGridFilters.isActive" i18n>Other</button>
     </div>
     <div class="ms-2 border border-2 rounded p-1">
-      <button class="btn btn-primary" (click)="setClaimState(CLAIM_STATE_UNCLAIMED)"
-        [disabled]="" i18n>
+      <button class="btn btn-primary" (click)="setClaimStateFilter(CLAIM_STATE_UNCLAIMED)"
+        [disabled]="newGridFilters.claimState === CLAIM_STATE_UNCLAIMED" i18n>
         Unclaimed
       </button>
-      <button class="btn btn-primary ms-2" (click)="setClaimState(CLAIM_STATE_CLAIMED)"
-        [disabled]="" i18n>
+      <button class="btn btn-primary ms-2" (click)="setClaimStateFilter(CLAIM_STATE_CLAIMED)"
+        [disabled]="newGridFilters.claimState === CLAIM_STATE_CLAIMED" i18n>
         Claimed
       </button>
-      <button class="btn btn-primary ms-2" (click)="setClaimState(CLAIM_STATE_MINE)"
-        [disabled]="" i18n>
+      <button class="btn btn-primary ms-2" (click)="setClaimStateFilter(CLAIM_STATE_MINE)"
+        [disabled]="newGridFilters.claimState === CLAIM_STATE_MINE" i18n>
         Mine
       </button>
     </div>
-    <div class="ms-2 _border _border-2 _rounded p-1 d-flex">
+    <div class="ms-2 border border-2 rounded p-1">
+      <button class="btn btn-primary" (click)="toggleRouteToFilter()"
+        [disabled]="newGridFilters.routeToAcq" i18n>
+        Purchasing
+      </button>
+      <button class="btn btn-primary ms-2" (click)="toggleRouteToFilter()"
+        [disabled]="!newGridFilters.routeToAcq" i18n>
+        ILL
+      </button>
+    </div>
+    <div class="ms-2 border border-2 rounded p-1 d-flex">
+      <div>
+        <select [(ngModel)]="formatFilter" class="form-select" (change)="grid.reload()">
+          <option value="" i18n>All Formats</option>
+          <option *ngFor="let format of formats" [value]="format.code()">
+            {{format.label()}}
+          </option>
+        </select>
+      </div>
+      <div class="ms-2">
+        <select [(ngModel)]="audienceFilter" class="form-select" (change)="grid.reload()" >
+          <option value="" i18n>All Audiences</option>
+          <option *ngFor="let audience of audiences" [value]="audience.code()">
+            {{audience.label()}}
+          </option>
+        </select>
+      </div>
+      <div class="ms-2">
+        <select [(ngModel)]="languageFilter" class="form-select" (change)="grid.reload()">
+          <option value="" i18n>All Languages</option>
+          <option *ngFor="let language of languages" [value]="language.code()">
+            {{language.label()}}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="ms-auto p-1">
+      <button class="btn btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
+    </div>
+  </div>
+  <div class="d-flex mt-2">
+    <div class="_ms-2 _border _border-2 _rounded p-1 d-flex">
       <input type="text" class="form-control" [(ngModel)]="searchTitle" 
         (keyup.enter)="grid.reload()"
         placeholder="Title..." i18n-placeholder/>
@@ -59,37 +100,15 @@
       <input type="text" class="form-control ms-2" [(ngModel)]="searchFamilyName" 
         (keyup.enter)="grid.reload()"
         placeholder="Last Name..." i18n-placeholder/>
+      <div class="input-group ms-2">
+        <span class="input-group-text">Create Date</span>
+        <eg-date-select-native
+          [noFuture]="true"
+          [ngModel]="createDateFilter"
+          (valueChange)="applyDateFilter($event)">
+        </eg-date-select-native>
+      </div>
     </div>
-    <div class="ms-auto p-1">
-      <button class="btn btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
-    </div>
-  </div>
-  <div class="d-flex mt-2">
-    <div>
-      <select [(ngModel)]="formatFilter" class="form-select" (change)="grid.reload()">
-        <option value="" i18n>All Formats</option>
-        <option *ngFor="let format of formats" [value]="format.code()">
-          {{format.label()}}
-        </option>
-      </select>
-    </div>
-    <div class="ms-2">
-      <select [(ngModel)]="audienceFilter" class="form-select" (change)="grid.reload()" >
-        <option value="" i18n>All Audiences</option>
-        <option *ngFor="let audience of audiences" [value]="audience.code()">
-          {{audience.label()}}
-        </option>
-      </select>
-    </div>
-    <div class="ms-2">
-      <select [(ngModel)]="languageFilter" class="form-select" (change)="grid.reload()">
-        <option value="" i18n>All Languages</option>
-        <option *ngFor="let language of languages" [value]="language.code()">
-          {{language.label()}}
-        </option>
-      </select>
-    </div>
-    <div class="flex-1"></div>
   </div>
 </div>
 
@@ -131,6 +150,8 @@
   <eg-grid-column name="patron_barcode" [cellTemplate]="patronBarcodeTemplate" label="Patron Card" i18n-label>
   </eg-grid-column>
   <eg-grid-column path="usr.profile.name" label="Patron Profile" i18n-label>
+  </eg-grid-column>
+  <eg-grid-column path="usr.first_given_name" label="Patron First Name" i18n-label>
   </eg-grid-column>
   <eg-grid-column path="usr._residence" label="District of Residence" i18n-label>
   </eg-grid-column>

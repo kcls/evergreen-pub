@@ -860,21 +860,27 @@ sub search_requests {
         $auir_where->{claim_date} = undef;
     } 
 
-    if ($filters->{is_active} && !$filters->{is_complete}) {
+    if ($filters->{is_staff_active}) {
         $auir_where->{reject_date} = undef;
 
         $auir_where->{'-or'} = [
-            {route_to => undef},
             {'-and' => [{route_to => 'ill'}, {illno => undef}]},
             {'-and' => [{route_to => 'acq'}, {lineitem => undef}]}
         ];
 
-    } elsif ($filters->{is_complete} && !$filters->{is_active}) {
+    } elsif ($filters->{is_staff_complete}) {
         $auir_where->{'-or'} = [
             {reject_date => {'<>' => undef}},
             {lineitem => {'<>' => undef}},
             {'-and' => [{route_to => 'ill'}, {complete_date => {'<>' => undef}}]}
         ];
+    }
+
+    if (my $date = $filters->{create_date}) {
+        my $start = DateTime::Format::ISO8601->parse_datetime(clean_ISO8601($date));
+        my $end = DateTime::Format::ISO8601->parse_datetime(clean_ISO8601($date));
+        $end->add(seconds => 86400);
+        $auir_where->{create_date} = {between => [$start->iso8601, $end->iso8601]};
     }
 
     if ($filters->{route_to_acq}) {
