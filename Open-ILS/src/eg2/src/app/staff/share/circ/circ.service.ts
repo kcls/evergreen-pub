@@ -1575,18 +1575,20 @@ export class CircService {
 
             counts.forEach(c => {
                 response.totalCircs += Number(c.count());
-                if (c.year() === curYear) {
+                let year = Number(c.year());
+
+                if (year === curYear) {
                     response.circsThisYear += Number(c.count());
                 }
-                if (c.year() === prevYear) {
+                if (year === prevYear) {
                     response.circsPrevYear += Number(c.count());
                 }
 
-                if (!response.allYears[c.year()]) {
-                    response.allYears[c.year()] = 0;
+                if (!response.allYears[year]) {
+                    response.allYears[year] = 0;
                 }
 
-                response.allYears[c.year()] += Number(c.count());
+                response.allYears[year] += Number(c.count());
             });
         })
         .then(_ => this.getMaxCircDisplayCount(item))
