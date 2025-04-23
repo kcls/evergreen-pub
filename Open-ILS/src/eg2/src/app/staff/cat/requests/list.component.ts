@@ -27,10 +27,14 @@ interface GridFilters {
     include_completed?: boolean,
 }
 
+// hm, tried an enum, but it weird fast.
+const CLAIM_STATE_UNCLAIMED = 1;
+const CLAIM_STATE_CLAIMED = 2;
+const CLAIM_STATE_MINE = 3;
+
 interface NewGridFilters {
     isActive: boolean,
-    isClaimed: boolean,
-    claimedByMe: boolean
+    claimState: number,
 }
 
 @Component({
@@ -68,8 +72,7 @@ export class ItemRequestComponent implements OnInit {
     // TODO persist
     newGridFilters: NewGridFilters = {
         isActive: true,
-        isClaimed: false,
-        claimedByMe: false
+        claimState: CLAIM_STATE_UNCLAIMED
     };
 
     illDenialOptions: IdlObject[] = [];
@@ -135,9 +138,9 @@ export class ItemRequestComponent implements OnInit {
             }
 
             let filters: any = {
-                claimed_by_me: this.newGridFilters.claimedByMe,
-                is_claimed: this.newGridFilters.isClaimed,
-                is_unclaimed: !this.newGridFilters.isClaimed,
+                claimed_by_me: this.newGridFilters.claimState === CLAIM_STATE_UNCLAIMED,
+                is_claimed: this.newGridFilters.claimState === CLAIM_STATE_CLAIMED,
+                is_unclaimed: this.newGridFilters.claimState === CLAIM_STATE_MINE,
                 is_active: this.newGridFilters.isActive,
                 is_complete: !this.newGridFilters.isActive,
                 patron_family_name: this.searchFamilyName,
@@ -219,9 +222,7 @@ export class ItemRequestComponent implements OnInit {
     }
 
     resetFilters() {
-        this.newGridFilters.isActive = true;
-        this.newGridFilters.isClaimed = false;
-        this.newGridFilters.claimedByMe = false;
+        this.newGridFilters.claimState = CLAIM_STATE_UNCLAIMED;
         this.searchFamilyName = null;
         this.searchTitle = null;
         this.searchAuthor = null;
@@ -239,15 +240,8 @@ export class ItemRequestComponent implements OnInit {
         this.grid.reload();
     }
 
-    toggleIsClaimed() {
-        this.newGridFilters.claimedByMe = false;
-        this.newGridFilters.isClaimed = !this.newGridFilters.isClaimed;
-        this.grid.reload();
-    }
-
-    toggleClaimedByMe() {
-        this.newGridFilters.claimedByMe = !this.newGridFilters.claimedByMe;
-        this.newGridFilters.isClaimed = false;
+    setClaimFilter(claimState: number) {
+        this.newGridFilters.claimState = claimState;
         this.grid.reload();
     }
 

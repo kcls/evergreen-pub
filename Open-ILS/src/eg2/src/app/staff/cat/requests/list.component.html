@@ -27,41 +27,41 @@
 <div class="border-bottom border-top mb-2">
   <div class="d-flex">
     <div class="border border-2 rounded p-1">
-      <button class="btn btn-sm btn-primary" (click)="toggleIsActive()"
+      <button class="btn btn-primary" (click)="toggleIsActive()"
         [disabled]="newGridFilters.isActive" i18n>Active</button>
-      <button class="btn btn-sm btn-primary ms-2" (click)="toggleIsActive()"
+      <button class="btn btn-primary ms-2" (click)="toggleIsActive()"
         [disabled]="!newGridFilters.isActive" i18n>Other</button>
     </div>
     <div class="ms-2 border border-2 rounded p-1">
-      <button class="btn btn-sm btn-primary" (click)="toggleIsClaimed()"
-        [disabled]="!newGridFilters.isClaimed && !newGridFilters.claimedByMe" i18n>
+      <button class="btn btn-primary" (click)="setClaimState(CLAIM_STATE_UNCLAIMED)"
+        [disabled]="" i18n>
         Unclaimed
       </button>
-      <button class="btn btn-sm btn-primary ms-2" (click)="toggleIsClaimed()"
-        [disabled]="newGridFilters.isClaimed" i18n>
+      <button class="btn btn-primary ms-2" (click)="setClaimState(CLAIM_STATE_CLAIMED)"
+        [disabled]="" i18n>
         Claimed
       </button>
-      <button class="btn btn-sm btn-primary ms-2" (click)="toggleClaimedByMe()"
-        [disabled]="newGridFilters.claimedByMe" i18n>
+      <button class="btn btn-primary ms-2" (click)="setClaimState(CLAIM_STATE_MINE)"
+        [disabled]="" i18n>
         Mine
       </button>
     </div>
     <div class="ms-2 _border _border-2 _rounded p-1 d-flex">
-      <input type="text" class="form-control form-control-sm" [(ngModel)]="searchTitle" 
+      <input type="text" class="form-control" [(ngModel)]="searchTitle" 
         (keyup.enter)="grid.reload()"
         placeholder="Title..." i18n-placeholder/>
-      <input type="text" class="form-control form-control-sm ms-2" [(ngModel)]="searchAuthor" 
+      <input type="text" class="form-control ms-2" [(ngModel)]="searchAuthor" 
         (keyup.enter)="grid.reload()"
         placeholder="Author..." i18n-placeholder/>
-      <input type="text" class="form-control form-control-sm ms-2" [(ngModel)]="searchIsbn" 
+      <input type="text" class="form-control ms-2" [(ngModel)]="searchIsbn" 
         (keyup.enter)="grid.reload()"
         placeholder="ISBN..." i18n-placeholder/>
-      <input type="text" class="form-control form-control-sm ms-2" [(ngModel)]="searchFamilyName" 
+      <input type="text" class="form-control ms-2" [(ngModel)]="searchFamilyName" 
         (keyup.enter)="grid.reload()"
         placeholder="Last Name..." i18n-placeholder/>
     </div>
     <div class="ms-auto p-1">
-      <button class="btn btn-sm btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
+      <button class="btn btn-outline-dark" (click)="resetFilters()" i18n>Reset</button>
     </div>
   </div>
   <div class="d-flex mt-2">
