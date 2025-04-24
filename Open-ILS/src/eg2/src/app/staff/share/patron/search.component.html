@@ -128,7 +128,6 @@
       </div>
       <div class="col-lg-2 ps-1 pe-1">
         <eg-org-select #homeLibSelect (onChange)="searchOrg = $event"
-          persistKey="patron.search"
           [fallbackOrg]="org.root()"
           i18n-placeholder placeholder="Home Library">
         </eg-org-select>
