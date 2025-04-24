@@ -549,7 +549,11 @@ sub apply_lineitem {
 
         my $result = $resp->{result};
 
-        if (int($result) > 0) {
+        if (ref($result) || int($result) == 0) {
+            $logger->info("User request $req_id hold placement failed: " . 
+                OpenSRF::Utils::JSON->perl2JSON($result));
+
+        } else {
             # Successful hold results in a hold ID value within resp.result.
             my $hold_id = int($result);
 
@@ -559,10 +563,6 @@ sub apply_lineitem {
 
             # TODO action trigger event for user request hold placed.
             # see also apply_hold();
-
-        } else {
-            $logger->info("User request $req_id hold placement failed: " . 
-                OpenSRF::Utils::JSON->perl2JSON($result));
         }
     }
 
