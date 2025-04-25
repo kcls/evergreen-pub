@@ -4894,6 +4894,40 @@ sub rec_hold_count_via_rhrr {
     return new_editor()->json_query($query)->[0]->{count};
 }
 
+# Sets the expire time on the provided hold object.
+sub set_hold_expire_time {
+	my ($hold, $ou) = @_;
+
+	my $start_date = $hold->request_time ?
+		DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($recipient->expire_date))
+        : DateTime->now;
+
+    my $def_interval = $U->ou_ancestor_setting_value($ou, OILS_SETTING_HOLD_EXPIRE);
+    my $max_interval = $U->ou_ancestor_setting_value($ou, 'circ.holds.max_expire_interval');
+
+    my $def_secs = OpenILS::Utils::DateTime->interval_to_seconds($def_interval);
+    my $max_secs = OpenILS::Utils::DateTime->interval_to_seconds($max_interval);
+    
+    my $def_date = $def_interval ? $start_date->add(seconds => $def_secs) : undef;
+    my $max_date = $max_interval ? $start_date->add(seconds => $max_secs) : undef;
+
+    if (!$hold->expire_time) {
+        if ($def_date) {
+            $hold->expire_time($def_date);
+        } elsif ($max_date) {
+            $hold->expire_time($max_date);
+        }
+
+        return;
+    }
+
+    # If we have a max expire, ensure the existing/provided expire time is <= max.
+    my $existing_date = DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($hold->expire_time));
+    $hold->expire_time($max_date) if ($max_date && $existing_date > $max_date);
+
+    return;
+}
+
 
 # A helper function to calculate a hold's expiration time at a given
 # org_unit. Takes the org_unit as an argument and returns either the
