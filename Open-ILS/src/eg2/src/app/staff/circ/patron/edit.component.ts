@@ -803,6 +803,22 @@ export class EditComponent implements OnInit {
         this.applyGroupedSettingValues();
     }
 
+    noticeTypeEnabled(grp: string): boolean {
+         let enabled = false;
+         this.groupedOptInSettingTypes.forEach(group => {
+             const gName = group[0].grp().name();
+             if (gName === grp) {
+                group.forEach(stype => {
+                    if (this.userSettings[stype.name()]) {
+                        enabled = true;
+                    }
+                });
+             }
+        });
+
+         return enabled;
+    }
+
     applyGroupedSettingValues() {
          this.groupedOptInSettingTypes.forEach(group => {
 
@@ -837,6 +853,7 @@ export class EditComponent implements OnInit {
         this.groupedOptInSettingTypes
             .filter(g => g[0].grp().name() === grpName)[0]
             .forEach(stype => this.userSettings[stype.name()] = value);
+        this.adjustSaveState();
     }
 
     loadPatron(): Promise<any> {
@@ -1397,6 +1414,10 @@ export class EditComponent implements OnInit {
 
         switch (name) {
             case 'opac.default_sms_notify':
+                if (this.noticeTypeEnabled('notify.text')) {
+                    return true;
+                }
+                // fall-thru
             case 'opac.default_sms_carrier':
                 return this.holdNotifyTypes.sms;
         }
