@@ -673,14 +673,24 @@ sub create_hold {
     $hold->selection_ou($hold->pickup_lib) unless $hold->selection_ou;
     $hold = $e->create_action_hold_request($hold) or return $e->die_event;
 
+    # TODO frozen holds get their expire times cleared!!!
+
     if (my $max_age = $U->date_exceeds_max_hold_age($e, $hold, $hold->expire_time)) {
         $e->rollback;
-        return OpenILS::Event->new('HOLD_EXPIRE_DATE_EXCEEDS_MAX', payload => {max_age => $max_age});
+        return OpenILS::Event->new(
+            'HOLD_EXPIRE_DATE_EXCEEDS_MAX', 
+            payload => {max_age => ''.$max_age, expire_time => ''.$hold->expire_time}
+        );
     }
 
-    if (my $max_age = $U->date_exceeds_max_hold_age($e, $hold, $hold->thaw_date)) {
-        $e->rollback;
-        return OpenILS::Event->new('HOLD_THAW_DATE_EXCEEDS_MAX', payload => {max_age => $max_age});
+    if ($U->is_true($hold->frozen)) {
+        if (my $max_age = $U->date_exceeds_max_hold_age($e, $hold, $hold->thaw_date)) {
+            $e->rollback;
+            return OpenILS::Event->new(
+                'HOLD_THAW_DATE_EXCEEDS_MAX', 
+                payload => {max_age => ''.$max_age, thaw_date => ''.$hold->thaw_date}
+            );
+        }
     }
 
     $e->commit;
@@ -1439,6 +1449,27 @@ sub update_hold_impl {
     if(!$U->is_true($hold->frozen) && $U->is_true($orig_hold->frozen)) {
         $logger->info("Reset expire_time on activated hold ".$hold->id);
         $hold->expire_time(calculate_expire_time($hold->request_lib));
+    }
+
+
+    # TODO frozen holds get their expire times cleared!!!
+
+    if (my $max_age = $U->date_exceeds_max_hold_age($e, $hold, $hold->expire_time)) {
+        $e->rollback;
+        return OpenILS::Event->new(
+            'HOLD_EXPIRE_DATE_EXCEEDS_MAX', 
+            payload => {max_age => ''.$max_age, expire_time => ''.$hold->expire_time}
+        );
+    }
+
+    if ($U->is_true($hold->frozen)) {
+        if (my $max_age = $U->date_exceeds_max_hold_age($e, $hold, $hold->thaw_date)) {
+            $e->rollback;
+            return OpenILS::Event->new(
+                'HOLD_THAW_DATE_EXCEEDS_MAX', 
+                payload => {max_age => ''.$max_age, thaw_date => ''.$hold->thaw_date}
+            );
+        }
     }
 
     $e->update_action_hold_request($hold) or return $e->die_event;
@@ -4921,6 +4952,10 @@ sub calculate_expire_time
 {
     my $ou = shift;
     my $interval = $U->ou_ancestor_setting_value($ou, OILS_SETTING_HOLD_EXPIRE);
+
+    # Use the max age as the expire interval if no default is provided.
+    $interval = $U->ou_ancestor_setting_value($ou, 'circ.holds.max_age_interval') unless $interval;
+
     if($interval) {
         my $date = DateTime->now->add(seconds => OpenILS::Utils::DateTime->interval_to_seconds($interval));
         return $U->epoch2ISO8601($date->epoch);

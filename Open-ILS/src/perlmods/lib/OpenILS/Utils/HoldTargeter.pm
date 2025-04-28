@@ -455,13 +455,21 @@ sub exit_targeter {
 sub handle_expired_hold {
     my $self = shift;
     my $hold = $self->hold;
+    my $expire_time = $hold->expire_time;
 
-    return 1 unless $hold->expire_time;
+    my $max_date = $U->date_exceeds_max_hold_age($self->editor, $hold, $expire_time);
+    my $exp_date = $expire_time ? dt_parser->parse_datetime(clean_ISO8601($expire_time)) : undef;
 
-    my $ex_time =
-        $dt_parser->parse_datetime(clean_ISO8601($hold->expire_time));
+    if ($max_date) {
+        $self->log_hold("expire_time (or undef) exceeds max hold age; using max of $max_date");
+        $exp_date = $max_date;
+    } elsif (!$exp_date) {
+        # No max age or expire date.  let it ride.
+        return 1;
+    }
+
     return 1 unless 
-        DateTime->compare($ex_time, DateTime->now(time_zone => 'local')) < 0;
+        DateTime->compare($exp_date, DateTime->now(time_zone => 'local')) < 0;
 
     # Hold is expired --
 

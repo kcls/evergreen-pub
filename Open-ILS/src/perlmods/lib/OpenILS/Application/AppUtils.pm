@@ -7,6 +7,7 @@ use base qw/OpenILS::Application/;
 use OpenSRF::Utils::Cache;
 use OpenSRF::Utils::Logger qw/$logger/;
 use OpenILS::Utils::ModsParser;
+use OpenILS::Utils::DateTime qw/:datetime/;
 use OpenSRF::Utils qw/:datetime/;
 use OpenSRF::EX qw(:try);
 use OpenILS::Event;
@@ -2723,7 +2724,7 @@ sub date_or_now {
     my ($class, $date_iso) = @_;
     return $date_iso ?
         DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($date_iso))
-        : DateTime->now;
+        : DateTime->now(time_zone => 'local');
 }
 
 # Returns the max date if the provided date (expire, thaw) exceeds the max
