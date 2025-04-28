@@ -2719,6 +2719,41 @@ sub circ_is_refundable {
     return 1;
 }
 
+sub date_or_now {
+    my ($class, $date_iso) = @_;
+    return $date_iso ?
+        DateTime::Format::ISO8601->new->parse_datetime(clean_ISO8601($date_iso))
+        : DateTime->now;
+}
+
+# Returns the max date if the provided date (expire, thaw) exceeds the max
+# allowed age of all holds OR the provided date is undef (i.e. infinith).
+# Returns undef otherwise.
+sub date_exceeds_max_hold_age {
+    my ($class, $e, $hold, $date_str) = @_;
+
+    my $ou = $hold->request_lib || $hold->pickup_lib;
+
+    my $max_intvl = $class->ou_ancestor_setting_value($ou, 'circ.holds.max_age_interval');
+
+    return undef unless $max_intvl;
+
+    my $max_secs = OpenILS::Utils::DateTime->interval_to_seconds($max_intvl);
+
+    # New holds may not have a request time yet.  Assume that time is now.
+    my $start_date = $class->date_or_now($hold->request_time);
+
+    my $max_date = $start_date->add(seconds => $max_secs);
+
+    # Lack of a date is treated as a far flung future date.
+    return $max_date unless $date_str;
+
+    my $end_date = $class->date_or_now($date_str);
+
+    return $max_date < $end_date ? $max_date : undef;
+}
+
+
 # generate a MARC XML document from a MARC XML string
 sub marc_xml_to_doc {
     my ($class, $xml) = @_;

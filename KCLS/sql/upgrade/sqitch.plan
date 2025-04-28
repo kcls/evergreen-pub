@@ -23,4 +23,4 @@
 0018-ill-req-perm [0017-org-select-short-names] 2025-04-07T15:27:07Z berick <berick@kcls24> # ILL Request Perm
 XXXX-checkout-emails [0004-damaged-item-letter] 2024-09-19T15:23:11Z berick <berick@kcls311> # Checkout Emails
 XXXX-pr-filters [0017-org-select-short-names] 2025-04-08T15:29:08Z berick <berick@kcls24> # Request Filters
-XXXX-hold-max-expire [0018-ill-req-perm] 2025-04-25T19:19:12Z berick <berick@kcls24> # hold max expire setting
+XXXX-hold-max-age [0018-ill-req-perm] 2025-04-25T19:19:12Z berick <berick@kcls24> # hold max age setting
