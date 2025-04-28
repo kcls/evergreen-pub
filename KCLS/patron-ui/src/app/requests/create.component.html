@@ -147,8 +147,9 @@
     </div>
 
     <div class="flex justify-center p-2 mt-4">
+      <!-- specify type="button" to avoid implicit form submission -->
       <button mat-raised-button class="kcls-background-dark kcls-text-light" 
-        [disabled]="!canSubmit()" (click)="submitRequest()" i18n>
+        type="button" [disabled]="!canSubmit()" (click)="submitRequest()" i18n>
         Request Item
       </button>
     </div>
