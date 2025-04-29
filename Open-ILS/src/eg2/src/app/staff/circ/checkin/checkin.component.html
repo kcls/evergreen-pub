@@ -147,6 +147,20 @@
   </ng-container>
 </ng-template>
 
+<!-- items on the shelf get a summary colum w/ patron and shelf info -->
+<ng-template #shelfSummaryTmpl let-r="row">
+  <ng-container *ngIf="r.hold && r.hold.current_shelf_lib() && r.patron">
+    <ng-container *ngIf="r.patron.alias()">
+      {{r.patron.alias()}}
+    </ng-container>
+    <ng-container *ngIf="!r.patron.alias()">
+      {{r.patron.first_given_name()}} {{r.patron.family_name()}}
+    </ng-container>
+    @ {{orgSn(r.hold.current_shelf_lib())}}
+  </ng-container>
+</ng-template>
+
+
 <div class="row">
   <div class="col-lg-12">
     <eg-grid #grid [dataSource]="gridDataSource" [sortable]="true"
@@ -291,6 +305,10 @@
       <eg-grid-column path="circ.due_date" label="Due Date" i18n-label
         timezoneContextOrg="circ.circ_lib" dateOnlyIntervalField="circ.duration"
         [hidden]="true" datatype="timestamp"></eg-grid-column>
+
+      <eg-grid-column name="holdShelfSummary" label="Shelf Summary" i18n-label
+        [cellTemplate]="shelfSummaryTmpl">
+      </eg-grid-column>
 
       <eg-grid-column path="copy.*" idlClass="acp" [hidden]="true"></eg-grid-column>
       <eg-grid-column path="circ.*" idlClass="circ" [hidden]="true"></eg-grid-column>
