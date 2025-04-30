@@ -863,6 +863,8 @@ sub search_requests {
 
     if ($filters->{is_staff_active}) {
         $auir_where->{reject_date} = undef;
+        $auir_where->{cancel_date} = undef;
+        $auir_where->{complete_date} = undef;
 
         $auir_where->{'-or'} = [
             {'-and' => [{route_to => 'ill'}, {hold => undef}]},
