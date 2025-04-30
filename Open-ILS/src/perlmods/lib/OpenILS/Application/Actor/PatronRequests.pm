@@ -865,15 +865,17 @@ sub search_requests {
         $auir_where->{reject_date} = undef;
 
         $auir_where->{'-or'} = [
-            {'-and' => [{route_to => 'ill'}, {illno => undef}]},
+            {'-and' => [{route_to => 'ill'}, {hold => undef}]},
             {'-and' => [{route_to => 'acq'}, {lineitem => undef}]}
         ];
 
     } elsif ($filters->{is_staff_complete}) {
         $auir_where->{'-or'} = [
             {reject_date => {'<>' => undef}},
+            # TODO for now any PR with a hold is effectively complete for staff.
+            {hold => {'<>' => undef}},
+            # Plus essentially completed ACQ requests
             {lineitem => {'<>' => undef}},
-            {'-and' => [{route_to => 'ill'}, {complete_date => {'<>' => undef}}]}
         ];
     }
 
@@ -943,7 +945,6 @@ sub search_requests {
 
     return undef;
 }
-
 
 
 1;
