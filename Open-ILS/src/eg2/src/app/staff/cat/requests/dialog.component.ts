@@ -289,7 +289,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         if (this.mode !== 'create') {
             if (this.request.route_to() === this.sourceRequest.route_to()) {
                 if (this.request.pubdate() !== this.sourceRequest.pubdate() ||
-                    this.request.format() !== this.sourceRequest.format()) {
+                    this.request.format().code() !== this.sourceRequest.format().code()) {
 
                     // Clear the value to force an update.
                     this.request.route_to(null);
