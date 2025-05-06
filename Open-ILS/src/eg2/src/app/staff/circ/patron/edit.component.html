@@ -68,6 +68,10 @@
     <label class="form-label" for="cust-{{args.settingName}}-input">
       {{userSettingTypes[args.settingName].label()}}
     </label>
+    <eg-help-popover *ngIf="args.settingName === 'opac.default_sms_notify'"
+      buttonClass="btn-sm text-info p-0 m-0"
+      [placement]="'right'" i18n-helpText helpText="Record only one phone number here.">
+    </eg-help-popover>
   </div>
 </ng-template>
 
