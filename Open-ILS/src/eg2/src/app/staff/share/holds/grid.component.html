@@ -175,7 +175,7 @@
         (onClick)="showMarkDiscardDialog($event)">
       </eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action
+      <eg-grid-toolbar-action *ngIf="!showRecentlyCanceled"
         i18n-group group="Hold" i18n-label label="Find Another Target"
         (onClick)="showRetargetDialog($event)"></eg-grid-toolbar-action>
 
