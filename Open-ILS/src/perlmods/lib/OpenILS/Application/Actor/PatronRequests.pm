@@ -58,7 +58,10 @@ sub apply_route_to {
 
     my $route_to = 'acq';
 
-    if ($request->format eq 'book' || $request->format eq 'large-print') {
+    # may be fleshed
+    my $format = ref $request->format ? $request->format->code : $request->format;
+
+    if ($format eq 'book' || $format eq 'large-print') {
         if ( (my $pubyear = $request->pubdate) ) {
             if ($pubyear =~ /^\d{4}$/) {
                 if ($pubyear < (DateTime->now->year - $ILL_ROUTE_AGE_YEARS)) {
@@ -66,7 +69,7 @@ sub apply_route_to {
                 }
             }
         }
-    } elsif (grep {$_ eq $request->format} @ILL_FORMATS) {
+    } elsif (grep {$_ eq $format} @ILL_FORMATS) {
         $route_to = 'ill';
     }
 
