@@ -785,6 +785,256 @@ BEGIN
 END;
 $func$ LANGUAGE PLPGSQL;
 
+--SELECT evergreen.upgrade_deps_block_check('1421', :eg_version);
+
+CREATE OR REPLACE FUNCTION unapi.acpt ( obj_id BIGINT, format TEXT,  ename TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE ) RETURNS XML AS $F$
+        SELECT  XMLELEMENT(
+                    name copy_tag,
+                    XMLATTRIBUTES(
+                        CASE WHEN $9 THEN 'http://open-ils.org/spec/holdings/v1' ELSE NULL END AS xmlns,
+                        copy_tag_type.label AS type,
+                        copy_tag.url AS url
+                    ),
+                    copy_tag.value
+                )
+          FROM  asset.copy_tag
+          JOIN  config.copy_tag_type
+          ON    copy_tag_type.code = copy_tag.tag_type
+          WHERE copy_tag.id = $1;
+$F$ LANGUAGE SQL STABLE;
+
+CREATE OR REPLACE FUNCTION unapi.acp ( obj_id BIGINT, format TEXT,  ename TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE ) RETURNS XML AS $F$
+        SELECT  XMLELEMENT(
+                    name copy,
+                    XMLATTRIBUTES(
+                        CASE WHEN $9 THEN 'http://open-ils.org/spec/holdings/v1' ELSE NULL END AS xmlns,
+                        'tag:open-ils.org:U2@acp/' || id AS id, id AS copy_id,
+                        create_date, edit_date, copy_number, circulate, deposit,
+                        ref, holdable, deleted, deposit_amount, price, barcode,
+                        circ_modifier, circ_as_type, opac_visible, age_protect
+                    ),
+                    unapi.ccs( status, $2, 'status', array_remove($4,'acp'), $5, $6, $7, $8, FALSE),
+                    unapi.acl( location, $2, 'location', array_remove($4,'acp'), $5, $6, $7, $8, FALSE),
+                    unapi.aou( circ_lib, $2, 'circ_lib', array_remove($4,'acp'), $5, $6, $7, $8),
+                    unapi.aou( circ_lib, $2, 'circlib', array_remove($4,'acp'), $5, $6, $7, $8),
+                    CASE WHEN ('acn' = ANY ($4)) THEN unapi.acn( call_number, $2, 'call_number', array_remove($4,'acp'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    CASE
+                        WHEN ('acpn' = ANY ($4)) THEN
+                            XMLELEMENT( name copy_notes,
+                                (SELECT XMLAGG(acpn) FROM (
+                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.copy_note
+                                      WHERE owning_copy = cp.id AND pub
+                                )x)
+                            )
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN ('acpt' = ANY ($4)) THEN
+                            XMLELEMENT( name copy_tags,
+                                (SELECT XMLAGG(acpt) FROM (
+                                    SELECT  unapi.acpt( copy_tag.id, 'xml', 'copy_tag', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.copy_tag_copy_map
+                                      JOIN asset.copy_tag ON copy_tag.id = copy_tag_copy_map.tag
+                                      WHERE copy_tag_copy_map.copy = cp.id AND copy_tag.pub
+                                )x)
+                            )
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN ('ascecm' = ANY ($4)) THEN
+                            XMLELEMENT( name statcats,
+                                (SELECT XMLAGG(ascecm) FROM (
+                                    SELECT  unapi.ascecm( stat_cat_entry, 'xml', 'statcat', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.stat_cat_entry_copy_map
+                                      WHERE owning_copy = cp.id
+                                )x)
+                            )
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN ('bre' = ANY ($4)) THEN
+                            XMLELEMENT( name foreign_records,
+                                (SELECT XMLAGG(bre) FROM (
+                                    SELECT  unapi.bre(peer_record,'marcxml','record','{}'::TEXT[], $5, $6, $7, $8, FALSE)
+                                      FROM  biblio.peer_bib_copy_map
+                                      WHERE target_copy = cp.id
+                                )x)
+                            )
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN ('bmp' = ANY ($4)) THEN
+                            XMLELEMENT( name monograph_parts,
+                                (SELECT XMLAGG(bmp) FROM (
+                                    SELECT  unapi.bmp( part, 'xml', 'monograph_part', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.copy_part_map
+                                      WHERE target_copy = cp.id
+                                )x)
+                            )
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN ('circ' = ANY ($4)) THEN
+                            XMLELEMENT( name current_circulation,
+                                (SELECT XMLAGG(circ) FROM (
+                                    SELECT  unapi.circ( id, 'xml', 'circ', array_remove($4,'circ'), $5, $6, $7, $8, FALSE)
+                                      FROM  action.circulation
+                                      WHERE target_copy = cp.id
+                                            AND checkin_time IS NULL
+                                )x)
+                            )
+                        ELSE NULL
+                    END
+                )
+          FROM  asset.copy cp
+          WHERE id = $1
+              AND cp.deleted IS FALSE
+          GROUP BY id, status, location, circ_lib, call_number, create_date,
+              edit_date, copy_number, circulate, deposit, ref, holdable,
+              deleted, deposit_amount, price, barcode, circ_modifier,
+              circ_as_type, opac_visible, age_protect;
+$F$ LANGUAGE SQL STABLE;
+
+CREATE OR REPLACE FUNCTION unapi.sunit ( obj_id BIGINT, format TEXT,  ename TEXT, includes TEXT[], org TEXT, depth INT DEFAULT NULL, slimit HSTORE DEFAULT NULL, soffset HSTORE DEFAULT NULL, include_xmlns BOOL DEFAULT TRUE ) RETURNS XML AS $F$
+        SELECT  XMLELEMENT(
+                    name serial_unit,
+                    XMLATTRIBUTES(
+                        CASE WHEN $9 THEN 'http://open-ils.org/spec/holdings/v1' ELSE NULL END AS xmlns,
+                        'tag:open-ils.org:U2@acp/' || id AS id, id AS copy_id,
+                        create_date, edit_date, copy_number, circulate, deposit,
+                        ref, holdable, deleted, deposit_amount, price, barcode,
+                        circ_modifier, circ_as_type, opac_visible, age_protect,
+                        status_changed_time, floating, mint_condition,
+                        detailed_contents, sort_key, summary_contents, cost
+                    ),
+                    unapi.ccs( status, $2, 'status', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE),
+                    unapi.acl( location, $2, 'location', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE),
+                    unapi.aou( circ_lib, $2, 'circ_lib', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8),
+                    unapi.aou( circ_lib, $2, 'circlib', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8),
+                    CASE WHEN ('acn' = ANY ($4)) THEN unapi.acn( call_number, $2, 'call_number', array_remove($4,'acp'), $5, $6, $7, $8, FALSE) ELSE NULL END,
+                    XMLELEMENT( name copy_notes,
+                        CASE
+                            WHEN ('acpn' = ANY ($4)) THEN
+                                (SELECT XMLAGG(acpn) FROM (
+                                    SELECT  unapi.acpn( id, 'xml', 'copy_note', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.copy_note
+                                      WHERE owning_copy = cp.id AND pub
+                                )x)
+                            ELSE NULL
+                        END
+                    ),
+                    XMLELEMENT( name copy_tags,
+                        CASE
+                            WHEN ('acpt' = ANY ($4)) THEN
+                                (SELECT XMLAGG(acpt) FROM (
+                                    SELECT  unapi.acpt( copy_tag.id, 'xml', 'copy_tag', array_remove( array_remove($4,'acp'),'sunit'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.copy_tag_copy_map
+                                      JOIN  asset.copy_tag ON copy_tag.id = copy_tag_copy_map.tag
+                                      WHERE copy_tag_copy_map.copy = cp.id AND copy_tag.pub
+                                )x)
+                            ELSE NULL
+                        END
+                    ),
+                    XMLELEMENT( name statcats,
+                        CASE
+                            WHEN ('ascecm' = ANY ($4)) THEN
+                                (SELECT XMLAGG(ascecm) FROM (
+                                    SELECT  unapi.ascecm( stat_cat_entry, 'xml', 'statcat', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.stat_cat_entry_copy_map
+                                      WHERE owning_copy = cp.id
+                                )x)
+                            ELSE NULL
+                        END
+                    ),
+                    XMLELEMENT( name foreign_records,
+                        CASE
+                            WHEN ('bre' = ANY ($4)) THEN
+                                (SELECT XMLAGG(bre) FROM (
+                                    SELECT  unapi.bre(peer_record,'marcxml','record','{}'::TEXT[], $5, $6, $7, $8, FALSE)
+                                      FROM  biblio.peer_bib_copy_map
+                                      WHERE target_copy = cp.id
+                                )x)
+                            ELSE NULL
+                        END
+                    ),
+                    CASE
+                        WHEN ('bmp' = ANY ($4)) THEN
+                            XMLELEMENT( name monograph_parts,
+                                (SELECT XMLAGG(bmp) FROM (
+                                    SELECT  unapi.bmp( part, 'xml', 'monograph_part', array_remove($4,'acp'), $5, $6, $7, $8, FALSE)
+                                      FROM  asset.copy_part_map
+                                      WHERE target_copy = cp.id
+                                )x)
+                            )
+                        ELSE NULL
+                    END,
+                    CASE
+                        WHEN ('circ' = ANY ($4)) THEN
+                            XMLELEMENT( name current_circulation,
+                                (SELECT XMLAGG(circ) FROM (
+                                    SELECT  unapi.circ( id, 'xml', 'circ', array_remove($4,'circ'), $5, $6, $7, $8, FALSE)
+                                      FROM  action.circulation
+                                      WHERE target_copy = cp.id
+                                            AND checkin_time IS NULL
+                                )x)
+                            )
+                        ELSE NULL
+                    END
+                )
+          FROM  serial.unit cp
+          WHERE id = $1
+              AND cp.deleted IS FALSE
+          GROUP BY id, status, location, circ_lib, call_number, create_date,
+              edit_date, copy_number, circulate, floating, mint_condition,
+              deposit, ref, holdable, deleted, deposit_amount, price,
+              barcode, circ_modifier, circ_as_type, opac_visible,
+              status_changed_time, detailed_contents, sort_key,
+              summary_contents, cost, age_protect;
+$F$ LANGUAGE SQL STABLE;
+
+--SELECT evergreen.upgrade_deps_block_check('1426', :eg_version);
+
+SELECT CLOCK_TIMESTAMP(), 'Adding hold reset reasons';
+
+CREATE TABLE action.hold_request_reset_reason (
+    id SERIAL NOT NULL PRIMARY KEY,
+    manual BOOLEAN,
+    name TEXT UNIQUE
+);
+
+CREATE TABLE action.hold_request_reset_reason_entry (
+    id SERIAL NOT NULL PRIMARY KEY,
+    hold INT REFERENCES action.hold_request (id) DEFERRABLE INITIALLY DEFERRED,
+    reset_reason INT REFERENCES action.hold_request_reset_reason (id) DEFERRABLE INITIALLY DEFERRED,
+    note TEXT,
+    reset_time TIMESTAMP WITH TIME ZONE,
+    previous_copy BIGINT REFERENCES asset.copy (id) DEFERRABLE INITIALLY DEFERRED,
+    requestor INT REFERENCES actor.usr (id) DEFERRABLE INITIALLY DEFERRED,
+    requestor_workstation INT REFERENCES actor.workstation (id) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX ahrrre_hold_idx ON action.hold_request_reset_reason_entry (hold);
+
+--SELECT evergreen.upgrade_deps_block_check('1428', :eg_version);
+
+ALTER TABLE acq.exchange_rate 
+	DROP CONSTRAINT exchange_rate_from_currency_fkey
+	,ADD CONSTRAINT exchange_rate_from_currency_fkey FOREIGN KEY (from_currency) REFERENCES acq.currency_type (code) ON UPDATE CASCADE;
+
+ALTER TABLE acq.exchange_rate 
+	DROP CONSTRAINT exchange_rate_to_currency_fkey
+	,ADD CONSTRAINT exchange_rate_to_currency_fkey FOREIGN KEY (to_currency) REFERENCES acq.currency_type (code) ON UPDATE CASCADE;
+
+ALTER TABLE acq.funding_source
+    DROP CONSTRAINT funding_source_currency_type_fkey
+    ,ADD CONSTRAINT funding_source_currency_type_fkey FOREIGN KEY (currency_type) REFERENCES acq.currency_type (code) ON UPDATE CASCADE;
+
+UPDATE acq.fund SET currency_type ='CAD' WHERE currency_type = 'CAN';
+UPDATE acq.fund_debit SET origin_currency_type ='CAD' WHERE origin_currency_type = 'CAN';
+UPDATE acq.provider SET currency_type ='CAD' WHERE currency_type = 'CAN';
+UPDATE acq.currency_type SET code = 'CAD' WHERE code = 'CAN';
+
 
 
 ------------------------------------------------------------------------------
@@ -1320,6 +1570,188 @@ VALUES (
         'cwst', 'label'
     )
 );
+
+SELECT evergreen.upgrade_deps_block_check('1421', :eg_version);
+
+SELECT evergreen.upgrade_deps_block_check('1422', :eg_version);
+
+UPDATE config.org_unit_setting_type
+SET description = oils_i18n_gettext('circ.holds.ui_require_monographic_part_when_present',
+        'Normally the selection of a monographic part during hold placement is optional if there is at least one copy on the bib without a monographic part.  A true value for this setting will require part selection even under this condition.  A true value for this setting will also require a part to be added before saving any changes or creating a new item in the holdings editor, if there are parts on the bib.',
+        'coust', 'description')
+WHERE name = 'circ.holds.ui_require_monographic_part_when_present';
+
+SELECT evergreen.upgrade_deps_block_check('1423', :eg_version);
+
+INSERT INTO config.org_unit_setting_type
+    (name, grp, datatype, label, description)
+VALUES (
+    'opac.self_register.dob_order',
+    'opac',
+    'string',
+    oils_i18n_gettext(
+        'opac.self_register.dob_order',
+        'Patron Self-Reg. Date of Birth Order',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'opac.self_register.dob_order',
+        'The order in which to present the Month, Day, and Year elements for the Date of Birth field in Patron Self-Registration. Use the letter M for Month, D for Day, and Y for Year. Examples: MDY, DMY, YMD',
+        'coust',
+        'description'
+    )
+);
+
+INSERT INTO config.org_unit_setting_type
+    (name, grp, datatype, label, description)
+VALUES (
+    'opac.patron.edit.au.usrname.hide',
+    'opac',
+    'bool',
+    oils_i18n_gettext(
+        'opac.patron.edit.au.usrname.hide',
+        'Hide Username field in Patron Self-Reg.',
+        'coust',
+        'label'
+    ),
+    oils_i18n_gettext(
+        'opac.patron.edit.au.usrname.hide',
+        'Hides the Requested Username field in the Patron Self-Registration interface.',
+        'coust',
+        'description'
+    )
+);
+
+SELECT evergreen.upgrade_deps_block_check('1424', :eg_version);
+
+INSERT into config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.admin.acq.distribution_formula', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.acq.distribution_formula',
+        'Grid Config: admin.acq.distribution_formula',
+        'cwst', 'label'
+    )
+);
+
+SELECT evergreen.upgrade_deps_block_check('1425', :eg_version);
+
+INSERT into config.org_unit_setting_type
+    (name, grp, label, description, datatype)
+VALUES (
+    'ui.toast_duration',
+    'gui',
+    oils_i18n_gettext('ui.toast_duration',
+        'Staff Client toast alert duration (seconds)',
+        'coust', 'label'),
+    oils_i18n_gettext('ui.toast_duration',
+        'The number of seconds a toast alert should remain visible if not manually dismissed. Default is 10.',
+        'coust', 'description'),
+    'integer'
+);
+
+SELECT evergreen.upgrade_deps_block_check('1426', :eg_version);
+
+INSERT INTO action.hold_request_reset_reason (id, name, manual) VALUES
+(1,'HOLD_TIMED_OUT',false),
+(2,'HOLD_MANUAL_RESET',true),
+(3,'HOLD_BETTER_HOLD',false),
+(4,'HOLD_FROZEN',true),
+(5,'HOLD_UNFROZEN',true),
+(6,'HOLD_CANCELED',true),
+(7,'HOLD_UNCANCELED',true),
+(8,'HOLD_UPDATED',true),
+(9,'HOLD_CHECKED_OUT',true),
+(10,'HOLD_CHECKED_IN',true);
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype, fm_class ) VALUES
+( 'circ.hold_retarget_previous_targets_interval', 'holds',
+  oils_i18n_gettext('circ.hold_retarget_previous_targets_interval',
+    'Retarget previous targets interval',
+    'coust', 'label'),
+  oils_i18n_gettext('circ.hold_retarget_previous_targets_interval',
+    'Hold targeter will create proximity adjustments for previously targeted copies within this time interval (in days).',
+    'coust', 'description'),
+  'integer', null);
+
+INSERT into config.org_unit_setting_type
+( name, grp, label, description, datatype, fm_class ) VALUES
+( 'circ.hold_reset_reason_entry_age_threshold', 'holds',
+  oils_i18n_gettext('circ.hold_reset_reason_entry_age_threshold',
+    'Hold reset reason entry deletion interval',
+    'coust', 'label'),
+  oils_i18n_gettext('circ.hold_reset_reason_entry_age_threshold',
+    'Hold reset reason entries will be removed if older than this interval. Default 1 year if no value provided.',
+    'coust', 'description'),
+  'interval', null);
+
+SELECT evergreen.upgrade_deps_block_check('1427', :eg_version);
+
+INSERT into config.workstation_setting_type (name, grp, datatype, label)
+VALUES (
+    'eg.grid.catalog.record.conjoined', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.catalog.record.conjoined',
+        'Grid Config: catalog.record.conjoined',
+        'cwst', 'label'
+    )
+);
+
+SELECT evergreen.upgrade_deps_block_check('1428', :eg_version);
+
+SELECT evergreen.upgrade_deps_block_check('1429', :eg_version);
+
+UPDATE config.org_unit_setting_type
+SET description = oils_i18n_gettext('circ.course_materials_brief_record_bib_source',
+    'The course materials module will use this bib source for any new brief bibliographic records made inside that module. For best results, use a transcendent bib source.',
+    'coust', 'description')
+WHERE name='circ.course_materials_brief_record_bib_source';
+
+SELECT evergreen.upgrade_deps_block_check('1430', :eg_version);
+
+INSERT INTO config.print_template
+    (name, label, owner, active, locale, content_type, template)
+VALUES ('serials_routing_list', 'Serials routing list', 1, TRUE, 'en-US', 'text/html', '');
+
+UPDATE config.print_template SET template = $TEMPLATE$
+[% 
+  SET title = template_data.title;
+  SET distribution = template_data.distribution;
+  SET issuance = template_data.issuance;
+  SET routing_list = template_data.routing_list;
+  SET stream = template_data.stream;
+%] 
+
+<p>[% title %]</p>
+<p>[% issuance.label %]</p>
+<p>([% distribution.holding_lib.shortname %]) [% distribution.label %] / [% stream.routing_label %] ID [% stream.id %]</p>
+  <ol>
+	[% FOR route IN routing_list %]
+    <li>
+    [% IF route.reader %]
+      [% route.reader.first_given_name %] [% route.reader.family_name %]
+      [% IF route.note %]
+        - [% route.note %]
+      [% END %]
+      [% route.reader.mailing_address.street1 %]
+      [% route.reader.mailing_address.street2 %]
+      [% route.reader.mailing_address.city %], [% route.reader.mailing_address.state %] [% route.reader.mailing_address.post_code %]
+    [% ELSIF route.department %]
+      [% route.department %]
+      [% IF route.note %]
+        - [% route.note %]
+      [% END %]
+    [% END %]
+    </li>
+  [% END %]
+  </ol>
+</div>
+
+$TEMPLATE$ WHERE name = 'serials_routing_list';
+
+
 ------------------------------------------------------------------------------
 END IF; END $INSERT$;
 ------------------------------------------------------------------------------
