@@ -9,7 +9,6 @@
         printTemplate="holds_for_patron"
         persistKey="circ.patron.holds"
         (placeHoldRequested)="newHold()"
-        [pageSize]="50"
         [hideHoldsCount]="true"
         [patronFocused]="true"
         [noLoadProgress]="true"
@@ -26,7 +25,6 @@
       <eg-holds-grid 
         printTemplate="holds_for_patron"
         persistKey="circ.patron.holds"
-        [pageSize]="50"
         [hideHoldsCount]="true"
         [patronFocused]="true"
         [noLoadProgress]="true"

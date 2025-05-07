@@ -56,17 +56,8 @@ export class StaffLoginComponent implements OnInit {
             }
         }
 
-        const needsBroadcast = this.auth.hasToken();
-
         // clear out any stale auth data
         this.auth.logout();
-
-        if (needsBroadcast) {
-            // Login page was accessed directly (e.g. via bookmark) while
-            // a session was already active.  Notify any open tabs they
-            // just got booted.
-            this.auth.broadcastLogout();
-        }
 
         // Focus username
         this.renderer.selectRootElement('#username').focus();
@@ -99,13 +90,11 @@ export class StaffLoginComponent implements OnInit {
 
         this.passwordVisible = false;
 
-        const splashUrl = this.ngLocation.prepareExternalUrl('/staff/splash');
-
         // post-login URL
-        let url: string = this.routeTo || splashUrl;
+        let url: string = this.routeTo || '/staff/splash';
 
         // prevent sending the user back to the login page
-        if (url.match('/staff/login')) { url = splashUrl; }
+        if (url.match('/staff/login')) { url = '/staff/splash'; }
 
         const workstation: string = this.args.workstation;
 
@@ -119,34 +108,21 @@ export class StaffLoginComponent implements OnInit {
                     // Reset the WS state to avoid looping back to WS removal
                     // page before the new workstation can be activated.
                     this.auth.workstationState = AuthWsState.PENDING;
-
-                    let url;
-
-                    if (workstation) {
-                        url = this.ngLocation.prepareExternalUrl(
-                            `/staff/admin/workstation/workstations/remove/${workstation}`);
-                    } else {
-                        url = this.ngLocation.prepareExternalUrl(
-                            `/staff/admin/workstation/workstations/manage`);
-                    }
-
-                    // Open a new page instead of router.navigate to ensure
-                    // user auth info is fully loaded after a partial login.
-                    location.href = url;
+                    this.router.navigate(
+                        [`/staff/admin/workstation/workstations/remove/${workstation}`]);
 
                 } else {
 
-                    // Initial fetches offline data when needed and
-                    // clears cached org unit setting values and
-                    // user/workstation setting values.
                     this.offline.refreshOfflineData()
+                    // Initial login clears cached org unit settings.
                     .then(_ => this.org.clearCachedSettings())
                     .then(_ => {
 
                         // Force reload of the app after a successful login.
                         // This allows the route resolver to re-run with a
                         // valid auth token and workstation.
-                        window.location.href = url;
+                        window.location.href =
+                            this.ngLocation.prepareExternalUrl(url);
                     });
                 }
             },

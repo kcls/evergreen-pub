@@ -1,0 +1,163 @@
+<eg-hold-note-dialog #noteDialog [holdId]="holdId"></eg-hold-note-dialog>
+<eg-hold-notify-dialog #notifyDialog [holdId]="holdId"></eg-hold-notify-dialog>
+
+<div class="mb-3" *ngIf="showRecordSummary">
+  <eg-bib-summary [recordId]="hold.record_id"></eg-bib-summary>
+</div>
+
+<div class="row">
+  <div class="col-lg-2">
+    <button (click)="showListView()" class="btn btn-info" i18n>List View</button>
+  </div>
+  <div class="col-lg-3 fw-bold" i18n><h4>Hold #{{holdId}}</h4></div>
+</div>
+
+<div class="well-table">
+  <div class="well-row">
+    <div class="well-label" i18n>Request Date</div>
+    <div class="well-value">{{hold.request_time | formatValue:'timestamp'}}</div>
+    <div class="well-label" i18n>Capture Date</div>
+    <div class="well-value">{{hold.capture_time | formatValue:'timestamp'}}</div>
+    <div class="well-label" i18n>Available On</div>
+    <div class="well-value">{{hold.shelf_time | formatValue:'timestamp'}}</div>
+  </div>
+  <div class="well-row">
+    <div class="well-label" i18n>Hold Type</div>
+    <div class="well-value">
+      {{hold.hold_type}}
+      <!-- TODO: add part data to wide holds 
+      <span *ngIf="hold.hold_type == 'P'">&nbsp;-&nbsp;{{hold.part_label}}</span>
+      -->
+    </div>
+    <div class="well-label" i18n>Targeted Item</div>
+    <div class="well-value">
+      <a routerLink="/staff/cat/item/{{hold.cp_id}}">{{hold.cp_barcode}}</a>
+    </div>
+    <div class="well-label" i18n>Call Number</div>
+    <div class="well-value">{{hold.cn_full_label}}</div>
+  </div>
+  <div class="well-row">
+    <div class="well-label" i18n>Pickup Lib</div>
+    <div class="well-value">{{hold.pl_shortname}}</div>
+    <div class="well-label" i18n>Status</div>
+    <div class="well-value">
+      <ng-container [ngSwitch]="hold.hold_status">
+        <div *ngSwitchCase="-1" i18n>Unknown Error</div>
+        <div *ngSwitchCase="1" i18n>Waiting for Item</div>
+        <div *ngSwitchCase="2" i18n>Waiting for Capture</div>
+        <div *ngSwitchCase="3" i18n>In Transit</div>
+        <div *ngSwitchCase="4" i18n>Ready for Pickup</div>
+        <div *ngSwitchCase="5" i18n>Hold Shelf Delay</div>
+        <div *ngSwitchCase="6" i18n>Canceled</div>
+        <div *ngSwitchCase="7" i18n>Suspended</div>
+        <div *ngSwitchCase="8" i18n>Wrong Shelf</div>
+        <div *ngSwitchCase="9" i18n>Fulfilled</div>
+      </ng-container>
+    </div>
+    <div class="well-label" i18n>Behind Desk</div>
+    <div class="well-value">{{hold.behind_desk === '1'}}</div>
+  </div>
+  <div class="well-row">
+    <div class="well-label" i18n>Current Shelf Lib</div>
+    <div class="well-value">{{getOrgName(hold.current_shelf_lib)}}</div>
+    <div class="well-label" i18n>Current Shelving Location</div>
+    <div class="well-value">{{hold.acpl_name}}</div>
+    <div class="well-label" i18n>Force Item Quality</div>
+    <div class="well-value">{{hold.mint_condition === '1'}}</div>
+  </div>
+  <div class="well-row">
+    <div class="well-label" i18n>Email Notify</div>
+    <div class="well-value">{{hold.email_notify === '1'}}</div>
+    <div class="well-label" i18n>Phone Notify</div>
+    <div class="well-value">{{hold.phone_notify}}</div>
+    <div class="well-label" i18n>SMS Notify</div>
+    <div class="well-value">{{hold.sms_notify}}</div>
+  </div>
+  <div class="well-row">
+    <div class="well-label" i18n>Cancel Cause</div>
+    <div class="well-value">{{hold.cancel_cause}}</div><!-- TODO: label -->
+    <div class="well-label" i18n>Cancel Time</div>
+    <div class="well-value">{{hold.cancel_time | formatValue:'timestamp'}}</div>
+    <div class="well-label" i18n>Cancel Note</div>
+    <div class="well-value">{{hold.cancel_note}}</div>
+  </div>
+  <div class="well-row">
+    <div class="well-label" i18n>Patron Name</div>
+    <div class="well-value">
+      <a routerLink="/staff/circ/patron/{{hold.usr_id}}/checkout">
+        {{hold.usr_display_name}}
+      </a>
+    </div>
+    <!-- force consistent width -->
+    <div class="well-label" i18n>Patron Barcode</div>
+    <div class="well-value">
+      <a routerLink="/staff/circ/patron/{{hold.usr_id}}/checkout">
+        {{hold.ucard_barcode}}
+      </a>
+    </div>
+    <div class="well-label" i18n>Hopeless Date</div>
+    <div class="well-value">{{hold.hopeless_date | formatValue:'timestamp'}}</div>
+  </div>
+</div>
+
+<div class="row mt-2">
+  <div class="col-lg-12">
+    <ul ngbNav #detailNav="ngbNav" class="nav-tabs" [activeId]="detailTab" [keyboard]="true" [roles]="false" role="tablist">
+      <li role="presentation" ngbNavItem="notes">
+        <a role="tab" ngbNavLink i18n>Notes</a>
+        <ng-template ngbNavContent>
+          <button class="btn btn-outline-dark mt-3" (click)="newNote()" i18n>New Note</button>
+          <div class="mt-3" *ngFor="let note of notes">
+            <div class="d-flex">
+              <div class="fw-bold">{{note.title()}}</div>
+              <div class="flex-1"></div>
+              <div>
+                <span *ngIf="note.slip() === 't'" 
+                  class="ms-2 badge rounded-pill bg-info p-1">Print on Slip</span>
+                <span *ngIf="note.pub() === 't'" 
+                  class="ms-2 badge rounded-pill bg-warning p-1">Patron Visible</span>
+                <span *ngIf="note.staff() === 't'" 
+                  class="ms-2 badge rounded-pill bg-info p-1">Staff Create</span>
+              </div>
+            </div>
+            <div class="well-table">
+              <div class="well-row">
+                <div class="well-value">{{note.body()}}</div>
+                <div class="well-label-no-flex">
+                  <button class="btn btn-warning" 
+                    (click)="deleteNote(note)" i18n>Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+      <li role="presentation" ngbNavItem="notifications">
+        <a role="tab" ngbNavLink i18n>Staff Notifications</a>
+        <ng-template ngbNavContent>
+          <button class="btn btn-outline-dark mt-3" 
+            (click)="newNotify()" i18n>Add Record of Notification</button>
+          <div class="mt-3" *ngFor="let notify of notifies">
+            <div class="d-flex">
+              <div class="fw-bold">{{notify.method()}}</div>
+              <div class="flex-1"></div>
+              <div>
+                <span>{{notify.notify_time() | date:'short'}}</span>
+                <span class="ms-2" i18n>
+                  Created by {{notify.notify_staff().usrname()}}</span>
+              </div>
+              <div>
+              </div>
+            </div>
+            <div class="well-table">
+              <div class="well-row">
+                <div class="well-value">{{notify.note()}}</div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+    <div [ngbNavOutlet]="detailNav"></div>
+  </div>
+</div>

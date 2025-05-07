@@ -1,0 +1,31 @@
+<eg-staff-banner bannerText="Acquisitions Search" i18n-bannerText>
+</eg-staff-banner>
+
+<!--
+<div class="row">
+  <div class="ms-auto me-3"><a i18n href="/eg/staff/acq/legacy/search/unified">Legacy Search Interface</a></div>
+</div>
+-->
+<div class="row" id="acq-search-page">
+  <div class="col-lg-12">
+    <ul ngbNav #acqSearchTabs="ngbNav" class="nav-tabs" [keyboard]="true" [roles]="false" role="tablist" [(activeId)]="searchType" (navChange)="onTabChange($event)">
+      <li role="presentation" [ngbNavItem]="'lineitems'">
+        <a role="tab" ngbNavLink i18n>Line Items Search</a>
+        <ng-template ngbNavContent><eg-lineitem-results [initialSearchTerms]="urlSearchTerms"></eg-lineitem-results></ng-template>
+      </li>
+      <li role="presentation" [ngbNavItem]="'purchaseorders'">
+        <a role="tab" ngbNavLink i18n>Purchase Orders Search</a>
+        <ng-template ngbNavContent><eg-purchase-order-results [initialSearchTerms]="urlSearchTerms"></eg-purchase-order-results></ng-template>
+      </li>
+      <li role="presentation" [ngbNavItem]="'invoices'">
+        <a role="tab" ngbNavLink i18n>Invoices Search</a>
+        <ng-template ngbNavContent><eg-invoice-results [initialSearchTerms]="urlSearchTerms"></eg-invoice-results></ng-template>
+      </li>
+      <li role="presentation" [ngbNavItem]="'selectionlists'">
+        <a role="tab" ngbNavLink i18n>Selection Lists Search</a>
+        <ng-template ngbNavContent><eg-picklist-results [initialSearchTerms]="urlSearchTerms"></eg-picklist-results></ng-template>
+      </li>
+    </ul>
+    <div [ngbNavOutlet]="acqSearchTabs"></div>
+  </div>
+</div>

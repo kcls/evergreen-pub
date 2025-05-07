@@ -20,7 +20,6 @@ export class HoldsPullListComponent {
     ) {}
 
     targetOrg(): number {
-        // TODO: selector
         return this.auth.user().ws_ou();
     }
 }

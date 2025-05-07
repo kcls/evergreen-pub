@@ -104,8 +104,6 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
 
     @Input() disablePaging: boolean;
 
-    @Input() disableLoadProgress = false;
-
     // result filtering
     //
     // filterable: true if the result filtering controls
@@ -122,22 +120,9 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     // "sticky", i.e., remain visible if if the table is long
     // and the user has scrolled far enough that the header
     // would go out of view
-    _stickyHeader = false;
-    @Input() set stickyHeader(v: boolean) {
-        this._stickyHeader = this.context.stickyGridHeader = v;
-    }
-
-    get stickyHeader(): boolean {
-        return this._stickyHeader;
-    }
+    @Input() stickyHeader: boolean;
 
     @Input() cellTextGenerator: GridCellTextGenerator;
-
-    // Disable tooltips for all grid columns
-    @Input() disableTooltips: boolean;
-
-    // Reduces some overall padding, etc.
-    @Input() tightDisplay = false;
 
     // If set, appears along the top left side of the grid.
     @Input() toolbarLabel: string;
@@ -145,12 +130,6 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
     // If true, showing/hiding columns will force the data source to
     // refresh the current page of data.
     @Input() reloadOnColumnChange = false;
-
-    // Sometimes we want to load settings from a setting the user
-    // cannot save settings back to (e.g. org unit settings).
-    // Over time, this should be replaced with logic to detect if
-    // the user can write configs back to the setting.
-    @Input() disableSaveSettings = false;
 
     context: GridContext;
 
@@ -202,7 +181,6 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
         this.context.disablePaging = this.disablePaging === true;
         this.context.cellTextGenerator = this.cellTextGenerator;
         this.context.ignoredFields = [];
-        this.context.disableTooltips = this.disableTooltips;
         this.context.reloadOnColumnChange = this.reloadOnColumnChange;
 
         if (this.showFields) {
@@ -225,7 +203,7 @@ export class GridComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         if (this.pageSize) {
-            this.context.pager.limit = Number(this.pageSize);
+            this.context.pager.limit = this.pageSize;
         }
 
         // TS doesn't seem to like: let foo = bar || () => '';

@@ -28,7 +28,7 @@ export class AsnReceiveComponent implements OnInit {
     barcode = '';
     receiving = false;
     dryRun = false;
-    receiveOnScan = true;
+    receiveOnScan = false;
     notFound = false;
     findingContainer = false;
     loadingContainer = false;
@@ -114,7 +114,7 @@ export class AsnReceiveComponent implements OnInit {
                 if (this.containers.length === 1) {
                     this.container = this.containers[0];
                     this.loadContainer().then(_ => {
-                        if (this.receiveOnScan && !this.container.process_date()) {
+                        if (this.receiveOnScan) {
                             this.receiveAllItems();
                         }
                     });
@@ -207,10 +207,7 @@ export class AsnReceiveComponent implements OnInit {
             this.progress.update({value: resp.progress});
             console.debug('ASN Receive returned', resp);
             this.receiveResponse = resp;
-        })).toPromise()
-        // Push the progress to 100% even if there were fewer receivable
-        // items than our ASN message wanted.
-        .then(_ => this.progress.update({value: this.progress.max}));
+        })).toPromise();
     }
 
     clearReceiving() {

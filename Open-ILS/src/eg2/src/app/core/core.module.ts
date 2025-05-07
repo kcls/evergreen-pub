@@ -5,17 +5,14 @@
  * and do not require entry in our 'providers' array.
  */
 import {NgModule} from '@angular/core';
-import {CommonModule, DecimalPipe, DatePipe, CurrencyPipe} from '@angular/common';
-import {FormatService, FormatValuePipe, OrgDateInContextPipe,
-    DueDatePipe, SimpleDatePipe, SimpleDateTimePipe} from './format.service';
+import {CommonModule, DatePipe, DecimalPipe} from '@angular/common';
+import {FormatValuePipe, OrgDateInContextPipe, DueDatePipe} from './format.service';
 
 @NgModule({
   declarations: [
     FormatValuePipe,
     OrgDateInContextPipe,
-    DueDatePipe,
-    SimpleDatePipe,
-    SimpleDateTimePipe
+    DueDatePipe
   ],
   imports: [
     CommonModule
@@ -24,9 +21,7 @@ import {FormatService, FormatValuePipe, OrgDateInContextPipe,
     CommonModule,
     FormatValuePipe,
     OrgDateInContextPipe,
-    DueDatePipe,
-    SimpleDatePipe,
-    SimpleDateTimePipe
+    DueDatePipe
   ],
   providers: [
     DatePipe,

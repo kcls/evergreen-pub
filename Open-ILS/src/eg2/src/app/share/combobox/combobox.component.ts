@@ -207,8 +207,6 @@ export class ComboboxComponent
     // When the UI value is cleared, null is emitted.
     @Output() onChange: EventEmitter<ComboboxEntry>;
 
-    @Output() keyUpEnter: EventEmitter<void> = new EventEmitter<void>();
-
     // Useful for massaging the match string prior to comparison
     // and display.  Default version trims leading/trailing spaces.
     formatDisplayString: (e: ComboboxEntry) => string;
@@ -234,20 +232,7 @@ export class ComboboxComponent
         this.defaultSelectionApplied = false;
 
         this.formatDisplayString = (result: ComboboxEntry) => {
-
-            let display;
-            if (this.idlClass && result.fm) {
-                // In some scenarios, like when we receive a partial
-                // data set from the caller in advance of any async
-                // lookups, the entry labels will not get formatted.
-                // Enforce the formatting here.
-                display = this.getFmRecordLabel(result.fm);
-            }
-
-            if (!display) { // Ensure the above produces something
-                display = result.label || result.id;
-            }
-
+            const display = result.label || result.id;
             return (display + '').trim();
         };
 
@@ -597,15 +582,8 @@ export class ComboboxComponent
                 // click action occurred.
                 if (term === '') { return []; }
 
-                // Clicking always displays the full list.
-                if (term === '_CLICK_') {
-                    if (this.asyncDataSource) {
-                        term = '';
-                    } else {
-                        setTimeout(() => this.applyDisableStyle());
-                        return this.entrylist;
-                    }
-                }
+                // If we make it this far, _CLICK_ means show everything.
+                if (term === '_CLICK_') { term = ''; }
 
                 // Give the typeahead a chance to open before applying
                 // the disabled entry styling.
@@ -642,13 +620,6 @@ export class ComboboxComponent
         this.propagateTouch = fn;
     }
 
-    hasNoValues(): boolean {
-        return (
-            this.allowFreeText &&
-            !this.asyncDataSource &&
-            (this.entrylist || []).length === 0
-        );
-    }
 }
 
 

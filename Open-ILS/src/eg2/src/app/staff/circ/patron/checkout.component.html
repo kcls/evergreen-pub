@@ -5,10 +5,6 @@
 <eg-string #receiptEmailed i18n-text text="Receipt Successfully Emailed">
 </eg-string>
 
-<a (click)="doneAutoReceipt()" tabindex="-1" class="d-none"
-  egAccessKey keyCtx="checkout" i18n-keySpec i18n-keyDesc
-  keySpec="alt+d" keyDesc="Print Checkout Reciept and Close Patron"></a>
-
 <eg-prompt-dialog #nonCatCount
   promptType="number"
   i18n-dialogTitle dialogTitle="Non-Cat Checkout"
@@ -47,42 +43,51 @@
         </div>
       </div>
     </div>
+    <div class="col-lg-2">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" 
+               (ngModelChange)="toggleStrictBarcode($event)"
+               id="strict-barcode-cbox" [(ngModel)]="strictBarcode"/>
+        <label class="form-check-label" 
+               for="strict-barcode-cbox" i18n>Strict Barcode</label>
+      </div>
+    </div>
     <div class="flex-1"></div>
     <div ngbDropdown>
       <button ngbDropdownToggle class="btn me-2" [ngClass]="{
-          'btn-outline-dark': dueDateOptions == 0,
+          'btn-outline-dark': dueDateOptions === 0,
           'btn-outline-success': dueDateOptions > 0
         }"
         i18n>Date Options</button>
       <div ngbDropdownMenu>
         <button ngbDropdownItem (click)="toggleDateOptions(1)">
           <span *ngIf="dueDateOptions > 0" 
-            class="badge badge-success">&#x2713;</span>  
-          <span *ngIf="dueDateOptions == 0" 
-            class="badge badge-warning">&#x2717;</span> 
-          <span class="pl-2" i18n>Specific Due Date</span>
+            class="rounded-pill bg-success">&#x2713;</span>  
+          <span *ngIf="dueDateOptions === 0" 
+            class="rounded-pill bg-warning">&#x2717;</span> 
+          <span class="ps-2" i18n>Specific Due Date</span>
         </button>
         <button ngbDropdownItem (click)="toggleDateOptions(2)">
-          <span *ngIf="dueDateOptions == 2" 
-            class="badge badge-success">&#x2713;</span>  
+          <span *ngIf="dueDateOptions === 2" 
+            class="rounded-pill bg-success">&#x2713;</span>  
           <span *ngIf="dueDateOptions < 2" 
-            class="badge badge-warning">&#x2717;</span> 
-          <span class="pl-2" i18n>Specific Due Date Until Logout</span>
+            class="rounded-pill bg-warning">&#x2717;</span> 
+          <span class="ps-2" i18n>Specific Due Date Until Logout</span>
         </button>
       </div>
     </div>
-    <eg-date-select-native
-      [noPast]="true"
-      [ngModel]="dueDateYmd"
-      [disabled]="dueDateOptions == 0"
-      (valueChange)="setDueDate($event)">
-    </eg-date-select-native>
+    <eg-datetime-select [initialIso]="dueDate" [noPast]="true"
+      [readOnly]="dueDateOptions === 0" (onChangeAsIso)="setDueDate($event)">
+    </eg-datetime-select>
+    <ng-container *ngIf="dueDateInvalid">
+      <span class="text-danger font-weight-bold ml-2" i18n>Due Date is Invalid</span>
+    </ng-container>
   </div>
 </div>
 
 <ng-template #copyBarcodeTemplate let-r="row">
   <ng-container *ngIf="r.copy">
-    <a routerLink="/staff/cat/item/{{r.copy.id()}}">{{r.copy.barcode()}}</a>
+    <a href="/eg/staff/cat/item/{{r.copy.id()}}">{{r.copy.barcode()}}</a>
   </ng-container>
 </ng-template>
 
@@ -129,9 +134,6 @@
       <eg-grid-column name="copy_barcode" label="Barcode" i18n-label
         [cellTemplate]="copyBarcodeTemplate"></eg-grid-column>
 
-      <eg-grid-column path="copy.alert_message" label="Alert Message" 
-        i18n-label></eg-grid-column>
-
       <eg-grid-column path="title" label="Title" i18n-label 
         [cellTemplate]="titleTemplate"></eg-grid-column>
 
@@ -155,31 +157,61 @@
 
 <div class="row mt-3 pt-3">
   <div class="col-lg-12 d-flex">
-    <div *ngIf="willEmailReceipt()">
-      <span class="label-with-material-icon">
-        <span class="material-icons me-1">email</span>
-        <span i18n>Receipt will be emailed to {{context.summary.patron.email()}}</span>
-      </span>
-    </div>
     <div class="flex-1"></div>
-    <div>
+    <div class="me-3">
       <div class="form-check form-check-inline pt-1">
         <input class="form-check-input" type="checkbox" 
           (ngModelChange)="toggleStrictBarcode($event)"
           id="strict-barcode-cbox" [(ngModel)]="strictBarcode"/>
-        <label class="form-check-label" 
+        <label class="form-label form-check-label" 
           for="strict-barcode-cbox" i18n>Strict Barcode</label>
       </div>
     </div>
-    <button class="btn btn-outline-dark" (click)="printReceipt()" i18n type="button">
-      Quick Receipt
-    </button>
-    <button class="btn btn-outline-dark ms-2" (click)="donePrintReceipt()" i18n type="button">
-      Done &amp; Print Receipt
-    </button>
-    <button class="btn btn-outline-dark ms-2" (click)="doneNoReceipt()" i18n type="button">
-      Done
-    </button>
+    <div class="me-3">
+      <div class="input-group">
+        <span class="material-icons pt-2 pe-2" aria-hidden="true">
+          {{mayEmailReceipt() ? 'email' : 'print'}}
+        </span>
+        <button class="btn btn-outline-dark" (click)="quickReceipt()" i18n type="button">
+          Quick Receipt
+        </button>
+        <div class="input-group-text">
+          <div ngbDropdown>
+            <button ngbDropdownToggle class="btn btn-outline-dark" type="button"
+              aria-label="Select email or print" i18n-aria-label
+              title="Select email or print" i18n-title>
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem (click)="emailReceipt()" type="button"
+                [disabled]="!mayEmailReceipt()" i18n>Email Receipt</button>
+              <button ngbDropdownItem (click)="printReceipt()" i18n type="button">Print Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="me-3">
+      <div class="input-group">
+        <button class="btn btn-outline-dark" (click)="doneAutoReceipt()" i18n type="button">
+          Done
+        </button>
+        <div class="input-group-text">
+          <div ngbDropdown>
+            <button ngbDropdownToggle class="btn btn-outline-dark" type="button"
+              aria-label="Select email or print" i18n-aria-label
+              title="Select email or print" i18n-title>
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem (click)="doneRedirect()" i18n>No Receipt</button>
+              <button ngbDropdownItem (click)="emailReceipt(true)" 
+                [disabled]="!mayEmailReceipt()" i18n>Email Receipt</button>
+              <button ngbDropdownItem 
+                (click)="printReceipt(true)" i18n>Print Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

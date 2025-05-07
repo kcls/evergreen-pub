@@ -9,9 +9,6 @@ import {PatronSearch} from '@eg/staff/share/patron/search.component';
 import {StoreService} from '@eg/core/store.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {CircService, CircDisplayInfo} from '@eg/staff/share/circ/circ.service';
-import {PrintService} from '@eg/share/print/print.service';
-import {Router} from '@angular/router';
-import {EventService} from '@eg/core/event.service';
 
 export interface BillGridEntry extends CircDisplayInfo {
     xact: IdlObject; // mbt
@@ -47,7 +44,6 @@ const PATRON_FLESH_FIELDS = [
     'notes',
     'profile',
     'net_access_level',
-    'stat_cat_entries',
     'ident_type',
     'ident_type2',
     'groups'
@@ -69,15 +65,10 @@ export class PatronContextService {
     settingsCache: {[key: string]: any} = {};
 
     constructor(
-        private router: Router,
         private store: StoreService,
         private serverStore: ServerStoreService,
-        private evt: EventService,
         private org: OrgService,
-        private auth: AuthService,
-        private net: NetService,
         private circ: CircService,
-        private printer: PrintService,
         public patrons: PatronService
     ) {}
 
@@ -146,11 +137,6 @@ export class PatronContextService {
 
     patronAlertsShown(): boolean {
         if (!this.summary) { return false; }
-
-        // Skip the alerts on the Bill statement page so staff
-        // can jump directly here from the Refunds summary page.
-        if (this.router.url.includes('/statement')) { return true; }
-
         this.store.addLoginSessionKey('eg.circ.last_alerted_patron');
         const shown = this.store.getLoginSessionItem('eg.circ.last_alerted_patron');
         if (shown === this.summary.patron.id()) { return true; }
@@ -210,66 +196,6 @@ export class PatronContextService {
             xact.circulation().circ_lib().shortname();
 
         return Object.assign(entry, circDisplay);
-    }
-
-    printLostPaidByPayment(paymentId: number): Promise<any> {
-        if (!paymentId) { return; }
-
-        return this.net.request('open-ils.circ',
-            'open-ils.circ.refundable_payment.receipt.by_pay.html',
-            this.auth.token(), paymentId
-
-        ).toPromise().then(receipt => {
-
-            if (receipt &&
-                receipt.textcode === 'MONEY_REFUNDABLE_XACT_SUMMARY_NOT_FOUND') {
-                alert('Cannot generate lost/paid receipt for payment #' + paymentId);
-                return;
-            }
-
-            if (!receipt || !receipt.template_output()) {
-                return alert(
-                    'Error creating refundable payment receipt for payment ' + paymentId);
-            }
-
-            const html = receipt.template_output().data();
-
-            this.printer.print({
-                text: html,
-                contentType: 'text/html',
-                printContext: 'default'
-            });
-        });
-    }
-
-    printLostPaid(xactId: number): Promise<any> {
-        if (!xactId) { return Promise.resolve(); }
-
-        return this.net.request('open-ils.circ',
-            'open-ils.circ.refundable_payment.receipt.by_xact.html',
-            this.auth.token(), xactId
-
-        ).toPromise().then(receipt => {
-
-            if (receipt &&
-                receipt.textcode === 'MONEY_REFUNDABLE_XACT_SUMMARY_NOT_FOUND') {
-                alert('Cannot generate lost/paid receipt for transaction #' + xactId);
-                return;
-            }
-
-            if (!receipt || !receipt.template_output()) {
-                return alert(
-                    'Error creating refundable payment receipt for payment ' + xactId);
-            }
-
-            const html = receipt.template_output().data();
-
-            this.printer.print({
-                text: html,
-                contentType: 'text/html',
-                printContext: 'default'
-            });
-        });
     }
 }
 

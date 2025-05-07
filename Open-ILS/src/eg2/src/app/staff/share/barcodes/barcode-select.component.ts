@@ -74,8 +74,6 @@ export class BarcodeSelectComponent extends DialogComponent {
         this.matches = [];
         this.inputs = {};
 
-        barcode = (barcode || '').trim();
-
         const result: BarcodeSelectResult = {
             barcode: barcode,
             id: null
@@ -85,7 +83,7 @@ export class BarcodeSelectComponent extends DialogComponent {
             'open-ils.actor',
             'open-ils.actor.get_barcodes',
             this.auth.token(), this.auth.user().ws_ou(),
-            class_, barcode
+            class_, barcode.trim()
         ).toPromise();
 
         promise = promise.then(results => {

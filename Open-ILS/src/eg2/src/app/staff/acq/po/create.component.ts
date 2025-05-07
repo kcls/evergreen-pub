@@ -1,4 +1,4 @@
-import {Component, Input, OnInit, AfterViewInit, ViewChild} from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {of, Observable} from 'rxjs';
 import {tap, take, map} from 'rxjs/operators';
@@ -32,7 +32,6 @@ export class PoCreateComponent implements OnInit {
     initDone = false;
     lineitems: number[] = [];
     origLiCount = 0;
-
     poName: string;
     orderAgency: number;
     provider: ComboboxEntry;
@@ -89,12 +88,6 @@ export class PoCreateComponent implements OnInit {
         }
     }
 
-    ngAfterViewInit() {
-        const node = document.getElementById('provider-input');
-        if (node) { node.focus(); }
-    }
-
-
     orgChange(org: IdlObject) {
         this.orderAgency = org ? org.id() : null;
         this.checkDuplicatePoName();
@@ -122,22 +115,18 @@ export class PoCreateComponent implements OnInit {
             args.lineitems = this.lineitems;
         }
 
-        if (this.createAssets) {
-            // This version simply creates all records sans Vandelay merging, etc.
-            // TODO: go to asset creator.
-            args.vandelay = {
-                import_no_match: true,
-                queue_name: `ACQ ${new Date().toISOString()}`
-            };
-        }
-
         this.net.request('open-ils.acq',
             'open-ils.acq.purchase_order.create',
             this.auth.token(), po, args
         ).toPromise().then(resp => {
             if (resp && resp.purchase_order) {
-                this.router.navigate(
-                    ['/staff/acq/po/' + resp.purchase_order.id()]);
+                if (this.createAssets) {
+                    this.router.navigate(
+                        ['/staff/acq/po/' + resp.purchase_order.id() + '/create-assets']);
+                } else {
+                    this.router.navigate(
+                        ['/staff/acq/po/' + resp.purchase_order.id()]);
+                }
             }
         });
     }

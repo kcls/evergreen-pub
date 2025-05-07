@@ -36,16 +36,12 @@ interface OrgDisplay {
 
 @Component({
   selector: 'eg-org-select',
-  templateUrl: './org-select.component.html',
-  styles: [`
-    .icons {margin-left:-18px}
-    .material-icons {font-size: 16px;font-weight:bold}
-  `],
+  templateUrl: './org-select.component.html'
 })
 export class OrgSelectComponent implements OnInit {
     static domId = 0;
 
-    showCombinedNames = true; // Managed via user/workstation setting
+    showCombinedNames = false; // Managed via user/workstation setting
 
     _selected: OrgDisplay;
     set selected(s: OrgDisplay) {
@@ -150,9 +146,6 @@ export class OrgSelectComponent implements OnInit {
     // in the selector.
     @Input() orgClassCallback: (orgId: number) => string;
 
-    // Make the input a wee bit less paddy
-    @Input() smallFormControl = false;
-
     // Emitted when the org unit value is changed via the selector.
     // Does not fire on initialOrg
     @Output() onChange = new EventEmitter<IdlObject>();
@@ -163,9 +156,6 @@ export class OrgSelectComponent implements OnInit {
     // detect when the selector is done with all of its automated
     // underground shuffling and landed on a value.
     @Output() componentLoaded: EventEmitter<void> = new EventEmitter<void>();
-
-    // Emitted when (keyup.enter) is fired on the input.
-    @Output() keyUpEnter: EventEmitter<void> = new EventEmitter<void>();
 
     // convenience method to get an IdlObject representing the current
     // selected org unit. One way of invoking this is via a template
@@ -198,12 +188,8 @@ export class OrgSelectComponent implements OnInit {
             this.getFromSetting() : Promise.resolve(null);
 
         promise = promise.then(startupOrg => {
-            return this.serverStore.getItem('eg.orgselect.show_short_names')
-            .then(hide => {
-                // hide == hide long names
-                // We're reversing the stock behavior here.
-                let show = !hide;
-
+            return this.serverStore.getItem('eg.orgselect.show_combined_names')
+            .then(show => {
                 const sortField = show ? 'name' : this.displayField;
 
                 // Sort the tree and reabsorb to propagate the sorted
@@ -322,21 +308,14 @@ export class OrgSelectComponent implements OnInit {
     orgChanged(selEvent: NgbTypeaheadSelectItemEvent) {
         // console.debug('org unit change occurred ' + selEvent.item);
         this.onChange.emit(this.org.get(selEvent.item.id));
-        this.saveCurrentSetting(selEvent.item.id);
-    }
 
-    saveCurrentSetting(orgId?: number): Promise<any> {
-        if (!this.persistKey) { return Promise.resolve(null); }
+        if (this.persistKey && this.valueFromSetting !== selEvent.item.id) {
+            // persistKey is active.  Update the persisted value when changed.
 
-        if (!orgId) { this.selectedOrgId(); }
-
-        if (this.valueFromSetting === orgId) { return Promise.resolve(null); }
-
-        // persistKey is active.  Update the persisted value when changed.
-
-        const key = `eg.orgselect.${this.persistKey}`;
-        this.valueFromSetting = orgId;
-        return this.serverStore.setItem(key, orgId);
+            const key = `eg.orgselect.${this.persistKey}`;
+            this.valueFromSetting = selEvent.item.id;
+            this.serverStore.setItem(key, this.valueFromSetting);
+        }
     }
 
     // Remove the tree-padding spaces when matching.

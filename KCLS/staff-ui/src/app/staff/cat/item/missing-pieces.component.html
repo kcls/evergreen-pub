@@ -1,0 +1,169 @@
+<eg-staff-banner i18n-bannerText bannerText="Mark Item Missing Pieces">
+</eg-staff-banner>
+
+<eg-patron-penalty-dialog #penaltyDialog></eg-patron-penalty-dialog>
+
+<eg-pause-refund-dialog #pauseRefundDialog></eg-pause-refund-dialog>
+
+<eg-repair-cost-dialog #costDialog></eg-repair-cost-dialog>
+
+<eg-string key="cat.item.missing_pieces.update_alert.success" 
+  i18n-text text="Item Alert Messge Successfully Updated"></eg-string>
+
+<eg-string key="cat.item.missing_pieces.update_alert.failure" 
+  i18n-text text="Item Alert Messge Update Failed"></eg-string>
+
+<div class="row rol-cols-auto">
+  <div class="col-4">
+    <div class="input-group">
+      <span class="input-group-text" id='barcode-label' i18n>Barcode</span>
+      <input type="text" class="form-control" id="item-barcode-input" 
+        (keydown)="noSuchItem=false; true;"
+        (keyup.enter)="getItemByBarcode()" [(ngModel)]="itemBarcode" 
+        aria-describedby="barcode-label"/>
+    </div>
+  </div>
+  <div class="col ms-0 ps-0">
+    <button class="btn btn-outline-dark" (disabled)="updatingItemAlert"
+      (click)="getItemByBarcode()" i18n>Submit</button>
+  </div>
+</div>
+
+<div class="mt-3 mb-3 p-2" *ngIf="item">
+  <div class="row">
+    <div class="col-lg-2" i18n>Title: </div>
+    <div class="col-lg-10">{{display('title')}}</div>
+  </div>
+  <div class="row">
+    <div class="col-lg-2" i18n>Author: </div>
+    <div class="col-lg-10">{{display('author')}}</div>
+  </div>
+  <div class="row">
+    <div class="col-lg-2" i18n>Call Number: </div>
+    <div class="col-lg-10">{{item.call_number().label()}}</div>
+  </div>
+  <div class="row mt-2">
+    <div class="col-lg-12">
+      <button class="btn btn-success" (click)="processItem()" i18n
+        [disabled]="itemIsLost">
+        Mark Item as Missing Pieces?
+      </button>
+      <button class="btn btn-warning ms-2" (click)="reset()">
+        <ng-container *ngIf="!itemProcessed" i18n>Cancel</ng-container>
+        <ng-container *ngIf="itemProcessed" i18n>Reset Form</ng-container>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="row m-1" *ngIf="expiredPatronAccount">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-warning">
+      <p i18n>
+        The patron account in question has expired.  Please extend the
+        patron's expire date and re-process the missing pieces.
+      </p>
+      <p>
+        <a target="_blank" 
+          routerLink="/staff/circ/patron/{{expiredPatronAccount.id()}}/edit" i18n>
+          {{expiredPatronAccount.family_name()}} / {{expiredPatronAccount.card().barcode()}}
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
+
+
+<div class="row m-1" *ngIf="noSuchItem">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-warning" i18n>
+     No item with barcode "{{itemBarcode}}".
+    </div>
+  </div>
+</div>
+
+<div class="row m-1" *ngIf="circNotFound">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-warning" i18n>
+     No circulation found for item with barcode {{itemBarcode}}.
+     Item not modified.
+    </div>
+  </div>
+</div>
+
+<div class="row m-1" *ngIf="itemIsLost">
+  <div class="col-lg-6 offset-lg-3">
+    <div class="alert alert-danger" i18n>
+      Item Is Marked LOST and Must First be Checked In.
+    </div>
+  </div>
+</div>
+
+
+<div class="row m-1" *ngIf="processing">
+  <div class="col-lg-6 offset-lg-3">
+    <eg-progress-inline></eg-progress-inline>
+  </div>
+</div>
+
+<div *ngIf="item && circ">
+  <hr class="mb-2"/>
+  <div class="row mb-2">
+    <div class="col-lg-4">
+      <div class="form-group form-validated">
+        <label for="alert-message" i18n>Item Alert Message:</label>
+        <textarea (ngModelChange)="alertMsgNeedsUpdating=true" 
+          id="alert-message" [(ngModel)]="itemAlert" 
+          required rows="3" class="form-control"></textarea>
+      </div>
+      <button [disabled]="!alertMsgNeedsUpdating" class="btn btn-info mt-1" 
+        (click)="updateAlertMessage()" i18n>Update Alert Message</button>
+    </div>
+    <div class="col-lg-4">
+      <label i18n>Missing Pieces Description for Letter</label> 
+      <eg-help-popover placement="right" 
+        i18n-helpText helpText="Modify the message which displays in the printed letter">
+      </eg-help-popover>
+      <textarea class="form-control mt-2"
+        [(ngModel)]="missingPiecesNote" required rows="3"></textarea>
+      <button class="btn btn-info mt-2" (click)="prepareLetter()" i18n>
+        Update Missing Pieces Description
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="circ">
+  <hr class="mb-2"/>
+  <div class="row">
+    <div class="col-lg-12">
+      <!-- avoid link underline since it's inside a button -->
+      <a style="text-decoration: none;"
+        routerLink="/staff/circ/patron/{{circ.usr()}}/checkout" target="_blank">
+        <button class="btn btn-outline-primary label-with-material-icon" i18n>
+          <span>Retrieve Patron</span>
+          <span class="material-icons">person</span>
+        </button>
+      </a>
+      <button class="btn btn-outline-primary label-with-material-icon ms-3" (click)="prepareLetter()" i18n>
+        <span>Update Letter</span>
+        <span class="material-icons">refresh</span>
+      </button>
+      <button *ngIf="printPreviewHtml" (click)="printLetter()" 
+        class="btn btn-outline-success label-with-material-icon ms-3" i18n>
+        <span>Print Letter</span>
+        <span class="material-icons">print</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 mt-5">
+    <h4 *ngIf="printPreviewHtml" i18n>Preview</h4>                                                
+    <div [ngClass]="{'border border-dark w-100': printPreviewHtml}" 
+      id="print-preview-pane"></div> 
+  </div>
+</div>
+
+

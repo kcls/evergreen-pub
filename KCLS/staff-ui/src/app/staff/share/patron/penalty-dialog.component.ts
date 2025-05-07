@@ -1,0 +1,323 @@
+import {Component, OnInit, Input, Output, ViewChild} from '@angular/core';
+import {of, merge, from, Observable} from 'rxjs';
+import {tap, take, switchMap} from 'rxjs/operators';
+import {IdlService, IdlObject} from '@eg/core/idl.service';
+import {OrgService} from '@eg/core/org.service';
+import {ServerStoreService} from '@eg/core/server-store.service';
+import {AuthService} from '@eg/core/auth.service';
+import {NetService} from '@eg/core/net.service';
+import {EventService} from '@eg/core/event.service';
+import {ToastService} from '@eg/share/toast/toast.service';
+import {PcrudService} from '@eg/core/pcrud.service';
+import {StaffService} from '@eg/staff/share/staff.service';
+import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
+import {DialogComponent} from '@eg/share/dialog/dialog.component';
+import {StringComponent} from '@eg/share/string/string.component';
+
+
+/**
+ * Dialog container for patron penalty/message application
+ *
+ * <eg-patron-penalty-dialog [patronId]="myPatronId">
+ * </eg-patron-penalty-dialog>
+ */
+
+@Component({
+  selector: 'eg-patron-penalty-dialog',
+  templateUrl: 'penalty-dialog.component.html'
+})
+
+export class PatronPenaltyDialogComponent
+    extends DialogComponent implements OnInit {
+
+    @Input() patronId: number;
+    @Input() penaltyNote = '';
+
+    // If true, avoid applying the new penalty.  Just create and return it.
+    @Input() externalCreate = false;
+
+    ALERT_NOTE = 20;
+    SILENT_NOTE = 21;
+    STAFF_CHR = 25;
+    noteRows = 3;
+
+    penalty: IdlObject; // modifying an existing penalty
+    penaltyTypes: IdlObject[];
+    startPatronMessage = 0;
+    patronMessage = 0;
+    patronMessages: IdlObject[];
+    penaltyTypeFromSelect = '';
+    penaltyTypeFromButton: number;
+    patron: IdlObject;
+    dataLoaded = false;
+    requireInitials = false;
+    startInitials = '';
+    initials: string;
+    startNoteText = '';
+    noteText = '';
+    defaultType = this.SILENT_NOTE;
+    appendToPatronMessage = '';
+
+    @ViewChild('successMsg', {static: false}) successMsg: StringComponent;
+    @ViewChild('errorMsg', {static: false}) errorMsg: StringComponent;
+
+    constructor(
+        private modal: NgbModal,
+        private idl: IdlService,
+        private org: OrgService,
+        private net: NetService,
+        private store: ServerStoreService,
+        private evt: EventService,
+        private toast: ToastService,
+        private auth: AuthService,
+        private staff: StaffService,
+        private pcrud: PcrudService) {
+        super(modal);
+    }
+
+    ngOnInit() {
+        this.onOpen$.subscribe(_ =>
+            this.init().subscribe(__ => this.dataLoaded = true));
+    }
+
+    init(): Observable<any> {
+        this.dataLoaded = false;
+
+        this.penaltyTypeFromButton = 0;
+        this.penaltyTypeFromSelect = '';
+        this.patronMessage = 0;
+        this.noteRows = 3;
+        this.initials = this.startInitials || '';
+        this.noteText = this.startNoteText || '';
+
+        this.startInitials = '';
+        this.startNoteText = '';
+
+        if (this.penalty) { // Modifying an existing penalty
+            const pen = this.penalty;
+            const sp = pen.standing_penalty().id();
+            if (sp === this.ALERT_NOTE ||
+                sp === this.SILENT_NOTE || sp === this.STAFF_CHR) {
+                this.penaltyTypeFromButton = sp;
+                this.penaltyTypeFromSelect = sp; // display in modify mode
+            } else {
+                this.penaltyTypeFromSelect = sp;
+            }
+
+            if (pen.usr_message()) {
+                this.noteText = pen.usr_message().message() || pen.usr_message().title();
+            }
+
+        } else {
+            this.penaltyTypeFromButton = this.defaultType;
+        }
+
+        this.store.getItem('ui.staff.require_initials.patron_standing_penalty')
+        .then(require => this.requireInitials = require);
+
+        let obs1;
+
+        if (this.patronId) {
+            obs1 = this.pcrud.retrieve('au', this.patronId)
+                .pipe(tap(usr => this.patron = usr));
+        } else {
+            // EMPTY won't do because it never gets switchMap'ed.
+            obs1 = of(true);
+        }
+
+        if (this.penaltyTypes) {
+            this.setInitialPatronMessage();
+            return obs1;
+        }
+
+        return obs1
+        .pipe(switchMap(_ => {
+            return this.pcrud.search('csp', {id: {'!=': null}}, {}, {atomic: true})
+
+            .pipe(tap(ptypes => {
+                this.penaltyTypes =
+                    ptypes.sort((a, b) => a.label() < b.label() ? -1 : 1);
+            }));
+        }))
+        .pipe(switchMap(_ => {
+            return this.pcrud.retrieveAll('cpm', {}, {atomic: true})
+            .pipe(tap(messages => {
+                this.patronMessages = messages.sort((m1, m2) => {
+                    if (m1.weight() === m2.weight()) {
+                        return m1.message() < m2.message() ? -1 : 1;
+                    }
+                    return m1.weight() < m2.weight() ? -1 : 1;
+                });
+
+                this.setInitialPatronMessage();
+            }));
+        }));
+    }
+
+    // Set the load-time message text if startup values are provided.
+    setInitialPatronMessage() {
+        if (!this.startPatronMessage) { return; }
+
+        const m = this.patronMessages.filter(
+            m => Number(m.id()) === Number(this.startPatronMessage))[0];
+
+        if (!m) { return; }
+
+        this.noteText = m.message();
+        if (this.appendToPatronMessage) {
+            this.noteText += " " + this.appendToPatronMessage;
+
+            const matches = this.noteText.match(/\n/g);
+            if (matches && matches.length > this.noteRows) {
+                this.noteRows = matches.length;
+            }
+        }
+    }
+
+    setPenaltyType() {
+        const pen = this.penalty;
+
+        const id = pen.standing_penalty().id();
+
+        if (id < 100 && (id < 20 || id > 28)) {
+            // Modifying system penalties is verboten unless they are
+            // canned alert, note, etc. penalty types.
+            return;
+        }
+
+        if (this.penaltyTypeFromButton) {
+
+            // Button type is activated...
+
+            if (!this.penaltyTypeFromSelect ||
+                this.penaltyTypeFromSelect === pen.standing_penalty().id()) {
+                // Selector type is unset or matches the existing value.
+                // This means the user wants to change from a selector
+                // type to a button type.
+                pen.standing_penalty(this.penaltyTypeFromButton);
+                return;
+            }
+        }
+
+        if (this.penaltyTypeFromSelect) {
+            pen.standing_penalty(this.penaltyTypeFromSelect);
+            return;
+        }
+
+        // No type selected.  Should not get here, but to be safe:
+        pen.standing_penalty(this.defaultType);
+    }
+
+    modifyPenalty() {
+
+        let msg: IdlObject;
+        if (msg = this.penalty.usr_message()) {
+            msg.ischanged(true);
+        } else {
+            msg = this.idl.create('aum');
+            msg.isnew(true);
+            msg.create_date('now');
+            msg.sending_lib(this.penalty.org_unit());
+            msg.pub(false);
+            msg.usr(this.penalty.usr());
+        }
+
+        msg.message(
+            this.initials ?
+            this.staff.appendInitials(this.noteText, this.initials) :
+            this.noteText
+        );
+
+        this.setPenaltyType();
+
+        this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.user.penalty.modify',
+            this.auth.token(), this.penalty, msg).toPromise()
+        .then(ok => {
+            if (!ok) {
+                this.errorMsg.current().then(msg => this.toast.danger(msg));
+                this.error('Update failed', true);
+            } else {
+                this.successMsg.current().then(msg => this.toast.success(msg));
+                this.penalty = null;
+                this.close(ok);
+            }
+        });
+    }
+
+    apply() {
+
+        if (this.penalty) {
+            this.modifyPenalty();
+            return;
+        }
+
+        // Determine the context org unit of the applied penalty.
+        const ptypeId = Number(this.penaltyTypeFromSelect || this.penaltyTypeFromButton);
+        const ptype = this.penaltyTypes.filter(pt => Number(pt.id()) === ptypeId)[0];
+        const ptypeDepth = ptype.org_depth() || 0;
+        const ctxOrg = this.org.ancestorAtDepth(this.auth.user().ws_ou(), ptypeDepth);
+
+        const pen = this.idl.create('ausp');
+        pen.usr(this.patronId);
+        pen.set_date('now');
+        pen.staff(this.auth.user().id());
+        pen.standing_penalty(ptypeId);
+        pen.org_unit(ctxOrg.id());
+
+        const msg = {
+            message:
+                this.initials ?
+                this.staff.appendInitials(this.noteText, this.initials) :
+                this.noteText,
+            pub: false
+        };
+
+        if (this.externalCreate) {
+            this.close({penalty: pen, message: msg});
+            return;
+        }
+
+        this.net.request(
+            'open-ils.actor',
+            'open-ils.actor.user.penalty.apply',
+            this.auth.token(), pen, msg
+        ).subscribe(resp => {
+            const e = this.evt.parse(resp);
+            if (e) {
+                this.errorMsg.current().then(msg => this.toast.danger(msg));
+                this.error(e, true);
+            } else {
+                // resp == penalty ID on success
+                this.successMsg.current().then(msg => this.toast.success(msg));
+                this.close(resp);
+            }
+        });
+    }
+
+    buttonClass(pType: number): string {
+        return this.penaltyTypeFromButton === pType ?
+            'btn-primary' : 'btn-light';
+    }
+
+    showPenaltyType(ptype: IdlObject): boolean {
+
+        if (this.penalty) {
+            if (this.penalty.standing_penalty()) {
+                const id = typeof this.penalty.standing_penalty() === 'object'
+                    ? this.penalty.standing_penalty().id()
+                    : this.penalty.standing_penalty();
+
+                return ptype.id() === id;
+            }
+        } else {
+            return ptype.id() >= 100;
+        }
+
+        return false;
+    }
+}
+
+
+

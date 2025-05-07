@@ -34,7 +34,6 @@ export class CatalogResolver implements Resolve<Promise<any[]>> {
         return Promise.all([
             this.cat.fetchCcvms(),
             this.cat.fetchCmfs(),
-            this.cat.checkSearchEngine(),
             this.fetchSettings(),
             this.basket.getRecordIds()
         ]);
@@ -53,12 +52,9 @@ export class CatalogResolver implements Resolve<Promise<any[]>> {
             'cat.marcedit.flateditor',
             'cat.holdings_show_copies',
             'cat.holdings_show_vols',
-            'cat.item_table.limit_to_viable',
+            'cat.patron_view_discovery_layer_url',
             'opac.staff_saved_search.size',
             'eg.catalog.search_templates',
-            'eg.catalog.search_templates.last',
-            'eg.catalog.hide_facets',
-            'eg.search.browse_sort_default',
             'opac.staff_saved_search.size',
             'opac.search.enable_bookplate_search',
             'eg.staffcat.exclude_electronic',
@@ -86,7 +82,10 @@ export class CatalogResolver implements Resolve<Promise<any[]>> {
                 settings['opac.staff.jump_to_details_on_single_hit'] === true;
             this.staffCat.searchFilters =
                 settings['eg.staffcat.search_filters'] || CATALOG_CCVM_FILTERS;
-            this.staffCat.hideFacets = settings['eg.catalog.hide_facets'];
+            if (settings['cat.patron_view_discovery_layer_url']) {
+                this.staffCat.patronViewUrl =
+                    settings['cat.patron_view_discovery_layer_url'];
+            }
         });
     }
 }

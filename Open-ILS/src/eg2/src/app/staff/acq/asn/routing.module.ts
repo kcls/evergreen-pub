@@ -8,7 +8,6 @@ import {LineitemHistoryComponent} from '../lineitem/history.component';
 import {LineitemWorksheetComponent} from '../lineitem/worksheet.component';
 import {AsnComponent} from './asn.component';
 import {AsnReceiveComponent} from './receive.component';
-import {AsnReportComponent} from './report.component';
 
 const routes: Routes = [{
   path: 'receive',
@@ -16,9 +15,7 @@ const routes: Routes = [{
 }, {
   path: 'receive/:containerCode',
   component: AsnReceiveComponent
-}, {
-  path: 'report',
-  component: AsnReportComponent
+
 }];
 
 @NgModule({

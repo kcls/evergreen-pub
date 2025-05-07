@@ -1,11 +1,18 @@
 
-<eg-acq-cancel-dialog #cancelDialog></eg-acq-cancel-dialog>
+<eg-acq-cancel-dialog recordType="po" #cancelDialog></eg-acq-cancel-dialog>
+<eg-acq-link-invoice-dialog #linkInvoiceDialog></eg-acq-link-invoice-dialog>
 <eg-progress-dialog #progressDialog></eg-progress-dialog>
 <eg-confirm-dialog #confirmFinalize
   i18n-dialogTitle i18n-dialogBody
   dialogTitle="Finalize Blanket Order?"
   dialogBody="This will disencumber all blanket charges and mark the PO as received.">
 </eg-confirm-dialog>
+<eg-confirm-dialog #confirmActivate
+  i18n-dialogTitle i18n-dialogBody
+  dialogTitle="Confirm Order Activation?"
+  dialogBody="Please confirm that you want to activate the order; there are warnings.">
+</eg-confirm-dialog>
+
 
 <div *ngIf="po()" class="p-1 border border-secondary rounded">
 
@@ -24,7 +31,8 @@
               <eg-progress-inline></eg-progress-inline>
             </div>
 
-            <span *ngIf="po().state() == 'on-order'" i18n>On Order</span>
+            <span *ngIf="po().state() === 'on-order'" i18n>On Order</span>
+            <span *ngIf="po().state() === 'received'" i18n>Received</span>
             <ng-container *ngIf="canActivate">
               <span *ngIf="!activationEvent" i18n>Pending / Activatable</span>
               <span *ngIf="activationEvent" i18n>
@@ -39,46 +47,46 @@
               </span>
             </ng-container>
 
+            <!-- activation warnings -->
+            <ng-container *ngIf='activationWarnings.length'>
+              <span i18n> (Warning: </span>
+              <ng-container *ngFor="let evt of activationWarnings">
+                <ng-container 
+                 *ngIf="evt.textcode === 'ACQ_FUND_EXCEEDS_WARN_PERCENT'">
+                  <span class="bg-warning" i18n>
+                    Fund exceeds warning percent: 
+                    {{evt.payload.fund.code()}} ({{evt.payload.fund.year()}}).
+                  </span>
+                </ng-container>
+              </ng-container>
+              <span i18n>)</span>
+            </ng-container>
+
             <!-- activation blocks -->
             <div class="text-danger" *ngFor="let evt of activationBlocks">
               <ng-container 
-                *ngIf="evt.textcode == 'ACQ_FUND_EXCEEDS_STOP_PERCENT'; else fundWarn">
+                *ngIf="evt.textcode === 'ACQ_FUND_EXCEEDS_STOP_PERCENT'; else noPrice">
                 <span i18n>
                   Fund exceeds stop percent: 
                   {{evt.payload.fund.code()}} ({{evt.payload.fund.year()}}).
                 </span>
               </ng-container>
-              <ng-template #fundWarn>
-                <ng-container 
-                  *ngIf="evt.textcode == 'ACQ_FUND_EXCEEDS_WARN_PERCENT'; else noPrice">
-                  <span i18n>
-                    Fund exceeds warning percent: 
-                    {{evt.payload.fund.code()}} ({{evt.payload.fund.year()}}).
-                  </span>
-                </ng-container>
-              </ng-template>
               <ng-template #noPrice>
                 <ng-container 
-                  *ngIf="evt.textcode == 'ACQ_LINEITEM_NO_PRICE'; else noCopies">
-                  <span i18n>One or more lineitems have no price.</span>
+                  *ngIf="evt.textcode === 'ACQ_LINEITEM_NO_PRICE'; else noCopies">
+                  <span i18n>One or more line items have no price.</span>
                 </ng-container>
               </ng-template>
               <ng-template #noCopies>
                 <ng-container 
-                  *ngIf="evt.textcode == 'ACQ_LINEITEM_NO_COPIES'; else noOwner">
-                  <span i18n>One or more lineitems have no items attached.</span>
+                  *ngIf="evt.textcode === 'ACQ_LINEITEM_NO_COPIES'; else noOwner">
+                  <span i18n>One or more line items have no items attached.</span>
                 </ng-container>
               </ng-template>
               <ng-template #noOwner>
                 <ng-container 
-                  *ngIf="evt.textcode == 'ACQ_COPY_NO_OWNING_LIB'; else noLocation">
+                  *ngIf="evt.textcode === 'ACQ_COPY_NO_OWNING_LIB'; else otherBlock">
                   <span i18n>One or more items have no owning lib.</span>
-                </ng-container>
-              </ng-template>
-              <ng-template #noLocation>
-                <ng-container 
-                  *ngIf="evt.textcode == 'ACQ_COPY_NO_LOCATION'; else otherBlock">
-                  <span i18n>One or more items have no copy location.</span>
                 </ng-container>
               </ng-template>
               <ng-template #otherBlock>
@@ -94,14 +102,19 @@
           <div class="flex-2" i18n>PO Name:</div>
           <div class="flex-4">
             <ng-container *ngIf="editPoName">
-              <input id='pl-name-input' type="text" class="form-control"
-                [(ngModel)]="newPoName" (keyup.enter)="toggleNameEdit(true)" 
+              <input id='ps-name-input' type="text" class="form-control"
+                [ngModel]="newPoName" (ngModelChange)="newPoName = $event; checkDuplicatePoName()"
+                (keyup.enter)="toggleNameEdit(true)" 
                 (blur)="toggleNameEdit()"/>
             </ng-container>
             <ng-container *ngIf="!editPoName">
               <a (click)="toggleNameEdit()" href='javascript:;'
-                class='font-weight-bold'>{{po().name()}}</a>
+                class='fw-bold'>{{po().name()}}</a>
             </ng-container>
+            <div *ngIf="dupeResults.dupeFound" class="alert alert-warning" i18n>
+              This name is already in used by another PO: 
+              <a target="_blank" routerLink="/staff/acq/po/{{dupeResults.dupePoId}}">View PO</a>
+            </div>
           </div> 
         </div>
         <div class="col-lg-8 d-flex">
@@ -117,7 +130,7 @@
         <div class="col-lg-4 d-flex">
           <div class="flex-2" i18n>Provider:</div>
           <div class="flex-4">
-            <a routerLink="/staff/acq/provider/{{po().provider().id()}}/details" i18n>
+            <a routerLink="/staff/acq/provider/{{po().provider().id()}}/details" target="_blank" i18n>
               {{po().provider().name()}} ({{po().provider().code()}})
             </a>
           </div>
@@ -128,15 +141,15 @@
 
       <div class="row">
         <div class="col-lg-4 d-flex">
-          <div class="flex-2" i18n>Lineitems:</div>
+          <div class="flex-2" i18n>Line Items:</div>
           <div class="flex-4">{{po().lineitem_count()}}</div>
         </div>
         <div class="col-lg-8 d-flex">
-          <div class="form-check form-check-inline">
-            <input class="ml-0 form-check-input" type="checkbox" (change)="setCanActivate()"
+          <div class="form-check form-check-inline" *ngIf="po().state() === 'new' || po().state() === 'pending'">
+            <input class="ms-0 form-check-input" type="checkbox" (change)="setCanActivate()"
               id="zero-copy-cbox" [(ngModel)]="zeroCopyActivate"/>
-            <label class="form-check-label" for="zero-copy-cbox" i18n>
-              Allow Activation with Zero-Copy Lineitems?
+            <label class="form-label form-check-label" for="zero-copy-cbox" i18n>
+              Allow Activation with Zero-Item Line Items?
             </label>
           </div>
         </div>
@@ -159,7 +172,7 @@
       <div class="row">
         <div class="col-lg-8" i18n>Prepayment Required?</div>
         <div class="col-lg-4">
-          <eg-bool [value]="po().provider().prepayment_required()"></eg-bool>
+          <eg-bool [value]="po().prepayment_required()"></eg-bool>
         </div>
       </div>
     </div>
@@ -167,57 +180,63 @@
   <hr class="p-0 m-0 mt-1"/>
   <div class="row mt-1">
     <div class="col-lg-12">
-      <a class="" href="javascript:;" class="label-with-material-icon"
+      <button type="button" class="btn btn-link label-with-material-icon"
         (click)="showNotes=!showNotes">
-        <span class="material-icons small mr-1">event_note</span>
+        <span class="material-icons small me-1" aria-hidden="true">event_note</span>
         <span>Notes ({{po().notes().length}})</span>
-      </a>
-      <span class="pl-2 pr-2" i18n> | </span>
+      </button>
+      <ng-container *ngIf="po().order_date()"> <!-- show invoice actions only if order was activated -->
+      <span class="ps-2 pe-2" i18n> | </span>
       <a [queryParams]="{f: 'acqpo:id', val1: poId}" class="label-with-material-icon"
         routerLink="/staff/acq/search/invoices">
-          <span class="material-icons small mr-1">list</span>
+          <span class="material-icons small me-1" aria-hidden="true">list</span>
           <span i18n>Invoices ({{invoiceCount}})</span>
       </a>
-      <span class="pl-2 pr-2" i18n> | </span>
+      <span class="ps-2 pe-2" i18n> | </span>
       <a href="/eg/staff/acq/legacy/invoice/view?create=1&attach_po={{poId}}"
         class="label-with-material-icon">
-        <span class="material-icons small mr-1">receipt</span>
+        <span class="material-icons small me-1" aria-hidden="true">receipt</span>
         <span i18n>Create Invoice</span>
       </a>
-      <span class="pl-2 pr-2" i18n> | </span>
+      <span class="ps-2 pe-2" i18n> | </span>
+      <button (click)="linkInvoiceFromPo()"
+        class="btn btn-link label-with-material-icon">
+        <span class="material-icons small me-1" aria-hidden="true">receipt</span>
+        <span i18n>Link Invoice</span>
+      </button>
+      </ng-container> <!-- show invoice actions -->
+      <span class="ps-2 pe-2" i18n> | </span>
       <a routerLink="./edi" i18n>EDI Messages ({{ediMessageCount}})</a>
-      <ng-container *ngIf="canActivate === true">
-        <span class="pl-2 pr-2" i18n> | </span>
-        <a (click)="activatePo(true)" href="javascript:;" i18n>
-          Activate Without Loading Items
-        </a>
-      </ng-container>
-      <span class="pl-2 pr-2" i18n> | </span>
+      <span class="ps-2 pe-2" i18n> | </span>
       <a routerLink="./history" i18n>History</a>
-      <ng-container *ngIf="po().state() == 'on-order' || po().state() == 'pending'">
-        <span class="pl-2 pr-2" i18n> | </span>
-        <a (click)="cancelPo()" href="javascript:;" class="label-with-material-icon">
-          <span class="material-icons small mr-1">cancel</span>
-          <span i18n>Cancel Order</span>
-        </a>
-      </ng-container>
-      <span class="pl-2 pr-2" i18n> | </span>
+      <span class="ps-2 pe-2" i18n> | </span>
       <a routerLink="./printer" class="label-with-material-icon">
-        <span class="material-icons small mr-1">print</span>
+        <span class="material-icons small me-1" aria-hidden="true">print</span>
         <span i18n>Print</span>
       </a>
+      <ng-container *ngIf="po().state() === 'on-order'">
+        <span class="ps-2 pe-2" i18n> | </span>
+        <button class="btn btn-sm btn-danger" (click)="cancelPo()" i18n>Cancel Order</button>
+      </ng-container>
       <ng-container *ngIf="canActivate === true">
-        <span class="pl-2 pr-2" i18n> | </span>
-        <a (click)="activatePo()" href="javascript:;" class="label-with-material-icon">
-          <span class="material-icons small mr-1">launch</span>
-          <span i18n>Activate Order</span>
-        </a>
+        <span class="ps-2 pe-2" i18n> | </span>
+        <button class="btn btn-sm btn-primary" (click)="activatePo(true)" [disabled]="doingActivation" i18n>Activate Without Loading Items</button>
+      </ng-container>
+      <ng-container *ngIf="canActivate === true">
+        <span class="ps-2 pe-2" i18n> | </span>
+        <button class="btn btn-sm btn-success" (click)="activatePo()" [disabled]="doingActivation" i18n>Activate Order</button>
       </ng-container>
       <ng-container *ngIf="canFinalize">
-        <span class="pl-2 pr-2" i18n> | </span>
-        <a (click)="finalizePo()" href="javascript:;" class="label-with-material-icon">
-          <span class="material-icons small mr-1">check_circle</span>
+        <span class="ps-2 pe-2" i18n> | </span>
+        <button (click)="finalizePo()" class="btn btn-link label-with-material-icon">
+          <span class="material-icons small me-1" aria-hidden="true">check_circle</span>
           <span i18n>Finalize Blanket Order</span>
+        </button>
+      </ng-container>
+      <ng-container *ngIf="showLegacyLinks">
+        <span class="ps-2 pe-2" i18n> | </span>
+        <a href="/eg/staff/acq/legacy/po/view/{{poId}}" target="_blank">
+          Show PO in Legacy Interface
         </a>
       </ng-container>
     </div>

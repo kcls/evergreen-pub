@@ -157,11 +157,7 @@ export class FmRecordEditorComponent
     @Input() hideBanner: boolean;
 
     // do not close dialog on error saving record
-    @Input() remainOpenOnError = false;
-
-    // Avoid making any pcrud calls.  Instead return the modified object
-    // to the caller via recordSaved Output and dialog close().
-    @Input() inPlaceMode = false;
+    @Input() remainOpenOnError: false;
 
     // if date fields need to be in a specific order (e.g.
     // start date before end date), specify them in a comma-
@@ -206,7 +202,7 @@ export class FmRecordEditorComponent
 
     // custom function for munging the record before it gets saved;
     // will get passed mode and the record itself
-    @Input() preSave: (mode: string, recToSave: IdlObject) => void;
+    @Input() preSave: Function;
 
     // recordId and record getters and setters.
     // Note that setting the this.recordId to NULL does not clear the
@@ -368,8 +364,8 @@ export class FmRecordEditorComponent
             if (this.record && this.recordId === null) {
                 promise = Promise.resolve(this.record);
             } else if (this.recordId) {
-                promise = this.pcrud.retrieve(
-                    this.idlClass, this.recordId, {no_i18n: true}).toPromise();
+                promise =
+                    this.pcrud.retrieve(this.idlClass, this.recordId).toPromise();
             } else {
                 // Not enough data yet to fetch anything
                 return Promise.resolve();
@@ -610,19 +606,6 @@ export class FmRecordEditorComponent
             this.preSave(this.mode, recToSave);
         }
         this.convertDatatypesToIdl(recToSave);
-
-        if (this.inPlaceMode) {
-            this.recordSaved.emit(recToSave);
-            if (this.fmEditForm) {
-                this.fmEditForm.form.markAsPristine();
-            }
-            if (this.isDialog()) {
-                this.record = undefined;
-                this.close(recToSave);
-            }
-            return;
-        }
-
         this.pcrud[this.mode]([recToSave]).toPromise().then(
             result => {
                 this.recordSaved.emit(result);
@@ -684,6 +667,10 @@ export class FmRecordEditorComponent
             return 'timestamp-timepicker';
         }
 
+        if (this.idlDef.pkey === field.name && !this.pkeyIsEditable) {
+            return 'readonly';
+        }
+
         // Some widgets handle readOnly for us.
         if (   field.datatype === 'timestamp'
             || field.datatype === 'org_unit'
@@ -732,7 +719,14 @@ export class FmRecordEditorComponent
     openTranslator(field: string) {
         this.translator.fieldName = field;
         this.translator.idlObject = this.record;
-        this.translator.open().toPromise();
+
+        this.translator.open().subscribe(
+            newValue => {
+                if (newValue) {
+                    this.record[field](newValue);
+                }
+            }
+        );
     }
 }
 

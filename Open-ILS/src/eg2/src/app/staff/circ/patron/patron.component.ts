@@ -37,7 +37,6 @@ export class PatronComponent implements OnInit {
     showSummary = true;
     loading = true;
     showRecentPatrons = false;
-    patronSearchStickyGrid = true;
 
     /* eg-patron-edit is unable to find #editorToolbar directly
      * within the template.  Adding a ref here allows it to

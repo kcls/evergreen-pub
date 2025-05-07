@@ -1,0 +1,8 @@
+
+
+.flat-editor-content {
+    font-family: Courier, 'Courier New', 'Lucida Console', Monaco, monospace; 
+    display: inline-block; 
+    color: black;
+    padding: 0;
+}

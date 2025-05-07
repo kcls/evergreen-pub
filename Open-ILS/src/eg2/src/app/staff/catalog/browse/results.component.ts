@@ -5,23 +5,19 @@ import {CatalogService} from '@eg/share/catalog/catalog.service';
 import {CatalogUrlService} from '@eg/share/catalog/catalog-url.service';
 import {CatalogSearchContext, CatalogSearchState} from '@eg/share/catalog/search-context';
 import {StaffCatalogService} from '../catalog.service';
-import {ServerStoreService} from '@eg/core/server-store.service';
 
 @Component({
   selector: 'eg-catalog-browse-results',
-  templateUrl: 'results.component.html',
-  styleUrls: ['results.component.css']
+  templateUrl: 'results.component.html'
 })
 export class BrowseResultsComponent implements OnInit, OnDestroy {
 
     searchContext: CatalogSearchContext;
     results: any[];
     routeSub: Subscription;
-    defaultRecordSort: string;
 
     constructor(
         private route: ActivatedRoute,
-        private store: ServerStoreService,
         private cat: CatalogService,
         private catUrl: CatalogUrlService,
         private staffCat: StaffCatalogService
@@ -32,9 +28,6 @@ export class BrowseResultsComponent implements OnInit, OnDestroy {
         this.routeSub = this.route.queryParamMap.subscribe(
             (params: ParamMap) => this.browseByUrl(params)
         );
-
-        this.store.getItem('eg.search.browse_sort_default')
-        .then(val => this.defaultRecordSort = val);
     }
 
     ngOnDestroy() {
@@ -62,7 +55,7 @@ export class BrowseResultsComponent implements OnInit, OnDestroy {
 
         result.compiledHeadings = [];
 
-        // Avoid dupe headings per see
+        // Avoi dupe headings per see
         const seen: any = {};
 
         result.sees.forEach(sees => {
@@ -83,17 +76,14 @@ export class BrowseResultsComponent implements OnInit, OnDestroy {
 
                     seen[heading.target] = true;
 
-                    heading.seeNotes = sees.notes;
-
-                    result.compiledHeadings.push(heading);
+                    result.compiledHeadings.push({
+                        heading: heading.heading,
+                        target: heading.target,
+                        target_count: heading.target_count,
+                        type: heading.type
+                    });
                 }
             });
-        });
-
-        result.authorities.forEach(auth => {
-            if (auth.notes && auth.notes.length) {
-                result.authNotes = auth.notes;
-            }
         });
 
         this.results.push(result);
@@ -130,9 +120,6 @@ export class BrowseResultsComponent implements OnInit, OnDestroy {
     searchByBrowseEntryParams(result) {
         const ctx = this.searchContext.clone();
         ctx.termSearch.hasBrowseEntry = result.browse_entry + ',' + result.fields;
-        if (this.defaultRecordSort) {
-            ctx.sort = this.defaultRecordSort;
-        }
         return this.catUrl.toUrlParams(ctx);
     }
 

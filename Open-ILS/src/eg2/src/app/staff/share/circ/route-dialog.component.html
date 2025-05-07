@@ -17,7 +17,7 @@
     <div *ngIf="checkin.patron.pref_family_name() 
       || checkin.patron.pref_first_given_name() 
       || checkin.patron.pref_second_given_name()">
-      Chosen name: 
+      Preferred name: 
         {{checkin.patron.pref_family_name() || checkin.patron.family_name()}},
         {{checkin.patron.pref_first_given_name() || checkin.patron.first_given_name()}}
         {{checkin.patron.pref_second_given_name()}}
@@ -61,7 +61,7 @@
     <ul>
       <li *ngFor="let note of checkin.hold.notes()">
         <strong>{{note.title()}}</strong>: {{note.body()}}
-        <span *ngIf="note.slip() =='t' || note.pub() == 't'" i18n>[Patron-visible]</span>
+        <span *ngIf="note.slip() ==='t' || note.pub() === 't'" i18n>[Patron-visible]</span>
       </li>
     </ul>
   </div>
@@ -130,25 +130,23 @@
 <ng-template #dialogContent>
   <div class="modal-header">
     <h4>
-      <ng-container *ngIf="slip == 'hold_shelf_slip'">
+      <ng-container *ngIf="slip === 'hold_shelf_slip'">
         <strong i18n>Hold Slip</strong><br/>
         <img class="p-2" src="/images/portal/holds.png" i18n-alt alt="holds icon"/>
       </ng-container>
-      <ng-container *ngIf="slip != 'hold_shelf_slip'">
+      <ng-container *ngIf="slip !== 'hold_shelf_slip'">
         <strong i18n>Transit Slip</strong><br/>
         <img class="p-2" src="/images/transit.png" i18n-alt alt="transit van icon"/>
       </ng-container>
     </h4>
-    <button type="button" class="close"
-      i18n-aria-label aria-label="Close" (click)="close()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close btn-close-white"
+      i18n-aria-label aria-label="Close" (click)="close()"></button>
   </div>
   <div class="modal-body">
-    <ng-container *ngIf="slip == 'hold_shelf_slip'">
+    <ng-container *ngIf="slip === 'hold_shelf_slip'">
       <ng-container *ngTemplateOutlet="holdShelfTmpl"></ng-container>
     </ng-container>
-    <ng-container *ngIf="slip != 'hold_shelf_slip'">
+    <ng-container *ngIf="slip !== 'hold_shelf_slip'">
       <ng-container *ngTemplateOutlet="transitTmpl"></ng-container>
     </ng-container>
   </div>

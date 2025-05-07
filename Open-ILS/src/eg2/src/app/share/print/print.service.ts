@@ -9,9 +9,6 @@ declare var OpenSRF;
 
 const PRINT_TEMPLATE_PATH = '/print_template';
 
-export const HATCH_FILE_WRITER_PRINTER = 'hatch_file_writer';
-export const HATCH_BROWSER_PRINTING_PRINTER = 'hatch_browser_printing';
-
 export interface PrintRequest {
     template?: TemplateRef<any>;
     templateName?: string;
@@ -22,7 +19,6 @@ export interface PrintRequest {
     printContext: string;
     contentType?: string; // defaults to text/html
     showDialog?: boolean;
-    printerName?: string;
 }
 
 export interface PrintTemplateResponse {
@@ -70,11 +66,6 @@ export class PrintService {
 
     compileRemoteTemplate(printReq: PrintRequest): Promise<PrintTemplateResponse> {
 
-        console.debug(
-            `Printing template=${printReq.templateName} with data`,
-            printReq.contextData
-        );
-
         const formData: FormData = new FormData();
 
         formData.append('ses', this.auth.token());
@@ -115,6 +106,7 @@ export class PrintService {
             xhttp.open('POST', PRINT_TEMPLATE_PATH, true);
             xhttp.send(formData);
         });
+
     }
 }
 

@@ -6,21 +6,24 @@ import {StaffCatalogService} from '../catalog.service';
 
 export const FACET_CONFIG = {
     display: [
-        {facetClass : 'author',  facetOrder : ['combined']},
-        {facetClass : 'subject', facetOrder : ['combined']},
-        {facetClass : 'series',  facetOrder : ['seriestitle']}
-    ],
-    displayCount: 10
+        {facetClass : 'author',  facetOrder : ['personal', 'corporate']},
+        {facetClass : 'subject', facetOrder : ['topic']},
+        {facetClass : 'identifier', facetOrder : ['genre']},
+        {facetClass : 'series',  facetOrder : ['seriestitle']},
+        {facetClass : 'subject', facetOrder : ['name', 'geographic']}
+    ]
 };
 
 @Component({
   selector: 'eg-catalog-result-facets',
-  templateUrl: 'facets.component.html'
+  templateUrl: 'facets.component.html',
+  styleUrls: ['./facets.component.css']
 })
 export class ResultFacetsComponent implements OnInit {
 
     searchContext: CatalogSearchContext;
     facetConfig: any;
+    displayFullFacets: string[] = [];
 
     constructor(
         private cat: CatalogService,
@@ -45,13 +48,16 @@ export class ResultFacetsComponent implements OnInit {
         return this.catUrl.toUrlParams(context);
     }
 
-    facetHasData(facetClass: string, name: string): boolean {
-        return (
-           this.searchContext.result.facetData[facetClass] &&
-           this.searchContext.result.facetData[facetClass][name] &&
-           this.searchContext.result.facetData[facetClass][name].valueList &&
-           this.searchContext.result.facetData[facetClass][name].valueList.length > 0
-        );
+    // Build a list of the facet class+names that should be expanded to show all options.
+    // More than one facet may be expanded
+    facetToggle(name: string, fClass: string) {
+        let index = this.displayFullFacets.indexOf(fClass+'-'+name);
+        if ( index == -1 ) {  // not found
+            this.displayFullFacets.push(fClass+'-'+name);
+        }
+        else { // delete it
+            this.displayFullFacets.splice(index, 1);
+        }
     }
 }
 

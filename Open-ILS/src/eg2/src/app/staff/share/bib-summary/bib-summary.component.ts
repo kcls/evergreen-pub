@@ -36,8 +36,7 @@ export class BibSummaryComponent implements OnInit {
         this.summary = s;
         if (this.initDone && this.summary) {
             this.summary.getBibCallNumber();
-            // Unused by KCLS
-            // this.loadCourseInformation(this.summary.record.id());
+            this.loadCourseInformation(this.summary.record.id());
         }
     }
 
@@ -56,7 +55,8 @@ export class BibSummaryComponent implements OnInit {
         .then(_ => this.cat.fetchCcvms())
         .then(_ => {
             if (this.summary) {
-                return this.summary.getBibCallNumber();
+                return this.loadCourseInformation(this.summary.record.id())
+                .then(__ => this.summary.getBibCallNumber());
             } else {
                 if (this.recordId) {
                     return this.loadSummary();
@@ -70,19 +70,19 @@ export class BibSummaryComponent implements OnInit {
     }
 
     loadSummary(): Promise<any> {
-        // KCLS doesn't use
-        // this.loadCourseInformation(this.recordId);
-        return this.bib.getBibSummary(this.recordId, null, true /* is staff */)
-        .toPromise()
-        .then(summary => {
-            this.summary = summary;
-            return summary.getBibCallNumber();
+        return this.loadCourseInformation(this.recordId)
+        .then(_ => {
+            return this.bib.getBibSummary(this.recordId).toPromise()
+            .then(summary => {
+                this.summary = summary;
+                return summary.getBibCallNumber();
+            });
         });
     }
 
-    loadCourseInformation(recordId) {
-        /* KCLS doesn't use.  Avoid the network lookup
-        this.org.settings('circ.course_materials_opt_in').then(setting => {
+    loadCourseInformation(recordId): Promise<any> {
+        return this.org.settings('circ.course_materials_opt_in')
+        .then(setting => {
             if (setting['circ.course_materials_opt_in']) {
                 this.course.fetchCoursesForRecord(recordId).then(courseList => {
                     if (courseList) {
@@ -92,20 +92,12 @@ export class BibSummaryComponent implements OnInit {
                 });
             }
         });
-        */
     }
 
     orgName(orgId: number): string {
         if (orgId) {
             return this.org.get(orgId).shortname();
         }
-    }
-
-    orgIsRoot(orgId: number): boolean {
-        if (orgId) {
-            return this.org.get(orgId).ou_type().depth() === 0;
-        }
-        return false;
     }
 
     iconFormatLabel(code: string): string {

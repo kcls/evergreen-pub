@@ -5,7 +5,7 @@ import {Component, OnInit, Input} from '@angular/core';
   template: `
     <eg-title i18n-prefix [prefix]="bannerText"></eg-title>
 
-    <div class="lead alert alert-primary text-center pt-2 pb-2"
+    <div class="lead alert alert-primary text-center pt-1 pb-1"
       [ngClass]="bannerStyle ? bannerStyle : 'alert-primary'">
       <h1>
         <i class="material-icons align-middle text-left" aria-hidden="true" *ngIf="bannerIcon">{{bannerIcon}}</i>

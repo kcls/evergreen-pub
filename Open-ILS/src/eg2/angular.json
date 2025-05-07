@@ -8,13 +8,19 @@
       "sourceRoot": "src",
       "projectType": "application",
       "i18n": {
-        "sourceLocale": "en-US"
+        "sourceLocale": "en-US",
+        "locales": {
+          "cs-CZ": {
+            "translation": "src/locale/messages.cs-CZ.xtb"
+          }
+        }
       },
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
             "baseHref": "/eg2/",
+            "deployUrl": "/eg2/",
             "outputPath": "../../web/eg2/",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -33,7 +39,6 @@
             ],
             "allowedCommonJsDependencies": [
               "file-saver",
-              "elastic-builder",
               "moment",
               "moment-timezone"
             ],

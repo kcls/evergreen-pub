@@ -1,0 +1,93 @@
+<div class="container">
+  <div class="col-lg-6 offset-lg-3">
+    <fieldset>
+      <legend class="mb-0" i18n><h1>Sign In</h1></legend>
+      <hr class="mt-1"/>
+      <form (ngSubmit)="handleSubmit()" #loginForm="ngForm" class="form-validated">
+
+        <div class="row row-cols-auto">
+          <label class="form-label col-form-label fw-bold col-4 text-end" for="username" i18n>Username</label>
+          <div class="col-8">
+            <input
+              type="text"
+              class="form-control"
+              id="username"
+              name="username"
+              required
+              autocomplete="username"
+              i18n-placeholder
+              placeholder="Username"
+              [(ngModel)]="args.username"/>
+          </div>
+        </div>
+
+        <div class="row row-cols-auto mt-3">
+          <label class="form-label col-form-label col-4 text-end fw-bold" for="password" i18n>Password</label>
+          <div class="col-8">
+            <div class="input-group p-0">
+              <input
+                [type]="passwordVisible ? 'text' : 'password'"
+                class="form-control"
+                id="password"
+                #password
+                name="password"
+                required
+                autocomplete="current-password"
+                i18n-placeholder
+                placeholder="Password"
+                spellcheck="false"
+                [attr.aria-description]="ariaDescription"
+                [(ngModel)]="args.password"/>
+              <button id="show_password" class="input-group-text pointer"
+                type="button" 
+                [attr.title]="passwordVisible ? 'Hide Password' : 'Show Password'"
+                [attr.aria-label]="passwordVisible ? 'Hide Password' : 'Show Password'"
+                i18n-aria-label i18n-title (click)="togglePasswordVisibility()" >
+                <span class="material-icons" aria-hidden="true">{{ passwordVisible ? 'visibility' : 'visibility_off' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row row-cols-auto mt-3" *ngIf="workstations && workstations.length">
+          <label class="form-label col-form-label col-4 text-end fw-bold" for="workstation" i18n>Workstation</label>
+          <div class="col-8">
+            <select
+              class="form-control"
+              id="workstation"
+              name="workstation"
+              required
+              [(ngModel)]="args.workstation">
+              <option *ngFor="let ws of workstations" [value]="ws.name">
+                {{ws.name}}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row row-cols-auto mt-3">
+          <div class="col-2 offset-4">
+            <button type="submit" class="btn btn-outline-dark" i18n>Sign In</button>
+          </div>
+          <div class="col-4" *ngIf="loginFailed">
+            <div class="badge rounded-pill bg-warning p-2" i18n>Login Failed</div>
+          </div>
+        </div>
+
+        <div class="row" *ngIf="pendingXactsDate">
+          <div class="col-lg-8 offset-lg-4 alert alert-warning mt-2" i18n>
+            Unprocessed offline transactions waiting for upload.
+            Last transaction added at {{pendingXactsDate | date:'short'}}.
+          </div>
+        </div>
+
+        <div class="row" *ngIf="pendingXactsDate">
+          <div class="col-lg-8 offset-lg-4 alert alert-warning mt-2">
+            Unprocessed offline transactions waiting for upload.
+            Last transaction added at {{pendingXactsDate | date:'short'}}.
+          </div>
+        </div>
+      </form>
+    </fieldset>
+  </div>
+</div>

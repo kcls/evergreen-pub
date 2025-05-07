@@ -1,6 +1,5 @@
 import {Component, Input, Output, OnInit, AfterViewInit,
     EventEmitter, ViewChild} from '@angular/core';
-import {Location} from '@angular/common';
 import {ActivatedRoute, ParamMap} from '@angular/router';
 import {Observable, of, from} from 'rxjs';
 import {map, concatMap} from 'rxjs/operators';
@@ -10,11 +9,10 @@ import {AuthService} from '@eg/core/auth.service';
 import {OrgService} from '@eg/core/org.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {GridComponent} from '@eg/share/grid/grid.component';
-import {GridDataSource, GridCellTextGenerator} from '@eg/share/grid/grid';
+import {GridDataSource} from '@eg/share/grid/grid';
 import {Pager} from '@eg/share/util/pager';
 import {BucketDialogComponent} from '@eg/staff/share/buckets/bucket-dialog.component';
 import {PatronMergeDialogComponent} from './merge-dialog.component';
-import {OrgSelectComponent} from '@eg/share/org-select/org-select.component';
 
 const DEFAULT_SORT = [
    'family_name ASC',
@@ -56,15 +54,12 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     @ViewChild('searchGrid') searchGrid: GridComponent;
     @ViewChild('addToBucket') addToBucket: BucketDialogComponent;
     @ViewChild('mergeDialog') mergeDialog: PatronMergeDialogComponent;
-    @ViewChild('homeLibSelect') homeLibSelect: OrgSelectComponent;
 
     startWithFired = false;
     @Input() startWithSearch: PatronSearch;
 
     // If set, load a batch of patrons by ID.
     @Input() patronIds: number[];
-
-    @Input() stickyGridHeader = true;
 
     // Fires on dbl-click or Enter while one or more search result
     // rows are selected.
@@ -85,12 +80,10 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     searchOrg: IdlObject;
     expandForm: boolean;
     dataSource: GridDataSource;
-    cellTextGenerator: GridCellTextGenerator;
     profileGroups: IdlObject[] = [];
 
     constructor(
         private route: ActivatedRoute,
-        private ngLocation: Location,
         private net: NetService,
         public org: OrgService,
         private auth: AuthService,
@@ -121,25 +114,16 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         });
 
         this.searchOrg = this.org.root();
-        this.store.getItemBatch([EXPAND_FORM])
+        this.store.getItemBatch([EXPAND_FORM, INCLUDE_INACTIVE])
             .then(settings => {
                 this.expandForm = settings[EXPAND_FORM];
+                this.search.inactive = settings[INCLUDE_INACTIVE];
             });
-
-        this.search.inactive = true;
-
-        // Text-ify function for cells that use display templates.
-        this.cellTextGenerator = {
-            patron_barcode: row => row.card() ? row.card().barcode() : '',
-            family_name: row => row.family_name(),
-        };
     }
 
     ngAfterViewInit() {
-        setTimeout(() => {
-            const node = document.getElementById('focus-this-input');
-            if (node) { node.focus(); }
-        });
+        const node = document.getElementById('focus-this-input');
+        if (node) { node.focus(); }
     }
 
     toggleExpandForm() {
@@ -152,13 +136,11 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     }
 
     toggleIncludeInactive() {
-        /*
         if (this.search.inactive) { // value set by ngModel
             this.store.setItem(INCLUDE_INACTIVE, true);
         } else {
             this.store.removeItem(INCLUDE_INACTIVE);
         }
-        */
     }
 
     gridSelectionChange(keys: string[]) {
@@ -179,17 +161,7 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
     }
 
     clear() {
-        this.searchOrg = this.org.root();
-        this.homeLibSelect.applyOrg = this.searchOrg;
-
-        // Tell the org select to save the cleared org value to
-        // the persist key.
-        this.homeLibSelect.saveCurrentSetting(this.searchOrg.id());
-
-        this.search = {
-            inactive: true,
-            profile: null
-        };
+        this.search = {profile: null};
         this.searchGrid.reload();
         this.formCleared.emit();
     }
@@ -240,8 +212,6 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         if (!search) { return of(); }
 
         const sorter = this.compileSort(sort);
-
-        console.debug('Patron search sort: ', sorter);
 
         const pSearch: PatronSearch = {
             search: search,
@@ -362,19 +332,8 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
 
     mergePatrons(rows: IdlObject[]) {
         this.mergeDialog.patronIds = [rows[0].id(), rows[1].id()];
-        this.mergeDialog.open({size: 'xl'}).subscribe(changes => {
+        this.mergeDialog.open({size: 'lg'}).subscribe(changes => {
             if (changes) { this.searchGrid.reload(); }
-        });
-    }
-
-    retrieveSelected(rows: IdlObject[]) {
-        let opened = 0;
-        rows.forEach(patron => {
-            if (opened++ < 35) {
-                const url = this.ngLocation.prepareExternalUrl(
-                    `/staff/circ/patron/${patron.id()}/`);
-                window.open(url);
-            }
         });
     }
 }

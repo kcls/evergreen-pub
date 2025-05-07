@@ -57,15 +57,6 @@ export class RouteDialogComponent extends DialogComponent {
             if (exit) {
                 return of(exit);
             } else {
-                return from(this.headlessPrint());
-            }
-        }))
-
-        .pipe(concatMap(exit => {
-            console.debug('Route Dialog headlessPrint() returned', exit);
-            if (exit) {
-                return of(exit);
-            } else {
                 return super.open(ops);
             }
         }));
@@ -100,52 +91,24 @@ export class RouteDialogComponent extends DialogComponent {
         if (hold) {
             promise = promise.then(_ => {
                 return this.pcrud.retrieve('au', hold.usr(),
-                    {flesh: 1, flesh_fields : {'au' : ['card', 'stat_cat_entries']}})
-                .toPromise()
+                    {flesh: 1, flesh_fields : {'au' : ['card']}}).toPromise()
                 .then(patron => this.checkin.patron = patron);
             });
         }
 
-        return promise.then(_ => false);
-    }
-
-    headlessPrint(): Promise<boolean> {
-        console.debug('Route Dialog headlessPrint()');
-
-        if (this.slip == 'hold_transit_slip') {
-            console.debug("Printing hold transit slip");
-            // Hold transit slips always print.
-            return this.print().then(_ => true); // exit
-        }
-
-        // Local holds and received hold transits only print if
-        // auto-print is enabled.
-        if (this.slip == 'hold_shelf_slip') {
-            if (this.checkin.params.auto_print_holds_transits) {
-                console.debug("Printing hold shelf slip");
-                return this.print().then(_ => true); // exit
-            } else {
-                console.debug("NOT printing hold shelf slip auto=false");
-            }
-        }
-
-        return Promise.resolve(true); // Never show popups.
-
-        /*
         if (this.checkin.params.auto_print_holds_transits
             || this.circ.suppressCheckinPopups) {
             // Print and exit.
-            return this.print().then(_ => true); // exit
+            return promise.then(_ => this.print()).then(_ => true); // exit
         }
 
-        return Promise.resolve(false); // keep going
-        */
+        return promise.then(_ => false); // keep going
     }
 
     applySettings(): Promise<boolean> {
-        console.debug('Route Dialog applySettings()');
+        console.debug('Route Dialog applying print settings');
 
-        if (this.checkin.transit && !this.checkin.transit.dest_recv_time()) {
+        if (this.checkin.transit) {
             if (this.checkin.patron && this.checkin.hold &&
                 // It's possible to recieve a fulfilled hold in the
                 // checkin response when a checkin results in canceling
@@ -159,12 +122,6 @@ export class RouteDialogComponent extends DialogComponent {
         } else {
             this.slip = 'hold_shelf_slip';
         }
-
-        // Printing depends on the context.  Handled later.
-        // Avoid the below lookup.
-        return Promise.resolve(false);
-
-        /*
 
         const autoPrintSet = 'circ.staff_client.do_not_auto_attempt_print';
 
@@ -183,7 +140,6 @@ export class RouteDialogComponent extends DialogComponent {
             }
         })
         .then(_ => this.noAutoPrint[this.slip]);
-        */
     }
 
     print(): Promise<any> {

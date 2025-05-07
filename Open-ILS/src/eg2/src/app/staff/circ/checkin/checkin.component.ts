@@ -1,13 +1,11 @@
 import {Component, ViewChild, OnInit, AfterViewInit, HostListener} from '@angular/core';
-import {Location} from '@angular/common'; // TODO use this.win to open
-import {NgZone} from '@angular/core';
+import {Location} from '@angular/common';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {empty, from} from 'rxjs';
-import {concatMap, tap} from 'rxjs/operators';
+import {concatMap} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
-import {PcrudService} from '@eg/core/pcrud.service';
 import {AuthService} from '@eg/core/auth.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PatronService} from '@eg/staff/share/patron/patron.service';
@@ -19,6 +17,8 @@ import {CircService, CircDisplayInfo, CheckinParams, CheckinResult
 import {BarcodeSelectComponent
     } from '@eg/staff/share/barcodes/barcode-select.component';
 import {PrintService} from '@eg/share/print/print.service';
+import {MarkDamagedDialogComponent
+    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {CopyAlertsDialogComponent
     } from '@eg/staff/share/holdings/copy-alerts-dialog.component';
 import {BucketDialogComponent
@@ -30,12 +30,7 @@ import {CancelTransitDialogComponent
     } from '@eg/staff/share/circ/cancel-transit-dialog.component';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
 import {AnonCacheService} from '@eg/share/util/anon-cache.service';
-import {DateSelectNativeComponent
-    } from '@eg/share/date-select-native/date-select-native.component';
-import {BroadcastService} from '@eg/share/util/broadcast.service';
-import {WinService} from '@eg/core/win.service';
 
-declare var decodeJS: (thing: any) => any;
 
 interface CheckinGridEntry extends CheckinResult {
     // May need to extend...
@@ -54,7 +49,6 @@ const CHECKIN_MODIFIERS = [
     'retarget_holds_all',
     'noop',
     'auto_print_holds_transits',
-    'auto_print_ill_receipt',
     'do_inventory_update'
 ];
 
@@ -90,21 +84,19 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('barcodeSelect') private barcodeSelect: BarcodeSelectComponent;
+    @ViewChild('markDamagedDialog') private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('copyAlertsDialog') private copyAlertsDialog: CopyAlertsDialogComponent;
     @ViewChild('bucketDialog') private bucketDialog: BucketDialogComponent;
     @ViewChild('itemNeverCircedStr') private itemNeverCircedStr: StringComponent;
     @ViewChild('backdateDialog') private backdateDialog: BackdateDialogComponent;
     @ViewChild('cancelTransitDialog') private cancelTransitDialog: CancelTransitDialogComponent;
-    @ViewChild('backdateSelect') private backdateSelect: DateSelectNativeComponent;
 
     constructor(
         private router: Router,
         private route: ActivatedRoute,
-        private ngZone: NgZone,
         private ngLocation: Location,
         private net: NetService,
         private org: OrgService,
-        private pcrud: PcrudService,
         private auth: AuthService,
         private store: ServerStoreService,
         private circ: CircService,
@@ -112,8 +104,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         private printer: PrintService,
         private holdings: HoldingsService,
         private anonCache: AnonCacheService,
-        private win: WinService,
-        private broadcaster: BroadcastService,
         public patronService: PatronService
     ) {}
 
@@ -150,17 +140,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
                 this.modifiers.auto_print_holds_transits = true;
             }
         }).then(_ => this.circ.applySettings());
-
-        this.broadcaster.listen('eg.checkin.lostpaid.result').subscribe(dataRaw => {
-            console.debug('Broadcast received: ', dataRaw);
-            const data = decodeJS(dataRaw);
-            console.debug(data);
-            if (data && data.window === this.win.getId()) {
-                this.ngZone.run(() => { // force change detection
-                    this.gridifyResult(data.result);
-                });
-            }
-        });
     }
 
     ngAfterViewInit() {
@@ -174,7 +153,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
     checkin(params?: CheckinParams, override?: boolean): Promise<CheckinResult> {
         if (!this.barcode) { return Promise.resolve(null); }
-        if (this.backdateSelect.invalid()) { return Promise.resolve(null); }
 
         const promise = params ? Promise.resolve(params) : this.collectParams();
 
@@ -258,8 +236,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         if (this.trimList && this.checkins.length >= TRIM_LIST_TO) {
             this.checkins.length = TRIM_LIST_TO;
         }
-
-        this.grid.context.reload();
+        this.grid.reload();
     }
 
     toggleMod(mod: string) {
@@ -280,22 +257,13 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         }
     }
 
-    printReceipt(selected?: boolean) {
-        if (selected && this.grid.context.getSelectedRows().length == 0) {
-            this.toast.warning($localize`Please select rows to print`);
-            return;
-        }
-
-        let checkins = selected ? this.grid.context.getSelectedRows() : this.checkins;
-
-        if (checkins.length === 0) {
-            return; // print-all version
-        }
+    printReceipt() {
+        if (this.checkins.length === 0) { return; }
 
         this.printer.print({
             printContext: 'default',
             templateName: 'checkin',
-            contextData: {checkins: checkins}
+            contextData: {checkins: this.checkins}
         });
     }
 
@@ -321,13 +289,13 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
 
     markDamaged(rows: CheckinGridEntry[]) {
-        const copyId = this.getCopyIds(rows)[0];
-        if (!copyId) { return; }
+        const copyIds = this.getCopyIds(rows, 14 /* ignore damaged */);
+        if (copyIds.length === 0) { return; }
 
-        const url = this.ngLocation.prepareExternalUrl(
-            `/staff/cat/item/damaged/${copyId}/`);
-
-        window.open(url);
+        from(copyIds).pipe(concatMap(id => {
+            this.markDamagedDialog.copyId = id;
+            return this.markDamagedDialog.open({size: 'lg'});
+        })).subscribe();
     }
 
     addItemAlerts(rows: CheckinGridEntry[]) {
@@ -397,17 +365,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
         }
     }
 
-    updateCopyStatus(rows: CheckinGridEntry[]): Promise<any> {
-        const copies = rows.filter(r => Boolean(r.copy)).map(r => r.copy);
-
-        if (copies.length === 0) { return Promise.resolve(); }
-
-        return from(copies).pipe(concatMap(copy => {
-            return this.pcrud.retrieve('acp',
-                copy.id(), {flesh: 1, flesh_fields: {acp: ['status']}})
-            .pipe(tap(c => copy.status(c.status())))
-        })).toPromise();
-    }
 
     cancelTransits(rows: CheckinGridEntry[]) {
 
@@ -420,7 +377,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
                 .then(transit => row.transit = transit)
             );
         }))
-        .toPromise().then(_ => {
+        .pipe(concatMap(_ => {
 
             const ids = rows
                 .filter(row => Boolean(row.transit))
@@ -428,14 +385,12 @@ export class CheckinComponent implements OnInit, AfterViewInit {
 
             if (ids.length > 0) {
                 this.cancelTransitDialog.transitIds = ids;
-                return this.cancelTransitDialog.open().toPromise();
+                return this.cancelTransitDialog.open();
+            } else {
+                return empty();
             }
-        })
-        .then(changesMade => {
-            if (changesMade) {
-                return this.updateCopyStatus(rows);
-            }
-        });
+
+        })).subscribe();
     }
 
     showRecordHolds(rows: CheckinGridEntry[]) {
@@ -454,17 +409,7 @@ export class CheckinComponent implements OnInit, AfterViewInit {
     showRecentCircs(rows: CheckinGridEntry[]) {
         const copyId = this.getCopyIds(rows)[0];
         if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/circs`);
-            window.open(url);
-        }
-    }
-
-    showItemDetails(rows: CheckinGridEntry[]) {
-        const copyId = this.getCopyIds(rows)[0];
-        if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/summary`);
+            const url = `/eg/staff/cat/item/${copyId}/circs`;
             window.open(url);
         }
     }
@@ -493,11 +438,6 @@ export class CheckinComponent implements OnInit, AfterViewInit {
             const url = `/eg/staff/cat/printlabels/${key}`;
             window.open(url);
         });
-    }
-
-    orgSn(id: number): string {
-        const o = this.org.get(id);
-        return o ? o.shortname() : '';
     }
 }
 

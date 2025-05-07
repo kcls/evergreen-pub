@@ -38,7 +38,7 @@
           <label class="form-label" for="{{idPrefix}}-{{field.name}}">{{field.label}}</label>
           <eg-help-popover [placement]="'right'" *ngIf="field.helpText" helpText="{{field.helpTextValue}}"></eg-help-popover>
         </div>
-        <div class="col-lg-8">
+        <div class="col-lg-9">
 
           <ng-container [ngSwitch]="inputType(field)">
 
@@ -164,9 +164,10 @@
                 [ngModel]="record[field.name]()"
                 (ngModelChange)="record[field.name]($event)"/>
             </ng-container>
-            <ng-container *ngSwitchCase="'readonly-au'">
+
+	    <ng-container *ngSwitchCase="'readonly-au'">
               <ng-container *ngIf="field.linkedValues">
-                <a routerLink="/staff/circ/patron/{{field.linkedValues[0].id}}/checkout" target="_blank">{{field.linkedValues[0].label}}
+                <a href="/eg/staff/circ/patron/{{field.linkedValues[0].id}}/checkout" target="_blank">{{field.linkedValues[0].label}}
                 <span class="material-icons" i18n-title title="Open user record in new tab">open_in_new</span></a>
               </ng-container>
             </ng-container>

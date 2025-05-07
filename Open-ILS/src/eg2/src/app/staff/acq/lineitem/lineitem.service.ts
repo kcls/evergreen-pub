@@ -3,36 +3,25 @@ import {Observable, from, concat, empty} from 'rxjs';
 import {switchMap, map, tap, merge} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
-import {OrgService} from '@eg/core/org.service';
 import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {ItemLocationService} from '@eg/share/item-location-select/item-location-select.service';
 import {saveAs} from 'file-saver';
 import {LineitemAlertDialogComponent} from './lineitem-alert-dialog.component';
-import {EgEvent, EventService} from '@eg/core/event.service';
 
 const LINEITEM_DISPOSITIONS:
     'new' | 'selector-ready' | 'order-ready' | 'pending-order' | 'on-order' | 'received' | 'delayed' = null;
-
 export type LINEITEM_DISPOSITION = typeof LINEITEM_DISPOSITIONS;
 
 const COPY_ORDER_DISPOSITIONS:
     'canceled' | 'delayed' | 'received' | 'on-order' | 'pre-order' = null;
-
 export type COPY_ORDER_DISPOSITION = typeof COPY_ORDER_DISPOSITIONS;
-
 const ORDER_IDENT_ATTRS = [
     'isbn',
     'issn',
     'upc'
 ];
-
-export interface BatchUpdateChanges {
-    copy: IdlObject,
-    distributionFormula: number | null,
-    itemCount: number | null,
-}
 
 export interface BatchLineitemStruct {
     id: number;
@@ -104,9 +93,7 @@ export class LineitemService {
 
     constructor(
         private idl: IdlService,
-        private evt: EventService,
         private net: NetService,
-        private org: OrgService,
         private auth: AuthService,
         private pcrud: PcrudService,
         private loc: ItemLocationService
@@ -282,7 +269,7 @@ export class LineitemService {
     }
 
     applyBatchNote(liIds: number[],
-        noteValue: string, vendorPublic: boolean, alertEntry?: number): Promise<any> {
+        noteValue: string, vendorPublic: boolean): Promise<any> {
 
         if (!noteValue || liIds.length === 0) { return Promise.resolve(); }
 
@@ -293,9 +280,6 @@ export class LineitemService {
             note.lineitem(id);
             note.value(noteValue);
             note.vendor_public(vendorPublic ? 't' : 'f');
-            if (alertEntry) {
-                note.alert_text(alertEntry);
-            }
             notes.push(note);
         });
 
@@ -416,7 +400,7 @@ export class LineitemService {
         .pipe(tap(loc => {
             this.loc.locationCache[loc.id()] = loc;
             this.batchOptionWanted.emit({location:
-                {id: loc.id(), label: loc.name(), fm: loc, userdata: loc}});
+                {id: loc.id(), label: loc.name(), fm: loc}});
         })).toPromise();
     }
 
@@ -539,40 +523,6 @@ export class LineitemService {
         });
 
         return promise;
-    }
-
-    fetchDistributionFormulas(): Promise<ComboboxEntry[]> {
-
-        return this.pcrud.search('acqdf',
-            {owner: this.org.fullPath(this.auth.user().ws_ou(), true)},
-            {}, {atomic: true}
-        ).toPromise().then(forms => {
-
-            // Sort the distribution formulas numerically first, followed
-            // by asciibetically.  E.g. 10A, 10B, 12A, 106A
-            const buckets: any = {};
-            forms.forEach(df => {
-                const match = df.name().match(/(\d+)/);
-                const prefix = match ? df.name().match(/(\d+)/)[0] : '-';
-
-                if (!buckets[prefix]) { buckets[prefix] = []; }
-                buckets[prefix].push(df);
-            });
-
-            let formulas: ComboboxEntry[] = [];
-            const keys = Object.keys(buckets)
-              .sort((k1, k2) => Number(k1) < Number(k2) ? -1 : 1);
-
-            keys.forEach(key => {
-                formulas = formulas.concat(
-                    buckets[key]
-                      .sort((f1, f2) => f1.name() < f2.name() ? -1 : 1)
-                      .map(f => ({id: f.id(), label: f.name()}))
-                );
-            });
-
-            return formulas;
-        });
     }
 }
 

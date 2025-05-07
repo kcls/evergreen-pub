@@ -1,0 +1,73 @@
+<div id="acq-provider-search-form" class="ps-3 pe-3 pt-3 pb-3 mb-3">
+<form>
+  <div class="row mb-1">
+    <div class="col-lg-3">
+      <input i18n-placeholder placeholder="Provider Name" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerName" type="text" class="form-control" />
+    </div>
+    <div class="col-lg-3">
+      <input i18n-placeholder placeholder="Code" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerCode" type="text" class="form-control" />
+    </div>
+    <div class="col-auto">
+      <eg-org-family-select i18n-labelText labelText="Owner"
+        [limitPerms]="['VIEW_PROVIDER','MANAGE_PROVIDER','ADMIN_PROVIDER']"
+        [ngModelOptions]="{standalone: true}" [(ngModel)]="providerOwners">
+      </eg-org-family-select>
+    </div>
+    <div class="col-auto align-items-end text-end">
+      <button class="btn btn-primary me-1" (click)="submitSearch()" type="submit" [hidden]="!collapsed" i18n>Search</button>
+      <button class="btn btn-secondary" (click)="clearSearch()" type="button" [hidden]="!collapsed" i18n>Reset Form</button>
+      <button class="btn" (click)="toggleCollapse()" type="button" 
+        i18n-title [attr.title]="collapsed? 'Show Provider Details' : 'Hide Provider Details'"
+        i18n-aria-label [attr.aria-label]="collapsed? 'Show Provider Details' : 'Hide Provider Details'">
+        <span class="material-icons">{{collapsed? 'expand_less' : 'expand_more'}}</span>
+      </button>
+      </div>
+  </div>
+
+  <div class="row mb-1" [hidden]="collapsed">
+    <div class="col-lg">
+      <input i18n-placeholder placeholder="Contact Name" [ngModelOptions]="{standalone: true}" [(ngModel)]="contactName" type="text" class="form-control" />
+    </div>
+    <div class="col-lg">
+      <input i18n-placeholder placeholder="Provider Email" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerEmail" type="text" class="form-control" />
+    </div>
+    <div class="col-lg">
+      <input i18n-placeholder placeholder="Provider Phone" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerPhone" type="text" class="form-control" />
+    </div>
+    <div class="col-lg">
+      <eg-combobox i18n-placeholder placeholder="Currency"
+        idlClass="acqct" [asyncSupportsEmptyTermClick]="true"
+        (onChange)="providerCurrencyType = $event ? $event.id : null" [asyncSupportsEmptyTermClick]="true"></eg-combobox>
+    </div>
+  </div>
+
+  <div class="row mb-1" [hidden]="collapsed">
+    <div class="col-lg">
+      <input i18n-placeholder placeholder="SAN" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerSAN" type="text" class="form-control" />
+    </div>
+    <div class="col-lg">
+      <!-- edi default account link -->
+      <eg-combobox i18n-placeholder placeholder="EDI Default"
+        idlClass="acqedi" [asyncSupportsEmptyTermClick]="true"
+        (onChange)="providerEDIDefault = $event ? $event.id : null"></eg-combobox>
+    </div>
+    <div class="col-lg">
+      <input i18n-placeholder placeholder="URL" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerURL" type="text" class="form-control" />
+    </div>
+    <div class="col-lg form-group d-flex">
+      <label class="form-label col-form-label me-2" for="acqproIsActive" i18n>Active?</label>
+      <select class="form-select w-auto" id="acqproIsActive" [ngModelOptions]="{standalone: true}" [(ngModel)]="providerIsActive">
+        <option i18n value="active">Yes</option>
+        <option i18n value="inactive">No</option>
+        <option i18n value="any">Any</option>
+      </select>
+    </div>
+  </div>
+  <div class="row mb-1" [hidden]="collapsed">
+    <div class="col-lg-2 offset-lg-10 text-end">
+      <button class="btn btn-primary me-1" (click)="submitSearch()" type="submit" i18n>Search</button>
+      <button class="btn btn-secondary" (click)="clearSearch()" type="button" i18n>Reset Form</button>
+    </div>
+  </div>
+</form>
+</div>

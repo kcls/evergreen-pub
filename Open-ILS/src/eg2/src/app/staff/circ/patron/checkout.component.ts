@@ -26,7 +26,6 @@ import {ToastService} from '@eg/share/toast/toast.service';
 import {StringComponent} from '@eg/share/string/string.component';
 import {AuthService} from '@eg/core/auth.service';
 import {PrintService} from '@eg/share/print/print.service';
-import {DateUtil} from '@eg/share/util/date';
 
 const SESSION_DUE_DATE = 'eg.circ.checkout.is_until_logout';
 
@@ -42,9 +41,9 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
     checkoutBarcode = '';
     gridDataSource: GridDataSource = new GridDataSource();
     cellTextGenerator: GridCellTextGenerator;
-    dueDateYmd: string;
     dueDate: string;
     dueDateOptions: 0 | 1 | 2 = 0; // auto date; specific date; session date
+    dueDateInvalid = false;
     printOnComplete = true;
     strictBarcode = false;
 
@@ -63,7 +62,6 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
 
     constructor(
         private router: Router,
-        private route: ActivatedRoute,
         private store: StoreService,
         private serverStore: ServerStoreService,
         private org: OrgService,
@@ -79,12 +77,6 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
     ) {}
 
     ngOnInit() {
-        this.route.paramMap.subscribe((params: ParamMap) => {
-            if (params.get("tab") === 'checkout') {
-                this.focusInput();
-            }
-        });
-
         this.circ.getNonCatTypes();
 
         this.gridDataSource.getRows = (pager: Pager, sort: any[]) => {
@@ -97,12 +89,6 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
 
         if (this.store.getSessionItem(SESSION_DUE_DATE)) {
             this.dueDate = this.store.getSessionItem('eg.circ.checkout.due_date');
-            if (this.dueDate) {
-                this.dueDateYmd =
-                    DateUtil.localYmdFromDate(new Date(Date.parse(this.dueDate)));
-            } else {
-                this.dueDateYmd = DateUtil.localYmdFromDate(); // Today
-            }
             this.toggleDateOptions(2);
         }
 
@@ -123,23 +109,8 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
     }
 
     focusInput() {
-        // Somehow the body steals the focus after this call, hence
-        // the setTimeout.
-        // Start with a quick focus, then fall back (below) again
-        // after a loger timeout.
-        setTimeout(() => {
-            const input = document.getElementById('barcode-input');
-            if (input) { input.focus(); }
-        });
-
-        // This is super hacky, but something is grabbing focus after a
-        // simple timeout (above), seemingly based on an actual timeout
-        // duration, and it's not easy to predict -- focus ends up on
-        // the Check Out Tab after navigating back from another tab.
-        setTimeout(() => {
-            const input = document.getElementById('barcode-input');
-            if (input) { input.focus(); }
-        }, 300);
+        const input = document.getElementById('barcode-input');
+        if (input) { input.focus(); }
     }
 
     collectParams(): Promise<CheckoutParams> {
@@ -184,6 +155,10 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
     }
 
     checkout(params?: CheckoutParams, override?: boolean): Promise<CheckoutResult> {
+
+        if (this.dueDateInvalid) {
+            return Promise.resolve(null);
+        }
 
         let barcode;
         const promise = params ? Promise.resolve(params) : this.collectParams();
@@ -285,9 +260,10 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
         }));
     }
 
-    setDueDate(ymd: string) {
-        this.dueDateYmd = ymd;
-        this.dueDate = DateUtil.localDateFromYmd(ymd).toISOString();
+    setDueDate(iso: string) {
+        const date = new Date(Date.parse(iso));
+        this.dueDateInvalid = (date < new Date());
+        this.dueDate = iso;
         this.store.setSessionItem('eg.circ.checkout.due_date', this.dueDate);
     }
 
@@ -374,21 +350,6 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
         );
     }
 
-    willEmailReceipt(): boolean {
-        if (!this.context.summary) { return false; }
-
-        const patron = this.context.summary.patron;
-        const setting = patron.settings()
-            .filter(s => s.name() === 'notification.checkout.email')[0];
-
-        return (
-            this.patronHasEmail() &&
-            setting &&
-            setting.value() === 'true' // JSON encoded
-        );
-    }
-
-
     quickReceipt() {
         if (this.mayEmailReceipt()) {
             this.emailReceipt();
@@ -403,14 +364,6 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
         } else if (this.printOnComplete) {
             this.printReceipt(true);
         }
-    }
-
-    donePrintReceipt() {
-        this.printReceipt(true);
-    }
-
-    doneNoReceipt() {
-        this.doneRedirect();
     }
 
     emailReceipt(redirect?: boolean) {
@@ -429,10 +382,7 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
     }
 
     printReceipt(redirect?: boolean) {
-        if (this.context.checkouts.length === 0) {
-            if (redirect) { this.doneRedirect(); }
-            return;
-        }
+        if (this.context.checkouts.length === 0) { return; }
 
         if (redirect) {
             // Wait for the print job to be queued before redirecting

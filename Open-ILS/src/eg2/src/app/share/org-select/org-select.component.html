@@ -9,30 +9,23 @@
 </ng-container>
 
 <ng-container *ngIf="!readOnly">
-  <div class="d-flex">
-    <input type="text" 
-      class="form-control"
-      [ngClass]="{'form-control-sm': smallFormControl}"
-      [attr.id]="domId.length ? domId : null"
-      [name]="name"
-      [placeholder]="placeholder"
-      [disabled]="disabled"
-      [required]="required"
-      [(ngModel)]="selected" 
-      [ngbTypeahead]="filter"
-      [resultTemplate]="displayTemplate"
-      [inputFormatter]="formatter"
-      (blur)="handleBlur()"
-      (click)="click$.next($event.target.value)"
-      (keyup.enter)="keyUpEnter.emit()"
-      (selectItem)="orgChanged($event)"
-      container="body"
-      #instance="ngbTypeahead"
-    />
-    <div class="d-flex flex-column icons" (click)="openMe($event)">
-      <span class="material-icons">keyboard_arrow_up</span>
-      <span class="material-icons">keyboard_arrow_down</span>
-    </div>
-  </div>
+
+  <input type="text" 
+    class="form-control"
+    id="{{domId}}"
+    [name]="name"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    [required]="required"
+    [(ngModel)]="selected" 
+    [ngbTypeahead]="filter"
+    [resultTemplate]="displayTemplate"
+    [inputFormatter]="formatter"
+    (blur)="handleBlur()"
+    (click)="click$.next($event.target.value)"
+    (selectItem)="orgChanged($event)"
+    container="body"
+    #instance="ngbTypeahead"
+  />
 
 </ng-container>

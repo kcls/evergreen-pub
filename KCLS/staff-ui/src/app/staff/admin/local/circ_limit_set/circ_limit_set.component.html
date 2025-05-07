@@ -1,0 +1,14 @@
+<eg-staff-banner bannerText="Circulation Limit Set Administration" i18n-bannerText>
+  </eg-staff-banner>
+
+<eg-admin-page idlClass="ccls" [templateFields]="[{name: 'Linked Entities', template: cclsLinkedEntitiesTmpl}]"></eg-admin-page>
+
+<ng-template #cclsLinkedEntitiesTmpl let-row="row">
+  <div>
+    <a routerLink="/staff/admin/local/config/circ_limit_set/{{row.id()}}">
+      Manage
+    </a>
+  </div>
+</ng-template>
+
+<eg-fm-record-editor #editDialog hiddenFields="id" idlClass="ccls"></eg-fm-record-editor>

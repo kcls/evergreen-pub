@@ -42,8 +42,6 @@ export class GridColumnComponent implements OnInit {
 
     @Input() dateOnlyIntervalField: string;
 
-    @Input() dateFormat: string;
-
     // Used in conjunction with cellTemplate
     @Input() cellContext: any;
     @Input() cellTemplate: TemplateRef<any>;
@@ -87,7 +85,6 @@ export class GridColumnComponent implements OnInit {
         col.isMultiSortable = this.multiSortable;
         col.datatype = this.datatype;
         col.datePlusTime = this.datePlusTime;
-        col.dateFormat = this.dateFormat;
         col.ternaryBool = this.ternaryBool;
         col.timezoneContextOrg = this.timezoneContextOrg;
         col.dateOnlyIntervalField = this.dateOnlyIntervalField;

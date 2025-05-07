@@ -1,0 +1,296 @@
+
+<div class="col-lg-12 card tight-card mb-2 p-2 bg-light">
+  <div class="card-body">
+    <div class="row">
+      <!-- Checkbox, jacket image, and title blob live in a flex row
+           because there's no way to give them col-lg-* columns that
+           don't waste a lot of space. -->
+      <div class="col-lg-7 d-flex">
+        <label  class="form-label checkbox">
+          <span class="fw-bold fst-italic">
+            {{index + 1 + searchContext.pager.offset}}.
+          </span>
+          <input class="ps-1" type='checkbox' [(ngModel)]="isRecordSelected"
+            (change)="toggleBasketEntry()"/>
+        </label>
+        <div class="ps-2 record-jacket-div" >
+          <ng-container *ngIf="hasMrConstituentRecords(summary)">
+            <a routerLink="/staff/catalog/search"
+              [queryParams]="appendFromMrParam(summary)">
+              <img src="/opac/extras/ac/jacket/medium/r/{{summary.id}}" alt=""/>
+            </a>
+          </ng-container>
+          <ng-container *ngIf="!hasMrConstituentRecords(summary)">
+              <a routerLink="/staff/catalog/record/{{summary.id}}"
+                [queryParams]="currentParams()">
+                <img src="/opac/extras/ac/jacket/medium/r/{{summary.id}}" alt=""/>
+              </a>
+          </ng-container>
+        </div>
+        <!-- for call number browse display -->
+        <ng-container *ngIf="callNumber">
+          <div class="ps-2 fw-bold">
+            {{callNumber.prefix().label()}}
+            {{callNumber.label()}}
+            {{callNumber.suffix().label()}}
+            @ {{orgName(callNumber.owning_lib())}}
+          </div>
+        </ng-container>
+        <div class="flex-1 ps-2">
+          <div class="row">
+            <div class="col-lg-12 fw-bold">
+              <h3 class="bib-field-title">
+              <ng-container *ngIf="hasMrConstituentRecords(summary)">
+                  <a routerLink="/staff/catalog/search" class="bib-title-link"
+                    [queryParams]="appendFromMrParam(summary)">
+                    <eg-bib-display-field [summary]="summary" field="title"
+                      [usePlaceholder]="true"></eg-bib-display-field>
+                  </a>
+              </ng-container>
+              
+              <ng-container *ngIf="!hasMrConstituentRecords(summary)">
+                <a routerLink="/staff/catalog/record/{{summary.id}}"
+                  target="_blank" [queryParams]="currentParams()" class="bib-title-link">
+                  <eg-bib-display-field [summary]="summary" field="title" 
+                    [usePlaceholder]="true"></eg-bib-display-field>
+                </a>
+              </ng-container>
+              
+              <a routerLink="/staff/catalog/search" class="bib-author-link pt-2" [queryParams]="getAuthorSearchParams(summary)">
+                <eg-bib-display-field [summary]="summary" field="author" [usePlaceholder]="true"></eg-bib-display-field>
+              </a>
+              </h3>
+            </div>
+          </div>
+          <div class="row pt-2">
+            <div class="col-lg-12">
+              <ng-container *ngIf="summary.display.bibcn">
+                <div class="pb-1" i18n>Call number: {{summary.display.bibcn}}</div>
+              </ng-container>
+              <ng-container *ngIf="summary.display.physical_description">
+                <!-- [].concat() to avoid modifying the summary arrays -->
+                <div class="pb-1" i18n>Phys. Desc.:
+                  <eg-bib-display-field [summary]="summary"
+                    field="physical_description" joiner=","></eg-bib-display-field>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="summary.display.edition">
+                <div class="pb-1" i18n>Edition:
+                  <eg-bib-display-field [summary]="summary"
+                    field="edition" joiner=","></eg-bib-display-field>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="summary.display.publisher || summary.display.pubdate">
+                <!-- note publisher typically includes pubdate -->
+                <ng-container *ngIf="summary.display.publisher; else pubDate">
+                  <div class="pb-1" i18n>Publisher:
+                  <eg-bib-display-field [summary]="summary" field="publisher">
+                  </eg-bib-display-field>
+                  </div>
+                </ng-container>
+                <ng-template #pubDate>
+                  <div class="pb-1" i18n>Pub Date:
+                    <eg-bib-display-field [summary]="summary" field="pubdate">
+                    </eg-bib-display-field>
+                  </div>
+                </ng-template>
+              </ng-container>
+              <ng-container *ngIf="summary.display.isbn">
+                <div class="pb-1" i18n>ISBN:
+                  <eg-bib-display-field [summary]="summary"
+                    field="isbn" joiner=","></eg-bib-display-field>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="summary.display.upc">
+                <div class="pb-1" i18n>UPC:
+                  <eg-bib-display-field [summary]="summary"
+                    field="upc" joiner=","></eg-bib-display-field>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="summary.display.issn">
+                <div i18n>ISSN:
+                  <eg-bib-display-field [summary]="summary"
+                    field="issn" joiner=","></eg-bib-display-field>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="hasCourse">
+                <div i18n>Associated Courses:
+                  <span *ngFor="let course of courses; let isLast=last">
+                    <a routerLink="/staff/admin/local/asset/course_list/{{course.id()}}">
+                      {{course.name()}} ({{course.course_number()}})
+                    </a>{{isLast ? '' : ', '}}
+                  </span>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 p-0 ps-1 m-0 d-flex">
+        <div class="flex-1">
+          <table>
+            <!-- i know, tables boo!, but this lets us fit quite a bit
+                of data into a small area without a lot of wasted space -->
+            <tbody>
+              <tr>
+                <td i18n>TCN: </td>
+                <td class="ps-1">{{summary.record.tcn_value()}}</td>
+              </tr>
+              <tr>
+                <td i18n>Holds: </td>
+                <td class="ps-1">{{summary.holdCount}}</td>
+              </tr>
+              <ng-container *ngFor="let copyCount of summary.holdingsSummary; let copyIdx = index">
+                <tr>
+                  <td>{{orgName(copyCount.org_unit)}}: </td>
+                  <td class="ps-1" i18n>{{copyCount.count}} total items</td>
+                </tr>
+                <tr *ngIf="copyCount.org_unit == 1">
+                  <td>{{orgName(copyCount.org_unit)}}: </td>
+                  <td class="ps-1" i18n
+                    [ngClass]="{'alert-danger rounded': !copyCount.hopeful && copyCount.count > 0}">
+                    {{copyCount.hopeful || 0}} viable items</td>
+                </tr>
+                <tr>
+                  <td>{{orgName(copyCount.org_unit)}}: </td>
+                  <td class="ps-1" i18n>{{copyCount.available}} available items</td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <ng-container *ngIf="summary.attributes.mattype && summary.attributes.mattype[0]">
+            <ng-container *ngFor="let icon of summary.attributes.mattype">
+            <span>
+              <img title="{{iconFormatLabel(icon)}}" 
+                src="/images/format_icons/mattype/{{icon}}.png"/>
+            </span>
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+      <div class="col-lg-2">
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="float-end small-text-1">
+              <span i18n>Created</span> {{summary.record.create_date() | date:'shortDate'}} <span i18n>by</span>
+              <!-- creator if fleshed after the initial data set is loaded -->
+              <a *ngIf="summary.record.creator().usrname"
+                routerLink="/staff/circ/patron/{{summary.record.creator().id()}}/checkout">
+                  {{summary.record.creator().usrname()}}
+              </a>
+              <!-- add a spacer pending data to reduce page shuffle -->
+              <span *ngIf="!summary.record.creator().usrname"> ... </span>
+            </div>
+          </div>
+        </div>
+        <div class="row pt-2">
+          <div class="col-lg-12">
+            <div class="float-end small-text-1" i18n>
+              Edited {{summary.record.edit_date() | date:'shortDate'}} by
+              <a *ngIf="summary.record.editor().usrname"
+                routerLink="/staff/circ/patron/{{summary.record.editor().id()}}/checkout">
+                  {{summary.record.editor().usrname()}}
+              </a>
+              <span *ngIf="!summary.record.editor().usrname"> ... </span>
+            </div>
+          </div>
+        </div>
+        <div class="row pt-2">
+          <div class="col-lg-12">
+            <div class="float-end small-text-1" i18n>
+              Cataloging Date:
+                <ng-container *ngIf="summary.record.cataloging_date()">
+                  {{summary.record.cataloging_date() | date:'shortDate'}}
+                </ng-container>
+                <ng-container *ngIf="!summary.record.cataloging_date()">
+                  &lt;unset&gt;
+                </ng-container>
+            </div>
+          </div>
+        </div>
+        <div class="row row-cols-auto pt-2">
+          <div class="col ms-auto">
+            <ng-container *ngIf="summary.record.deleted() == 't'">
+              <span class="text-danger" i18n>(Deleted)</span>
+            </ng-container>
+          </div>
+          <div class="col">
+            <span>
+              <button (click)="placeHold()" [disabled]="!summary.isHoldable"
+                [ngClass]="summary.isHoldable ? 'btn-success' : 'btn-secondary'"
+                class="btn btn-sm label-with-material-icon small-text-1">
+                <span class="material-icons" aria-hidden="true">check</span>
+                <span i18n>Place Hold</span>
+              </button>
+            </span>
+          </div>
+        </div>
+      </div><!-- col -->
+    </div><!-- row -->
+    <div class="row" *ngIf="searchContext.showResultExtras && summary.eResourceUrls.length">
+      <div class="col-lg-12 mt-2">
+        <div class="w-auto ms-2 me-2">
+          <div class="row p-1 mt-1 mb-1 border-top" *ngFor="let url of summary.eResourceUrls">
+            <div class="col-lg-2">
+              <span class="fw-bold">
+                <ng-container [ngSwitch]="url.ind2">
+                  <ng-container *ngSwitchCase="'0'" i18n>Electronic Resource:</ng-container>
+                  <ng-container *ngSwitchCase="'1'" i18n>Version of Resource:</ng-container>
+                  <ng-container *ngSwitchCase="'2'" i18n>Related Resource:</ng-container>
+                  <ng-container *ngSwitchDefault i18n>Electronic Resource</ng-container>
+                  </ng-container>
+               </span>
+            </div>
+            <div class="col-lg"><a href="{{url.href}}">{{url.label}}</a> {{url.note}}</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- row -->
+    <div class="row" *ngIf="searchContext.showResultExtras && summary.copies">
+      <div class="shelving-locations" role="region" aria-describedby="caption{{index}}" tabindex="0">
+        <table class="table" role="table" *ngIf="summary.copies.length">
+          <caption id="caption{{index}}" *ngIf="summary.copies.length">
+              <span i18n="Shelving locations table heading">{{summary.copies.length}} Shelving Locations</span>
+              <span i18n="Shelving locations table heading preposition and separators">&nbsp;for&nbsp;</span> 
+              <eg-bib-display-field [summary]="summary" field="title" [usePlaceholder]="true"></eg-bib-display-field>
+              <span i18n="Shelving locations table heading separator">&nbsp;-&nbsp;</span>
+              <eg-bib-display-field [summary]="summary" field="author" [usePlaceholder]="true"></eg-bib-display-field>
+          </caption>
+          <thead role="rowgroup">
+            <tr>
+              <th scope="col" role="columnheader" class="shelving-library org-unit" i18n>Library</th>
+              <th scope="col" role="columnheader" class="copy-location" i18n>Shelving location</th>
+              <th scope="col" role="columnheader" class="callnumber" i18n>Call number</th>
+              <th scope="col" role="columnheader" class="status" i18n>Status</th>
+              <th scope="col" role="columnheader" class="due-date timestamp" i18n>Due date</th>
+            </tr>
+          </thead>
+          <tbody role="rowgroup">
+            <tr role="row" *ngFor="let copy of summary.copies">
+              <th role="rowheader" class="shelving-library org-unit" i18n>{{copy.circ_lib_sn}}</th>
+              <td role="cell" class="copy-location" i18n>{{copy.copy_location}}</td>
+              <td role="cell" class="callnumber" i18n>
+                {{copy.call_number_prefix_label}} 
+                {{copy.call_number_label}}
+                {{copy.call_number_suffix_label}}
+              </td>
+              <td role="cell" class="status" i18n>{{copy.copy_status}}</td>
+              <td role="cell" class="due-date timestamp" i18n>
+                <ng-container *ngIf="copy.due_date">
+                  <span title="Due:" i18n-title>{{copy.due_date | date:'shortDate'}}</span>
+                </ng-container>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-container *ngIf="!summary.copies.length && !summary.eResourceUrls.length">
+        <p class="fst-italic" i18n>No Items To Display</p>
+      </ng-container>
+    </div>
+  </div><!-- card-body -->
+</div><!-- card -->
+

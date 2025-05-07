@@ -125,7 +125,6 @@ export class BasketActionsComponent {
                 this.basket.getRecordIds().then(ids => {
                     this.addToBucketDialog.bucketClass = 'biblio';
                     this.addToBucketDialog.itemIds = ids;
-                    this.addToBucketDialog.openBucket = true;
                     this.addToBucketDialog.open({size: 'lg'});
                 });
                 break;

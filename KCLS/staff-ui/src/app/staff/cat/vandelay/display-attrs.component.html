@@ -1,0 +1,21 @@
+
+<ul ngbNav #tabs="ngbNav" [(activeId)]="attrType" (navChange)="onNavChange($event)" [keyboard]="true" [roles]="false" role="tablist" class="nav-tabs">
+	<li role="presentation" [ngbNavItem]="'bib'">
+		<a i18n ngbNavLink role="tab">Bibliographic Attributes</a>
+		<ng-template ngbNavContent>
+      <div class="mt-3">
+        <eg-admin-page idlClass="vqbrad"></eg-admin-page>
+      </div>
+		</ng-template>
+	</li>
+	<li role="presentation" [ngbNavItem]="'authority'">
+		<a i18n ngbNavLink role="tab">Authority Attributes</a>
+		<ng-template ngbNavContent>
+      <div class="mt-3">
+        <eg-admin-page idlClass="vqarad"></eg-admin-page>
+      </div>
+		</ng-template>
+	</li>
+</ul>
+
+<div [ngbNavOutlet]="tabs" class="mt-2"></div>

@@ -1,5 +1,6 @@
 import {Component, OnInit, Input, Output, EventEmitter} from '@angular/core';
 import {Router} from '@angular/router';
+import {HttpClient} from '@angular/common/http';
 import {StoreService} from '@eg/core/store.service';
 import {CatalogService} from '@eg/share/catalog/catalog.service';
 import {CatalogSearchContext} from '@eg/share/catalog/search-context';
@@ -8,6 +9,8 @@ import {StaffCatalogService} from '../catalog.service';
 import {StringService} from '@eg/share/string/string.service';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {HoldingsService} from '@eg/staff/share/holdings/holdings.service';
+
+export const AC_CLEAR_CACHE_PATH = '/opac/extras/ac/clearcache/all/r/';
 
 @Component({
   selector: 'eg-catalog-record-actions',
@@ -42,12 +45,17 @@ export class RecordActionsComponent implements OnInit {
               'eg.cat.transfer_target_lib',
               'eg.cat.transfer_target_vol'
             ]
-        },
-        lineitemTransfer: {
-            key: 'eg.cat.marked_lineitem_transfer_record',
-            current: null
         }
     };
+
+    get patronViewUrl(): string {
+        if (!this.staffCat.patronViewUrl) {
+            return `/eg/opac/record/${encodeURIComponent(this.recId)}`;
+        }
+        return encodeURI(this.staffCat.patronViewUrl.replace(
+            /\{eg_record_id\}/g, ''+this.recId
+        ));
+    }
 
     @Input() set recordId(recId: number) {
         this.recId = recId;
@@ -66,7 +74,8 @@ export class RecordActionsComponent implements OnInit {
         private cat: CatalogService,
         private catUrl: CatalogUrlService,
         private staffCat: StaffCatalogService,
-        private holdings: HoldingsService
+        private holdings: HoldingsService,
+        private http: HttpClient
     ) {}
 
     ngOnInit() {
@@ -106,13 +115,19 @@ export class RecordActionsComponent implements OnInit {
         this.addHoldingsRequested.emit();
     }
 
-    // KCLS bibliocommons
-    openPatronView() {
-        // '082' is (I assume) a KCLS-specific identifier.  Seems to work.
-        const url =
-            `https://kcls.bibliocommons.com/item/show/${this.recId}082`;
-
-        window.open(url, '_blank');
+    clearAddedContentCache() {
+        const url = AC_CLEAR_CACHE_PATH + this.recId;
+        this.http.get(url, {responseType: 'text'}).subscribe(
+            data => {
+                console.debug(data);
+                this.strings.interpolate('catalog.record.toast.clearAddedContentCache')
+                    .then(txt => this.toast.success(txt));
+            },
+            (err: unknown) => {
+                this.strings.interpolate('catalog.record.toast.clearAddedContentCacheFailed')
+                    .then(txt => this.toast.danger(txt));
+            }
+        );
     }
 }
 

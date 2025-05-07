@@ -13,10 +13,7 @@ import {DialogComponent} from '@eg/share/dialog/dialog.component';
 import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {BibRecordService, BibRecordSummary} from '@eg/share/catalog/bib-record.service';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
-import {PauseRefundDialogComponent} from '@eg/staff/share/holdings/pause-refund-dialog.component';
-import {ServerStoreService} from '@eg/core/server-store.service';
 import {BillingService} from '@eg/staff/share/billing/billing.service';
-import {PrintService} from '@eg/share/print/print.service';
 
 /**
  * Dialog for marking items damaged and asessing related bills.
@@ -40,22 +37,17 @@ export class MarkDamagedDialogComponent
     billingTypes: ComboboxEntry[];
 
     // Overide the API suggested charge amount
-    amountChangeRequested = true; // KCLS JBAS-3129
+    amountChangeRequested: boolean;
     newCharge: number;
     newNote: string;
     newBtype: number;
-    pauseArgs: any = {};
-    dibs = '';
 
-    @ViewChild('successMsg', {static: false}) private successMsg: StringComponent;
-    @ViewChild('errorMsg', {static: false}) private errorMsg: StringComponent;
-    @ViewChild('pauseRefundDialog', {static: false})
-        pauseRefundDialog: PauseRefundDialogComponent;
+    @ViewChild('successMsg', { static: true }) private successMsg: StringComponent;
+    @ViewChild('errorMsg', { static: true }) private errorMsg: StringComponent;
+
 
     // Charge data returned from the server requesting additional charge info.
     chargeResponse: any;
-
-    autoRefundsActive = false;
 
     constructor(
         private modal: NgbModal, // required for passing to parent
@@ -66,17 +58,9 @@ export class MarkDamagedDialogComponent
         private org: OrgService,
         private billing: BillingService,
         private bib: BibRecordService,
-        private store: ServerStoreService,
-        private printer: PrintService,
         private auth: AuthService) {
         super(modal); // required for subclassing
     }
-
-    ngOnInit() {
-        this.store.getItem('eg.circ.lostpaid.auto_refund')
-        .then(value => this.autoRefundsActive = value);
-    }
-
 
     /**
      * Fetch the item/record, then open the dialog.
@@ -104,7 +88,6 @@ export class MarkDamagedDialogComponent
         return this.billing.getUserBillingTypes().then(types => {
             this.billingTypes =
                 types.map(bt => ({id: bt.id(), label: bt.name()}));
-            this.newBtype = this.billingTypes[0].id;
         });
     }
 
@@ -126,8 +109,7 @@ export class MarkDamagedDialogComponent
         this.chargeResponse = null;
         this.newCharge = null;
         this.newNote = null;
-        //this.amountChangeRequested = false; // KCLS JBAS-3129
-        this.pauseArgs = {};
+        this.amountChangeRequested = false;
     }
 
     bTypeChange(entry: ComboboxEntry) {
@@ -137,16 +119,10 @@ export class MarkDamagedDialogComponent
     markDamaged(args: any) {
         this.chargeResponse = null;
 
-        if (!args) { args = {}; }
-
         if (args.apply_fines === 'apply') {
             args.override_amount = this.newCharge;
             args.override_btype = this.newBtype;
             args.override_note = this.newNote;
-        }
-
-        if (this.pauseArgs) {
-            Object.assign(args, this.pauseArgs);
         }
 
         if (this.handleCheckin) {
@@ -154,44 +130,24 @@ export class MarkDamagedDialogComponent
         }
 
         this.net.request(
-            'open-ils.circ', 'open-ils.circ.mark_item_damaged.details',
+            'open-ils.circ', 'open-ils.circ.mark_item_damaged',
             this.auth.token(), this.copyId, args
         ).subscribe(
             result => {
                 console.debug('Mark damaged returned', result);
 
-                const evt = this.evt.parse(result);
-
-                if (result && !evt) {
-                    // Result is a hash of detail info.
+                if (Number(result) === 1) {
                     this.successMsg.current().then(msg => this.toast.success(msg));
                     this.close(true);
-                    this.printLetter(result);
                     return;
                 }
 
-
-                if (evt.textcode === 'REFUNDABLE_TRANSACTION_PENDING') {
-                    if (this.autoRefundsActive) {
-                        this.pauseRefundDialog.refundableXact = evt.payload.mrx;
-                        this.pauseRefundDialog.open().subscribe(resp => {
-                            this.pauseArgs = resp;
-                            this.markDamaged(args);
-                        });
-                    } else {
-                        this.pauseArgs = {no_pause_refund: true};
-                        this.markDamaged(args);
-                    }
-                    return;
-                }
+                const evt = this.evt.parse(result);
 
                 if (evt.textcode === 'DAMAGE_CHARGE') {
-                    // More info needed from staff on how to handle charges.
+                    // More info needed from staff on how to hangle charges.
                     this.chargeResponse = evt.payload;
                     this.newCharge = this.chargeResponse.charge;
-                } else {
-                    console.error(evt);
-                    alert(evt);
                 }
             },
             err => {
@@ -199,29 +155,6 @@ export class MarkDamagedDialogComponent
                 console.error(err);
             }
         );
-    }
-
-    disableOk(): boolean {
-        if (!this.dibs) { return true; }
-        return this.amountChangeRequested && (!this.newBtype || !this.newCharge);
-    }
-
-    printLetter(details: any) {
-        if (!details || !details.circ) { return; } // No one to notify.
-
-        this.printer.print({
-            printContext: 'default',
-            templateName: 'damaged_item_letter',
-            contextData: {
-                circulation: details.circ,
-                copy: this.copy,
-                patron: details.circ.usr(),
-                note: details.note,
-                cost: parseFloat(details.bill_amount).toFixed(2),
-                title: this.bibSummary.display.title,
-                dibs: this.dibs,
-            }
-        });
     }
 }
 

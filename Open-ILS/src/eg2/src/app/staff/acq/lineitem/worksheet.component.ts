@@ -33,11 +33,6 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
 
     ngOnInit() {
 
-        this.closing = this.route.snapshot.url
-          .filter(part => part.path === 'close').length > 0;
-        this.printing = this.route.snapshot.url
-          .filter(part => part.path === 'print').length > 0;
-
         this.route.paramMap.subscribe((params: ParamMap) => {
             const id = +params.get('lineitemId');
             if (id !== this.lineitemId) {
@@ -57,18 +52,13 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
         this.net.request(
             'open-ils.acq', 'open-ils.acq.lineitem.retrieve',
             this.auth.token(), this.lineitemId, {
-                flesh_bib: true, // MARC fun in the template
-                flesh_display_entries: true, // bre flat display entries
-                flesh_provider: true,
                 flesh_attrs: true,
                 flesh_notes: true,
                 flesh_cancel_reason: true,
                 flesh_li_details: true,
                 flesh_fund: true,
-                flesh_li_details_copy: true,
-                // flesh_copies: true, // repeats above, but different
-                flesh_li_details_location: true,
-                // flesh_location: true, // repeats above, but different
+                flesh_copies: true,
+                flesh_location: true,
                 flesh_copy_location: true,
                 flesh_call_number: true,
                 flesh_li_details_receiver: true,
@@ -77,28 +67,21 @@ export class LineitemWorksheetComponent implements OnInit, AfterViewInit {
         ).toPromise()
         .then(li => this.lineitem = li)
         .then(_ => this.getRemainingData())
-        .then(_ => this.populatePreview())
-        .then(_ => {
-            if (this.printing) {
-                this.printWorksheet();
-            }
-        });
+        .then(_ => this.populatePreview());
     }
 
     getRemainingData(): Promise<any> {
+
         // Flesh owning lib
         this.lineitem.lineitem_details().forEach(lid => {
             lid.owning_lib(this.org.get(lid.owning_lib()));
         });
 
-        if (!this.lineitem.eg_bib_id()) {
-            return Promise.resolve();
-        }
-
         return this.net.request(
             'open-ils.circ',
-            'open-ils.circ.bre.holds.count', this.lineitem.eg_bib_id().id()
+            'open-ils.circ.bre.holds.count', this.lineitem.eg_bib_id()
         ).toPromise().then(count => this.holdCount = count);
+
     }
 
     populatePreview(): Promise<any> {

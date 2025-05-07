@@ -20,7 +20,6 @@ export interface FormatParams {
     datatype?: string;
     orgField?: string; // 'shortname' || 'name'
     datePlusTime?: boolean;
-    dateFormat?: string;
     timezoneContextOrg?: number;
     dateOnlyInterval?: string;
 }
@@ -126,12 +125,6 @@ export class FormatService {
                 return org ? org[orgField]() : '';
 
             case 'timestamp':
-                // This can happen when in the process of applying a
-                // NOW() date value to an object in a grid.  Treat it
-                // essentially as unset so the caller is required to
-                // retrieve the modified value.
-                if (value === 'now') { return ''; }
-
                 let tz;
                 if (params.idlField === 'dob') {
                     // special case: since dob is the only date column that the
@@ -155,7 +148,7 @@ export class FormatService {
                     return '';
                 }
 
-                let fmt = params.dateFormat || this.dateFormat || 'shortDate';
+                let fmt = this.dateFormat || 'shortDate';
 
                 if (params.datePlusTime) {
                     // Time component directly requested
@@ -379,33 +372,9 @@ export class FormatService {
 @Pipe({name: 'formatValue'})
 export class FormatValuePipe implements PipeTransform {
     constructor(private formatter: FormatService) {}
+    // Add other filter params as needed to fill in the FormatParams
     transform(value: string, datatype: string): string {
         return this.formatter.transform({value: value, datatype: datatype});
-    }
-}
-
-@Pipe({name: 'egDate'})
-export class SimpleDatePipe implements PipeTransform {
-    constructor(private formatter: FormatService) {}
-
-    transform(value: string): string {
-        return this.formatter.transform({
-            value: value,
-            datatype: 'timestamp'
-        });
-    }
-}
-
-@Pipe({name: 'egDateTime'})
-export class SimpleDateTimePipe implements PipeTransform {
-    constructor(private formatter: FormatService) {}
-
-    transform(value: string): string {
-        return this.formatter.transform({
-            value: value,
-            datatype: 'timestamp',
-            datePlusTime: true
-        });
     }
 }
 

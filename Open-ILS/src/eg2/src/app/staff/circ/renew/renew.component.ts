@@ -17,6 +17,8 @@ import {CircService, CircDisplayInfo, CheckoutParams, CheckoutResult
 import {BarcodeSelectComponent
     } from '@eg/staff/share/barcodes/barcode-select.component';
 import {PrintService} from '@eg/share/print/print.service';
+import {MarkDamagedDialogComponent
+    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {CopyAlertsDialogComponent
     } from '@eg/staff/share/holdings/copy-alerts-dialog.component';
 import {BucketDialogComponent
@@ -59,6 +61,7 @@ export class RenewComponent implements OnInit, AfterViewInit {
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('barcodeSelect') private barcodeSelect: BarcodeSelectComponent;
+    @ViewChild('markDamagedDialog') private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('copyAlertsDialog') private copyAlertsDialog: CopyAlertsDialogComponent;
     @ViewChild('itemNeverCircedStr') private itemNeverCircedStr: StringComponent;
     @ViewChild('cancelTransitDialog') private cancelTransitDialog: CancelTransitDialogComponent;
@@ -207,14 +210,15 @@ export class RenewComponent implements OnInit, AfterViewInit {
         return copies;
     }
 
+
     markDamaged(rows: RenewGridEntry[]) {
-        const copyId = this.getCopyIds(rows)[0];
-        if (!copyId) { return; }
+        const copyIds = this.getCopyIds(rows, 14 /* ignore damaged */);
+        if (copyIds.length === 0) { return; }
 
-        const url = this.ngLocation.prepareExternalUrl(
-            `/staff/cat/item/damaged/${copyId}/`);
-
-        window.open(url);
+        from(copyIds).pipe(concatMap(id => {
+            this.markDamagedDialog.copyId = id;
+            return this.markDamagedDialog.open({size: 'lg'});
+        }));
     }
 
     addItemAlerts(rows: RenewGridEntry[]) {
@@ -279,8 +283,7 @@ export class RenewComponent implements OnInit, AfterViewInit {
     showRecentCircs(rows: RenewGridEntry[]) {
         const copyId = this.getCopyIds(rows)[0];
         if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/circs`);
+            const url = `/eg/staff/cat/item/${copyId}/circs`;
             window.open(url);
         }
     }
