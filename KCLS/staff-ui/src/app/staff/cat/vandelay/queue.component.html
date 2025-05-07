@@ -1,0 +1,172 @@
+
+<eg-progress-dialog #progressDlg
+  dialogTitle="Deleting Queue..." i18n-dialogTitle></eg-progress-dialog>
+
+<eg-progress-dialog #progressSelect
+  dialogTitle="Selecting all records..." i18n-dialogTitle></eg-progress-dialog>
+
+<ng-container *ngIf="queueSummary && queueSummary.queue">
+
+  <eg-confirm-dialog
+    #confirmDelDlg
+    i18n-dialogTitle i18n-dialogBody
+    dialogTitle="Confirm Delete"
+    dialogBody="Delete Queue {{queueSummary.queue.name()}}?">
+  </eg-confirm-dialog>
+
+  <h2 i18n>Queue {{queueSummary.queue.name()}}</h2>
+  <div class="row pb-2">
+    <div class="col-lg-6">
+      <div class="card tight-card">
+        <h5 class="card-header" i18n>Queue Summary</h5>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <div class="d-flex">
+              <div class="flex-3" i18n>Records in Queue:</div>
+              <div class="flex-1">{{queueSummary.total}}</div>
+              <div class="flex-3" i18n>Items in Queue:</div>
+              <div class="flex-1">{{queueSummary.total_items}}</div>
+            </div>
+          </li>
+          <li class="list-group-item">
+            <div class="d-flex">
+              <div class="flex-3" i18n>Records Imported:</div>
+              <div class="flex-1">{{queueSummary.imported}}</div>
+              <div class="flex-3" i18n>Items Imported:</div>
+              <div class="flex-1">{{queueSummary.total_items_imported}}</div>
+            </div>
+          </li>
+          <li class="list-group-item">
+            <div class="d-flex">
+              <div class="flex-3" i18n>Records Import Failures:</div>
+              <div class="flex-1">{{queueSummary.rec_import_errors}}</div>
+              <div class="flex-3" i18n>Item Import Failures:</div>
+              <div class="flex-1">{{queueSummary.item_import_errors}}</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card tight-card">
+        <h5 class="card-header" i18n>Queue Actions</h5>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <div class="d-flex">
+              <div class="flex-1">
+                <button type="button" class="btn btn-link p-0" (click)="importSelected()"
+                  i18n>Import Selected Records</button>
+              </div>
+              <div class="flex-1">
+                <button type="button" class="btn btn-link p-0" (click)="importAll()" i18n>Import All Records</button>
+              </div>
+            </div>
+          </li>
+          <li class="list-group-item">
+            <div class="d-flex">
+              <div class="flex-1">
+                <a i18n class="btn btn-link p-0"
+                  routerLink="/staff/cat/vandelay/queue/{{queueType}}/{{queueId}}/items">
+                    View Import Items
+                </a>
+              </div>
+              <div class="flex-1">
+                <button type="button" class="btn btn-link p-0" (click)="exportNonImported()"
+                  i18n>Export Non-Imported Records</button>
+              </div>
+            </div>
+          </li>
+          <li class="list-group-item">
+            <div class="d-flex">
+              <eg-bucket-dialog #bucketDialog bucketClass="biblio" [fromBibQueue]="queueId">
+              </eg-bucket-dialog>
+              <div class="flex-1">
+                <button type="button" class="btn btn-link p-0" (click)="bucketDialog.open({size:'lg'})" i18n>
+                  Copy Queue To Bucket
+                </button>
+              </div>
+              <div class="flex-1">
+                <button type="button" class="btn btn-link p-0" (click)="deleteQueue()" i18n>Delete Queue</button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #matchesTmpl let-row="row">
+  <a i18n [ngClass]="{'fw-bold': hasOverlayTarget(row.id)}"
+    routerLink="/staff/cat/vandelay/queue/{{queueType}}/{{queueId}}/record/{{row.id}}/matches">
+      ({{row.matches.length}})
+      {{hasOverlayTarget(row.id) ? '*' : ''}}
+  </a>
+</ng-template>
+
+<ng-template #errorsTmpl let-row="row">
+  <div *ngIf="row.error_detail">
+    <b class="text-danger" title="{{row.error_detail}}">{{row.import_error}}</b>
+  </div>
+  <div *ngIf="row.error_items.length">
+    <b class="text-danger">Items ({{row.error_items.length}})</b>
+  </div>
+</ng-template>
+
+<ng-template #importedAsTmpl let-row="row">
+  <a *ngIf="queueType==='bib'" target="_blank" routerLink="/staff/catalog/record/{{row.imported_as}}">
+    {{row.imported_as}}
+  </a>
+  <a *ngIf="queueType==='auth'" target="_blank" routerLink="/staff/cat/authority/edit/{{row.imported_as}}">
+    {{row.imported_as}}
+  </a>
+</ng-template>
+
+
+<!--
+Most columns are generated programmatically from queued record attribute
+definitions.  Hide a number of stock record attributes by default
+because there are a lot of them.
+-->
+
+<ng-template #selectTemplate let-row="row">
+  <ng-container *ngIf="rowIsSelected(row.id)">
+    <span i18n-title title="Row is Selected"
+      class="material-icons">check_circle</span>
+  </ng-container>
+</ng-template>
+
+<eg-grid #queueGrid [dataSource]="queueSource"
+  persistKey="cat.vandelay.queue.{{queueType}}"
+  (onRowActivate)="openRecord($event)"
+  [pageOffset]="queuePageOffset()" [cellTextGenerator]="cellTextGenerator"
+  [disableSelect]="true"
+  (onRowClick)="rowClicked($event)"
+  hideFields="language,pagination,price,rec_identifier,eg_tcn_source,eg_identifier,item_barcode,zsource">
+
+  <eg-grid-toolbar-checkbox i18n-label label="Select All"
+    (onChange)="toggleSelectRows($event)"></eg-grid-toolbar-checkbox>
+
+  <eg-grid-toolbar-checkbox i18n-label label="Records With Matches"
+    (onChange)="limitToMatches($event)"></eg-grid-toolbar-checkbox>
+
+  <eg-grid-toolbar-checkbox i18n-label label="Non-Imported Records"
+    (onChange)="limitToNonImported($event)"></eg-grid-toolbar-checkbox>
+
+  <eg-grid-toolbar-checkbox i18n-label label="Records with Import Errors"
+    (onChange)="limitToImportErrors($event)"></eg-grid-toolbar-checkbox>
+
+  <eg-grid-column name="selected" i18n-label label="Select"
+    [cellTemplate]="selectTemplate"></eg-grid-column>
+
+  <eg-grid-column name="id" [index]="true" [hidden]="true"></eg-grid-column>
+  <eg-grid-column i18n-label label="Matches" name="+matches" 
+    [cellTemplate]="matchesTmpl"></eg-grid-column>
+  <eg-grid-column name="import_error" i18n-label
+    label="Import Errors" [cellTemplate]="errorsTmpl"></eg-grid-column>
+  <eg-grid-column name="import_time" i18n-label
+    label="Import Date" datatype="timestamp"></eg-grid-column>
+  <eg-grid-column name="imported_as" i18n-label label="Imported As" 
+    [cellTemplate]="importedAsTmpl"></eg-grid-column>
+</eg-grid>
+

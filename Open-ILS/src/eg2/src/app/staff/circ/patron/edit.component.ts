@@ -26,13 +26,6 @@ import {HoldNotifyUpdateDialogComponent} from './hold-notify-update.component';
 import {BroadcastService} from '@eg/share/util/broadcast.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {WorkLogService} from '@eg/staff/share/worklog/worklog.service';
-import {StaffService} from '@eg/staff/share/staff.service';
-import {PatronPenaltyDialogComponent
-    } from '@eg/staff/share/patron/penalty-dialog.component';
-
-const LIMITED_CHECKOUT_PROFILE = 17;
-const RECIP_LIMIT_HOLDS_AND_CKO_PROFILE = 23;
-const LIMITED_CHECKOUT_PENALTY_MESSAGE = 7;
 
 const PATRON_FLESH_FIELDS = [
     'cards',
@@ -157,8 +150,6 @@ export class EditComponent implements OnInit {
         private addrRequiredAlert: AlertDialogComponent;
     @ViewChild('xactCollisionAlert')
         private xactCollisionAlert: AlertDialogComponent;
-    @ViewChild('limitedCkoDialog')
-        private limitedCkoDialog: PatronPenaltyDialogComponent;
 
 
     autoId = -1;
@@ -183,16 +174,13 @@ export class EditComponent implements OnInit {
     inetLevels: ComboboxEntry[];
     statCats: StatCat[] = [];
     grpList: IdlObject;
-    editProfiles: number[] = [];
+    editProfiles: IdlObject[] = [];
     userStatCats: {[statId: number]: ComboboxEntry} = {};
     userSettings: {[name: string]: any} = {};
     userSettingTypes: {[name: string]: IdlObject} = {};
     optInSettingTypes: {[name: string]: IdlObject} = {};
-    groupedOptInSettingTypes: IdlObject[][] = [];
-    groupedOptInSettingChecked: {[grp: string]: boolean} = {};
-    groupedSettingsVisible: {[grp: string]: boolean} = {};
     secondaryGroups: IdlObject[] = [];
-    expireDate: string;
+    expireDate: Date;
     changesPending = false;
     dupeBarcode = false;
     dupeUsername = false;
@@ -200,11 +188,6 @@ export class EditComponent implements OnInit {
     stageUser: IdlObject;
     stageUserRequestor: IdlObject;
     waiverName: string;
-
-    // Penalty created by the patron penalty dialog because the
-    // patron was added to the Limited Checkout profile group.
-    limitedCkoPenalty: {penalty: IdlObject, message: any}  | null = null;
-    previousProfile: number | null = null;
 
     fieldPatterns: {[cls: string]: {[field: string]: RegExp}} = {
         au: {},
@@ -237,11 +220,8 @@ export class EditComponent implements OnInit {
 
     fieldDoc: {[cls: string]: {[field: string]: string}} = {};
 
-    closeOnSave = false;
-
     constructor(
         private router: Router,
-        private route: ActivatedRoute,
         private org: OrgService,
         private net: NetService,
         private auth: AuthService,
@@ -256,20 +236,11 @@ export class EditComponent implements OnInit {
         private patronService: PatronService,
         private printer: PrintService,
         private worklog: WorkLogService,
-        private staff: StaffService,
         public context: PatronContextService
     ) {}
 
     ngOnInit() {
-        this.closeOnSave = Boolean(this.route.snapshot.queryParamMap.get('closeOnSave'));
         this.load();
-    }
-
-    focusDob() {
-        setTimeout(() => {
-            const node = document.getElementById('au-dob-input');
-            if (node) { node.focus(); }
-        });
     }
 
     load(): Promise<any> {
@@ -290,7 +261,6 @@ export class EditComponent implements OnInit {
         .then(_ => this.setSmsCarriers())
         .then(_ => this.setFieldPatterns())
         .then(_ => this.showForm = true)
-        .then(_ => this.focusDob())
         // Not my preferred way to handle this, but some values are
         // applied to widgets slightly after the load() is done and the
         // widgets are rendered.  If a widget is required and has no
@@ -300,9 +270,6 @@ export class EditComponent implements OnInit {
         // an nonsaveable state on every page load, check the save state
         // after a 1 second delay.
         .then(_ => setTimeout(() => {
-            if (this.stageUsername) {
-                this.setExpireDate(true);
-            }
             this.emitSaveState();
             this.loading = false;
         }, 1000));
@@ -333,12 +300,7 @@ export class EditComponent implements OnInit {
 
             failed = failed || failedPerms.includes(grp.application_perm());
 
-            if (!failed) {
-                const id = Number(grp.id());
-                if (!this.editProfiles.includes(id)) {
-                    this.editProfiles.push(id);
-                }
-            }
+            if (!failed) { this.editProfiles.push(grp.id()); }
 
             const children = profiles.filter(p => p.parent() === grp.id());
             children.forEach(child => traverseTree(child, failed));
@@ -391,7 +353,6 @@ export class EditComponent implements OnInit {
         })
         .then(reqr => this.stageUserRequestor = reqr)
         .then(_ => this.copyStageData())
-        .then(_ => this.checkStageUserDupes())
         .then(_ => this.maintainJuvFlag());
     }
 
@@ -402,23 +363,12 @@ export class EditComponent implements OnInit {
         Object.keys(this.idl.classes.stgu.field_map).forEach(key => {
             const field = this.idl.classes.au.field_map[key];
             if (field && !field.virtual) {
-                let value = stageData.user[key]();
+                const value = stageData.user[key]();
                 if (value !== null) {
-                    if (key === 'email') {
-                        value = value.toLowerCase();
-                    }
                     patron[key](value);
-                    if (key === 'day_phone') {
-                        this.handlePhoneChange('day_phone', value);
-                    }
                 }
             }
         });
-
-        // Self-register form collects guardian data in the ident_value2 field.
-        if (patron.ident_value2() && !patron.guardian()) {
-            patron.guardian(patron.ident_value2());
-        }
 
         // Clear the usrname if it looks like a UUID
         if (patron.usrname().replace(/-/g, '').match(/[0-9a-f]{32}/)) {
@@ -440,7 +390,6 @@ export class EditComponent implements OnInit {
             addr.isnew(true);
             addr.id(this.autoId--);
             addr.valid('t');
-            addr.within_city_limits('f');
 
             this.strings.interpolate('circ.patron.edit.default_addr_type')
             .then(msg => addr.address_type(msg));
@@ -530,18 +479,12 @@ export class EditComponent implements OnInit {
 
         const patron = this.patron;
 
-        // Fire-and-forget the email search because it takes way
-        // too long (~15 seconds) for KCLS.  TODO: make query faster.
+        // Fire-and-forget the email search because it can take several seconds
         if (patron.email()) {
             this.dupeValueChange('email', patron.email());
         }
 
         return this.dupeValueChange('name', patron.family_name())
-        .then(_ => {
-            if (patron.pref_family_name()) {
-                return this.dupeValueChange('name', '', true);
-            }
-        })
 
         .then(_ => {
             if (patron.ident_value()) {
@@ -658,8 +601,6 @@ export class EditComponent implements OnInit {
             cats.forEach(cat => {
                 cat.id(Number(cat.id()));
                 cat.entries().forEach(entry => entry.id(Number(entry.id())));
-                cat.required(Number(cat.required())); // ===
-                cat.allow_freetext(Number(cat.allow_freetext())); // ===
 
                 const entries = cat.entries().map(entry =>
                     ({id: entry.id(), label: entry.value()}));
@@ -749,8 +690,7 @@ export class EditComponent implements OnInit {
             ]
         };
 
-        return this.pcrud.search('cust', query,
-            {flesh: 1, flesh_fields: {cust: ['grp']}}, {atomic : true})
+        return this.pcrud.search('cust', query, {}, {atomic : true})
         .toPromise().then(types => {
 
             types.forEach(stype => {
@@ -768,75 +708,11 @@ export class EditComponent implements OnInit {
                             // false otherwise.
                             val = Boolean((val + '').match(/^t/i));
                         }
-                        this.userSettings[stype.name()] = val
+                        this.userSettings[stype.name()] = val;
                     }
                 }
             });
-
-            this.groupOptInSettingTypes();
         });
-    }
-
-    groupOptInSettingTypes() {
-
-        const groups: {[grpName: string]: IdlObject[]} = {};
-
-        const other = this.idl.create('csg');
-        other.name('_other');
-        other.label('Other'); // TODO
-
-        Object.values(this.optInSettingTypes).forEach(stype => {
-
-            // Protect against opt-in setting types that have no group.
-            // Ideally this would not happen or at least be resolved.
-            if (!stype.grp()) { stype.grp(other); }
-
-            const grpName = stype.grp().name();
-
-            if (!groups[grpName]) { groups[grpName] = []; }
-
-            groups[grpName].push(stype);
-        });
-
-        this.groupedOptInSettingTypes = Object.values(groups);
-
-        this.applyGroupedSettingValues();
-    }
-
-    applyGroupedSettingValues() {
-         this.groupedOptInSettingTypes.forEach(group => {
-
-            const gName = group[0].grp().name();
-            let anySelected = false;
-            let anyNotSelected = false;
-
-            group.forEach(stype => {
-                if (this.userSettings[stype.name()]) {
-                    anySelected = true;
-                } else {
-                    anyNotSelected = true;
-                }
-            });
-
-            if (anyNotSelected) {
-                if (anySelected) {
-                    // Partial selection.
-                    // Leave grouped checkbox unchecked, but expand the
-                    // list so staff can see which are selected.
-                    this.groupedSettingsVisible[gName] = true;
-                }
-            } else {
-                // All are selected.
-                // Leave the list collapsed but select the group checkbox.
-                this.groupedOptInSettingChecked[gName] = true;
-            }
-         });
-    }
-
-    groupedSettingClicked(value: boolean, grpName: string) {
-        this.groupedOptInSettingTypes
-            .filter(g => g[0].grp().name() === grpName)[0]
-            .forEach(stype => this.userSettings[stype.name()] = value);
     }
 
     loadPatron(): Promise<any> {
@@ -870,7 +746,7 @@ export class EditComponent implements OnInit {
 
         const holdNotify = usets['opac.hold_notify'];
 
-        if (false && holdNotify) { // KCLS relies solely on opt-in settings
+        if (holdNotify) {
             this.holdNotifyTypes.email = this.holdNotifyValues.email_notify
                 = holdNotify.match(/email/) !== null;
 
@@ -898,8 +774,7 @@ export class EditComponent implements OnInit {
             usets['opac.default_pickup_location'] = Number(setting);
         }
 
-        this.expireDate =
-            DateUtil.localYmdFromDate(new Date(this.patron.expire_date()));
+        this.expireDate = new Date(this.patron.expire_date());
 
         // stat_cat_entries() are entry maps under the covers.
         this.patron.stat_cat_entries().forEach(map => {
@@ -1049,11 +924,11 @@ export class EditComponent implements OnInit {
                     map.isdeleted(true);
                 }
             }
-        } else if (entry) {
+        } else {
             map = this.idl.create('actscecm');
             map.isnew(true);
             map.stat_cat(cat.id());
-            map.stat_cat_entry(entry.label || entry.id);
+            map.stat_cat_entry(entry.label);
             map.target_usr(this.patronId);
             this.patron.stat_cat_entries().push(map);
         }
@@ -1097,19 +972,6 @@ export class EditComponent implements OnInit {
         const oldValue = this.getFieldValue(path, index, field);
         if (oldValue === value) { return; }
 
-        if (field === 'profile' && oldValue) {
-            this.previousProfile = oldValue;
-        }
-
-        if (field === 'email' && value) {
-            // KCLS wants lower case email
-            value = value.toLowerCase();
-        }
-
-        if (field === 'barcode' && value) {
-            value = value.trim();
-        }
-
         this.changeHandlerNeeded = true;
         this.objectFromPath(path, index)[field](value);
     }
@@ -1134,7 +996,6 @@ export class EditComponent implements OnInit {
 
             case 'profile':
                 this.setExpireDate();
-                this.checkLimitedCko();
                 break;
 
             case 'day_phone':
@@ -1149,11 +1010,6 @@ export class EditComponent implements OnInit {
             case 'family_name':
             case 'email':
                 this.dupeValueChange(field, value);
-                break;
-
-            case 'pref_first_given_name':
-            case 'pref_family_name':
-                this.dupeValueChange(field, '', true);
                 break;
 
             case 'street1':
@@ -1193,7 +1049,7 @@ export class EditComponent implements OnInit {
         cutoff.setTime(cutoff.getTime() -
             Number(DateUtil.intervalToSeconds(interval) + '000'));
 
-        const isJuve = DateUtil.localDateFromYmd(this.patron.dob()) > cutoff;
+        const isJuve = new Date(this.patron.dob()) > cutoff;
 
         this.fieldValueChange(null, null, 'juvenile', isJuve);
         this.afterFieldChange(null, null, 'juvenile');
@@ -1219,7 +1075,7 @@ export class EditComponent implements OnInit {
             if (!resp) { return; }
 
             ['city', 'state', 'county'].forEach(field => {
-                if (resp[field] && !addr[field]()) {
+                if (resp[field]) {
                     addr[field](resp[field]);
                 }
             });
@@ -1271,7 +1127,7 @@ export class EditComponent implements OnInit {
         });
     }
 
-    dupeValueChange(name: string, value: any, prefName?: boolean): Promise<any> {
+    dupeValueChange(name: string, value: any): Promise<any> {
 
         if (name.match(/phone/)) { name = 'phone'; }
         if (name.match(/name/)) { name = 'name'; }
@@ -1281,19 +1137,9 @@ export class EditComponent implements OnInit {
         switch (name) {
 
             case 'name':
-                let fname = this.patron.first_given_name();
-                let lname = this.patron.family_name();
-
-                // Patron search API searches name values across both
-                // pref and non-pref variants.  When searching for pref
-                // name dupes, use regular name search with pref name values.
-                if (prefName) {
-                    fname = this.patron.pref_first_given_name() || fname;
-                    lname = this.patron.pref_family_name() || lname;
-                }
-
+                const fname = this.patron.first_given_name();
+                const lname = this.patron.family_name();
                 if (!fname || !lname) { return; }
-
                 search = {
                     first_given_name : {value : fname, group : 0},
                     family_name : {value : lname, group : 0}
@@ -1380,9 +1226,6 @@ export class EditComponent implements OnInit {
                 // If the user ops in for email notices, require
                 // an email address
                 return this.holdNotifyTypes.email;
-
-            case 'au.guardian':
-                return this.patron.juvenile() === 't';
         }
 
         return this.fieldVisibility[field] === 3;
@@ -1428,93 +1271,15 @@ export class EditComponent implements OnInit {
           .map(org => org.id());
     }
 
-
-    // Show the patron penalty dialog when the 'Limited Checkout' profile
-    // is used so staff can annotate the reason.
-    checkLimitedCko() {
-        this.limitedCkoPenalty = null;
-
-        const profile = this.profileSelect.profiles[this.patron.profile()];
-        if (!profile || (
-                Number(profile.id()) !== LIMITED_CHECKOUT_PROFILE &&
-                Number(profile.id()) !== RECIP_LIMIT_HOLDS_AND_CKO_PROFILE)
-        ) {
-            return;
-        }
-
-        // We have a limited cko patron.  Ask staff to create a penalty.
-        this.limitedCkoDialog.externalCreate = true;
-        this.limitedCkoDialog.startPatronMessage = LIMITED_CHECKOUT_PENALTY_MESSAGE;
-        this.limitedCkoDialog.defaultType = this.limitedCkoDialog.ALERT_NOTE;
-
-        if (!this.patron.isnew()) {
-            this.limitedCkoDialog.patronId = this.patron.id();
-        }
-
-        this.limitedCkoDialog.open({size: 'lg'}).toPromise().then(msg => {
-            if (msg) {
-                this.limitedCkoPenalty = msg;
-            } else {
-                console.debug('Reverting to previous profile on penalty cancel');
-
-                this.profileSelect.cbox.selectedId = this.previousProfile;
-                this.fieldValueChange(null, null, 'profile', this.previousProfile);
-                this.afterFieldChange(null, null, 'profile');
-
-                this.previousProfile = null;
-            }
-
-            // Re-check the validity of our inputs after the
-            // dialog has closed so we're not including, e.g. a
-            // not-yet-entered-but-require staff initials field in the
-            // validity check.
-            this.emitSaveState();
-        });
-    }
-
-    applyLimitedCkoPenalty(): Promise<any> {
-        if (!this.limitedCkoPenalty) {
-            return Promise.resolve();
-        }
-
-        console.debug('Applying limited CKO penalty');
-
-        // May not have an ID until after the patron is created.
-        this.limitedCkoPenalty.penalty.usr(this.modifiedPatron.id());
-
-        return this.net.request(
-            'open-ils.actor',
-            'open-ils.actor.user.penalty.apply',
-            this.auth.token(),
-            this.limitedCkoPenalty.penalty,
-            this.limitedCkoPenalty.message
-        ).toPromise().then(resp => {
-            console.debug('Limited CKO penalty create returned: ', resp);
-
-            const e = this.evt.parse(resp);
-            if (e) {
-                alert(e);
-            }
-        });
-    }
-
-    setExpireDate(noPending?: boolean) {
+    setExpireDate() {
         const profile = this.profileSelect.profiles[this.patron.profile()];
         if (!profile) { return; }
 
         const seconds = DateUtil.intervalToSeconds(profile.perm_interval());
         const nowEpoch = new Date().getTime();
         const newDate = new Date(nowEpoch + (seconds * 1000 /* millis */));
-        const ymd = DateUtil.localYmdFromDate(newDate);
-        this.expireDate = ymd;
-
-        if (noPending) {
-            // Avoid firing the pending-changes handlers
-            this.patron.expire_date(ymd);
-            return;
-        }
-
-        this.fieldValueChange(null, null, 'expire_date', ymd);
+        this.expireDate = newDate;
+        this.fieldValueChange(null, null, 'expire_date', newDate.toISOString());
         this.afterFieldChange(null, null, 'expire_date');
     }
 
@@ -1703,23 +1468,13 @@ export class EditComponent implements OnInit {
 
     save(clone?: boolean): Promise<any> {
 
-        // TODO prefix these with $localize when we can.
-        const dibs = prompt('Staff Initials');
-        if (!dibs) {
-            alert('Staff initials are required to save');
-            return;
-        }
-
-        this.patron.dibs(this.staff.appendInitials('', dibs));
-
         this.changesPending = false;
         this.loading = true;
         this.showForm = false;
 
         return this.saveUser()
         .then(_ => this.saveUserSettings())
-        .then(_ => this.applyLimitedCkoPenalty())
-        // .then(_ => this.updateHoldPrefs()) // KCLS does not need
+        .then(_ => this.updateHoldPrefs())
         .then(_ => this.removeStagedUser())
         .then(_ => this.postSaveRedirect(clone));
     }
@@ -1743,16 +1498,10 @@ export class EditComponent implements OnInit {
             return;
         }
 
-        // Let errbody know we modified a patron
-        this.broadcaster.broadcast('eg.circ.patron.edit', this.modifiedPatron.id());
-
         if (clone) {
             this.context.summary = null;
             this.router.navigate(
                 ['/staff/circ/patron/register/clone', this.modifiedPatron.id()]);
-
-        } else if (this.closeOnSave) {
-            window.close();
 
         } else {
             // Full refresh to force reload of modified patron data.
@@ -2031,7 +1780,7 @@ export class EditComponent implements OnInit {
     groupEditForbidden(): boolean {
         return (
             this.patron.profile()
-            && !this.editProfiles.includes(Number(this.patron.profile()))
+            && !this.editProfiles.includes(this.patron.profile())
         );
     }
 

@@ -23,7 +23,6 @@ import {PatronBarcodeValidatorDirective} from '@eg/share/validators/patron_barco
 import {BroadcastService} from '@eg/share/util/broadcast.service';
 import {CourseService} from './share/course.service';
 import {FileExportService} from '@eg/share/util/file-export.service';
-import {StaffService} from '@eg/staff/share/staff.service';
 import {OfflineService} from '@eg/staff/share/offline.service';
 import {ItemLocationSelectModule} from '@eg/share/item-location-select/item-location-select.module';
 
@@ -87,9 +86,8 @@ export class StaffCommonModule {
                 AccessKeyService,
                 AudioService,
                 BroadcastService,
-                FileExportService,
-                StaffService,
                 CourseService,
+                FileExportService,
                 OfflineService
             ]
         };

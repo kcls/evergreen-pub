@@ -8,7 +8,6 @@ import {PicklistComponent} from './picklist.component';
 import {PicklistSummaryComponent} from './summary.component';
 import {HttpClientModule} from '@angular/common/http';
 import {AcqCommonModule} from '../acq-common.module';
-import {PoService} from '../po/po.service';
 
 @NgModule({
   declarations: [
@@ -24,11 +23,7 @@ import {PoService} from '../po/po.service';
     HttpClientModule,
     AcqCommonModule
   ],
-  providers: [
-    PicklistRoutingModule,
-    // Needed for the lineite-list bits
-    PoService
-  ]
+  providers: []
 })
 
 export class PicklistModule {}

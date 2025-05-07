@@ -19,11 +19,10 @@
     [ngClass]="{'has-changes': hasChanged, 'bg-warning': warnOnRequired()}">
     <div class="d-flex" 
       *ngFor="let count of labelCounts | keyvalue; let idx = index">
-      <!-- KCLS hide the count summaries entirely in edit mode -->
       <ng-container *ngIf="!expanded && !editing && idx === defaultDisplayCount">
         <span class="text-info" i18n>...</span>
       </ng-container>
-      <ng-container *ngIf="!editing && (expanded || idx < defaultDisplayCount)">
+      <ng-container *ngIf="expanded || editing || idx < defaultDisplayCount">
         <ng-container *ngIf="editing">
           <div class="ms-4 me-2">
             <input type="checkbox" class="form-check-input" 
@@ -65,9 +64,8 @@
     <ng-container *ngTemplateOutlet="editTemplate"></ng-container>
     <div class="mt-1">
       <button class="btn btn-outline-dark" (click)="save()" i18n>Apply</button>
-      <button class="btn btn-outline-dark ml-1" (click)="cancel()" i18n>Cancel</button>
-      <button *ngIf="!hideClearOption"
-        class="btn btn-outline-dark ml-1" (click)="clear()" i18n>Clear</button>
+      <button class="btn btn-outline-dark ms-1" (click)="cancel()" i18n>Cancel</button>
+      <button class="btn btn-outline-dark ms-1" (click)="clear()" i18n>Clear</button>
     </div>
   </ng-container>
 </div>

@@ -117,19 +117,6 @@ export class OrgService {
         return nodes;
     }
 
-    ancestorAtDepth(nodeOrId: OrgNodeOrId, depth: number): IdlObject {
-        let node = null;
-        this.ancestors(nodeOrId).some(n => {
-            if (n.ou_type().depth() === depth) {
-                node = n;
-                return true;
-            }
-            return false;
-        });
-
-        return node;
-    }
-
     // tests that a node can have users
     canHaveUsers(nodeOrId): boolean {
         return this.get(nodeOrId).ou_type().can_have_users() === 't';

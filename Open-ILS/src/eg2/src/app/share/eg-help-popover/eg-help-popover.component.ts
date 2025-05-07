@@ -27,6 +27,4 @@ export class EgHelpPopoverComponent {
     // This augments the basic 'btn' class
     @Input()
     buttonClass = 'btn-sm';
-
-    constructor() { }
 }

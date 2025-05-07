@@ -2,14 +2,6 @@ import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
 
 const routes: Routes = [{
-  path: 'overdrive',
-  loadChildren: () =>
-    import('./overdrive/overdrive.module').then(m => m.OverdriveModule)
-}, {
-  path: 'update-items',
-  loadChildren: () =>
-    import('./update-items/update-items.module').then(m => m.UpdateItemsModule)
-}, {
   path: 'search',
   loadChildren: () =>
     import('./search/acq-search.module').then(m => m.AcqSearchModule)
@@ -27,10 +19,6 @@ const routes: Routes = [{
   path: 'picklist',
   loadChildren: () =>
     import('./picklist/picklist.module').then(m => m.PicklistModule)
-}, {
-  path: 'receive-lineitems',
-  loadChildren: () =>
-    import('./receive-lineitems/receive.module').then(m => m.ReceiveLineitemModule)
 }, {
   path: 'related',
   loadChildren: () =>

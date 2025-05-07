@@ -12,12 +12,6 @@ import {IdlObject} from '@eg/core/idl.service';
 import {BasketService} from '@eg/share/catalog/basket.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 
-interface Suggestion {
-    fieldClass: string;
-    value: string;
-    ridx: number;
-}
-
 @Component({
   selector: 'eg-catalog-results',
   templateUrl: 'results.component.html',
@@ -53,7 +47,6 @@ export class ResultsComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.searchContext = this.staffCat.searchContext;
         this.staffCat.browsePagerData = [];
-        //this.router.events.subscribe(console.log);
 
         // Our search context is initialized on page load.  Once
         // ResultsComponent is active, it will not be reinitialized,
@@ -95,12 +88,18 @@ export class ResultsComponent implements OnInit, OnDestroy {
         }
     }
 
-    // Jump to record page if only a single hit is returned
-    // and the jump is enabled by library setting
+    // For non-metarecord searches, jump to record page if only a
+    // single hit is returned and the jump is enabled by library setting.
+    // Unlike the OPAC version of jump-on-single-hit, the staff version
+    // does not attempt to jump to the bib if it is the single member
+    // of a sole metarecord returned by a metarecord search.
     jumpIfNecessary() {
         const ids = this.searchContext.currentResultIds();
-        if (this.staffCat.jumpOnSingleHit && ids.length === 1) {
-           // this.router.navigate(['/staff/catalog/record/' + ids[0], { queryParams: this.catUrl.toUrlParams(this.searchContext) }]);
+        if (
+            this.staffCat.jumpOnSingleHit &&
+            ids.length === 1 &&
+            !this.searchContext.termSearch.isMetarecordSearch()
+        ) {
             this.router.navigate(['/staff/catalog/record/' + ids[0]], {queryParamsHandling: 'merge'});
         }
     }
@@ -182,38 +181,6 @@ export class ResultsComponent implements OnInit, OnDestroy {
         } else {
             this.basket.removeRecordIds(ids);
         }
-    }
-
-    showFacets(): boolean {
-        return !this.searchContext.showBasket && !this.staffCat.hideFacets;
-    }
-
-    suggestions(): Suggestion[] {
-        const suggestions: Suggestion[] = [];
-
-        if (this.searchContext.result && this.searchContext.result.suggest) {
-            Object.keys(this.searchContext.result.suggest).forEach(fieldClass => {
-
-                const first = this.searchContext.result.suggest[fieldClass][0];
-                if (!first) { return; }
-
-                first.options.forEach((option, idx) => {
-                    if (idx > 2) { return; }
-                    suggestions.push({
-                        fieldClass: fieldClass,
-                        value: option.text,
-                        ridx: ++this.staffCat.routeIndex
-                    });
-                });
-            });
-        }
-
-        return suggestions;
-    }
-
-    // https://stackoverflow.com/questions/62509599/nothing-happens-when-link-inside-ngfor-is-clicked
-    trackByIdx(index: any, item: any) {
-       return index;
     }
 }
 

@@ -10,15 +10,15 @@
 
         <div [ngSwitch]="mod.field" class="mt-2 mb-2">
           <span *ngSwitchCase="'phone_notify'">
-            <span class="mr-2">You have set Notify by Phone to</span>
+            <span class="me-2">You have set Notify by Phone to</span>
             <eg-bool [value]="mod.newValue"></eg-bool>
           </span>
           <span *ngSwitchCase="'sms_notify'">
-            <span class="mr-2">You have set Notify by SMS to</span>
+            <span class="me-2">You have set Notify by SMS to</span>
             <eg-bool [value]="mod.newValue"></eg-bool>
           </span>
           <span *ngSwitchCase="'email_notify'">
-            <span class="mr-2">You have set Notify by Email to</span>
+            <span class="me-2">You have set Notify by Email to</span>
             <eg-bool [value]="mod.newValue"></eg-bool>
           </span>
           <span *ngSwitchCase="'default_phone'">

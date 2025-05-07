@@ -15,8 +15,6 @@ import {LineitemCopiesComponent} from './copies.component';
 import {LineitemBatchCopiesComponent} from './batch-copies.component';
 import {LineitemCopyAttrsComponent} from './copy-attrs.component';
 import {LineitemHistoryComponent} from './history.component';
-import {PicklistDialogComponent} from './pl-dialog.component';
-import {PoProviderDialogComponent} from './po-provider-dialog.component';
 import {BriefRecordComponent} from './brief-record.component';
 import {CreateAssetsComponent} from './create-assets.component';
 import {CancelDialogComponent} from './cancel-dialog.component';
@@ -55,8 +53,6 @@ import {AcqCommonModule} from '../acq-common.module';
     ClaimPolicyDialogComponent,
     ManageClaimsDialogComponent,
     LineitemAlertDialogComponent,
-    PicklistDialogComponent,
-    PoProviderDialogComponent,
     BriefRecordComponent,
     CreateAssetsComponent,
     LineitemWorksheetComponent
@@ -82,8 +78,7 @@ import {AcqCommonModule} from '../acq-common.module';
   ],
   providers: [
     LineitemService,
-    PoService,
-    MarcEditModule
+    PoService
   ]
 })
 

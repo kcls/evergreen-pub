@@ -57,7 +57,7 @@ export class PatronMessagesComponent implements OnInit {
         const flesh = {
             flesh: 1,
             flesh_fields: {
-                ausp: ['standing_penalty', 'staff', 'usr_message']
+                ausp: ['standing_penalty', 'staff']
             },
             order_by: {}
         };
@@ -143,7 +143,6 @@ export class PatronMessagesComponent implements OnInit {
     archive(penalties: IdlObject[]) {
         penalties.forEach(p => p.stop_date('now'));
         this.pcrud.update(penalties).toPromise()
-        .then(_ => this.context.refreshPatron())
         .then(_ => {
             this.mainGrid.reload();
             this.archiveGrid.reload();
@@ -152,7 +151,6 @@ export class PatronMessagesComponent implements OnInit {
 
     remove(penalties: IdlObject[]) {
         this.pcrud.remove(penalties).toPromise()
-        .then(_ => this.context.refreshPatron())
         .then(_ => {
             this.mainGrid.reload();
             this.archiveGrid.reload();
@@ -168,11 +166,8 @@ export class PatronMessagesComponent implements OnInit {
             }));
         })).toPromise().then(_ => {
             if (modified) {
-                this.context.refreshPatron()
-                .then(__ => {
-                    this.mainGrid.reload();
-                    this.archiveGrid.reload();
-                });
+                this.mainGrid.reload();
+                this.archiveGrid.reload();
             }
         });
     }

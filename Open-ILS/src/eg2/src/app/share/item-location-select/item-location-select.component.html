@@ -1,10 +1,7 @@
 
 <ng-template #displayTemplate let-r="result" i18n>
-  {{r.label}} 
-  <!-- KCLS only show location owning lib if it's outside of the display scope -->
-  <ng-container *ngIf="r.userdata && locationIsRemote(r.userdata)">
-    ({{orgName(r.userdata.owning_lib())}})
-  </ng-container>
+  {{r.label}} <ng-container *ngIf="r.userdata">
+    ({{orgName(r.userdata.owning_lib())}})</ng-container>
 </ng-template>
 
 <eg-string #unsetString text="<Unset>" i18n-text></eg-string>
@@ -19,9 +16,7 @@
   (onChange)="cboxChanged($event)"
   [required]="required"
   [startsWith]="startsWith"
-  [asyncSupportsEmptyTermClick]="asyncSupportsEmptyTermClick"
   (blur)="propagateTouch()"
-  (keyUpEnter)="keyUpEnter.emit()"
   placeholder="Shelving Location..."
   i18n-placeholder>
 </eg-combobox>

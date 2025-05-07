@@ -1,5 +1,4 @@
 import {Component, OnInit, Output, Input, ViewChild, EventEmitter} from '@angular/core';
-import {Location} from '@angular/common';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {Observable, empty, of, from} from 'rxjs';
 import {map, concat, ignoreElements, last, tap, mergeMap, switchMap, concatMap} from 'rxjs/operators';
@@ -26,12 +25,11 @@ import {ArrayUtil} from '@eg/share/util/array';
 import {PrintService} from '@eg/share/print/print.service';
 import {StringComponent} from '@eg/share/string/string.component';
 import {DueDateDialogComponent} from './due-date-dialog.component';
-import {MarkMissingDialogComponent
-    } from '@eg/staff/share/holdings/mark-missing-dialog.component';
+import {MarkDamagedDialogComponent
+    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {ClaimsReturnedDialogComponent} from './claims-returned-dialog.component';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {AddBillingDialogComponent} from '@eg/staff/share/billing/billing-dialog.component';
-import {BroadcastService} from '@eg/share/util/broadcast.service';
 
 export interface CircGridEntry extends CircDisplayInfo {
     index: string; // class + id -- row index
@@ -49,7 +47,7 @@ export interface CircGridEntry extends CircDisplayInfo {
 
 const CIRC_FLESH_DEPTH = 4;
 const CIRC_FLESH_FIELDS = {
-  circ: ['target_copy', 'workstation', 'checkin_workstation', 'circ_lib', 'usr'],
+  circ: ['target_copy', 'workstation', 'checkin_workstation', 'circ_lib'],
   acp:  [
     'call_number',
     'holds_count',
@@ -62,7 +60,7 @@ const CIRC_FLESH_FIELDS = {
   ],
   acpm: ['part'],
   acn:  ['record', 'owning_lib', 'prefix', 'suffix'],
-  bre:  ['flat_display_entries']
+  bre:  ['wide_display_entry']
 };
 
 @Component({
@@ -100,8 +98,8 @@ export class CircGridComponent implements OnInit {
     @ViewChild('copyAlertsDialog')
         private copyAlertsDialog: CopyAlertsDialogComponent;
     @ViewChild('dueDateDialog') private dueDateDialog: DueDateDialogComponent;
-    @ViewChild('markMissingDialog')
-        private markMissingDialog: MarkMissingDialogComponent;
+    @ViewChild('markDamagedDialog')
+        private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('itemsOutConfirm')
         private itemsOutConfirm: ConfirmDialogComponent;
     @ViewChild('claimsReturnedConfirm')
@@ -116,7 +114,6 @@ export class CircGridComponent implements OnInit {
         private addBillingDialog: AddBillingDialogComponent;
 
     constructor(
-        private ngLocation: Location,
         private org: OrgService,
         private net: NetService,
         private auth: AuthService,
@@ -126,7 +123,6 @@ export class CircGridComponent implements OnInit {
         private store: StoreService,
         private printer: PrintService,
         private toast: ToastService,
-        private broadcaster: BroadcastService,
         private serverStore: ServerStoreService
     ) {}
 
@@ -250,7 +246,7 @@ export class CircGridComponent implements OnInit {
             isbn: circDisplay.isbn,
             copy: circDisplay.copy,
             volume: circDisplay.volume,
-            record: circDisplay.record,
+            record: circDisplay.copy,
             display: circDisplay.display,
             copyAlertCount: 0 // TODO
         };
@@ -368,48 +364,26 @@ export class CircGridComponent implements OnInit {
 
         if (copyIds.length === 0) { return; }
 
-        let copyId = copyIds[0];
+        let rowsModified = false;
 
-        // Limit the broadcast sub to this action for now to be conservative/safe.
-        let sub;
-        sub = this.broadcaster.listen('eg.holdings.update').subscribe(data => {
-            if (data && data.copies && data.copies.includes(copyId)) {
-                this.emitReloadRequest();
-                if (sub) {
-                    sub.unsubscribe();
-                }
+        const markNext = (ids: number[]): Promise<any> => {
+            if (ids.length === 0) {
+                return Promise.resolve();
             }
-        });
 
-        const url = this.ngLocation.prepareExternalUrl(
-            `/staff/cat/item/damaged/${copyId}/`);
+            this.markDamagedDialog.copyId = ids.pop();
 
-        window.open(url);
-    }
-
-    markMissing(rows: CircGridEntry[]) {
-        const copyIds = this.getCopyIds(rows, 4 /* ignore missing */);
-
-        if (copyIds.length === 0) { return; }
-
-        // This assumes all of our items our checked out, since this is
-        // a circ grid.  If we add support later for showing completed
-        // circulations, there may be cases where we can skip the items
-        // out confirmation alert and subsequent checkin
-        this.itemsOutConfirm.open().subscribe(confirmed => {
-            if (!confirmed) { return; }
-
-            this.checkin(rows, {noop: true}, true).toPromise().then(_ => {
-
-                this.markMissingDialog.copyIds = copyIds;
-                this.markMissingDialog.open({}).subscribe(
-                    rowsModified => {
-                        if (rowsModified) {
-                            this.emitReloadRequest();
-                        }
-                    }
-                );
+            return this.markDamagedDialog.open({size: 'lg'})
+            .toPromise().then(ok => {
+                if (ok) { rowsModified = true; }
+                return markNext(ids);
             });
+        };
+
+        markNext(copyIds).then(_ => {
+            if (rowsModified) {
+                this.emitReloadRequest();
+            }
         });
     }
 
@@ -437,13 +411,7 @@ export class CircGridComponent implements OnInit {
                 // Value can be null when dialogs are canceled
                 if (result) { refreshNeeded = true; }
             },
-            err => {
-                dialog.close();
-                this.reportError(err);
-                if (refreshNeeded) {
-                    this.emitReloadRequest();
-                }
-            },
+            err => this.reportError(err),
             () => {
                 dialog.close();
                 if (refreshNeeded) {
@@ -469,13 +437,7 @@ export class CircGridComponent implements OnInit {
                     if (resp.success) { refreshNeeded = true; }
                     dialog.increment();
                 },
-                err => {
-                    dialog.close();
-                    this.reportError(err);
-                    if (refreshNeeded) {
-                        this.emitReloadRequest();
-                    }
-                },
+                err => this.reportError(err),
                 () => {
                     dialog.close();
                     if (refreshNeeded) {
@@ -500,11 +462,7 @@ export class CircGridComponent implements OnInit {
                 if (result) { changesApplied = true; }
                 dialog.increment();
             },
-            err => {
-                dialog.close();
-                this.reportError(err);
-                if (changesApplied && !noReload) { this.emitReloadRequest(); }
-            },
+            err => this.reportError(err),
             () => {
                 dialog.close();
                 if (changesApplied && !noReload) { this.emitReloadRequest(); }
@@ -524,10 +482,7 @@ export class CircGridComponent implements OnInit {
             );
         })).subscribe(
             result => dialog.increment(),
-            err => {
-                dialog.close();
-                this.reportError(err);
-            },
+            err => this.reportError(err),
             () => {
                 dialog.close();
                 this.emitReloadRequest();
@@ -565,10 +520,7 @@ export class CircGridComponent implements OnInit {
                 this.getCopyIds(rows), {claims_never_checked_out: true}
             ).subscribe(
                 result => dialog.increment(),
-                err => {
-                    dialog.close();
-                    this.reportError(err);
-                },
+                err => this.reportError(err),
                 () => {
                     dialog.close();
                     this.emitReloadRequest();
@@ -602,36 +554,14 @@ export class CircGridComponent implements OnInit {
     showRecentCircs(rows: CircGridEntry[]) {
         const copyId = this.getCopyIds(rows)[0];
         if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/circ-history`);
-            window.open(url);
+            window.open('/eg/staff/cat/item/' + copyId + '/circ_list');
         }
     }
 
     showTriggeredEvents(rows: CircGridEntry[]) {
         const copyId = this.getCopyIds(rows)[0];
         if (copyId) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${copyId}/triggered-events`);
-            window.open(url);
-        }
-    }
-
-    openItemStatusList(rows: CircGridEntry[]) {
-        const ids = this.getCopyIds(rows);
-        if (ids.length > 0) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/list/${ids.join(',')}`);
-            window.open(url);
-        }
-    }
-
-    openItemStatus(rows: CircGridEntry[]) {
-        const ids = this.getCopyIds(rows);
-        if (ids.length > 0) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/list/${ids.join(',')}?routeToDetails=1`);
-            window.open(url);
+            window.open('/eg/staff/cat/item/' + copyId + '/triggered_events');
         }
     }
 }

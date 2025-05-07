@@ -1,0 +1,629 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* bootstrap CSS only -- JS bits come from ng-bootstrap */
+@import '~bootstrap-5-css-only/css/bootstrap.min.css';
+
+/* Locally served material icon fonts  */
+@import '~material-design-icons-iconfont/dist/material-design-icons.css';
+
+/* BS default colors lack sufficient contrast for accessibility */
+:root {
+  --blue: #0A58CA; /* $blue-600 in BS5 */
+  --primary: #0A58CA;
+  --bs-blue-rgb: 10,88,202;
+  --bs-primary-rgb: 10,88,202;
+  --green: #198754; /* $green ($green-500) in BS5 */
+  --success: #198754;
+  --bs-green-rgb: 25,135,84;
+  --bs-success-rgb: 25,135,84;
+  --cyan: #087990; /* $cyan-700 in BS5 */
+  --info: #087990;
+  --bs-cyan-rgb: 8,121,144;
+  --bs-info-rgb: 8,121,144;
+}
+
+/** BS default fonts are huge */
+body, .form-control, .btn, .input-group-text, .form-select {
+  /* This more or less matches the font size of the angularjs client.
+   * The default BS4 font of 1rem is comically large.
+   */
+  font-size: .88rem;
+}
+h1 {
+  font-size: 1.25rem;
+  font-weight: normal;
+  margin: 0
+}
+h2 {
+  font-size: 1.25rem;
+  font-weight: 550;
+  color: #0D7764;
+}
+h3 {font-size: 1.15rem}
+h4 {font-size: 1.05rem}
+h5 {font-size: .95rem}
+
+.small-text-1 {font-size: 85%}
+
+/** Use a default link color that achieves WCAG AA
+ *  color contrast against a white background
+ */
+a { 
+  border-color: #0A58CA;
+  color: #0A58CA; 
+}
+
+a:focus,
+a:hover { 
+  border-color: #0848A5;
+  color: #0848A5; 
+}
+
+.nav-link {
+  color: #0A58CA;
+}
+
+.btn-link {
+  color: #0A58CA;
+  padding: inherit;
+}
+
+.btn-link:focus,
+.btn-link:hover,
+.nav-link:focus,
+.nav-link:hover {
+  color: #0848A5;
+}
+
+/** Ang5 routes on clicks to href's with no values, so we can't have
+ * bare href's to force anchor styling.  Use this for anchors w/ no href.
+ * TODO: should we style all of them?  a:not([href]) ....
+ * */
+ .no-href {
+  color: #0A58CA;
+  cursor: pointer;
+}
+
+.no-href:hover {
+  border-color: #0848A5;
+  color: #0848A5; 
+}
+
+/** BS has flex utility classes, but none for specifying flex widths.
+ *  BS class="col" is roughly equivelent to flex-1, but col-2 is not
+ *  equivalent to flex-2, since col-2 really means 2/12 width. */
+.flex-1 {flex: 1}
+.flex-2 {flex: 2}
+.flex-3 {flex: 3}
+.flex-4 {flex: 4}
+.flex-5 {flex: 5}
+.flex-6 {flex: 6}
+
+/** BS deprecated the well, but it's replacement is not quite the same.
+ * Define our own version and expand it to a full "table".
+ * */
+.well-row {
+  display: flex;
+}
+.well-table .well-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  margin: 4px;
+  padding: 4px;
+  min-height: 40px;
+}
+
+.well-table .well-label-no-flex {
+  display: flex;
+  align-items: center;
+  margin: 4px;
+  padding: 4px;
+  min-height: 40px;
+}
+
+.well-table .well-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+  padding: 4px;
+  margin: 4px;
+  min-height: 40px;
+}
+
+.btn.disabled, .btn:disabled {
+  cursor: not-allowed;
+}
+
+/* copies color/border/elements from above sans position elements */
+.well-like {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+}
+
+/* usefuf for mat-icon buttons without any background or borders */
+.material-icon-button {
+  /* Transparent background */
+  border: none;
+  background-color: rgba(0, 0, 0, 0.0);
+  padding-left: .25rem;
+  padding-right: .25rem; /* default .5rem */
+}
+
+.mat-icon-in-button {
+    line-height: inherit;
+}
+
+.mat-icon-shrunk-in-button {
+    line-height: inherit;
+    font-size: 18px;
+}
+
+.material-icons.small {
+  font-size: 18px;
+}
+
+.input-group .mat-icon-in-button {
+    font-size: .88rem !important; /* useful for buttons that cuddle up with inputs */
+}
+
+.material-icons {
+  /** default is 24px which is pretty chunky */
+  font-size: 22px;
+}
+
+.mat-icon-shrunk-in-button {
+    line-height: inherit;
+    font-size: 18px;
+}
+
+/* allow spans/labels to vertically orient with material icons */
+.label-with-material-icon {
+    display: inline-flex;
+    vertical-align: middle;
+    align-items: center;
+}
+
+/* dropdown menu link/button with no downward carrot icon */
+.no-dropdown-caret::after {
+    display: none;
+}
+
+/* Default .card padding is extreme */
+.tight-card .card-body,
+.tight-card .list-group-item {
+  padding: .25rem;
+}
+.tight-card .card-header {
+  padding: .5rem;
+}
+
+/* roughly the same size as a btn-sm */
+.tight-pagination .page-link {
+  padding: .40rem .7rem;
+}
+
+@media all and (min-width: 800px) {
+    ngb-typeahead-window {
+        height: auto;
+        max-height: 440px;
+        overflow-x: hidden;
+    }
+}
+
+ngb-typeahead-window .dropdown-item {
+    font-size: 14px;
+}
+
+/* Limit size of dropdown menus and allow for scrolling */
+.scrollable-menu {
+  height: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 99%;
+}
+
+/* Items stick to the top of the page once scrolled past,
+ * leaving room above for the nav bar */
+.sticky-top-with-nav {
+  top: 48px;
+  position: sticky;
+  /* Sticky menus display above sticky grid headers */
+  z-index: 2;
+}
+
+/* --------------------------------------------------------------------------
+/* Form Validation CSS - https://angular.io/guide/form-validation
+ * TODO: these colors don't fit the EG color scheme
+ * Required valid fields are left-border styled in green-ish.
+ * Invalid fields are left-border styled in red-ish.
+ *
+ * re: .valid-input / .invalid-input : sometimes you just need a 
+ * simple way to force it.
+ */
+.form-validated .ng-valid[required]:not(eg-combobox):not(eg-date-select):not(eg-date-select-native), 
+.form-validated .ng-valid.required, input[formcontrolname].ng-valid.required,
+.valid-input {
+  border-left: 5px solid #78FA89;
+}
+.form-validated .ng-invalid:not(form):not(eg-combobox):not(eg-date-select):not(eg-date-select-native),
+input[formcontrolname].ng-invalid, .invalid-input {
+  border-left: 5px solid #FA787E;
+}
+
+.invalid {
+  border-left: 5px solid #FA787E;
+}
+
+/* Typical form CSS.
+ * Brings font size down 5% to squeeze a bit more in.
+ * Bold labels
+ * Fixes some bootstrap margin funkiness with checkboxes for
+ * better vertical alignment.
+ * Optional faint odd or even row striping.
+ */
+.common-form {
+  font-size: 95%;
+}
+.common-form .row {
+  margin: 5px;
+  padding: 3px;
+}
+
+.common-form label {
+  font-weight: bold;
+}
+
+.common-form.striped-even .row:nth-child(even),
+  .striped-rows-even .row:nth-child(even) {
+
+  background-color: rgba(0,0,0,.03);
+  border-top: 1px solid rgba(0,0,0,.125);
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.common-form.striped-odd .row:nth-child(odd),
+  .striped-rows-odd .row:nth-child(odd) {
+
+  background-color: rgba(0,0,0,.03);
+  border-top: 1px solid rgba(0,0,0,.125);
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+option[disabled] {
+  color: rgba(0,0,0,.3);
+}
+
+.form-check-input[type=checkbox] {
+  border-width: 2px;
+  border-color: rgba(0, 0, 0, .4);
+  min-width: 1rem;
+  min-height: 1rem;
+}
+
+/**
+ * Only display the print container when printing
+ */
+#eg-print-container {
+    display: none;
+}
+@media print {
+  head {display: none} /* just to be safe */
+  body div:not([id="eg-print-container"]) {display: none}
+  div {display: none}
+  @page {size: auto} /* work around Bootrap 4's default
+                        of A3; specifying any paper
+                        size stops browsers from letting
+                        the user choose portrait or
+                        landscape. LP#1986725 */
+  #eg-print-container {display: block}
+  #eg-print-container div {display: block}
+  #eg-print-container pre {border: none}
+}
+
+/**
+ * Make sure that comboboxes (including org select
+ * are visible, even in nested modals.
+ *
+ * See https://github.com/ng-bootstrap/ng-bootstrap/issues/2505
+ * for the upstream issue that necessitates this.
+ */
+body>.dropdown-menu {z-index: 2100;}
+
+/* Styles for eg-daterange-select that don't work
+ * in the component's CSS file.
+ */
+.ngb-dp-day:not(.disabled) .daterange-day.focused {
+  background-color: #e6e6e6;
+}
+.ngb-dp-day:not(.disabled) .daterange-day.range, .ngb-dp-day:not(.disabled) .daterange-day:hover {
+  background-color: #129a78;
+  color: white;
+  font-size: 1.4em;
+}
+.ngb-dp-day:not(.disabled) .daterange-day.faded {
+  background-color: #c9efe4;
+  color: black;
+}
+
+/* Washed out version of the Bootstrap 'info' background.
+ * Useful for blocking out sections of a page/form without it 
+ * being so intensely colorful */
+.bg-faint {
+  /*background-color: rgb(204, 229, 255, 0.3);*/
+
+  /* d9edf7 */
+  /*background-color: rgb(217, 237, 247, 0.5);*/
+
+  background-color: rgba(0,0,0,.03);
+}
+
+/* Allow for larger XL dialogs */
+@media (min-width: 1300px) { .modal-xl { max-width: 1200px; } }
+@media (min-width: 1600px) { .modal-xl { max-width: 1500px; } }
+@media (min-width: 1700px) { .modal-xl { max-width: 1600px; } }
+
+/* Default modal background color */
+.modal-header {
+  background-color: var(--info);
+}
+
+/* Contrast for dialog titles */
+.modal-header .modal-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.modal-header .close,
+.modal-header .close:hover {
+  color: #fff;
+  opacity: 1;
+  text-shadow: none;
+}
+
+.modal-header .close:not(:disabled):not(.disabled):focus, 
+.modal-header .close:not(:disabled):not(.disabled):hover {
+  opacity: 1;
+}
+
+/**
+ * Make the acquisitions search form's navigation tabs match
+ * those of the staff interface. This is a global rule because
+ * various approaches to doing it local to the acq search component
+ * don't work:
+ *
+ * 1. A rule bound to the container of the acq search tabset
+ *    would make the entire background be grey.
+ * 2. ":host ::ng-deep" for a local rule works, but depends on a
+ *    mechanism that is deprecated.
+ * 4. ng-tabset provides no hooks for custom styles for the nav-tab
+ *    background.
+ * 5. Turning off view encapsulation for the acq search component
+ *    breaks a lot of styles.
+ */
+#acq-search-page ngbNav .nav.nav-tabs {
+  background-color: rgb(247, 247, 247);
+}
+
+/**
+ * Similar to the CSS above for the search form, set some
+ * CSS for the line item worksheet. Ordinarily would be
+ * preferable to just add the CSS to the worksheet component,
+ * but untl a well-supported alternative to ng-deep comes along...
+ */
+#worksheet-outlet thead th { font-weight: bold; background-color: #ccc; text-align: center; border-bottom: 1px #000 solid; border-right: 1px #000 solid; padding: 0 
+6px; }
+#worksheet-outlet tbody td { text-align: left; vertical-align: top; border: 1px #999 inset; padding: 0 2px; }
+
+/* style for negative monetary values */
+.negative-money-amount {
+    color: red;
+}
+
+input.medium {
+  width: 6em;
+}
+
+input.small {
+  width: 4em;
+}
+
+/* 
+ * Created initially for styled grid rows where full 'bg-danger' CSS is
+ * intense and not especially readable, more so when rows are stacked.
+ * http://web-accessibility.carnegiemuseums.org/design/color/
+ */
+.less-intense-alert {
+  background-color: #f9dede;
+  color: #212121;
+}
+
+/* Accessible button colors */
+
+button.input-group-text.text-danger {
+  color: #C92235 !important;
+}
+
+.btn-warning,
+.btn-outline-warning {
+  border-color: #BB8402;
+}
+
+/* other colors' focus state shadows do not need to change */
+.btn-warning.focus,
+.btn-warning:focus {
+  border-color: #FFC107;
+  box-shadow: 0 0 0 .2rem rgba(255, 205, 57,.5);
+}
+
+.btn-primary {
+  background-color: #0A58CA;
+  border-color: #0A58CA;
+}
+
+.btn-primary:hover,
+.btn-primary.hover,
+.btn-primary:focus,
+.btn-primary.focus {
+  background-color: #0848A5;
+  border-color: #0848A5;
+}
+
+.btn-outline-primary {
+  border-color: #0A58CA;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary.hover,
+.btn-outline-primary:focus,
+.btn-outline-primary.focus {
+  border-color: #0848A5;
+}
+
+.btn-info {
+  background-color: #087990;
+  border-color: #087990;
+  color: #fff;
+}
+
+.btn-info:hover,
+.btn-info.hover,
+.btn-info:focus,
+.btn-info.focus {
+  background-color: #076376;
+  border-color: #076376;
+}
+
+.btn-outline-info {
+  border-color: #087990;
+}
+
+.btn-outline-info:hover,
+.btn-outline-info.hover,
+.btn-outline-info:focus,
+.btn-outline-info.focus {
+  border-color: #076376;
+}
+
+.btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.btn-success:hover,
+.btn-success.hover,
+.btn-success:focus,
+.btn-success.focus {
+  background-color: #157146;
+  border-color: #157146;
+}
+
+.btn-outline-success {
+  border-color: #198754;
+}
+
+.btn-outline-success:hover,
+.btn-outline-success.hover,
+.btn-outline-success:focus,
+.btn-outline-success.focus {
+  border-color: #157146;
+}
+
+/* Less intense, WCAG AAA-compliant badges */
+.badge {
+  font-weight: 400;
+  font-size: .9em;
+  line-height: .9em;
+  padding-top: .15em;
+}
+
+.badge-primary,
+.badge.text-bg-primary {
+  background: #cfe2ff;
+  color: #062C65;
+}
+
+.badge-secondary,
+.badge.text-bg-secondary {
+  background: #dee2e6;
+  color: #212529;
+}
+
+.badge-success,
+.badge.text-bg-success {
+  background: #dff0d8;
+  color: #003B35;
+}
+
+.badge-danger,
+.badge.text-bg-danger {
+  background: #f8d7da;
+  color: #58151c;
+}
+
+.badge-warning,
+.badge.text-bg-warning {
+  background: #ffe69c;
+  color: #723809;
+}
+
+.badge-info,
+.badge.text-bg-info {
+  background: #cff4fc;
+  color: #032830;
+}
+
+.badge-light,
+.badge.text-bg-light {
+  background: #e9ecef;
+  color: #212529;
+}
+
+.badge-dark,
+.badge.text-bg-dark {
+  color: #000;
+  background: #adb5bd;
+}
+
+/* 
+ * https://getbootstrap.com/docs/5.0/migration/#content-reboot-etc
+ * Links are underlined by default.
+ */
+a {
+  text-decoration: none;
+}
+
+.input-group {
+  flex-wrap: nowrap;
+}
+
+.input-group-text label,
+.input-group-text button {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.form-label.input-group-text {
+  margin-bottom: inherit;
+}
+
+.popover-body {
+  padding: 0;
+}
+
+/*
+   CSS Cursor classes
+*/
+.pointer {
+  cursor: pointer;
+}
+
+/* Fix tooltip link colors */
+.tooltip .tooltip-inner a {
+  color: inherit;
+}

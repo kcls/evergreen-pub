@@ -1,10 +1,8 @@
 <ng-template #dialogContent>
-  <div class="modal-header bg-info">
+  <div class="modal-header">
     <h4 class="modal-title"><span i18n>Merge Patrons</span></h4>
-    <button type="button" class="close" 
-      i18n-aria-label aria-label="Close" (click)="close()">
-      <span aria-hidden="true">&times;</span>
-    </button>
+    <button type="button" class="btn-close btn-close-white" 
+      i18n-aria-label aria-label="Close" (click)="close()"></button>
   </div>
   <div class="modal-body">
     <div class="row" *ngIf="loading">
@@ -12,8 +10,8 @@
         <eg-progress-inline></eg-progress-inline>
       </div>
     </div>
-    <div class="p-2 d-flex" *ngIf="!loading">
-      <div class="mr-4 flex-1">
+    <div class="row" *ngIf="!loading">
+      <div class="col-lg-6">
         <div>
           <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="lead" id="lead-record-1"
@@ -23,12 +21,12 @@
         </div>
         <eg-patron-summary [summary]="summary1"></eg-patron-summary>  
       </div>
-      <div class="ml-4 flex-1">
+      <div class="col-lg-6">
         <div>
           <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="lead" id="lead-record-2" 
               [value]="summary2.patron.id()" [(ngModel)]="leadAccount">
-            <label class="form-check-label" for="lead-record-2">Use as Lead?</label>
+            <label class="form-label form-check-label" for="lead-record-2">Use as Lead?</label>
           </div>
         </div>
         <eg-patron-summary [summary]="summary2"></eg-patron-summary>  

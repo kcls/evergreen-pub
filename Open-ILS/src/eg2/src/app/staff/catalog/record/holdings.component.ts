@@ -3,7 +3,6 @@ import {Component, OnInit, Input, ViewChild, ViewEncapsulation
 import {Router} from '@angular/router';
 import {Observable, Observer, of, EMPTY} from 'rxjs';
 import {map, tap, concatMap} from 'rxjs/operators';
-import {Location} from '@angular/common';
 import {Pager} from '@eg/share/util/pager';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
 import {StaffCatalogService} from '../catalog.service';
@@ -17,6 +16,8 @@ import {GridToolbarCheckboxComponent
     } from '@eg/share/grid/grid-toolbar-checkbox.component';
 import {StoreService} from '@eg/core/store.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
+import {MarkDamagedDialogComponent
+    } from '@eg/staff/share/holdings/mark-damaged-dialog.component';
 import {MarkMissingDialogComponent
     } from '@eg/staff/share/holdings/mark-missing-dialog.component';
 import {AnonCacheService} from '@eg/share/util/anon-cache.service';
@@ -43,8 +44,6 @@ import {TransferHoldingsComponent
     } from '@eg/staff/share/holdings/transfer-holdings.component';
 import {AlertDialogComponent} from '@eg/share/dialog/alert.component';
 import {BroadcastService} from '@eg/share/util/broadcast.service';
-import {ToastService} from '@eg/share/toast/toast.service';
-import {StringComponent} from '@eg/share/string/string.component';
 
 
 // The holdings grid models a single HoldingsTree, composed of HoldingsTreeNodes
@@ -93,7 +92,6 @@ export class HoldingsEntry {
 export class HoldingsMaintenanceComponent implements OnInit {
 
     initDone = false;
-    midFetch = false;
     gridDataSource: GridDataSource;
     gridTemplateContext: any;
     @ViewChild('holdingsGrid', { static: true }) holdingsGrid: GridComponent;
@@ -107,6 +105,8 @@ export class HoldingsMaintenanceComponent implements OnInit {
         private emptyCallNumsCheckbox: GridToolbarCheckboxComponent;
     @ViewChild('emptyLibsCheckbox', { static: true })
         private emptyLibsCheckbox: GridToolbarCheckboxComponent;
+    @ViewChild('markDamagedDialog', { static: true })
+        private markDamagedDialog: MarkDamagedDialogComponent;
     @ViewChild('markMissingDialog', { static: true })
         private markMissingDialog: MarkMissingDialogComponent;
     @ViewChild('copyAlertsDialog', { static: true })
@@ -131,8 +131,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
         private transferHoldings: TransferHoldingsComponent;
     @ViewChild('transferAlert', {static: false})
         private transferAlert: AlertDialogComponent;
-
-    @ViewChild('transferTargetMarked') transferTargetMarked: StringComponent;
 
     holdingsTree: HoldingsTree;
 
@@ -160,6 +158,8 @@ export class HoldingsMaintenanceComponent implements OnInit {
     orgClassCallback: (orgId: number) => string;
     marked_orgs: number[] = [];
 
+    copyCounts: {[orgId: number]: {}} = {};
+
     private _recId: number;
     @Input() set recordId(id: number) {
         this._recId = id;
@@ -182,7 +182,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
 
     constructor(
         private router: Router,
-        private ngLocation: Location,
         private org: OrgService,
         private idl: IdlService,
         private pcrud: PcrudService,
@@ -192,7 +191,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
         private store: ServerStoreService,
         private localStore: StoreService,
         private holdings: HoldingsService,
-        private toast: ToastService,
         private broadcaster: BroadcastService,
         private anonCache: AnonCacheService
     ) {
@@ -224,16 +222,7 @@ export class HoldingsMaintenanceComponent implements OnInit {
         this.cellTextGenerator = {
             owner_label: row => row.locationLabel,
             holdable: row => row.copy ?
-                this.gridTemplateContext.copyIsHoldable(row.copy) : '',
-            circ_modifier: row => {
-                if (row.copy) {
-                    const mod = row.copy.circ_modifier();
-                    if (mod) { return mod.code() + ' : ' + mod.name(); }
-                    return '';
-                }
-            },
-            barcode: row => row.copy ? row.copy.barcode() : '',
-            loan_duration: row => row.copy ? row.copy.loan_duration() : ''
+                this.gridTemplateContext.copyIsHoldable(row.copy) : ''
         };
 
         this.orgClassCallback = (orgId: number): string => {
@@ -318,10 +307,7 @@ export class HoldingsMaintenanceComponent implements OnInit {
     // No data is loaded until the first occurrence of the org change handler
     contextOrgChanged(org: IdlObject) {
         this.contextOrgLoaded = true;
-        // The provided org unit will be null when this method is invoked
-        // via org-select componentLoaded.  This happens when no pref
-        // is set for the default org unit for this selector.
-        if (org) { this.contextOrg = org; }
+        this.contextOrg = org;
         this.hardRefresh();
     }
 
@@ -370,10 +356,7 @@ export class HoldingsMaintenanceComponent implements OnInit {
 
     onRowActivate(row: any) {
         if (row.copy) {
-            const url = this.ngLocation.prepareExternalUrl(
-                '/staff/cat/volcopy/attrs/item/' + row.copy.id());
-
-            window.open(url);
+            this.openHoldingEdit([row], true, false);
         } else {
             this.gridTemplateContext.toggleExpandRow(row);
         }
@@ -438,8 +421,8 @@ export class HoldingsMaintenanceComponent implements OnInit {
     setTreeCounts(node: HoldingsTreeNode) {
 
         if (node.nodeType === 'org') {
-            node.copyCount = 0;
-            node.callNumCount = 0;
+            node.copyCount = this.copyCounts[node.target.id() + ''].copies;
+            node.callNumCount = this.copyCounts[node.target.id() + ''].call_numbers;
         } else if (node.nodeType === 'callNum') {
             node.copyCount = 0;
         }
@@ -449,13 +432,9 @@ export class HoldingsMaintenanceComponent implements OnInit {
         node.children.forEach(child => {
             this.setTreeCounts(child);
             if (node.nodeType === 'org') {
-                node.copyCount += child.copyCount;
-                if (child.nodeType === 'callNum') {
-                    node.callNumCount++;
-                } else {
+                if (child.nodeType !== 'callNum') {
                     hasChildOrgWithData = child.callNumCount > 0;
                     hasChildOrgSansData = child.callNumCount === 0;
-                    node.callNumCount += child.callNumCount;
                 }
             } else if (node.nodeType === 'callNum') {
                 node.copyCount = node.children.length;
@@ -557,39 +536,37 @@ export class HoldingsMaintenanceComponent implements OnInit {
                 return;
             }
 
-            if (this.midFetch) {
-                observer.complete();
-                // If getRows exits early on mid-fetch, the grid will
-                // think it has all of its data, even though another
-                // getRows() call is already active.  Once we exit
-                // here, remind our data source we are still fetching data.
-                setTimeout(() => this.gridDataSource.requestingData = true);
-                return;
-            }
-
-            this.midFetch = true;
-
             this.itemCircsNeeded = [];
             // Track vol IDs for the current fetch so we can prune
             // any that were deleted in an out-of-band update.
             const volsFetched: number[] = [];
 
-            this.pcrud.search('acn',
-                {   record: this.recordId,
-                    owning_lib: this.org.fullPath(this.contextOrg, true),
-                    deleted: 'f',
-                    label: {'!=' : '##URI##'}
-                }, {
-                    flesh: 3,
-                    flesh_fields: {
-                        acp: ['status', 'location', 'circ_lib', 'parts', 'notes',
-                             'circ_modifier', 'age_protect', 'copy_alerts', 'floating',
-                            'latest_inventory', 'total_circ_count', 'last_circ'],
-                        acn: ['prefix', 'suffix', 'copies'],
-                        acli: ['inventory_workstation']
-                    }
-                },
-                {authoritative: true}
+            return this.net.request(
+                'open-ils.search',
+                'open-ils.search.biblio.record.copy_counts.global.staff',
+                this.recordId
+            ).pipe(
+                tap(counts => this.copyCounts = counts),
+                concatMap(_ => {
+
+                    return this.pcrud.search('acn',
+                        {   record: this.recordId,
+                            owning_lib: this.org.fullPath(this.contextOrg, true),
+                            deleted: 'f',
+                            label: {'!=' : '##URI##'}
+                        }, {
+                            flesh: 3,
+                            flesh_fields: {
+                                acp: ['status', 'location', 'circ_lib', 'parts', 'notes',
+                                     'tags', 'age_protect', 'copy_alerts', 'latest_inventory',
+                                     'total_circ_count', 'last_circ'],
+                                acn: ['prefix', 'suffix', 'copies'],
+                                acli: ['inventory_workstation']
+                            }
+                        },
+                        {authoritative: true}
+                    );
+                })
             ).subscribe(
                 callNum => {
                     this.appendCallNum(callNum);
@@ -600,13 +577,10 @@ export class HoldingsMaintenanceComponent implements OnInit {
                     this.refreshHoldings = false;
                     this.pruneVols(volsFetched);
                     this.fetchCircs().then(
-                        ok => {
-                            this.flattenHoldingsTree(observer);
-                            this.midFetch = false;
-                        }
+                        ok => this.flattenHoldingsTree(observer)
                     );
                 }
-            );
+             );
         });
     }
 
@@ -741,7 +715,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
         }
     }
 
-
     // Which copies in the grid are selected.
     selectedCopyIds(rows: HoldingsEntry[], skipStatus?: number): number[] {
         return this.selectedCopies(rows, skipStatus).map(c => Number(c.id()));
@@ -773,17 +746,33 @@ export class HoldingsMaintenanceComponent implements OnInit {
     }
 
 
-    showMarkDamaged(rows: HoldingsEntry[]) {
+    async showMarkDamagedDialog(rows: HoldingsEntry[]) {
         const copyIds = this.selectedCopyIds(rows, 14 /* ignore damaged */);
 
         if (copyIds.length === 0) { return; }
 
-        const copyId = copyIds[0];
+        let rowsModified = false;
 
-        const url = this.ngLocation.prepareExternalUrl(
-            `/staff/cat/item/damaged/${copyId}/`);
+        const markNext = async(ids: number[]) => {
+            if (ids.length === 0) {
+                return Promise.resolve();
+            }
 
-        window.open(url);
+            this.markDamagedDialog.copyId = ids.pop();
+            return this.markDamagedDialog.open({size: 'lg'}).subscribe(
+                ok => {
+                    if (ok) { rowsModified = true; }
+                    return markNext(ids);
+                },
+                dismiss => markNext(ids)
+            );
+        };
+
+        await markNext(copyIds);
+        if (rowsModified) {
+            this.refreshHoldings = true;
+            this.holdingsGrid.reload();
+        }
     }
 
     showMarkMissingDialog(rows: any[]) {
@@ -810,13 +799,8 @@ export class HoldingsMaintenanceComponent implements OnInit {
         }
 
         // Action may only apply to a single org or call number row.
-        let node = rows[0].treeNode;
-
-        if (node.nodeType === 'copy') {
-            // If a copy node is selected in this context, we really
-            // care about the parent call number node.
-            node = node.parentNode;
-        }
+        const node = rows[0].treeNode;
+        if (node.nodeType === 'copy') { return; }
 
         let orgId: number;
 
@@ -841,8 +825,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
         // owning lib.
         this.localStore.setLocalItem('eg.cat.transfer_target_lib', orgId);
         this.localStore.setLocalItem('eg.cat.transfer_target_record', this.recordId);
-
-        this.toast.success(this.transferTargetMarked.text);
     }
 
     openAngJsWindow(path: string) {
@@ -852,35 +834,27 @@ export class HoldingsMaintenanceComponent implements OnInit {
 
     openItemHolds(rows: HoldingsEntry[]) {
         if (rows.length > 0 && rows[0].copy) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${rows[0].copy.id()}/holds-transits`);
-            window.open(url);
+            this.openAngJsWindow(`cat/item/${rows[0].copy.id()}/holds`);
         }
     }
 
     openItemStatusList(rows: HoldingsEntry[]) {
         const ids = this.selectedCopyIds(rows);
         if (ids.length > 0) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/list/${ids.join(',')}`);
-            window.open(url);
+            return this.openAngJsWindow(`cat/item/search/${ids.join(',')}`);
         }
     }
 
     openItemStatus(rows: HoldingsEntry[]) {
-        const ids = this.selectedCopyIds(rows);
-        if (ids.length > 0) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/list/${ids.join(',')}?routeToDetails=1`);
-            window.open(url);
+        if (rows.length > 0 && rows[0].copy) {
+           return this.openAngJsWindow(`cat/item/${rows[0].copy.id()}`);
         }
     }
 
     openItemTriggeredEvents(rows: HoldingsEntry[]) {
         if (rows.length > 0 && rows[0].copy) {
-            const url = this.ngLocation.prepareExternalUrl(
-                `/staff/cat/item/${rows[0].copy.id()}/triggered-events`);
-            window.open(url);
+           return this.openAngJsWindow(
+               `cat/item/${rows[0].copy.id()}/triggered_events`);
         }
     }
 
@@ -996,14 +970,16 @@ export class HoldingsMaintenanceComponent implements OnInit {
     }
 
     openItemNotes(rows: HoldingsEntry[]) {
-        const copyId = this.selectedCopyIds(rows)[0];
-        if (!copyId) { return; }
+        const copyIds = this.selectedCopyIds(rows);
+        if (copyIds.length === 0) { return; }
 
-        this.copyNotesDialog.copyId = copyId;
+        this.copyNotesDialog.copyIds = copyIds;
         this.copyNotesDialog.open({size: 'lg'}).subscribe(
             changes => {
                 if (!changes) { return; }
-                this.hardRefresh();
+                if (changes.newNotes.length > 0 || changes.delNotes.length > 0) {
+                    this.hardRefresh();
+                }
             }
         );
     }
@@ -1011,12 +987,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
     openReplaceBarcodeDialog(rows: HoldingsEntry[]) {
         const ids = this.selectedCopyIds(rows);
         if (ids.length === 0) { return; }
-
-        // KCLS JBAS-2604
-        this.holdings.spawnAddHoldingsUi(
-            this.recordId, null, null, ids, false, false);
-
-        /* KCLS
         this.replaceBarcode.copyIds = ids;
         this.replaceBarcode.open({}).subscribe(
             modified => {
@@ -1025,7 +995,6 @@ export class HoldingsMaintenanceComponent implements OnInit {
                 }
             }
         );
-        */
     }
 
     // mode 'callNums' -- only delete empty call numbers
@@ -1089,18 +1058,8 @@ export class HoldingsMaintenanceComponent implements OnInit {
     requestItems(rows: HoldingsEntry[]) {
         const copyIds = this.selectedCopyIds(rows);
         if (copyIds.length === 0) { return; }
-        const params = {target: copyIds};
-
-        // KCLS JBAS-2601 Open Item holds in new browser tab
-        const url = this.ngLocation.prepareExternalUrl(
-            this.router.serializeUrl(
-                this.router.createUrlTree(
-                    ['/staff/catalog/hold/C'], {queryParams: params}
-                )
-            )
-        );
-
-        window.open(url);
+        const params = {target: copyIds, holdFor: 'staff'};
+        this.router.navigate(['/staff/catalog/hold/C'], {queryParams: params});
     }
 
     openBucketDialog(rows: HoldingsEntry[]) {
@@ -1173,6 +1132,7 @@ export class HoldingsMaintenanceComponent implements OnInit {
             items.forEach(i => i.call_number(
                 this.treeNodeCache.callNum[i.call_number()].target));
 
+            console.log(items);
             promise = this.transferItems.autoTransferItems(items, recId, orgId);
 
         } else {

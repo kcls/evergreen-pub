@@ -24,14 +24,14 @@ export class StaffNavComponent implements OnInit, OnDestroy {
     locales: any[];
     currentLocale: any;
 
-    // When active, show a link to the experimental Angular staff catalog
-    showAngularCatalog = true;
-    curbsideEnabled = false;
+    // When active, show a link to the traditional staff catalog
+    showTraditionalCatalog = true;
+    showAngularAcq: boolean;
+    curbsideEnabled: boolean;
+    showAngularCirc = false;
     maxRecentPatrons: number = 1;
 
     @ViewChild('navOpChange', {static: false}) opChange: OpChangeComponent;
-    hostname: string;
-
     permFailedSub: Subscription;
 
     constructor(
@@ -50,8 +50,6 @@ export class StaffNavComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
 
-        this.hostname = window.location.hostname;
-
         this.locale.supportedLocales().subscribe(
             l => this.locales.push(l),
             err => {},
@@ -64,7 +62,6 @@ export class StaffNavComponent implements OnInit, OnDestroy {
         // NOTE: this can eventually go away.
         // Avoid attempts to fetch org settings if the user has not yet
         // logged in (e.g. this is the login page).
-        /*
         if (this.user()) {
             // Note these are all pre-cached by our resolver.
             // Batching not required.
@@ -94,7 +91,6 @@ export class StaffNavComponent implements OnInit, OnDestroy {
                 }
             }).then(enable => this.showAngularCirc = enable);
         }
-        */
 
         // Wire up our op-change component as the general purpose
         // permission failed handler.

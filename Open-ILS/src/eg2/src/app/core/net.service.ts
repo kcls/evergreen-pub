@@ -28,12 +28,7 @@ import {EventService, EgEvent} from './event.service';
 // These are availavble at runtime, but are not exported.
 declare var OpenSRF, OSRF_TRANSPORT_TYPE_WS;
 
-// Let us be nice to the servers.
-const MAX_PARALLEL_REQUESTS = 5;
-
 export class NetRequest {
-    static autoId = 0;
-    id: number;
     service: string;
     method: string;
     params: any[];
@@ -53,7 +48,6 @@ export class NetRequest {
         this.service = service;
         this.method = method;
         this.params = params;
-        this.id = NetRequest.autoId++;
         if (session) {
             this.session = session;
             this.localSession = false;
@@ -83,9 +77,6 @@ export class NetService {
     // and the active request is marked as superseded.
     permFailedHasHandler: Boolean = false;
 
-    pending: NetRequest[] = [];
-    active: NetRequest[] = [];
-
     constructor(
         private egEvt: EventService
     ) {
@@ -110,30 +101,9 @@ export class NetService {
         return Observable.create(
             observer => {
                 request.observer = observer;
-                this.pending.push(request);
-                this.sendFromQueue();
+                this.sendCompiledRequest(request);
             }
         );
-    }
-
-    sendFromQueue(remove?: NetRequest) {
-
-        if (remove) {
-            // Remove a completed request from the active request queue
-            for (let idx = 0; idx < this.active.length; idx++) {
-                if (this.active[idx].id === remove.id) {
-                    this.active.splice(idx, 1);
-                    break;
-                }
-            }
-        }
-
-        while (this.pending.length > 0
-            && this.active.length < MAX_PARALLEL_REQUESTS) {
-            const request = this.pending.shift();
-            this.active.push(request);
-            this.sendCompiledRequest(request);
-        }
     }
 
     // Send the compiled request to the server via WebSockets
@@ -159,9 +129,6 @@ export class NetService {
                 if (!request.superseded) {
                     request.observer.complete();
                 }
-
-                // Even if we are superseded, this request is done.
-                this.sendFromQueue(request);
             },
             onresponse : r => {
                 this.dispatchResponse(request, r.recv().content());
@@ -170,7 +137,6 @@ export class NetService {
                 const msg = `${request.method} failed! See server logs. ${errmsg}`;
                 console.error(msg);
                 request.observer.error(msg);
-                this.sendFromQueue(request);
             },
             onmethoderror : (req, statCode, statMsg) => {
                 const msg =
@@ -184,7 +150,6 @@ export class NetService {
                 }
 
                 request.observer.error(msg);
-                this.sendFromQueue(request);
             }
 
         }).send();

@@ -1,7 +1,5 @@
 <h3 i18n>Bill History</h3>
 
-<eg-progress-dialog #progress></eg-progress-dialog>
-
 <eg-add-billing-dialog [patronId]="patronId" #billingDialog>
 </eg-add-billing-dialog>
 
@@ -14,7 +12,7 @@
 
 <ng-template #barcodeTemplate let-r="row">
   <ng-container *ngIf="r.copy_id">
-    <a routerLink="/staff/cat/item/{{r.copy_id}}">{{r.copy_barcode}}</a>
+    <a href="/eg/staff/cat/item/{{r.copy_id}}">{{r.copy_barcode}}</a>
   </ng-container>
 </ng-template>
 
@@ -38,14 +36,13 @@
         </div>
         <div class="col-lg-4 form-inline">
           <span class="me-2" i18n>Start Date:</span>
-          <eg-date-select-native [noFuture]="true" 
-            [(ngModel)]="xactsStart" (blur)="refreshXacts()">
-          </eg-date-select-native>
+          <eg-date-select [initialIso]="xactsStart"
+            (onChangeAsIso)="dateChange('xactsStart', $event)"></eg-date-select>
         </div>
         <div class="col-lg-4 form-inline">
           <span class="me-2" i18n>End Date:</span>
-          <eg-date-select-native [(ngModel)]="xactsEnd" (blur)="refreshXacts()">
-          </eg-date-select-native>
+          <eg-date-select [initialIso]="xactsEnd"
+            (onChangeAsIso)="dateChange('xactsEnd', $event)"></eg-date-select>
         </div>
       </div>
 
@@ -55,9 +52,6 @@
         [showDeclaredFieldsOnly]="true"
         [reloadOnColumnChange]="true"
         [dataSource]="xactsDataSource" [sortable]="true">
-
-        <eg-grid-toolbar-button i18n-label label="Refresh" [disabled]="reloading()" 
-          (onClick)="refreshXacts()"></eg-grid-toolbar-button>
 
         <eg-grid-toolbar-action i18n-label label="Add Billing"
           (onClick)="addBillingForXact($event)"></eg-grid-toolbar-action>
@@ -86,7 +80,7 @@
 
         <eg-grid-column i18n-label label="Title" name="title" 
           [cellTemplate]="titleTemplate"
-          path="circulation.target_copy.call_number.record.simple_record.title_proper">
+          path="circulation.target_copy.call_number.record.simple_record.title">
         </eg-grid-column>
 
         <eg-grid-column name="record_id" 
@@ -135,14 +129,13 @@
         </div>
         <div class="col-lg-4 form-inline">
           <span class="me-2" i18n>Start Date:</span>
-          <eg-date-select-native [noFuture]="true" 
-            [(ngModel)]="paymentsStart" (blur)="refreshPayments()">
-          </eg-date-select-native>
+          <eg-date-select [initialIso]="paymentsStart"
+            (onChangeAsDate)="dateChange('paymentsStart', $event)"></eg-date-select>
         </div>
         <div class="col-lg-4 form-inline">
           <span class="me-2" i18n>End Date:</span>
-          <eg-date-select-native [(ngModel)]="paymentsEnd" (blur)="refreshPayments()">
-          </eg-date-select-native>
+          <eg-date-select [initialIso]="paymentsEnd"
+            (onChangeAsDate)="dateChange('paymentsEnd', $event)"></eg-date-select>
         </div>
       </div>
 
@@ -153,23 +146,8 @@
         [reloadOnColumnChange]="true"
         [dataSource]="paymentsDataSource" [sortable]="true">
 
-        <eg-grid-toolbar-button i18n-label label="Refresh" [disabled]="reloading()"
-          (onClick)="refreshPayments()"></eg-grid-toolbar-button>
-
         <eg-grid-toolbar-action
           i18n-label label="Full Details" (onClick)="showStatement($event, true)">
-        </eg-grid-toolbar-action>
-
-        <eg-grid-toolbar-action
-          i18n-label label="Reprint Lost/Paid Receipt" (onClick)="printLostPaid($event)">
-        </eg-grid-toolbar-action>
-
-        <eg-grid-toolbar-action
-          i18n-label label="View Refund Letter" (onClick)="printRefundLetterFromPayment($event)">
-        </eg-grid-toolbar-action>
-
-        <eg-grid-toolbar-action
-          i18n-label label="Print Payments" (onClick)="printPayments($event)">
         </eg-grid-toolbar-action>
 
         <eg-grid-column path="amount" i18n-label label="Amount"></eg-grid-column>
@@ -183,7 +161,7 @@
 
         <eg-grid-column i18n-label label="Title" name="title" 
           [cellTemplate]="titleTemplate"
-          path="xact.circulation.target_copy.call_number.record.simple_record.title_proper">
+          path="xact.circulation.target_copy.call_number.record.simple_record.title">
         </eg-grid-column>
 
         <eg-grid-column name="record_id" 

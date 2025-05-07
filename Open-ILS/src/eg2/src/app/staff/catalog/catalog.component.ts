@@ -51,8 +51,7 @@ export class CatalogComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        /* KCLS HD 10644 */
-        // this.clearHoldPatron();
+        this.clearHoldPatron();
         this.onDestroy.next(null);
     }
 }

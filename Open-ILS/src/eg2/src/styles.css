@@ -23,7 +23,7 @@
 }
 
 /** BS default fonts are huge */
-body, .form-control, .btn, .input-group-text, .form-select {
+body, .form-control, .btn, .input-group-text {
   /* This more or less matches the font size of the angularjs client.
    * The default BS4 font of 1rem is comically large.
    */
@@ -176,11 +176,6 @@ a:hover {
   font-size: 22px;
 }
 
-.mat-icon-shrunk-in-button {
-    line-height: inherit;
-    font-size: 18px;
-}
-
 /* allow spans/labels to vertically orient with material icons */
 .label-with-material-icon {
     display: inline-flex;
@@ -202,21 +197,13 @@ a:hover {
   padding: .5rem;
 }
 
-/* roughly the same size as a btn-sm */
-.tight-pagination .page-link {
-  padding: .40rem .7rem;
-}
-
 @media all and (min-width: 800px) {
+    /* scrollable typeahead menus for full-size screens */
     ngb-typeahead-window {
         height: auto;
-        max-height: 440px;
+        max-height: 200px;
         overflow-x: hidden;
     }
-}
-
-ngb-typeahead-window .dropdown-item {
-    font-size: 14px;
 }
 
 /* Limit size of dropdown menus and allow for scrolling */
@@ -241,17 +228,13 @@ ngb-typeahead-window .dropdown-item {
  * TODO: these colors don't fit the EG color scheme
  * Required valid fields are left-border styled in green-ish.
  * Invalid fields are left-border styled in red-ish.
- *
- * re: .valid-input / .invalid-input : sometimes you just need a 
- * simple way to force it.
  */
-.form-validated .ng-valid[required]:not(eg-combobox):not(eg-date-select):not(eg-date-select-native), 
-.form-validated .ng-valid.required, input[formcontrolname].ng-valid.required,
-.valid-input {
+.form-validated .ng-valid[required]:not(eg-combobox):not(eg-date-select), 
+.form-validated .ng-valid.required, input[formcontrolname].ng-valid.required {
   border-left: 5px solid #78FA89;
 }
-.form-validated .ng-invalid:not(form):not(eg-combobox):not(eg-date-select):not(eg-date-select-native),
-input[formcontrolname].ng-invalid, .invalid-input {
+.form-validated .ng-invalid:not(form):not(eg-combobox):not(eg-date-select),
+input[formcontrolname].ng-invalid {
   border-left: 5px solid #FA787E;
 }
 
@@ -303,6 +286,28 @@ option[disabled] {
   border-color: rgba(0, 0, 0, .4);
   min-width: 1rem;
   min-height: 1rem;
+}
+
+/* Bootstrap's focus "outline" is a faint box shadow. Buttons have
+   color-specific shadows, so let's leave those alone except for
+   ones that are dropdown items. */
+:not(button):not(.btn):focus,
+:not(button):not(.btn):focus-visible,
+button.dropdown-item:focus,
+button.dropdown-item:focus-visible {
+  outline: 0.25rem solid rgba(13, 110, 253, 0.75);
+  outline-offset: 0;
+  --moz-outline-radius: 0.25rem;
+}
+
+.form-control:focus,
+.form-control:focus-visible {
+  box-shadow: unset;
+  outline: 0.25rem solid rgba(13, 110, 253, 0.75) !important;
+}
+
+input[type="checkbox"]:focus {
+  outline-offset: 0.1rem;
 }
 
 /**

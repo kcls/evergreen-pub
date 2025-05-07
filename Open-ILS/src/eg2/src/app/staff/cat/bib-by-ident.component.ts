@@ -24,22 +24,14 @@ export class BibByIdentComponent implements OnInit, AfterViewInit {
     ) {}
 
     ngOnInit() {
-        console.log('INIT');
         this.route.paramMap.subscribe((params: ParamMap) => {
             this.identType = params.get('identType') as 'id' | 'tcn';
-            this.focusInput();
         });
     }
 
     ngAfterViewInit() {
-        this.focusInput();
-    }
-
-    focusInput() {
-        setTimeout(() => {
-            const node = document.getElementById('bib-ident-value');
-            setTimeout(() => node.focus());
-        });
+        const node = document.getElementById('bib-ident-value');
+        setTimeout(() => node.focus());
     }
 
     search() {

@@ -4,9 +4,8 @@
 }
 
 ::ng-deep .lost-row {
-  /*color: #FFF;*/
-  color: #000;
-  background-color: #f57600 !important;
+  color: #FFF;
+  background-color: #800000 !important;
 }
 
 ::ng-deep .longoverdue-row {
@@ -14,8 +13,3 @@
   background-color: #FFE1A8 !important;
 }
 
-/* 
-JBAS-3148 Copying this here to mimic the behavior of the patron status  
-CSS, which is not present in the DOM until we have a patron to view.    
-*/
-::ng-deep .patron-status-color { border: 3px solid transparent; }

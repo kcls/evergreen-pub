@@ -31,11 +31,6 @@ export class PromptDialogComponent extends DialogComponent implements OnInit {
             if (node) { node.focus(); node.select(); }
         });
     }
-
-    closeAndClear(value?: any) {
-        this.close(value);
-        this.promptValue = '';
-    }
 }
 
 

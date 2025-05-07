@@ -13,8 +13,8 @@ import {VandelayService} from '@eg/staff/cat/vandelay/vandelay.service';
 import {PicklistUploadService} from './upload.service';
 
 const routes: Routes = [{
-  path: 'brief-record',
-  component: BriefRecordComponent
+    path: 'brief-record',
+    component: BriefRecordComponent
 }, {
   path: 'upload',
   component: UploadComponent

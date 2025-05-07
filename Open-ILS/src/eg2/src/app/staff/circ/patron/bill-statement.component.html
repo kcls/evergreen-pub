@@ -82,7 +82,7 @@
   <div class="row p-1">
     <div class="col-lg-2" i18n>Barcode</div>
     <div class="col-lg-2">
-      <a target="_blank" routerLink="/staff/cat/item/{{copy().id()}}">
+      <a target="_blank" href="/eg/staff/cat/item/{{copy().id()}}">
         {{copy().barcode()}}
       </a>
     </div>
@@ -165,16 +165,8 @@
                   <span *ngIf="line.end_date"> - {{line.end_date  | date:'short'}}</span>
                 </div>
               </div>
-              <div class="col-lg-2">
-                <span class="text-danger" *ngIf="lineIsRegPayment(line)">
-                  - {{line.amount | currency}}
-                </span>
-                <span class="text-info" *ngIf="lineIsRefundPayment(line)">
-                  {{-1 * line.amount | currency}}
-                </span>
-                <span *ngIf="lineIsNonPayment(line)">
-                  {{line.amount | currency}}
-                </span>
+              <div class="col-lg-2" [ngClass]="{'text-danger': line.type !== 'billing'}">
+                <span *ngIf="line.type !== 'billing'">-</span>{{line.amount | currency}}
               </div>
               <div class="col-lg-2">{{line.running_balance | currency}}</div>
             </div>
