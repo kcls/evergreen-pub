@@ -742,20 +742,14 @@ $_$ LANGUAGE PLPERLU;
 
 --SELECT evergreen.upgrade_deps_block_check('1433', :eg_version);
 
+SELECT CLOCK_TIMESTAMP(), 'Adding MFA bits';
+
 -- New stuff!
 CREATE TABLE IF NOT EXISTS config.mfa_factor (
     name        TEXT    PRIMARY KEY,
     label       TEXT    NOT NULL,
     description TEXT    NOT NULL
 );
-
-INSERT INTO config.mfa_factor (name, label, description) VALUES
-  ('webauthn', 'Web Authentication API', 'Uses external Public Key credentials to confirm authentication'),
-  ('totp', 'Time-based One-Time Password', 'For use with TOTP applications such as Google Authenticator'),
-  ('email', 'One-Time Password by Email', 'Uses a dedicated MFA email address to confirm authentication'),
-  ('sms', 'One-Time Password by SMS', 'Uses a dedicated MFA phone number and carrier to confirm authentication'),
-  ('static', 'Pre-generated backup passwords', 'Confirms authentication via pre-shared One-Time passwords')
-;
 
 CREATE TABLE IF NOT EXISTS actor.usr_mfa_exception (
     id      SERIAL  PRIMARY KEY,
@@ -1164,7 +1158,7 @@ BEGIN
 END;
 $f$ STABLE LANGUAGE PLPGSQL;
 
-SELECT evergreen.upgrade_deps_block_check('1438', :eg_version);
+--SELECT evergreen.upgrade_deps_block_check('1438', :eg_version);
 
 ALTER TABLE biblio.monograph_part
     ADD COLUMN creator INTEGER DEFAULT 1,
@@ -1222,6 +1216,8 @@ $$ LANGUAGE PLPGSQL;
 
 
 --SELECT evergreen.upgrade_deps_block_check('1440', :eg_version);
+
+SELECT CLOCK_TIMESTAMP(), 'Adding patron loader bits';
 
 CREATE TABLE config.patron_loader_header_map (
     id SERIAL,
@@ -1401,6 +1397,8 @@ CREATE TABLE IF NOT EXISTS actor.usr_mfa_exception (
 ALTER TABLE acq.invoice_item ALTER CONSTRAINT invoice_item_fund_debit_fkey DEFERRABLE INITIALLY DEFERRED;
 
 --SELECT evergreen.upgrade_deps_block_check('1457', :eg_version);
+
+SELECT CLOCK_TIMESTAMP(), 'Adding hold reset reason indexes';
 
 ALTER TABLE action.hold_request_reset_reason_entry DROP CONSTRAINT hold_request_reset_reason_entry_hold_fkey;
 ALTER TABLE action.hold_request_reset_reason_entry ADD FOREIGN KEY (hold) REFERENCES action.hold_request(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
@@ -2109,9 +2107,9 @@ $$ LANGUAGE plpgsql;
 DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN
 ------------------------------------------------------------------------------
 
-SELECT evergreen.upgrade_deps_block_check('1399', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1399', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1400', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1400', '3.14-upgrade');
 
 INSERT into config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -2130,7 +2128,7 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1401', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1401', '3.14-upgrade');
 
 INSERT INTO permission.perm_list ( id, code, description ) SELECT DISTINCT
   648,
@@ -2150,7 +2148,7 @@ INSERT INTO permission.perm_list ( id, code, description )  SELECT DISTINCT
   FROM permission.perm_list
   WHERE NOT EXISTS (SELECT 1 FROM permission.perm_list WHERE code = 'CREATE_BIB_BUCKET');
 
-SELECT evergreen.upgrade_deps_block_check('1402', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1402', '3.14-upgrade');
 
 INSERT INTO config.org_unit_setting_type (
   name, grp, label, description, datatype
@@ -2173,7 +2171,7 @@ INSERT INTO config.org_unit_setting_type (
 );
 
 
-SELECT evergreen.upgrade_deps_block_check('1403', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1403', '3.14-upgrade');
 
 UPDATE action_trigger.event_definition SET template = 
 
@@ -2204,7 +2202,7 @@ $$
 
 WHERE hook = 'container.biblio_record_entry_bucket.csv' AND MD5(template) = '386d7ab2a78a69a44a47e2b0b8c5699b';
 
-SELECT evergreen.upgrade_deps_block_check('1404', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1404', '3.14-upgrade');
 
 UPDATE config.org_unit_setting_type
 SET description = oils_i18n_gettext('acq.default_owning_lib_for_auto_lids_strategy',
@@ -2213,21 +2211,9 @@ SET description = oils_i18n_gettext('acq.default_owning_lib_for_auto_lids_strate
 WHERE name = 'acq.default_owning_lib_for_auto_lids_strategy'
 AND description = 'Stategy to use to set default owning library to set when line item items are auto-created because the provider''s default copy count has been set. Valid values are "workstation" to use the workstation library, "blank" to leave it blank, and "use_setting" to use the "Default owning library for auto-created line item items" setting. If not set, the workstation library will be used.';
 
-SELECT evergreen.upgrade_deps_block_check('1405', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1405', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1406', :eg_version);
-
-INSERT INTO config.workstation_setting_type (name, grp, datatype, label) 
-VALUES (
-    'eg.grid.admin.config.circ_matrix_matchpoint', 'gui', 'object',
-    oils_i18n_gettext(
-        'eg.grid.admin.config.circ_matrix_matchpoint',
-        'Grid Config: admin.config.circ_matrix_matchpoint',
-        'cwst', 'label'
-    )
-);
-
-SELECT evergreen.upgrade_deps_block_check('1406', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1406', '3.14-upgrade');
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label) 
 VALUES (
@@ -2239,7 +2225,19 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1407', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1406', '3.14-upgrade');
+
+INSERT INTO config.workstation_setting_type (name, grp, datatype, label) 
+VALUES (
+    'eg.grid.admin.config.circ_matrix_matchpoint', 'gui', 'object',
+    oils_i18n_gettext(
+        'eg.grid.admin.config.circ_matrix_matchpoint',
+        'Grid Config: admin.config.circ_matrix_matchpoint',
+        'cwst', 'label'
+    )
+);
+
+PERFORM evergreen.upgrade_deps_block_check('1407', '3.14-upgrade');
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES 
@@ -2284,7 +2282,7 @@ INSERT INTO permission.perm_list ( id, code, description ) VALUES
     'Allow a user to ignore a fund''s stop percentage.', 'ppl', 'description'))
 ;
 
-SELECT evergreen.upgrade_deps_block_check('1408', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1408', '3.14-upgrade');
 
 INSERT INTO config.usr_setting_type (name, grp, datatype, label)
 VALUES
@@ -2428,7 +2426,7 @@ Auto-Submitted: auto-generated
 
 $$);
 
-SELECT evergreen.upgrade_deps_block_check('1409', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1409', '3.14-upgrade');
 
 INSERT INTO config.global_flag (name, enabled, label)
     VALUES (
@@ -2441,7 +2439,7 @@ INSERT INTO config.global_flag (name, enabled, label)
         )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1410', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1410', '3.14-upgrade');
 
 INSERT INTO config.org_unit_setting_type (
   name, grp, label, description, datatype
@@ -2511,7 +2509,7 @@ INSERT INTO config.org_unit_setting_type (
   'string'
 );
 
-SELECT evergreen.upgrade_deps_block_check('1411', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1411', '3.14-upgrade');
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -2537,10 +2535,10 @@ UPDATE  config.ui_staff_portal_page_entry
 
 
 -- SIP stuff we already have
-SELECT evergreen.upgrade_deps_block_check('1412', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1413', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1412', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1413', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1414', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1414', '3.14-upgrade');
 
 INSERT INTO permission.perm_list ( id, code, description ) SELECT DISTINCT
   654,
@@ -2560,7 +2558,7 @@ INSERT INTO permission.perm_list ( id, code, description )  SELECT DISTINCT
   FROM permission.perm_list
   WHERE NOT EXISTS (SELECT 1 FROM permission.perm_list WHERE code = 'MANAGE_SHIPMENT_NOTIFICATION');
 
-SELECT evergreen.upgrade_deps_block_check('1415', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1415', '3.14-upgrade');
 INSERT INTO permission.perm_list ( id, code, description ) SELECT DISTINCT
    656,
    'PATRON_BARRED.override',
@@ -2571,9 +2569,9 @@ INSERT INTO permission.perm_list ( id, code, description ) SELECT DISTINCT
    WHERE NOT EXISTS (SELECT 1 FROM permission.perm_list WHERE code = 'PATRON_BARRED.override');
 
 
-SELECT evergreen.upgrade_deps_block_check('1417', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1417', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1418', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1418', '3.14-upgrade');
 
 INSERT INTO config.global_flag (name, enabled, value, label) 
     VALUES (
@@ -2590,7 +2588,7 @@ INSERT INTO config.global_flag (name, enabled, value, label)
 
 COMMIT;
 
-SELECT evergreen.upgrade_deps_block_check('1419', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1419', '3.14-upgrade');
 
 INSERT INTO config.usr_setting_type (name,grp,opac_visible,label,description,datatype) VALUES (
     'ui.show_search_highlight',
@@ -2611,7 +2609,7 @@ INSERT INTO config.usr_setting_type (name,grp,opac_visible,label,description,dat
     'bool'
 );
 
-SELECT evergreen.upgrade_deps_block_check('1420', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1420', '3.14-upgrade');
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -2639,9 +2637,9 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1421', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1421', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1422', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1422', '3.14-upgrade');
 
 UPDATE config.org_unit_setting_type
 SET description = oils_i18n_gettext('circ.holds.ui_require_monographic_part_when_present',
@@ -2649,7 +2647,7 @@ SET description = oils_i18n_gettext('circ.holds.ui_require_monographic_part_when
         'coust', 'description')
 WHERE name = 'circ.holds.ui_require_monographic_part_when_present';
 
-SELECT evergreen.upgrade_deps_block_check('1423', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1423', '3.14-upgrade');
 
 INSERT INTO config.org_unit_setting_type
     (name, grp, datatype, label, description)
@@ -2691,7 +2689,7 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1424', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1424', '3.14-upgrade');
 
 INSERT into config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -2703,7 +2701,7 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1425', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1425', '3.14-upgrade');
 
 INSERT into config.org_unit_setting_type
     (name, grp, label, description, datatype)
@@ -2719,7 +2717,7 @@ VALUES (
     'integer'
 );
 
-SELECT evergreen.upgrade_deps_block_check('1426', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1426', '3.14-upgrade');
 
 INSERT INTO action.hold_request_reset_reason (id, name, manual) VALUES
 (1,'HOLD_TIMED_OUT',false),
@@ -2755,7 +2753,7 @@ INSERT into config.org_unit_setting_type
     'coust', 'description'),
   'interval', null);
 
-SELECT evergreen.upgrade_deps_block_check('1427', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1427', '3.14-upgrade');
 
 INSERT into config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -2767,9 +2765,9 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1428', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1428', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1429', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1429', '3.14-upgrade');
 
 UPDATE config.org_unit_setting_type
 SET description = oils_i18n_gettext('circ.course_materials_brief_record_bib_source',
@@ -2777,7 +2775,7 @@ SET description = oils_i18n_gettext('circ.course_materials_brief_record_bib_sour
     'coust', 'description')
 WHERE name='circ.course_materials_brief_record_bib_source';
 
-SELECT evergreen.upgrade_deps_block_check('1430', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1430', '3.14-upgrade');
 
 INSERT INTO config.print_template
     (name, label, owner, active, locale, content_type, template)
@@ -2819,11 +2817,11 @@ UPDATE config.print_template SET template = $TEMPLATE$
 
 $TEMPLATE$ WHERE name = 'serials_routing_list';
 
-SELECT evergreen.upgrade_deps_block_check('1431', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1431', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1432', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1432', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1433', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1433', '3.14-upgrade');
 
 -- Permission seed data 
 INSERT INTO permission.perm_list ( id, code, description ) VALUES
@@ -2979,7 +2977,7 @@ INSERT INTO actor.passwd_type (code, name) VALUES
     ('webauthn-login', 'WebAuthn data for single-factor login')
 ;
 
-SELECT evergreen.upgrade_deps_block_check('1434', :eg_version); 
+PERFORM evergreen.upgrade_deps_block_check('1434', '3.14-upgrade'); 
 
 INSERT INTO config.print_template 
     (name, label, owner, active, locale, content_type, template)
@@ -3203,7 +3201,7 @@ UPDATE config.print_template SET template = $TEMPLATE$
 </div>
 $TEMPLATE$ WHERE name = 'scko_checkouts';
 
-SELECT evergreen.upgrade_deps_block_check('1435', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1435', '3.14-upgrade');
 
 -- 950.data.seed-values.sql
 
@@ -3219,8 +3217,8 @@ INSERT INTO config.i18n_string (id, context, string) VALUES (1,
 );
 SELECT SETVAL('config.i18n_string_id_seq', 10000); -- reserve some for stock EG interfaces
 
-SELECT evergreen.upgrade_deps_block_check('1436', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1437', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1436', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1437', '3.14-upgrade');
 
 INSERT INTO config.org_unit_setting_type
     (grp, name, datatype, label, description)
@@ -3241,10 +3239,10 @@ VALUES (
     )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1438', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1439', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1440', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1441', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1438', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1439', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1440', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1441', '3.14-upgrade');
 
 -- Add settings for record bucket interfaces
 
@@ -3446,7 +3444,7 @@ UPDATE  config.ui_staff_portal_page_entry
         AND target_url = '/eg/staff/cat/bucket/record/'
 ;
 
-SELECT evergreen.upgrade_deps_block_check('1442', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1442', '3.14-upgrade');
 
 INSERT into config.workstation_setting_type
     (name, grp, label, description, datatype)
@@ -3462,7 +3460,7 @@ VALUES (
     'bool'
 );
 
-SELECT evergreen.upgrade_deps_block_check('1443', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1443', '3.14-upgrade');
 
 INSERT into config.workstation_setting_type
     (name, grp, label, description, datatype)
@@ -3506,12 +3504,12 @@ VALUES (
     'bool'
 );
 
-SELECT evergreen.upgrade_deps_block_check('1444', :eg_version); -- JBoyer
+PERFORM evergreen.upgrade_deps_block_check('1444', '3.14-upgrade'); -- JBoyer
 
 -- If these settings have not been marked Deprecated go ahead and do so now
 UPDATE config.org_unit_setting_type SET label = 'Deprecated: ' || label WHERE name IN ('format.date', 'format.time') AND NOT label ILIKE 'deprecated: %';
 
-SELECT evergreen.upgrade_deps_block_check('1445', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1445', '3.14-upgrade');
 
 UPDATE action_trigger.event_definition
 SET template =
@@ -3632,14 +3630,14 @@ $$
 $$;
 
 
-SELECT evergreen.upgrade_deps_block_check('1446', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1447', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1448', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1446', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1447', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1448', '3.14-upgrade');
 
 -- KCLS skipping this. conflicts with existing change and unnecessary.
---SELECT evergreen.upgrade_deps_block_check('1449', :eg_version);
+--PERFORM evergreen.upgrade_deps_block_check('1449', '3.14-upgrade');
 
-SELECT evergreen.upgrade_deps_block_check('1451', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1451', '3.14-upgrade');
 
 INSERT into config.workstation_setting_type (name, grp, datatype, label)
 VALUES (
@@ -3651,8 +3649,8 @@ VALUES (
        )
 );
 
-SELECT evergreen.upgrade_deps_block_check('1454', :eg_version);
-SELECT evergreen.upgrade_deps_block_check('1457', :eg_version);
+PERFORM evergreen.upgrade_deps_block_check('1454', '3.14-upgrade');
+PERFORM evergreen.upgrade_deps_block_check('1457', '3.14-upgrade');
 
 ------------------------------------------------------------------------------
 END IF; END $INSERT$;
