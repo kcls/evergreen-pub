@@ -2225,18 +2225,6 @@ VALUES (
     )
 );
 
-PERFORM evergreen.upgrade_deps_block_check('1406', '3.14-upgrade');
-
-INSERT INTO config.workstation_setting_type (name, grp, datatype, label) 
-VALUES (
-    'eg.grid.admin.config.circ_matrix_matchpoint', 'gui', 'object',
-    oils_i18n_gettext(
-        'eg.grid.admin.config.circ_matrix_matchpoint',
-        'Grid Config: admin.config.circ_matrix_matchpoint',
-        'cwst', 'label'
-    )
-);
-
 PERFORM evergreen.upgrade_deps_block_check('1407', '3.14-upgrade');
 
 INSERT INTO config.workstation_setting_type (name, grp, datatype, label)
@@ -2585,8 +2573,6 @@ INSERT INTO config.global_flag (name, enabled, value, label)
             'label'
         )
     );
-
-COMMIT;
 
 PERFORM evergreen.upgrade_deps_block_check('1419', '3.14-upgrade');
 
@@ -3215,7 +3201,8 @@ INSERT INTO config.i18n_string (id, context, string) VALUES (1,
         'i18ns','string'
     )
 );
-SELECT SETVAL('config.i18n_string_id_seq', 10000); -- reserve some for stock EG interfaces
+
+PERFORM SETVAL('config.i18n_string_id_seq', 10000); -- reserve some for stock EG interfaces
 
 PERFORM evergreen.upgrade_deps_block_check('1436', '3.14-upgrade');
 PERFORM evergreen.upgrade_deps_block_check('1437', '3.14-upgrade');
