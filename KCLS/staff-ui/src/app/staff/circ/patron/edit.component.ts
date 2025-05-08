@@ -803,6 +803,8 @@ export class EditComponent implements OnInit {
         this.applyGroupedSettingValues();
     }
 
+    // Returns true if at least one notice type from the specified
+    // group (e.g. 'notify.text' is enabled.
     noticeTypeEnabled(grp: string): boolean {
          let enabled = false;
          this.groupedOptInSettingTypes.forEach(group => {
@@ -1080,6 +1082,18 @@ export class EditComponent implements OnInit {
 
     userSettingChange(name: string, value: any) {
         this.userSettings[name] = value;
+
+        if (name === 'opac.default_sms_notify' && value) {
+            // SMS value applied.
+
+            if (!this.noticeTypeEnabled('notify.text')) {
+                // No SMS notices aren enabled.  Enable them all
+
+                this.groupedOptInSettingChecked['notify.text'] = true;
+                this.groupedSettingClicked(true, 'notify.text');
+            }
+        }
+
         this.adjustSaveState();
     }
 
