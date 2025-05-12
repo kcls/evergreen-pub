@@ -49,9 +49,12 @@ export class AudioService {
 
             const player = new Audio(url);
 
+console.debug('playing url', url);
+
             player.onloadeddata = () => {
                 this.urlCache[origPath] = url;
                 player.play();
+console.debug('played url', url);
                 console.debug(`audio: ${url}`);
             };
 
