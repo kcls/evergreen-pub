@@ -44,8 +44,9 @@ angular.module('egCoreMod')
         egHatch.getItem('eg.audio.disable').then(function(audio_disabled) {
             if (!audio_disabled) {
         
+                // NOTE KCLS migrated to mp3 files
                 var url = service.url_cache[path] || 
-                    service.base_url + path.replace(/\./g, '/') + '.wav';
+                    service.base_url + path.replace(/\./g, '/') + '.mp3';
 
                 var player = new Audio(url);
 
