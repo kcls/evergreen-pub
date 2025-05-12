@@ -13,12 +13,16 @@
  * /audio/notifications/warning/checkout.wav
  * /audio/notifications/warning.wav
  *
+ * KCLS migrated to .mp3 files!
+ *
  * Files are only played when sounds are configured to play via
  * workstation settings.
  */
 import {Injectable, EventEmitter} from '@angular/core';
 import {ServerStoreService} from '@eg/core/server-store.service';
 const AUDIO_BASE_URL = '/audio/notifications/';
+
+const AUDIO_SUFFIX = '.mp3';
 
 @Injectable()
 export class AudioService {
@@ -41,7 +45,7 @@ export class AudioService {
             if (audioDisabled) { return; }
 
             const url = this.urlCache[path] ||
-                AUDIO_BASE_URL + path.replace(/\./g, '/') + '.wav';
+                AUDIO_BASE_URL + path.replace(/\./g, '/') + AUDIO_SUFFIX;
 
             const player = new Audio(url);
 
