@@ -542,6 +542,8 @@ export class CircService {
             return this.handleOverridableCheckoutEvents(result);
         }
 
+        console.debug('Checkout event: ', result.firstEvent.textcode);
+
         switch (result.firstEvent.textcode) {
             case 'SUCCESS':
                 result.success = true;
