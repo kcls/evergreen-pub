@@ -542,12 +542,9 @@ export class CircService {
             return this.handleOverridableCheckoutEvents(result);
         }
 
-        console.debug('Checkout event: ', result.firstEvent.textcode);
-
         switch (result.firstEvent.textcode) {
             case 'SUCCESS':
                 result.success = true;
-                console.debug('PLAYING AUDIO', `success.${key}`)
                 this.audio.play(`success.${key}`);
                 return Promise.resolve(result);
 
