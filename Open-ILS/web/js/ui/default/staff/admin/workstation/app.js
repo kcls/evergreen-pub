@@ -935,6 +935,9 @@ function($scope , $q , $window , $location , egCore , egAlertDialog , workstatio
 
     console.log('set context org to ' + $scope.contextOrg);
 
+    $scope.hatchIsOpen = function() {
+        return egCore.hatch.hatchAvailable;
+    }
     egCore.hatch.hostname().then(function(name) {
         $scope.newWSName = name || '';
     });

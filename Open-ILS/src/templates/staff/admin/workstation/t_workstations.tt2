@@ -10,6 +10,12 @@
     [% l('Please register a workstation.') %]
   </div>
 
+  <div class="alert alert-danger" ng-if="!hatchIsOpen()">
+    It looks like the Hatch browser extension isn't enabled. Please     
+    turn it on and reload the page. It's required for proper Evergreen  
+    printing and workstation registration.                              
+  </div>
+
   <div class="row">
     <div class="col-md-6 font-weight-bold">
       [% l('Register a New Workstation For This Browser') %]
