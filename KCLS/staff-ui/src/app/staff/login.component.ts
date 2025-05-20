@@ -43,7 +43,7 @@ export class StaffLoginComponent implements OnInit {
       private auth: AuthService,
       private org: OrgService,
       private store: StoreService,
-      private hatch: HatchService,
+      public hatch: HatchService,
       private offline: OfflineService
     ) {}
 
