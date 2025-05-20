@@ -20,6 +20,14 @@
       <span i18n>Please register a workstation.</span>
     </div>
 
+    <div class="row" *ngIf="hatch.isAvailable === false">
+      <div class="col-lg-12 alert alert-danger mt-2" i18n>
+        It looks like the Hatch browser extension isn't enabled. Please
+        turn it on and reload the page. It's required for proper
+        Evergreen printing and workstation registration.
+      </div>
+    </div>
+
     <div class="row">
       <div class="col" i18n>Register a New Workstation For This Browser</div>
     </div>
