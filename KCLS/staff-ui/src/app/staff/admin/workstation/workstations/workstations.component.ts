@@ -47,7 +47,7 @@ export class WorkstationsComponent implements OnInit {
         private store: StoreService,
         private auth: AuthService,
         private org: OrgService,
-        private hatch: HatchService,
+        public  hatch: HatchService,
         private perm: PermService
     ) {}
 

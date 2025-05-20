@@ -11,6 +11,7 @@ import {AuthService, AuthWsState} from '@eg/core/auth.service';
 import {StoreService} from '@eg/core/store.service';
 import {OrgService} from '@eg/core/org.service';
 import {OfflineService} from '@eg/staff/share/offline.service';
+import {HatchService} from '@eg/core/hatch.service';
 
 @Component({
   styleUrls: ['./login.component.css'],
@@ -42,6 +43,7 @@ export class StaffLoginComponent implements OnInit {
       private auth: AuthService,
       private org: OrgService,
       private store: StoreService,
+      public hatch: HatchService,
       private offline: OfflineService
     ) {}
 
