@@ -786,9 +786,10 @@
       </li>
       [% END %]
 
+      <!-- KCLS avoid showing color mode selector -->
+      <!--
       <li class="dropdown" uib-dropdown>
         <a href uib-dropdown-toggle>
-          <!-- SVGs are Material Icons to match Angular -->
           <span class="sr-only">[% l('Current color mode:') %]</span>
           <span ng-if="color_mode == 'light'">
             <span class="svg-icon">
@@ -837,6 +838,7 @@
           </li>
         </ul>
       </li>
+      -->
 
       <li class="dropdown" ng-show="username" uib-dropdown title="Logout and more...">
         <a href class="glyphicon glyphicon-list" 

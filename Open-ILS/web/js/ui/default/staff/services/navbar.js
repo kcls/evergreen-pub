@@ -132,10 +132,16 @@ angular.module('egCoreMod')
 
                 // This needs to run even if egCore.startup.go() doesn't (which might only happen during offline circ?)
                 $scope.init = function() {
+                    // KCLS avoid showing the color mode selector for now and
+                    // default to how it was.
+                    $scope.color_mode = 'light';
+
+                    /*
                     $scope.color_mode = egCore.hatch.getLocalItem('eg.ui.general.colormode');
                     if (!$scope.color_mode) {
                         $scope.color_mode = 'auto';
                     }
+                    */
                     const darkModePreference = window.matchMedia("(prefers-color-scheme: dark)");
                     darkModePreference.addEventListener("change", $scope.setColorMode);
                     $scope.setColorMode();
