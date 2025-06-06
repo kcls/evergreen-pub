@@ -33,7 +33,10 @@ static long _oilsAuthBlockCount = 0;
  * It starts as a 2 in order to signal that the question hasn't been answered, and once answered
  * it is set to a truthy value of 0 for false, or 1 for true.
  */
-static int _mfaEnabledCache = 2;
+//static int _mfaEnabledCache = 2;
+// KCLS assume mfa is disabled for now so we don't have to run the service
+// to answer the question.
+static int _mfaEnabledCache = 0;
 
 
 /**
