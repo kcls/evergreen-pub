@@ -95,7 +95,13 @@ function($q , $timeout , $rootScope , $window , $location , egNet , egHatch , $i
                 egNet.request(
                     'open-ils.auth',
                     'open-ils.auth.session.retrieve', token)
+
+                .then(function(user) { 
+                    service._mfa_allowed = false; 
+                    return user;
+                })
     
+                /*
                 .then(function(user) {
                     egNet.request(
                         'open-ils.auth_mfa',
@@ -104,7 +110,9 @@ function($q , $timeout , $rootScope , $window , $location , egNet , egHatch , $i
                     ).then(function(res) {
                         // cache MFA allowed-ness whenever we have to fetch the session
                         service._mfa_allowed = Number(res) === 1;
-                    }).then(function() {
+                    })
+                  */
+                .then(function(user) {
                         if (user && user.classname) {
                             // authtoken test succeeded
                             service.user(user);
@@ -116,7 +124,7 @@ function($q , $timeout , $rootScope , $window , $location , egNet , egHatch , $i
                             deferred.reject();
                         }
                     });
-                });
+                //});
             }
 
         } else {
