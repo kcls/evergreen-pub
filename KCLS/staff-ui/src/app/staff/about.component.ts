@@ -16,7 +16,9 @@ export class AboutComponent implements OnInit {
 
     ngOnInit() {
         this.server = window.location.hostname;
-        this.version = "3.9";
+        // Staff-facing generated versions are not always helpful to KCLS.
+        // Just show the major version numbers
+        this.version = "3.14";
 
         /*
         this.net.request(
