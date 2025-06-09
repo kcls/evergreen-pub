@@ -2339,8 +2339,11 @@ __PACKAGE__->register_method(
 sub create_reset_reason_entry {
     my($self, $conn, $auth, $hold, $reset_reason, $note, $previous_copy) = @_;
     my $e = new_editor(authtoken => $auth, xact => 1);
-    #checkauth to set the requestor (if available)
-    $e->checkauth;
+
+    # NOTE: hold targeter wants to call this function but currently 
+    # cannot because it has no auth token
+    return $e->die_event unless $e->checkauth;
+
     my @holds;
     if(ref $hold eq 'ARRAY') {
         @holds = @{$hold};

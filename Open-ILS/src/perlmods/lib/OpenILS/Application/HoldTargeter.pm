@@ -84,7 +84,7 @@ sub hold_targeter {
 
     $logger->info("targeter processing $total holds");
 
-    my $hold_ses = create OpenSRF::AppSession("open-ils.circ");
+#    my $hold_ses = create OpenSRF::AppSession("open-ils.circ");
 
     for my $hold_id (@hold_ids) {
         $count++;
@@ -101,18 +101,18 @@ sub hold_targeter {
             $logger->error($msg);
             $single->message($msg) unless $single->message;
         }
-        else {
-            $hold_ses->request(
-                "open-ils.circ.hold_reset_reason_entry.create",
-                $single->editor()->authtoken,
-                $hold_id,
-                OILS_HOLD_TIMED_OUT,
-                undef,
-                $single->{previous_copy_id}
-            ) unless defined
-                $args->{hold} ||
-                $single->{previous_copy_id} == $single->hold->current_copy;
-        }
+#        else {
+#            $hold_ses->request(
+#                "open-ils.circ.hold_reset_reason_entry.create",
+#                $single->editor()->authtoken,
+#                $hold_id,
+#                OILS_HOLD_TIMED_OUT,
+#                undef,
+#                $single->{previous_copy_id}
+#            ) unless defined
+#                $args->{hold} ||
+#                $single->{previous_copy_id} == $single->hold->current_copy;
+#        }
 
         if (($count % $throttle) == 0) { 
             # Time to reply to the caller.  Return either the number
@@ -125,7 +125,7 @@ sub hold_targeter {
         }
     }
 
-    $hold_ses->disconnect;
+#    $hold_ses->disconnect;
 
     return undef;
 }
