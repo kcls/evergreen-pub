@@ -743,7 +743,7 @@ sub request_permissions {
                 due_date => {'<' => 'now'},
                 '-or' => [ 
                     {stop_fines => undef },
-                    {stop_fines => ['LOST', 'CLAIMSRETURNED']}
+                    {stop_fines => ['MAXFINES', 'LONGOVERDUE']}
                 ],
             },
             '+acp' => {circ_modifier => ILL_CIRC_MOD}
