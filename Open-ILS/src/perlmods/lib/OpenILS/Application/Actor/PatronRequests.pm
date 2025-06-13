@@ -710,6 +710,9 @@ sub request_permissions {
             cancel_date => undef,
             complete_date => undef,
             reject_date => undef,
+            # Once a hold is placed, regardless of its outcome, we no
+            # longer consider the request as active.
+            hold_date => undef,
         }, {idlist => 1}
     );
 
