@@ -705,14 +705,28 @@ sub request_permissions {
     $response->{create_allowed} = create_allowed_impl($e, $patron);
     $response->{ill_allowed} = ill_requests_allowed_impl($e, $patron);
 
+    # The concept of "active" has been changed from requests that are
+    # in progress to any request created in the last 30 days.
+    # TODO relabel the org unit setting to reflect this and 
+    # create a separate setting to specificy the time window.
+
+#    my $active = $e->search_actor_user_item_request(
+#        {   usr => $patron->id,
+#            cancel_date => undef,
+#            complete_date => undef,
+#            reject_date => undef,
+#            # Once a hold is placed, regardless of its outcome, we no
+#            # longer consider the request as active.
+#            hold_date => undef,
+#        }, {idlist => 1}
+#    );
+#
+
+    my $window_date = DateTime->now->subtract(days => 30);
+
     my $active = $e->search_actor_user_item_request(
         {   usr => $patron->id,
-            cancel_date => undef,
-            complete_date => undef,
-            reject_date => undef,
-            # Once a hold is placed, regardless of its outcome, we no
-            # longer consider the request as active.
-            hold_date => undef,
+            create_date => {'>=' => $window_date->iso8601}
         }, {idlist => 1}
     );
 
