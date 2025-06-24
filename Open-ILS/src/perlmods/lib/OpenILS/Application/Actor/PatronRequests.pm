@@ -879,12 +879,18 @@ sub search_requests {
     $auir_where->{language} = $filters->{language} if $filters->{language};
     $auir_where->{audience} = $filters->{audience} if $filters->{audience};
 
-    my $where = {'+auir' => $auir_where};
-
     my $query = {
         select => {auir => ['id']},
-        from => {auir => 'au'},
-        where => $where,
+        from => {
+            auir => {
+                'au' => {},
+                'ahr' => {
+                    type => 'left',
+                    fkey => 'hold',
+                    field => 'id',
+                }
+            }
+        },
         order_by => $order_by,
         limit => $limit,
         offset => $offset,
@@ -902,21 +908,51 @@ sub search_requests {
         $auir_where->{reject_date} = undef;
         $auir_where->{cancel_date} = undef;
         $auir_where->{complete_date} = undef;
+        $auir_where->{'-and'} = [{route_to => 'acq'}, {lineitem => undef}];
 
-        $auir_where->{'-or'} = [
-            {'-and' => [{route_to => 'ill'}, {hold => undef}]},
-            {'-and' => [{route_to => 'acq'}, {lineitem => undef}]}
-        ];
+        # active ILLs from the staff perspective are those which are either
+        # not on hold or whose hold has not been canceled or arrived.
+        $query->{where} = {'-or' => [
+            {'+auir' => $auir_where},
+            {'-and' => [
+                {'+auir' => {route_to => 'ill'}},
+                {'-or' => [
+                    # No hold yet
+                    {'+ahr' => {id => undef}},
+                    # Or the hold is active
+                    {'+ahr' => {shelf_time => undef, cancel_time => undef}}
+                ]}
+            ]}
+        ]};
+
 
     } elsif ($filters->{is_staff_complete}) {
         $auir_where->{'-or'} = [
             {reject_date => {'<>' => undef}},
             {complete_date => {'<>' => undef}},
-            # TODO for now any PR with a hold is effectively complete for staff.
-            {hold => {'<>' => undef}},
+            # ACQ reqs are considered done for staff once the hold is placed.
+            {'-and' => [{route_to => 'acq'}, {hold => {'<>' => undef}}]},
             # Plus essentially completed ACQ requests
             {lineitem => {'<>' => undef}},
         ];
+
+        # completed ILLs from the staff perspective are those which are
+        # on hold and whose hold has either been canceled or reached the
+        # hold shelf.
+        $query->{where} = {'-or' => [
+            {'+auir' => $auir_where},
+            {'-and' => [
+                {'+auir' => {route_to => 'ill'}},
+                {'+ahr' => {
+                    '-or' => [
+                        {shelf_time => {'<>' => undef}},
+                        {cancel_time => {'<>' => undef}}
+                    ]
+                }}
+            ]}
+        ]};
+    } else {
+        $query->{where} = {'+auir' => $auir_where};
     }
 
     if (my $date = $filters->{create_date}) {
@@ -955,7 +991,7 @@ sub search_requests {
     }
 
     if (my $name = $filters->{patron_family_name}) {
-        $where->{'+au'} = {
+        $query->{where}->{'+au'} = {
             '-or' => [
                 {family_name => {ilike => "$name%"}},
                 {pref_family_name => {'ilike' => "$name%"}}
