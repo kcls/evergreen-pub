@@ -241,6 +241,9 @@ export class ItemRequestDialogComponent extends DialogComponent {
     }
 
     setFormat(code: string) {
+        // clear the route_to so the server can apply a route_to value
+        // which matches the new format.
+        this.request.route_to(null);
         this.request.format(this.formats.filter(f => f.code() === code)[0]);
     }
     setAudience(code: string) {
