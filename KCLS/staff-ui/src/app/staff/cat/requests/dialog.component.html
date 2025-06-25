@@ -77,12 +77,14 @@
     </div>
 
     <div class="row mt-3">
+      <!--
       <ng-container *ngIf="mode !== 'create'">
         <div class="col-2" i18n>Format</div>
         <div class="col-4">{{request.format().label()}}</div>
       </ng-container>
 
       <ng-container *ngIf="mode === 'create'">
+      -->
         <div class="col-2" i18n>Format</div>
         <div class="col-4">
           <select (ngModelChange)="setFormat($event)" required
@@ -92,7 +94,9 @@
             </option>
           </select>
         </div>
+      <!--
       </ng-container>
+      -->
 
       <div class="col-2" i18n>Author</div>
       <div class="col-4">
