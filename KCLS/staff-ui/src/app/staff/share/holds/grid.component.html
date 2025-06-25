@@ -134,7 +134,7 @@
         i18n-label label="Show Hold Details" i18n-group group="Hold"
         (onClick)="showDetails($event)"></eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action
+      <eg-grid-toolbar-action *ngIf="!showRecentlyCanceled"
         i18n-label label="Modify Hold(s)" group="Hold" i18n-group
         (onClick)="showManageDialog($event)">
       </eg-grid-toolbar-action>
@@ -156,7 +156,7 @@
         (onClick)="showPatron($event)">
       </eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action
+      <eg-grid-toolbar-action *ngIf="!showRecentlyCanceled"
         i18n-group group="Hold" i18n-label label="Transfer To Marked Title"
         (onClick)="showTransferDialog($event)">
       </eg-grid-toolbar-action>
@@ -179,15 +179,15 @@
         i18n-group group="Hold" i18n-label label="Find Another Target"
         (onClick)="showRetargetDialog($event)"></eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action 
+      <eg-grid-toolbar-action  *ngIf="!showRecentlyCanceled"
         i18-group group="Hold" i18n-label label="Set Top of Queue"
         (onClick)="setTopOfQueue($event)"></eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action 
+      <eg-grid-toolbar-action  *ngIf="!showRecentlyCanceled"
         i18-group group="Hold" i18n-label label="Activate Suspended Holds"
         (onClick)="activateHolds($event)"></eg-grid-toolbar-action>
 
-      <eg-grid-toolbar-action 
+      <eg-grid-toolbar-action  *ngIf="!showRecentlyCanceled"
         i18-group group="Hold" i18n-label label="Un-Set Top of Queue"
         (onClick)="setTopOfQueue($event, true)"></eg-grid-toolbar-action>
 
