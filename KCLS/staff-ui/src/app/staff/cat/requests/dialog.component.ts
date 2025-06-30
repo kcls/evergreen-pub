@@ -254,7 +254,7 @@ export class ItemRequestDialogComponent extends DialogComponent {
         const flesh = {
             flesh: 2,
             flesh_fields: {
-                auir: ['usr', 'claimed_by', 'format', 'language', 'audience'],
+                auir: ['usr', 'claimed_by', 'format', 'language', 'audience', 'edited_by'],
                 au: ['card']
             }
         };
@@ -320,6 +320,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
 
         if (this.mode !== 'create') {
             return promise.then(_ => {
+                this.request.edit_date('now');
+                this.request.edited_by(this.auth.user().id());
                 this.pcrud.update(this.request).toPromise()
                 .then(_ => this.applyLineitem(lineitem))
                 .then(_ => this.close(true))
@@ -333,6 +335,8 @@ export class ItemRequestDialogComponent extends DialogComponent {
                 req.format(this.request.format()?.code());
                 req.language(this.request.language()?.code());
                 req.audience(this.request.audience()?.code());
+                req.edit_date('now');
+                req.edited_by(this.auth.user().id());
 
                 return this.pcrud.create(req).toPromise()
                 .then(_ => this.close(true))

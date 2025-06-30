@@ -212,6 +212,16 @@
   </eg-grid-column>
   <eg-grid-column i18n-label label="ID Matched" name="id_matched" [sortable]="true">
   </eg-grid-column>
+  <!--
+    Hmm... even though showDeclaredFieldsOnly=true, when the 'edited by' 
+    fields are added to the grid they display twice.
+  -->
+  <!--
+  <eg-grid-column i18n-label label="Edited By" path="edited_by.usrname">
+  </eg-grid-column>
+  <eg-grid-column i18n-label label="Edite Date" path="edit_date">
+  </eg-grid-column>
+  -->
   <eg-grid-column i18n-label label="Claimed By" path="claimed_by.usrname">
   </eg-grid-column>
   <eg-grid-column i18n-label label="Claim Date" name="claim_date" [sortable]="true">
