@@ -255,6 +255,8 @@ sub cancel_request {
     return OpenILS::Event->new('BAD_PARAMS') unless $req->usr eq $e->requestor->id;
 
     $req->cancel_date('now');
+    $req->edit_date('now');
+    $req->edited_by($e->requestor->id);
 
     $e->update_actor_user_item_request($req) or return $e->die_event;
     $e->commit;
@@ -351,6 +353,8 @@ sub request_status_impl {
             # marked as complete, go ahead and mark it while we're here.
             # Note complete_time check above.
             $req->complete_date($hold->shelf_time || $hold->cancel_time);
+            $req->edit_date('now');
+            $req->edited_by($e->requestor->id);
             my $e2 = new_editor(xact => 1);
             $e2->update_actor_user_item_request($req) or return $e2->die_event;
             $e2->commit;
@@ -368,6 +372,8 @@ sub request_status_impl {
         #
         # Consider this request completed.
         $req->complete_date($req->hold_date);
+        $req->edit_date('now');
+        $req->edited_by($e->requestor->id);
 
         my $e2 = new_editor(xact => 1);
         $e2->update_actor_user_item_request($req) or return $e2->die_event;
@@ -570,6 +576,8 @@ sub apply_lineitem {
     }
 
     $req->lineitem($lineitem_id);
+    $req->edit_date('now');
+    $req->edited_by($e->requestor->id);
 
     return $e->die_event unless $e->update_actor_user_item_request($req);
 
@@ -599,6 +607,8 @@ sub apply_hold {
 
     $request->hold($hold_id);
     $request->hold_date('now');
+    $request->edit_date('now');
+    $request->edited_by($e->requestor->id);
 
     # Will fail if the hold id is not valid.
     return $e->die_event unless $e->update_actor_user_item_request($request);
@@ -998,8 +1008,10 @@ sub search_requests {
             }
         ]);
 
+        # fleshing multiple 'au' values in a retrieve call gets weird..
+        # mabye not doable?
+        $req->edited_by($e->retrieve_actor_user($req->edited_by));
         if ($req->claimed_by) {
-            # avoid fleshing multiple 'au' values above.
             $req->claimed_by($e->retrieve_actor_user($req->claimed_by));
         }
 

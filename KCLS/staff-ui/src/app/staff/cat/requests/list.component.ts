@@ -366,6 +366,8 @@ export class ItemRequestComponent implements OnInit {
 
     updateReqs(reqs: IdlObject[]) {
         from(reqs).pipe(concatMap(req => {
+            req.edit_date('now');
+            req.edited_by(this.auth.user().id());
             return this.pcrud.update(req);
         })).subscribe(
             null,
