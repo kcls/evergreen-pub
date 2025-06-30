@@ -52,7 +52,7 @@
             routerLink="/staff/circ/patron/{{request.usr().id()}}/checkout"
             >{{request.usr().card().barcode()}}</a>)
       </div>
-      <div class="col-3" *ngIf="request.edited_by() && request.edited_by().usrname" i18n>
+      <div class="col-3" i18n>
         Edited By {{request.edited_by().usrname()}} @ {{request.edit_date() | date:'shortDate'}}
       </div>
       <div class="col-4 d-flex" *ngIf="request.claimed_by() && request.claim_date() !== 'now'">
