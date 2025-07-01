@@ -1,4 +1,5 @@
 
 input[type="text"], select {
-  max-width: 12em;
+  width: 16em;
+  /*font-family: monospace;*/
 }

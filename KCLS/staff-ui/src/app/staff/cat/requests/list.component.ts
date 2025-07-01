@@ -53,9 +53,9 @@ export class ItemRequestComponent implements OnInit {
     searchIsbn: string | null = null;
     createDateFilter: string | null = null;
 
-    formatFilter = '';
-    audienceFilter = '';
-    languageFilter = '';
+    formatFilter = ['_all'];
+    audienceFilter = ['_all'];
+    languageFilter = ['_all'];
 
     formats: IdlObject[] = [];
     audiences: IdlObject[] = [];
@@ -167,13 +167,18 @@ export class ItemRequestComponent implements OnInit {
                 isbn: this.searchIsbn,
             }
 
-            if (this.formatFilter !== '') {
+            // TODO supporting matching on a mix filter values with null
+            // requires backend changes.
+
+            if (!this.formatFilter.includes('_all')) {
                 filters.format = this.formatFilter;
             }
-            if (this.audienceFilter !== '') {
+
+            if (!this.audienceFilter.includes('_all')) {
                 filters.audience = this.audienceFilter;
             }
-            if (this.languageFilter !== '') {
+
+            if (!this.languageFilter.includes('_all')) {
                 filters.language = this.languageFilter;
             }
 
@@ -247,9 +252,9 @@ export class ItemRequestComponent implements OnInit {
         this.searchAuthor = null;
         this.searchIsbn = null;
 
-        this.formatFilter = '';
-        this.audienceFilter = '';
-        this.languageFilter = '';
+        this.formatFilter = ['_all'];
+        this.audienceFilter = ['_all'];
+        this.languageFilter = ['_all'];
 
         this.grid.reload();
     }
@@ -395,6 +400,10 @@ export class ItemRequestComponent implements OnInit {
                 this.grid.context.reloadSync();
             }
         });
+    }
+
+    trimLangLabel(label: string): string {
+        return label.replace(/^.*\//, '');
     }
 }
 
