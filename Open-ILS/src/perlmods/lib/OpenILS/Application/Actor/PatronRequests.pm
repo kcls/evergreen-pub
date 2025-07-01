@@ -908,23 +908,24 @@ sub search_requests {
         $auir_where->{reject_date} = undef;
         $auir_where->{cancel_date} = undef;
         $auir_where->{complete_date} = undef;
-        $auir_where->{'-and'} = [{route_to => 'acq'}, {lineitem => undef}];
 
         # active ILLs from the staff perspective are those which are either
         # not on hold or whose hold has not been canceled or arrived.
-        $query->{where} = {'-or' => [
-            {'+auir' => $auir_where},
-            {'-and' => [
-                {'+auir' => {route_to => 'ill'}},
-                {'-or' => [
-                    # No hold yet
-                    {'+ahr' => {id => undef}},
-                    # Or the hold is active
-                    {'+ahr' => {shelf_time => undef, cancel_time => undef}}
+        $query->{where} = {
+            '+auir' => $auir_where,
+            '-or' => [
+                {'+auir' => {route_to => 'acq', lineitem => undef}},
+                {'-and' => [
+                    {'+auir' => {route_to => 'ill'}},
+                    {'-or' => [
+                        # No hold yet
+                        {'+ahr' => {id => undef}},
+                        # Or the hold is active
+                        {'+ahr' => {shelf_time => undef, cancel_time => undef}}
+                    ]}
                 ]}
-            ]}
-        ]};
-
+            ]
+        };
 
     } elsif ($filters->{is_staff_complete}) {
         $auir_where->{'-or'} = [
