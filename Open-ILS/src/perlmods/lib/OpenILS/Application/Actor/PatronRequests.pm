@@ -916,6 +916,10 @@ sub search_requests {
         $auir_where->{isbn} = {ilike => "$isbn%"};
     }
 
+    if (my $illno = $filters->{illno}) {
+        $auir_where->{illno} = $illno;
+    }
+
     if (my $name = $filters->{patron_family_name}) {
         $where->{'+au'} = {
             '-or' => [
