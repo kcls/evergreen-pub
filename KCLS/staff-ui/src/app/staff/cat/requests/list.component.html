@@ -113,6 +113,11 @@
         </option>
       </select>
     </div>
+    <div class="p-1 mt-auto">
+      <input type="text" class="form-control" [(ngModel)]="searchIllno" 
+        (keyup.enter)="grid.reload()"
+        placeholder="Ill Number..." i18n-placeholder/>
+    </div>
   </div>
   <div class="d-flex mt-2">
     <div class="_ms-2 _border _border-2 _rounded p-1 d-flex">

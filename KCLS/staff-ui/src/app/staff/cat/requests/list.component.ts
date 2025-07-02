@@ -49,6 +49,7 @@ export class ItemRequestComponent implements OnInit {
 
     searchFamilyName: string | null = null;
     searchTitle: string | null = null;
+    searchIllno: string | null = null;
     searchAuthor: string | null = null;
     searchIsbn: string | null = null;
     createDateFilter: string | null = null;
@@ -163,6 +164,7 @@ export class ItemRequestComponent implements OnInit {
                 patron_family_name: this.searchFamilyName,
                 create_date: createDateYmd,
                 title: this.searchTitle,
+                illno: this.searchIllno,
                 author: this.searchAuthor,
                 isbn: this.searchIsbn,
             }
@@ -249,6 +251,7 @@ export class ItemRequestComponent implements OnInit {
         this.createDateFilter = null;
         this.searchFamilyName = null;
         this.searchTitle = null;
+        this.searchIllno = null;
         this.searchAuthor = null;
         this.searchIsbn = null;
 
