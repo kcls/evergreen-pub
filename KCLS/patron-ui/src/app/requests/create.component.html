@@ -11,6 +11,9 @@
 </ng-container>
 
 <ng-container *ngIf="app.getAuthSession() && requests.requestsAllowed && !requests.atMaxRequests">
+  <div class="mt-5 flex justify-center border rounded border-slate-400 p-2">
+    <p i18n>Currently at {{requests.activeRequestCount}} of {{requests.maxRequestCount}} requests.</p>
+  </div>
   <form role="form" class="mt-4">
     <div class="flex p-2" *ngIf="requests.selectedFormat !== 'article'">
       <mat-form-field class="flex-1">
