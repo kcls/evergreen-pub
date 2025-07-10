@@ -1,41 +1,4 @@
 <form [formGroup]="formGroup">
-  <h2 i18n>Card Options</h2>
-
-  <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
-
-  <mat-radio-group i18n-aria-label aria-label="Card Design" formControlName="design">
-    <div class="grid grid-cols-2 xs:grid-cols-1">
-      <div *ngFor="let card of cardOptions" class="mb-3">
-        <mat-radio-button [value]="card" aria-label="{{card}}">
-          <img class="card-image-horiz p-3" [src]="cardOptionUrl(card)" alt="{{card}}"/>
-        </mat-radio-button>
-      </div>
-    </div>
-  </mat-radio-group>
-
-  <p class="mt-1 mb-2" *ngIf="!register.inKioskMode">
-    <a href="https://kcls.org/library-card-artists/" i18n>
-      Learn about the artists who created these new designs.
-    </a>
-  </p>
-
-  <h3 i18n>Choose How To Receive Your Card</h3>
-
-  <mat-radio-group formControlName="delivery">
-    <mat-radio-button value="Mail">
-      <span i18n>Mail my card.  
-        <span class="italic text-sm">
-          (You’ll receive your card and activation instructions within 1-2 weeks.)
-        </span>
-      </span>
-    </mat-radio-button>
-    <mat-radio-button value="Pick up">
-      <span i18n> I will pick up at my home library
-        <span class="italic text-sm">(Available same day.)</span>
-      </span>
-    </mat-radio-button>
-  </mat-radio-group>
-
   <h2 i18n>Your Information</h2>
   <hr/>
 
@@ -134,141 +97,6 @@
     </div>
   </div>
 
-  <div class="columns-2 mt-6">
-    <div>
-      <mat-form-field class="w-full">
-        <mat-label i18n>Phone Number</mat-label>
-        <input type="tel" matInput formControlName="phone"/>
-        <mat-hint>111-222-3333</mat-hint>
-        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
-            Phone Number <strong>required</strong>
-        </mat-error>
-        <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
-            Phone Number format is <strong>111-222-3333</strong>
-        </mat-error>
-      </mat-form-field>
-    </div>
-    <div>
-      <mat-form-field class="w-full">
-        <mat-label i18n>SMS/Text Number</mat-label>
-        <input matInput formControlName="smsNumber" type="text"/>
-        <mat-hint>111-222-3333</mat-hint>
-        <mat-error *ngIf="formGroup.controls.smsNumber.hasError('required')" i18n>
-            SMS/Text Number is <strong>required</strong> to receive text notices.
-        </mat-error>
-        <mat-error *ngIf="formGroup.controls.smsNumber.hasError('pattern')" i18n>
-            SMS/Text Number format is <strong>111-222-3333</strong>
-        </mat-error>
-      </mat-form-field>
-    </div>
-  </div>
-
-  <div class="columns-2 mt-6">
-    <div>
-      <mat-form-field class="w-full">
-        <mat-label i18n>Email Address</mat-label>
-        <input type="email" matInput formControlName="email"/>
-        <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
-          Email is <strong>required</strong> to receive email notices.
-        </mat-error>
-        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
-          Email format is <strong>not valid</strong>
-        </mat-error>
-      </mat-form-field>
-    </div>
-    <div>
-      <mat-form-field class="w-full">
-        <mat-label i18n>Confirm Email Address</mat-label>
-        <input type="email" matInput formControlName="email2"/>
-        <mat-error *ngIf="formGroup.controls.email2.hasError('email')" i18n>
-            Email format is <strong>not valid</strong>
-        </mat-error>
-      </mat-form-field>
-      <!-- for some reason, form-level errors cannot be used
-        reliably within a <mat-error> container -->
-      <div *ngIf="formGroup.hasError('sameEmailValidator')" class="mat-mdc-form-field-error" i18n>
-        Email addresses do not match
-      </div>
-    </div>
-  </div>
-
-  <h3 i18n>What library is closest to your residence?</h3>
-
-  <p class="mt-4" *ngIf="!register.inKioskMode" i18n>
-    Not sure? Find your nearest library on this
-    <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
-  </p>
-
-  <div class="columns-2 mt-6">
-    <div>
-      <mat-form-field class="w-full">
-        <mat-label i18n>Home Library</mat-label>
-        <mat-select formControlName="homeOrg">
-          <mat-option [value]="org.id" *ngFor="let org of homeOrgs">{{org.name}}</mat-option>
-        </mat-select>
-        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
-            Home Library is <strong>required</strong>
-        </mat-error>
-      </mat-form-field>
-    </div>
-  </div>
-
-  <h2 i18n>Notification Preferences</h2>
-     
-  <hr/>
-
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
-    <div *ngIf="formGroup.controls.allEmailNotices.value">
-      <div class="ml-3" *ngFor="let set of emailSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
-      </div>
-    </div>
-  </div>
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
-    <div class="mb-4" *ngIf="formGroup.controls.allTextNotices.value">
-      <div class="ml-3" *ngFor="let set of textSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
-      </div>
-    </div>
-  </div>
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
-    <div class="mb-4" *ngIf="formGroup.controls.allPhoneNotices.value">
-      <div class="ml-3" *ngFor="let set of phoneSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
-      </div>
-    </div>
-  </div>
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allPrintNotices" i18n>Print Notices</mat-checkbox>
-    <div class="mb-4" *ngIf="formGroup.controls.allPrintNotices.value">
-      <div class="ml-3" *ngFor="let set of printSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
-      </div>
-    </div>
-  </div>
-
-  <div class="mt-6"></div>
-
-  <h2 i18n>Contact Preferences</h2>
-  <hr/>
-
-  <div class="columns-1 mt-6">
-    <div class="w-full">
-      <h3 i18n>May we contact you?</h3>
-      <div class="pl-4">
-        <mat-checkbox formControlName="wantsLibNews" i18n>
-          Tell me about library news and events
-        </mat-checkbox>
-        <mat-checkbox formControlName="wantsFoundationInfo" i18n>
-          Send me information about supporting the King County Library System Foundation.
-        </mat-checkbox>
-      </div>
-    </div>
-  </div>
-
   <h3 i18n>Residential Address</h3>
 
   <div class="columns-1 mt-6">
@@ -276,7 +104,7 @@
       <mat-form-field class="w-full">
         <mat-label i18n>Street Address</mat-label>
         <input type="text" matInput formControlName="street1"/>
-        <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+        <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
             Street address is <strong>required</strong>
         </mat-error>
       </mat-form-field>
@@ -294,7 +122,7 @@
       <mat-form-field class="w-full">
         <mat-label i18n>City</mat-label>
         <input type="text" matInput formControlName="city"/>
-        <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+        <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
             City is <strong>required</strong>
         </mat-error>
       </mat-form-field>
@@ -403,6 +231,204 @@
     </div>
 
   </ng-container>
+
+  <div class="m-6 p-2 border border-slate-300 bg-blue-300">
+    <b>NEW PAGE</b>
+  </div>
+
+
+  <div class="columns-2 mt-6">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Email Address</mat-label>
+        <input type="email" matInput formControlName="email"/>
+        <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
+          Email is <strong>required</strong> to receive email notices.
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
+          Email format is <strong>not valid</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Confirm Email Address</mat-label>
+        <input type="email" matInput formControlName="email2"/>
+        <mat-error *ngIf="formGroup.controls.email2.hasError('email')" i18n>
+            Email format is <strong>not valid</strong>
+        </mat-error>
+      </mat-form-field>
+      <!-- for some reason, form-level errors cannot be used
+        reliably within a <mat-error> container -->
+      <div *ngIf="formGroup.hasError('sameEmailValidator')" class="mat-mdc-form-field-error" i18n>
+        Email addresses do not match
+      </div>
+    </div>
+  </div>
+
+  <b>TODO phones are for all-access only. Any reason not to request anyway?</b>
+
+  <div class="columns-2 mt-6">
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>Phone Number</mat-label>
+        <input type="tel" matInput formControlName="phone"/>
+        <mat-hint>111-222-3333</mat-hint>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
+            Phone Number <strong>required</strong>
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
+            Phone Number format is <strong>111-222-3333</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field class="w-full">
+        <mat-label i18n>SMS/Text Number</mat-label>
+        <input matInput formControlName="smsNumber" type="text"/>
+        <mat-hint>111-222-3333</mat-hint>
+        <mat-error *ngIf="formGroup.controls.smsNumber.hasError('required')" i18n>
+            SMS/Text Number is <strong>required</strong> to receive text notices.
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.smsNumber.hasError('pattern')" i18n>
+            SMS/Text Number format is <strong>111-222-3333</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="m-6 p-2 border border-slate-300 bg-blue-300">
+    <b>NEW PAGE</b>
+  </div>
+
+  <div class="m-6 p-2">
+    <b>TODO: HOLD PICKUP LIB SELECTOR GOES HERE</b>
+  </div>
+
+  <h2 i18n>Contact Preferences</h2>
+  <hr/>
+
+  <div class="columns-1 mt-6">
+    <div class="w-full">
+      <h3 i18n>May we contact you?</h3>
+      <div class="pl-4">
+        <mat-checkbox formControlName="wantsLibNews" i18n>
+          Tell me about library news and events
+        </mat-checkbox>
+        <mat-checkbox formControlName="wantsFoundationInfo" i18n>
+          Send me information about supporting the King County Library System Foundation.
+        </mat-checkbox>
+      </div>
+    </div>
+  </div>
+
+  <h2 i18n>Notification Preferences</h2>
+     
+  <hr/>
+
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
+    <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
+    <div *ngIf="formGroup.controls.allEmailNotices.value">
+      <div class="ml-3" *ngFor="let set of emailSettings">
+        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
+      </div>
+    </div>
+  </div>
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
+    <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
+    <div class="mb-4" *ngIf="formGroup.controls.allTextNotices.value">
+      <div class="ml-3" *ngFor="let set of textSettings">
+        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
+      </div>
+    </div>
+  </div>
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
+    <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
+    <div class="mb-4" *ngIf="formGroup.controls.allPhoneNotices.value">
+      <div class="ml-3" *ngFor="let set of phoneSettings">
+        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
+      </div>
+    </div>
+  </div>
+  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
+    <mat-checkbox formControlName="allPrintNotices" i18n>Print Notices</mat-checkbox>
+    <div class="mb-4" *ngIf="formGroup.controls.allPrintNotices.value">
+      <div class="ml-3" *ngFor="let set of printSettings">
+        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="m-6 p-2 border border-slate-300 bg-blue-300">
+    <b>NEW PAGE</b>
+  </div>
+
+  <h2 i18n>Card Options</h2>
+
+  <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
+
+  <mat-radio-group i18n-aria-label aria-label="Card Design" formControlName="design">
+    <div class="grid grid-cols-2 xs:grid-cols-1">
+      <div *ngFor="let card of cardOptions" class="mb-3">
+        <mat-radio-button [value]="card" aria-label="{{card}}">
+          <img class="card-image-horiz p-3" [src]="cardOptionUrl(card)" alt="{{card}}"/>
+        </mat-radio-button>
+      </div>
+    </div>
+  </mat-radio-group>
+
+  <p class="mt-1 mb-2" *ngIf="!register.inKioskMode">
+    <a href="https://kcls.org/library-card-artists/" i18n>
+      Learn about the artists who created these new designs.
+    </a>
+  </p>
+
+  <h3 i18n>Choose How To Receive Your Card</h3>
+
+  <mat-radio-group formControlName="delivery">
+    <mat-radio-button value="Mail">
+      <span i18n>Mail my card.  
+        <span class="italic text-sm">
+          (You’ll receive your card and activation instructions within 1-2 weeks.)
+        </span>
+      </span>
+    </mat-radio-button>
+    <mat-radio-button value="Pick up">
+      <span i18n> I will pick up at my home library
+        <span class="italic text-sm">(Available same day.)</span>
+      </span>
+      <b>TODO show calculated home lib here?</b>
+    </mat-radio-button>
+  </mat-radio-group>
+
+
+
+  <ng-container *ngIf="false">
+    <h3 i18n>What library is closest to your residence?</h3>
+
+    <p class="mt-4" *ngIf="!register.inKioskMode" i18n>
+      Not sure? Find your nearest library on this
+      <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
+    </p>
+
+    <div class="columns-2 mt-6">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Home Library</mat-label>
+          <mat-select formControlName="homeOrg">
+            <mat-option [value]="org.id" *ngFor="let org of homeOrgs">{{org.name}}</mat-option>
+          </mat-select>
+          <mat-error *ngIf="formGroup.controls.homeOrg.hasError('homeOrg')" i18n>
+              Home Library is <strong>required</strong>
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="mt-6"></div>
+
 
   <div class="columns-1 mt-6">
     <div>

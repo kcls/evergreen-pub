@@ -307,6 +307,8 @@ export class RegisterCreateComponent implements OnInit {
                 this.printSettings.push(set);
             }
 
+            console.log('email options', this.emailSettings);
+
             this.formGroup.addControl(name, new FormControl(false));
 
         })).toPromise();
