@@ -3969,26 +3969,38 @@ sub process_received_transit {
         my $loc = $self->circ_lib;
         my $dest = $transit->dest;
 
-        # KCLS
-        # If item needs to be routed to a different location, update the 
-        # source org unit & send time
-        # NOTE: transits have a prev_hop field meant to serve this purpose.
-        # Investigate possibility of using that instead to retain data.
-        $transit->source($self->circ_lib);
-        $transit->source_send_time('now');
-        $self->bail_on_events($self->editor->event)
-            unless $self->editor->update_action_transit_copy($transit);
+        {   # Extra braces for visual clarity, why not.
+            #
+            # KCLS
+            # this code branch returns a bail_on_events which rolls back
+            # the active transaction and any changes made up until now.
+            # To avoid introducing possible breakage with changing that
+            # behavior, update source_send_time in its own transaction.
+            my $e2 = new_editor(xact => 1);
 
-        $logger->info("circulator: Fowarding transit on copy which is destined ".
-            "for a different location. transit=$tid, copy=$copyid, current ".
-            "location=$loc, destination location=$dest");
+            my $t2 = $e2->retrieve_action_transit_copy($tid) or return $e2->die_event;
+            my $old_send_time = $t2->source_send_time;
+
+            # $t2->source($self->circ_lib);
+            $t2->source_send_time('now');
+
+            $e2->update_action_transit_copy($t2) or return $e2->die_event;
+            $t2 = $e2->retrieve_action_transit_copy($tid) or return $e2->die_event;
+            $self->transit($t2);
+
+            $logger->info("circulator: Fowarding transit on copy which is destined ".
+                "for a different location. transit=$tid, copy=$copyid, current ".
+                "location=$loc, destination location=$dest; replaced original ".
+                "send time of $old_send_time");
+
+            # grab the associated hold object if available
+            my $ht = $e2->retrieve_action_hold_transit_copy($tid);
+            $self->hold($e2->retrieve_action_hold_request($ht->hold)) if $ht;
+
+            $e2->commit;
+        }
 
         my $evt = OpenILS::Event->new('ROUTE_ITEM', org => $dest, payload => {});
-
-        # grab the associated hold object if available
-        my $ht = $self->editor->retrieve_action_hold_transit_copy($tid);
-        $self->hold($self->editor->retrieve_action_hold_request($ht->hold)) if $ht;
-
         return $self->bail_on_events($evt);
     }
 
