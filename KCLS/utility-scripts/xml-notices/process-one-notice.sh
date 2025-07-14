@@ -73,8 +73,13 @@ if [ -n "$SEND_XML" ]; then
         announce "No content to deliver for $LOCAL_FILE";
     else
 
-        announce "SCP'ing $LOCAL_FILE => $SCP_DEST/$FILE_NAME"
-        scp "$LOCAL_FILE" "$SCP_DEST/$FILE_NAME"
+        if [ -n "$IS_REALTIME" ]; then
+            announce "SCP'ing $LOCAL_FILE => $SCP_REALTIME_DEST/$FILE_NAME"
+            scp "$LOCAL_FILE" "$SCP_REALTIME_DEST/$FILE_NAME"
+        else 
+            announce "SCP'ing $LOCAL_FILE => $SCP_DEST/$FILE_NAME"
+            scp "$LOCAL_FILE" "$SCP_DEST/$FILE_NAME"
+        fi;
 
         if [ $? == 0 ]; then
             announce "SCP Succeeded for $FILE_NAME";

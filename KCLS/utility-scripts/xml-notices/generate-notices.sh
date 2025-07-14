@@ -10,6 +10,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 END_DATE=$(date +'%F');
 FILE_DATE=""
 SCP_DEST="kingco@sftp.unique-mgmt.com:incoming"
+SCP_REALIMTE_DEST="kingco@sftp.unique-mgmt.com:directload"
 AT_FILTERS="/openils/conf/a_t_filters/"
 WINDOW=""
 SKIP_ACTION_TRIGGER=""
@@ -26,6 +27,7 @@ NOTICE_TYPE=""
 NOTIFY_INTERVAL=""
 PROCESS_HOOKS=""
 CUSTOM_FILTERS=""
+IS_REALTIME=""
 
 function usage {
 
@@ -66,6 +68,9 @@ Options:
         For notices which run more frequently than daily, specify the 
         time window to process so the correct events can be isolated.
 
+    --realtime
+        Deliver notices to the remote realtime directory for faster processing.
+
     --help
         Show this message
 
@@ -84,6 +89,7 @@ while [ "$#" -gt 0 ]; do
         '--force-generate-xml') FORCE_GENERATE_XML="--force";;
         '--send-xml') SEND_XML="YES";;
         '--window') WINDOW="$2"; shift;;
+        '--realtime') IS_REALTIME="YES"; shift;;
         '--help') usage;;
         *) echo "Unknown parameter: $1"; usage;;
     esac;
@@ -108,6 +114,7 @@ export SCP_DEST
 export END_DATE
 export FILE_DATE
 export WINDOW
+export IS_REALTIME
 export GRANULARITY
 export NOTICE_TYPE
 export NOTIFY_INTERVAL
@@ -451,6 +458,7 @@ echo "PROCESS_HOOKS=$PROCESS_HOOKS"
 echo "END_DATE=$END_DATE"
 echo "FILE_DATE=$FILE_DATE"
 echo "WINDOW=$WINDOW"
+echo "IS_REALTIME=$IS_REALTIME"
 echo "FOR_TEXT=$FOR_TEXT"
 echo "FOR_EMAIL=$FOR_EMAIL"
 echo "FOR_NO_EMAIL=$FOR_NO_EMAIL"
