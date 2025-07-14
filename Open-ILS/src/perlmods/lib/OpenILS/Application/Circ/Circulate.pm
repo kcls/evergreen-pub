@@ -3965,42 +3965,12 @@ sub process_received_transit {
         # - this item is in-transit to a different location
         # - Or we are capturing holds as transits, so why create a new transit?
 
-        my $tid = $transit->id; 
-        my $loc = $self->circ_lib;
         my $dest = $transit->dest;
 
-        {   # Extra braces for visual clarity, why not.
-            #
-            # KCLS
-            # this code branch returns a bail_on_events which rolls back
-            # the active transaction and any changes made up until now.
-            # To avoid introducing possible breakage with changing that
-            # behavior, update source_send_time in its own transaction.
-            my $e2 = new_editor(xact => 1);
+        my $evt = $self->kcls_update_track_intermediate_transit($transit);
+        return $self->bail_on_events($evt) if $evt;
 
-            my $t2 = $e2->retrieve_action_transit_copy($tid) or return $e2->die_event;
-            my $old_send_time = $t2->source_send_time;
-
-            # $t2->source($self->circ_lib);
-            $t2->source_send_time('now');
-
-            $e2->update_action_transit_copy($t2) or return $e2->die_event;
-            $t2 = $e2->retrieve_action_transit_copy($tid) or return $e2->die_event;
-            $self->transit($t2);
-
-            $logger->info("circulator: Fowarding transit on copy which is destined ".
-                "for a different location. transit=$tid, copy=$copyid, current ".
-                "location=$loc, destination location=$dest; replaced original ".
-                "send time of $old_send_time");
-
-            # grab the associated hold object if available
-            my $ht = $e2->retrieve_action_hold_transit_copy($tid);
-            $self->hold($e2->retrieve_action_hold_request($ht->hold)) if $ht;
-
-            $e2->commit;
-        }
-
-        my $evt = OpenILS::Event->new('ROUTE_ITEM', org => $dest, payload => {});
+        $evt = OpenILS::Event->new('ROUTE_ITEM', org => $dest, payload => {});
         return $self->bail_on_events($evt);
     }
 
@@ -4046,6 +4016,55 @@ sub process_received_transit {
     return $hold_transit;
 }
 
+sub kcls_update_track_intermediate_transit {
+    my ($self, $transit) = @_;
+
+    my $transit_id = $transit->id;
+    my $transit_dest = $transit->dest;
+    my $loc = $self->circ_lib;
+    my $copy_id = $self->copy->id;
+
+    # The code branch this is called from returns a bail_on_events which
+    # rolls back the active transaction and any changes made up until
+    # now.  To avoid introducing possible breakage with changing that
+    # behavior, and since the code is about to exit anyway, update 
+    # transit/copy in its own transaction.
+    my $e = new_editor(xact => 1, requestor => $self->editor->requestor);
+
+    # Get an up to date copy.
+    $transit = $e->retrieve_action_transit_copy($transit_id) or return $e->die_event;
+    my $old_send_time = $transit->source_send_time;
+
+    $transit->source($self->circ_lib);
+    $transit->source_send_time('now');
+
+    $e->update_action_transit_copy($transit) or return $e->die_event;
+    $transit = $e->retrieve_action_transit_copy($transit_id) or return $e->die_event;
+
+    # Track the updated transit since it gets returned to the caller.
+    $self->transit($transit);
+
+    $logger->info("circulator: Fowarding transit on copy which is destined ".
+        "for a different location. transit=$transit_id, copy=$copy_id, current ".
+        "location=$loc, destination location=$transit_dest; replaced original ".
+        "send time of $old_send_time");
+
+    # grab the associated hold object if available
+    my $ht = $e->retrieve_action_hold_transit_copy($transit_id);
+    $self->hold($e->retrieve_action_hold_request($ht->hold)) if $ht;
+
+    # Update the copy last editor/edit date even though no changes to
+    # the copy itself were made.  This helps tracking.
+    my $copy = $e->retrieve_asset_copy($transit->target_copy) or return $e->die_event;
+
+    $copy->editor($e->requestor->id);
+    $copy->edit_date('now');
+    $e->update_asset_copy($copy) or return $e->die_event;
+
+    $e->commit;
+
+    return undef;
+}
 
 # ------------------------------------------------------------------
 # Sets the shelf_time and shelf_expire_time for a newly shelved hold
