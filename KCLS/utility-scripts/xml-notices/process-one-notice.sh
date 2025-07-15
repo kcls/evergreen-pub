@@ -15,6 +15,8 @@ else
     FILE_NAME="${NOTICE_TAG}-${END_DATE}.xml"
 fi;
 
+FILE_NAME_SCRUBBED=""
+
 LOCAL_FILE="$OUTPUT_DIR/$FILE_NAME"
 
 function announce {                                                            
@@ -74,8 +76,10 @@ if [ -n "$SEND_XML" ]; then
     else
 
         if [ -n "$IS_REALTIME" ]; then
-            announce "SCP'ing $LOCAL_FILE => $SCP_REALTIME_DEST/$FILE_NAME"
-            scp "$LOCAL_FILE" "$SCP_REALTIME_DEST/$FILE_NAME"
+            # Replace ':' with '-' for Windows sftp server
+            FILE_NAME_SCRUBBED="${FILE_NAME//:/-}"                            
+            announce "SCP'ing $LOCAL_FILE => $SCP_REALTIME_DEST/$FILE_NAME_SCRUBBED"
+            scp "$LOCAL_FILE" "$SCP_REALTIME_DEST/$FILE_NAME_SCRUBBED" 
         else 
             announce "SCP'ing $LOCAL_FILE => $SCP_DEST/$FILE_NAME"
             scp "$LOCAL_FILE" "$SCP_DEST/$FILE_NAME"
