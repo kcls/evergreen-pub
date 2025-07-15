@@ -111,6 +111,7 @@ export NO_GENERATE_XML
 export FORCE_GENERATE_XML
 export SEND_XML
 export SCP_DEST
+export SCP_REALIMTE_DEST
 export END_DATE
 export FILE_DATE
 export WINDOW
