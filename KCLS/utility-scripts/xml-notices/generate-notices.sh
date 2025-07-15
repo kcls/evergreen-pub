@@ -89,7 +89,7 @@ while [ "$#" -gt 0 ]; do
         '--force-generate-xml') FORCE_GENERATE_XML="--force";;
         '--send-xml') SEND_XML="YES";;
         '--window') WINDOW="$2"; shift;;
-        '--realtime') IS_REALTIME="YES"; shift;;
+        '--realtime') IS_REALTIME="YES";;
         '--help') usage;;
         *) echo "Unknown parameter: $1"; usage;;
     esac;
