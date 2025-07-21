@@ -70,6 +70,7 @@ MACRO input_field(fclass, fname, label, type, css_class, value) BLOCK;
     id='[% field_path %]'
     name='[% field_path %]'
     onchange="validate('[% field_path %]')"
+    autocomplete="[% fclass %]-[% fname %]"
     [% IF type == 'text' %]onkeyup="validate('[% field_path %]', true)"[% END %]
     value='[% value || CGI.param(field_path) | html %]'/>
 
