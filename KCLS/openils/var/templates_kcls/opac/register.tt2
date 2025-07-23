@@ -298,7 +298,7 @@ a:hover {
         [% IF ctx.register.user.delivery_method == 'MAIL' %]
           <h2>
             You have chosen to have your library card mailed to you.
-            It will arrive within 3-5 business days.
+            It will arrive within 1-2 weeks.
           </h2>
         [% ELSE %]
           <h2>
