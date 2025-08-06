@@ -1,6 +1,12 @@
 <form [formGroup]="formGroup">
+
+<mat-stepper #stepper>
+  <mat-step label="Your Information">
+
+  <!--
   <h2 i18n>Your Information</h2>
   <hr/>
+  -->
 
   <h3 i18n>Enter Your Name</h3>
 
@@ -232,9 +238,21 @@
 
   </ng-container>
 
+</mat-step>
+
+<mat-step label="Account Type">
+
+  <b class="mt-5 ml-5">You can have an eCard or a full access card, etc.</b>
+  
+</mat-step>
+
+<mat-step label="Contact Information">
+
+  <!--
   <div class="m-6 p-2 border border-slate-300 bg-blue-300">
     <b>NEW PAGE</b>
   </div>
+  -->
 
 
   <div class="columns-2 mt-6">
@@ -266,7 +284,7 @@
     </div>
   </div>
 
-  <b>TODO phones are for all-access only. Any reason not to request anyway?</b>
+  <b>TODO phone only required for all-access cards</b>
 
   <div class="columns-2 mt-6">
     <div>
@@ -297,16 +315,24 @@
     </div>
   </div>
 
+</mat-step>
+<mat-step label="Preferences">
+
+
+
+  <!--
   <div class="m-6 p-2 border border-slate-300 bg-blue-300">
     <b>NEW PAGE</b>
   </div>
+  <h2 i18n>Contact Preferences</h2>
+  <hr/>
+
+  -->
+
 
   <div class="m-6 p-2">
     <b>TODO: HOLD PICKUP LIB SELECTOR GOES HERE</b>
   </div>
-
-  <h2 i18n>Contact Preferences</h2>
-  <hr/>
 
   <div class="columns-1 mt-6">
     <div class="w-full">
@@ -359,12 +385,16 @@
     </div>
   </div>
 
+</mat-step>
+<mat-step label="Card Options">
 
+  <!--
   <div class="m-6 p-2 border border-slate-300 bg-blue-300">
     <b>NEW PAGE</b>
   </div>
 
   <h2 i18n>Card Options</h2>
+  -->
 
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 
@@ -429,6 +459,8 @@
 
   <div class="mt-6"></div>
 
+</mat-step>
+<mat-step label="Submit">
 
   <div class="columns-1 mt-6">
     <div>
@@ -447,6 +479,8 @@
       Please provide values for all required fields.
     </span>
   </div>
+</mat-step>
+</mat-stepper>
 
 </form>
 
