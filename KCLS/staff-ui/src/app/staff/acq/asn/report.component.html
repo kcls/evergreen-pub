@@ -15,6 +15,19 @@
     </div>
   </div>
   <div class="col-lg-4">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text" i18n>ASN Barcode:</span>
+      </div>
+      <input type='text' id='asn-barcode-input' class="form-control" 
+        (keyup.enter)="load()" placeholder="ASN Barcode..."
+        i18n-placeholder [(ngModel)]="asnBarcode"/>
+      <div class="input-group-append">
+        <button class="btn btn-outline-secondary" (click)="load()" i18n>Go</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
     <button class="btn btn-outline-primary" (click)="printWorksheets()" 
       [disabled]="!grid || grid.context.getSelectedRows().length === 0" i18n>
       Print Selected Worksheets

@@ -1,7 +1,7 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {Location} from '@angular/common';
-import {mergeMap, first, empty, Observable, Observer, of, from} from 'rxjs';
+import {mergeMap, first, EMPTY, empty, Observable, Observer, of, from} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -20,6 +20,7 @@ import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.componen
 export class AsnReportComponent implements OnInit {
 
     invoiceIdent: string;
+    asnBarcode: string;
 
     @ViewChild('grid') grid: GridComponent;
     @ViewChild('progress') progress: ProgressInlineComponent;
@@ -41,12 +42,15 @@ export class AsnReportComponent implements OnInit {
     ngOnInit() {
 
         this.dataSource.getRows = (pager: Pager, sort: any[]) => {
+            if (!this.invoiceIdent && !this.asnBarcode) { return EMPTY; }
 
-            if (!this.invoiceIdent) { return empty(); }
+            let query: any = {};
 
-            const query: any = {
-                inv_ident: this.invoiceIdent
-            };
+            if (this.invoiceIdent) {
+                query.inv_ident = this.invoiceIdent;
+            } else {
+                query.container_code = this.asnBarcode;
+            }
 
             return this.flatData.getRows(this.grid.context, query, pager, sort)
             .pipe(mergeMap(row => {
