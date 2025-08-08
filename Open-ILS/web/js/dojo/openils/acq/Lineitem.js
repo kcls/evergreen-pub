@@ -182,7 +182,8 @@ openils.acq.Lineitem.fetchAndRender = function(liId, args, callback) {
                         (po) ? 'foo' : '', // forces class='hiddenfoo' i.e. not hidden
                         (pl) ? 'foo' : '', // ditto
                         encodeURIComponent(location.pathname + location.search),
-                        lineitem.order_summary().delay_count() || '0'
+                        lineitem.order_summary().delay_count() || '0',
+                        lineitem.eg_bib_id()
                     ],
                     function(str) {
                         // prevent long titles from filling up the page
