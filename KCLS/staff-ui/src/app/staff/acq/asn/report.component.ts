@@ -21,6 +21,7 @@ export class AsnReportComponent implements OnInit {
 
     invoiceIdent: string;
     asnBarcode: string;
+    codeList: string[] = [];
 
     @ViewChild('grid') grid: GridComponent;
     @ViewChild('progress') progress: ProgressInlineComponent;
@@ -41,16 +42,31 @@ export class AsnReportComponent implements OnInit {
 
     ngOnInit() {
 
+        const codes = this.route.snapshot.queryParamMap.get('containerCodes');
+        if (codes) { this.codeList = codes.split(','); }
+
         this.dataSource.getRows = (pager: Pager, sort: any[]) => {
-            if (!this.invoiceIdent && !this.asnBarcode) { return EMPTY; }
+            console.debug(this.invoiceIdent, this.asnBarcode, this.codeList);
+
+            if (!this.invoiceIdent && !this.asnBarcode && this.codeList.length === 0) {
+                return EMPTY;
+            }
 
             let query: any = {};
 
             if (this.invoiceIdent) {
                 query.inv_ident = this.invoiceIdent;
+            } else if (this.codeList.length > 0) {
+                query.container_code = this.codeList;
             } else {
                 query.container_code = this.asnBarcode;
             }
+
+            sort = [
+                // For grouped containers
+                {name: 'container_code', dir: 'asc'},
+                {name: 'shipment_notification.recv_date', dir: 'asc'}
+            ];
 
             return this.flatData.getRows(this.grid.context, query, pager, sort)
             .pipe(mergeMap(row => {
