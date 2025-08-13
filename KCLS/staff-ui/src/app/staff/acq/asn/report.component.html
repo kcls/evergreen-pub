@@ -1,5 +1,7 @@
 <eg-staff-banner bannerText="ASN Report" i18n-bannerText></eg-staff-banner>
 
+<eg-partial-receive-dialog #prDialog></eg-partial-receive-dialog>
+
 <div class="row mt-2">
   <div class="col-lg-4">
     <div class="input-group">
@@ -51,8 +53,19 @@
 
 <div class="row mt-3">
   <div class="col-lg-12">
-    <eg-grid #grid [dataSource]="dataSource" idlClass="acqsns" 
-      persistKey="acq.asn.report" [sortable]="true" [showDeclaredFieldsOnly]="true">
+    <eg-grid #grid 
+      idlClass="acqsns" 
+      persistKey="acq.asn.report" 
+      [dataSource]="dataSource" 
+      [sortable]="true" 
+      [rowFlairIsEnabled]="true"
+      [rowFlairCallback]="rowFlairCallback"
+      [showDeclaredFieldsOnly]="true">
+
+      <eg-grid-toolbar-action                                                    
+      i18n-group i18n-label label="Modify Receive Count"
+      (onClick)="modifyReceiveCount($event)"></eg-grid-toolbar-action>  
+
 
       <eg-grid-column path="_index" [hidden]="true" [index]="true"
         [required]="true" label="Row Index" i18n-label>

@@ -34,6 +34,9 @@ export class AsnReceiveComponent implements OnInit {
     loadingContainer = false;
     liCache: {[id: number]: any} = {};
 
+    groupContainerCodes = false;
+    groupedContainerCodes = [];
+
     // Technically possible for one container code to match across providers.
     container: IdlObject;
     entries: IdlObject[] = [];
@@ -100,6 +103,10 @@ export class AsnReceiveComponent implements OnInit {
         this.liCache = {};
 
         this.gridDataSource.reset();
+
+        if (this.groupContainerCodes) {
+            this.groupedContainerCodes.push(this.barcode);
+        }
 
         this.pcrud.search('acqsn',
             {container_code: this.barcode},
@@ -222,6 +229,26 @@ export class AsnReceiveComponent implements OnInit {
         const entry = this.entries.filter(e => e.lineitem().id() === liId)[0];
         if (entry) { return entry.item_count(); }
         return 0;
+    }
+
+
+    openGroupedReportView() {
+
+        let url = this.ngLocation.prepareExternalUrl(
+            this.router.serializeUrl(
+                this.router.createUrlTree(
+                    ['/staff/acq/asn/report']
+                )
+            )
+        );
+
+        url += '?containerCodes=' + encodeURIComponent(this.groupedContainerCodes.join(','));
+
+        window.open(url);
+    }
+
+    resetGroupedContainerCodes() {
+        this.groupedContainerCodes = [];
     }
 }
 
