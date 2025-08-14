@@ -51,6 +51,8 @@ export class ResultRecordComponent implements OnInit, OnDestroy {
         this.basketSub = this.basket.onChange.subscribe(() => {
             this.isRecordSelected = this.basket.hasRecordId(this.summary.id);
         });
+
+        console.debug(this.summary);
     }
 
     ngOnDestroy() {
