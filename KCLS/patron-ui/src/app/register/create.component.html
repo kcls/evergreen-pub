@@ -106,6 +106,27 @@
   <h3 i18n>Residential Address</h3>
 
   <div class="columns-1 mt-6">
+		<mat-form-field class="w-full">
+			<mat-label>Street Address</mat-label>
+			<input type="text"
+						 placeholder="Street address..."
+						 aria-label="Street 1"
+						 matInput
+             formControlName="street1"
+						 [matAutocomplete]="street1Auto">
+      <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
+        Street address is <strong>required</strong>
+      </mat-error>
+			<mat-autocomplete #street1Auto="matAutocomplete" (optionSelected)="street1AutoSelected($event)">
+        <mat-option *ngFor="let option of filteredResAddrOptions | async" [value]="option">
+          {{option}} <!-- Or {{option.name}} if options are objects -->
+        </mat-option>
+			</mat-autocomplete>
+		</mat-form-field>
+  </div>
+
+<!--
+  <div class="columns-1 mt-6">
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Street Address</mat-label>
@@ -116,6 +137,7 @@
       </mat-form-field>
     </div>
   </div>
+-->
 
   <div class="columns-2 mt-4">
     <div>
@@ -140,16 +162,21 @@
       <mat-form-field class="w-full">
         <mat-label i18n>State</mat-label>
         <mat-select formControlName="state" [value]="formGroup.controls.state.value">
-          <!--  almsot all registrations will be in WA and that's the 
+          <!--  almost all registrations will be in WA and that's the 
                 preferred address label.  For other states, store the
                 whole state name -->
-          <ng-container *ngFor="let state of states">
+          <ng-container *ngFor="let state of STATES | keyvalue">
+            <ng-container>
+              <mat-option [value]="state.key">{{state.value}}</mat-option>
+            </ng-container>
+<!--
             <ng-container *ngIf="state === 'Washington'">
-              <mat-option value="WA">{{state}}</mat-option>
+              <mat-option value="WA">{{state.value}}</mat-option>
             </ng-container>
             <ng-container *ngIf="state !== 'Washington'">
               <mat-option [value]="state">{{state}}</mat-option>
             </ng-container>
+-->
           </ng-container>
         </mat-select>
         <mat-error *ngIf="formGroup.controls.state.hasError('required')" i18n>
@@ -183,11 +210,21 @@
     <div class="columns-1 mt-4">
       <div>
         <mat-form-field class="w-full">
-          <mat-label i18n>Street Address</mat-label>
-          <input type="text" matInput formControlName="mailingStreet1"/>
+          <mat-label>Street Address</mat-label>
+          <input type="text"
+                 placeholder="Street address..."
+                 aria-label="Street 1"
+                 matInput
+                 formControlName="mailingStreet1"
+                 [matAutocomplete]="mailStreet1Auto">
           <mat-error *ngIf="formGroup.controls.mailingStreet1.hasError('required')" i18n>
-              Street address is <strong>required</strong>
+            Street address is <strong>required</strong>
           </mat-error>
+          <mat-autocomplete #mailStreet1Auto="matAutocomplete" (optionSelected)="mailStreet1AutoSelected($event)">
+            <mat-option *ngFor="let option of filteredMailAddrOptions | async" [value]="option">
+              {{option}}
+            </mat-option>
+          </mat-autocomplete>
         </mat-form-field>
       </div>
     </div>
@@ -215,7 +252,7 @@
         <mat-form-field class="w-full">
           <mat-label i18n>State</mat-label>
           <mat-select formControlName="mailingState">
-            <mat-option *ngFor="let state of states" [value]="state">{{state}}</mat-option>
+            <mat-option *ngFor="let state of STATES | keyvalue" [value]="state.key">{{state.value}}</mat-option>
           </mat-select>
           <mat-error *ngIf="formGroup.controls.mailingState.hasError('required')" i18n>
               State is <strong>required</strong>
