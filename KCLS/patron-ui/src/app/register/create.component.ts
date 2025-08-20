@@ -2,11 +2,15 @@ import {Component, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {FormBuilder, FormControl, Validators, AbstractControl,
     FormRecord, ValidationErrors, ValidatorFn} from '@angular/forms';
+import {EMPTY, Observable, from, of} from 'rxjs';
+import {toArray, debounceTime, distinctUntilChanged} from 'rxjs/operators';
 import {tap} from 'rxjs/operators';
+import {map, startWith, switchMap} from 'rxjs/operators';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {RegisterService} from './register.service';
+import {MatAutocompleteSelectedEvent} from '@angular/material/autocomplete';
 
 const JUV_AGE = 18; // years
 const DEFAULT_STATE = 'WA';
@@ -42,6 +46,15 @@ interface ApiPayload {
 interface ApiResponse {
     success: number, // Perl
 }
+
+interface AddressSuggestion {
+    street_line: string,
+    city: string,
+    state: string,
+    zipcode: string,
+    full_string?: string,
+}
+
 
 export const sameEmailValidator: ValidatorFn = (
   control: AbstractControl,
@@ -80,6 +93,14 @@ export class RegisterCreateComponent implements OnInit {
     phoneSettings: UserSettingType[] = [];
     textSettings: UserSettingType[] = [];
     printSettings: UserSettingType[] = [];
+
+    filteredResAddrOptions: Observable<string[]> = EMPTY;
+    resAddressSuggestions: AddressSuggestion[] = [];
+    selectedResAddress = '';
+
+    filteredMailAddrOptions: Observable<string[]> = EMPTY;
+    mailAddressSuggestions: AddressSuggestion[] = [];
+    selectedMailAddress = '';
 
     cardOptions = [
         '2025-Barry-Johnson',
@@ -130,62 +151,63 @@ export class RegisterCreateComponent implements OnInit {
         smsNumber: '',
     }, {validators: sameEmailValidator});
 
-    states = [
-        $localize`Alabama`,
-        $localize`Alaska`,
-        $localize`Arizona`,
-        $localize`Arkansas`,
-        $localize`California`,
-        $localize`Colorado`,
-        $localize`Connecticut`,
-        $localize`Delaware`,
-        $localize`District of Columbia`,
-        $localize`Florida`,
-        $localize`Georgia`,
-        $localize`Hawaii`,
-        $localize`Idaho`,
-        $localize`Illinois`,
-        $localize`Indiana`,
-        $localize`Iowa`,
-        $localize`Kansas`,
-        $localize`Kentucky`,
-        $localize`Louisiana`,
-        $localize`Maine`,
-        $localize`Maryland`,
-        $localize`Massachusetts`,
-        $localize`Michigan`,
-        $localize`Minnesota`,
-        $localize`Mississippi`,
-        $localize`Missouri`,
-        $localize`Montana`,
-        $localize`Nebraska`,
-        $localize`Nevada`,
-        $localize`New Hampshire`,
-        $localize`New Jersey`,
-        $localize`New Mexico`,
-        $localize`New York`,
-        $localize`North Carolina`,
-        $localize`North Dakota`,
-        $localize`Ohio`,
-        $localize`Oklahoma`,
-        $localize`Oregon`,
-        $localize`Pennsylvania`,
-        $localize`Rhode Island`,
-        $localize`South Carolina`,
-        $localize`South Dakota`,
-        $localize`Tennessee`,
-        $localize`Texas`,
-        $localize`Utah`,
-        $localize`Vermont`,
-        $localize`Virginia`,
-        $localize`Washington`,
-        $localize`West Virginia`,
-        $localize`Wisconsin`,
-        $localize`Wyoming`,
-        $localize`Armed Forces Americas`,
-        $localize`Armed Forces Europe`,
-        $localize`Armed Forces Pacific`
-    ];
+    // TODO move these somewhere common
+	STATES = {
+	  'AL': $localize`Alabama`,
+	  'AK': $localize`Alaska`,
+	  'AZ': $localize`Arizona`,
+	  'AR': $localize`Arkansas`,
+	  'CA': $localize`California`,
+	  'CO': $localize`Colorado`,
+	  'CT': $localize`Connecticut`,
+	  'DE': $localize`Delaware`,
+	  'DC': $localize`District of Columbia`,
+	  'FL': $localize`Florida`,
+	  'GA': $localize`Georgia`,
+	  'HI': $localize`Hawaii`,
+	  'ID': $localize`Idaho`,
+	  'IL': $localize`Illinois`,
+	  'IN': $localize`Indiana`,
+	  'IA': $localize`Iowa`,
+	  'KS': $localize`Kansas`,
+	  'KY': $localize`Kentucky`,
+	  'LA': $localize`Louisiana`,
+	  'ME': $localize`Maine`,
+	  'MD': $localize`Maryland`,
+	  'MA': $localize`Massachusetts`,
+	  'MI': $localize`Michigan`,
+	  'MN': $localize`Minnesota`,
+	  'MS': $localize`Mississippi`,
+	  'MO': $localize`Missouri`,
+	  'MT': $localize`Montana`,
+	  'NE': $localize`Nebraska`,
+	  'NV': $localize`Nevada`,
+	  'NH': $localize`New Hampshire`,
+	  'NJ': $localize`New Jersey`,
+	  'NM': $localize`New Mexico`,
+	  'NY': $localize`New York`,
+	  'NC': $localize`North Carolina`,
+	  'ND': $localize`North Dakota`,
+	  'OH': $localize`Ohio`,
+	  'OK': $localize`Oklahoma`,
+	  'OR': $localize`Oregon`,
+	  'PA': $localize`Pennsylvania`,
+	  'RI': $localize`Rhode Island`,
+	  'SC': $localize`South Carolina`,
+	  'SD': $localize`South Dakota`,
+	  'TN': $localize`Tennessee`,
+	  'TX': $localize`Texas`,
+	  'UT': $localize`Utah`,
+	  'VT': $localize`Vermont`,
+	  'VA': $localize`Virginia`,
+	  'WA': $localize`Washington`,
+	  'WV': $localize`West Virginia`,
+	  'WI': $localize`Wisconsin`,
+	  'WY': $localize`Wyoming`,
+	  'AA': $localize`Armed Forces Americas`,
+	  'AE': $localize`Armed Forces Europe`,
+	  'AP': $localize`Armed Forces Pacific`
+	};
 
     constructor(
         private router: Router,
@@ -276,7 +298,119 @@ export class RegisterCreateComponent implements OnInit {
                 this.formGroup.controls[set.name].setValue(val);
             });
         });
+
+        this.filteredResAddrOptions = this.formGroup.controls.street1.valueChanges.pipe(
+            startWith(''),
+			debounceTime(300), // Wait for 300ms of inactivity
+			distinctUntilChanged(), // Only emit if the value has changed
+            switchMap(value => this.resAddrStreet1Filter('' + value)), // Or call API here
+        );
+
+        this.filteredMailAddrOptions = this.formGroup.controls.mailingStreet1.valueChanges.pipe(
+            startWith(''),
+			debounceTime(300), // Wait for 300ms of inactivity
+			distinctUntilChanged(), // Only emit if the value has changed
+            switchMap(value => this.mailAddrStreet1Filter('' + value)), // Or call API here
+        );
+
     }
+
+    street1AutoSelected(event: MatAutocompleteSelectedEvent) {
+        if (event) {
+            if (event.option) {
+                if (event.option.value) {
+                    this.selectedResAddress = event.option.value;
+                    return this.populateResAddrFromSuggestion();
+                }
+            }
+        }
+
+        this.selectedResAddress = '';
+    }
+
+    mailStreet1AutoSelected(event: MatAutocompleteSelectedEvent) {
+        if (event) {
+            if (event.option) {
+                if (event.option.value) {
+                    this.selectedMailAddress = event.option.value;
+                    return this.populateMailAddrFromSuggestion();
+                }
+            }
+        }
+
+        this.selectedMailAddress = '';
+    }
+
+    populateResAddrFromSuggestion() {
+        const addr = this.resAddressSuggestions.filter(a => a.full_string === this.selectedResAddress)[0];
+
+        if (!addr) {
+            console.error('Cannot find addr', this.selectedResAddress);
+            return;
+        }
+
+        this.formGroup.controls.street1.setValue(addr.street_line);
+        this.formGroup.controls.city.setValue(addr.city);
+        this.formGroup.controls.state.setValue(addr.state);
+        this.formGroup.controls.zipCode.setValue(addr.zipcode);
+    }
+
+    populateMailAddrFromSuggestion() {
+        const addr = this.mailAddressSuggestions.filter(a => a.full_string === this.selectedMailAddress)[0];
+
+        if (!addr) {
+            console.error('Cannot find addr', this.selectedMailAddress);
+            return;
+        }
+
+        this.formGroup.controls.mailingStreet1.setValue(addr.street_line);
+        this.formGroup.controls.mailingCity.setValue(addr.city);
+        this.formGroup.controls.mailingState.setValue(addr.state);
+        this.formGroup.controls.mailingZipCode.setValue(addr.zipcode);
+    }
+
+	private resAddrStreet1Filter(value: string): Observable<string[]> {
+        this.resAddressSuggestions = [];
+
+        if (value === this.selectedResAddress) {
+            return EMPTY;
+        }
+
+        return this.addrStreet1Fitler(value, this.resAddressSuggestions);
+	}
+
+	private mailAddrStreet1Filter(value: string): Observable<string[]> {
+        this.mailAddressSuggestions = [];
+
+        if (value === this.selectedMailAddress) {
+            return EMPTY;
+        }
+
+        return this.addrStreet1Fitler(value, this.mailAddressSuggestions);
+	}
+
+	private addrStreet1Fitler(value: string, suggestions: AddressSuggestion[]): Observable<string[]> {
+		const filterValue = value.toLowerCase();
+
+        if (!value || value.length < 5) { return EMPTY; }
+
+        return this.gateway.request(
+			'open-ils.rs-addrs',
+		    'open-ils.rs-addrs.autocomplete',
+            'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
+            {"search": filterValue}
+        ).pipe(
+            map(suggestion => {
+                //console.debug('Found matching address', suggestion);
+                let addr: AddressSuggestion = suggestion as AddressSuggestion;
+                addr.full_string = `${addr.street_line} ${addr.city}, ${addr.state} ${addr.zipcode}`;
+                suggestions.push(addr);
+                return addr.full_string;
+            }),
+            toArray()
+        );
+	}
+
 
     // Note: we could call this after the pickup lib has changed to
     // ensure the setting types are correctly scoped to the org
@@ -307,7 +441,7 @@ export class RegisterCreateComponent implements OnInit {
                 this.printSettings.push(set);
             }
 
-            console.log('email options', this.emailSettings);
+            //console.log('email options', this.emailSettings);
 
             this.formGroup.addControl(name, new FormControl(false));
 
