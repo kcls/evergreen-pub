@@ -76,7 +76,9 @@ export class PartialReceiveDialogComponent
     modify() {
         this.processing = true;
 
-        let receivedItems = this.lineitem.lineitem_details().filter(d => Boolean(d.recv_time()));
+        // received, non-canceled lineitem details
+        let receivedItems = this.lineitem.lineitem_details()
+            .filter(d => Boolean(d.recv_time()) && !Boolean(d.cancel_reason()));
 
         console.log(receivedItems + ' are marked as received');
 
