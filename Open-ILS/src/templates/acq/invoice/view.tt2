@@ -46,6 +46,15 @@
     </div>
 
     <div dojoType="dijit.layout.ContentPane" layoutAlign="client">
+        <div id='acq-invoice-summary-needs-attention' style="display:flex; padding:5px">
+          <div style="flex:1">
+            <span>EDI Account # </span>
+            <span id='acq-invoice-edi-account-num'></span>
+          </div>
+        </div>
+    </div>
+
+    <div dojoType="dijit.layout.ContentPane" layoutAlign="client">
         <div class='hidden' id='oils-acq-final-invoice-pane'>
             <table>
                 <tbody id='acq-final-invoice-tbody'>
