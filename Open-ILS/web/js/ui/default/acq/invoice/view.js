@@ -1003,6 +1003,19 @@ function addInvoiceEntry(entry) {
             updateTotalCost();
             if (focusLineitem == li.id())
                 focusLi();
+
+            // check if this lineitem needs attention
+            let summary = fieldmapper.standardRequest(
+                ['open-ils.acq', 'open-ils.acq.lineitem.invoice_shipment_summary'], 
+                {params : [openils.User.authtoken, li.id(), invoiceId]}
+            );
+
+            console.log('shipment summary', summary);
+
+            if (Number(summary.total_shipped) != Number(summary.total_received)) {
+                openils.Util.addCSSClass(row, 'li-needs-attention');
+                nodeByName('note', row).innerHTML = 'Needs Attention';
+            }
         }
     );
 

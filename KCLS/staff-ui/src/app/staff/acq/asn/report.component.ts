@@ -1,7 +1,7 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {Location} from '@angular/common';
-import {mergeMap, first, EMPTY, empty, Observable, Observer, of, from} from 'rxjs';
+import {mergeMap, concatMap, first, EMPTY, empty, Observable, Observer, of, from} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -14,6 +14,7 @@ import {GridComponent} from '@eg/share/grid/grid.component';
 import {GridFlatDataService} from '@eg/share/grid/grid-flat-data.service';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
 import {PartialReceiveDialogComponent} from './partial-receive-dialog.component';
+import {ToastService} from '@eg/share/toast/toast.service';
 
 @Component({
   templateUrl: 'report.component.html'
@@ -34,6 +35,7 @@ export class AsnReportComponent implements OnInit {
     index = 0;
 
     constructor(
+        private toast: ToastService,
         private route: ActivatedRoute,
         private router: Router,
         private ngLocation: Location,
@@ -152,6 +154,53 @@ export class AsnReportComponent implements OnInit {
         this.prDialog.open({size: 'md'}).subscribe(count => {
             console.debug('Modified ', count);
             row._isPartial = true;
+        });
+    }
+
+    markInvoicesReadyForPayment() {
+        let invoiceIds = [];
+        this.grid.context.getSelectedRows().forEach(row => {
+
+            if (Boolean(row['ready_for_payment_at'])) {
+                return;
+            }
+
+            let id = Number(row['invoice.id']);
+            if (!invoiceIds.includes(id)) {
+                invoiceIds.push(id);
+            }
+        });
+
+        this.pcrud.search('acqinv', {id: invoiceIds}, {}, {atomic: true}).toPromise()
+        .then(invoices => {
+            let toUpdate = [];
+            invoices.forEach(inv => {
+                if (Boolean(inv.ready_for_payment_at())) {
+                    return;
+                }
+
+                inv.ready_for_payment_at('now');
+                inv.ready_for_payment_by(this.auth.user().id());
+                toUpdate.push(inv);
+            });
+
+            if (toUpdate.length === 0) {
+                console.warn('No invoices need updating');
+                return;
+            }
+
+            this.pcrud.update(toUpdate)
+            .subscribe(
+                resp => {
+                    console.log('Resp', resp);
+                },
+                err => console.error(err),
+                () => {
+                    this.toast.success(toUpdate.length + ' invoices updated');
+                    this.grid.reload();
+                }
+            );
+
         });
     }
 }

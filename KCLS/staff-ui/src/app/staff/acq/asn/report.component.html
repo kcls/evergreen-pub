@@ -3,7 +3,7 @@
 <eg-partial-receive-dialog #prDialog></eg-partial-receive-dialog>
 
 <div class="row mt-2">
-  <div class="col-lg-4">
+  <div class="col-lg-7 d-flex">
     <div class="input-group">
       <div class="input-group-prepend">
         <span class="input-group-text" i18n>Invoice Identifier:</span>
@@ -15,9 +15,7 @@
         <button class="btn btn-outline-secondary" (click)="load()" i18n>Go</button>
       </div>
     </div>
-  </div>
-  <div class="col-lg-4">
-    <div class="input-group">
+    <div class="input-group ms-3">
       <div class="input-group-prepend">
         <span class="input-group-text" i18n>ASN Barcode:</span>
       </div>
@@ -29,10 +27,14 @@
       </div>
     </div>
   </div>
-  <div class="col-lg-4">
+  <div class="col-lg-5">
     <button class="btn btn-outline-primary" (click)="printWorksheets()" 
       [disabled]="!grid || grid.context.getSelectedRows().length === 0" i18n>
       Print Selected Worksheets
+    </button>
+    <button class="btn btn-outline-primary ms-3" (click)="markInvoicesReadyForPayment()"
+      [disabled]="!grid || grid.context.getSelectedRows().length === 0" i18n>
+      Mark Selected Invoices Complete
     </button>
   </div>
 </div>
@@ -66,6 +68,10 @@
       i18n-group i18n-label label="Modify Receive Count"
       (onClick)="modifyReceiveCount($event)"></eg-grid-toolbar-action>  
 
+      <eg-grid-toolbar-action                                                    
+      i18n-group i18n-label label="Modify Receive Count"
+      (onClick)="modifyReceiveCount($event)"></eg-grid-toolbar-action>  
+
 
       <eg-grid-column path="_index" [hidden]="true" [index]="true"
         [required]="true" label="Row Index" i18n-label>
@@ -74,7 +80,15 @@
       <eg-grid-column path="inv_ident" label="Invoice Identifier" i18n-label>
       </eg-grid-column>
 
-      <eg-grid-column path="invoice" label="Invoice ID" i18n-label [hidden]="true">
+      <eg-grid-column path="invoice.id" label="Invoice ID" i18n-label [required]="true" [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="invoice.ready_for_payment_at" 
+        label="Ready for Payment Date" i18n-label [required]="true" [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="invoice.ready_for_payment_by.usrname" 
+        label="Ready for Payment By" i18n-label [hidden]="true">
       </eg-grid-column>
 
       <eg-grid-column path="container_code" label="Container Code" i18n-label>
