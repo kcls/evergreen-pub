@@ -9,13 +9,15 @@ import {AsnService} from './asn.service';
 import {AsnComponent} from './asn.component';
 import {AsnReceiveComponent} from './receive.component';
 import {AsnReportComponent} from './report.component';
+import {PartialReceiveDialogComponent} from './partial-receive-dialog.component';
 
 
 @NgModule({
   declarations: [
     AsnComponent,
     AsnReceiveComponent,
-    AsnReportComponent
+    AsnReportComponent,
+    PartialReceiveDialogComponent
   ],
   imports: [
     StaffCommonModule,

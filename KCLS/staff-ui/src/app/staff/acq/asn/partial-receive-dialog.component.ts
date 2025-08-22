@@ -1,0 +1,82 @@
+import {Component, OnInit, Input, ViewChild} from '@angular/core';
+import {Observable} from 'rxjs';
+import {IdlObject} from '@eg/core/idl.service';
+import {NetService} from '@eg/core/net.service';
+import {EventService} from '@eg/core/event.service';
+import {ToastService} from '@eg/share/toast/toast.service';
+import {PcrudService} from '@eg/core/pcrud.service';
+import {AuthService} from '@eg/core/auth.service';
+import {DialogComponent} from '@eg/share/dialog/dialog.component';
+import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
+import {StringComponent} from '@eg/share/string/string.component';
+import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
+import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
+
+/* Dialog for modifying circulation due dates. */
+
+@Component({
+  selector: 'eg-partial-receive-dialog',
+  templateUrl: 'partial-receive-dialog.component.html'
+})
+
+export class PartialReceiveDialogComponent
+    extends DialogComponent implements OnInit {
+
+    lineitem: IdlObject | null = null;
+    lineitemId = 0;
+    liTitle = '';
+    nonViableItemCount = 0;
+    processing = false;
+
+    // Maybe show progress, depending on how quick this generally is.
+    // @ViewChild('loadProgress') loadProgress: ProgressInlineComponent;
+
+    constructor(
+        private modal: NgbModal, // required for passing to parent
+        private toast: ToastService,
+        private net: NetService,
+        private evt: EventService,
+        private pcrud: PcrudService,
+        private auth: AuthService) {
+        super(modal);
+    }
+
+    ngOnInit() {
+        this.onOpen$.subscribe(_ => {
+            this.lineitem = null;
+            this.liTitle = '';
+
+            this.net.request(
+                'open-ils.acq',
+                'open-ils.acq.lineitem.retrieve',
+                this.auth.token(),
+                this.lineitemId, {
+                    flesh_li_details: true,
+                    flesh_bib: true,
+                    flesh_display_entries: true
+                }
+            ).subscribe(li => {
+                const attrs = li.eg_bib_id().flat_display_entries();
+                const titleAttr = attrs.filter(a => a.name() === 'title_proper')[0];
+
+                if (titleAttr) {
+                    this.liTitle = titleAttr.value();
+                }
+
+                this.lineitem = li;
+            });
+        });
+    }
+
+    modify() {
+        this.processing = true;
+
+        console.log('nonViableItemCount is ', this.nonViableItemCount);
+
+        setTimeout(() => {
+            this.processing = false;
+            this.close();
+        }, 1000); // TODO simulating
+    }
+}
+

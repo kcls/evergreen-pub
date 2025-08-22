@@ -13,6 +13,7 @@ import {GridDataSource, GridColumn, GridCellTextGenerator} from '@eg/share/grid/
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {GridFlatDataService} from '@eg/share/grid/grid-flat-data.service';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
+import {PartialReceiveDialogComponent} from './partial-receive-dialog.component';
 
 @Component({
   templateUrl: 'report.component.html'
@@ -25,6 +26,7 @@ export class AsnReportComponent implements OnInit {
 
     @ViewChild('grid') grid: GridComponent;
     @ViewChild('progress') progress: ProgressInlineComponent;
+    @ViewChild('prDialog') prDialog: PartialReceiveDialogComponent;
 
     dataSource: GridDataSource = new GridDataSource();
     index = 0;
@@ -46,7 +48,7 @@ export class AsnReportComponent implements OnInit {
         if (codes) { this.codeList = codes.split(','); }
 
         this.dataSource.getRows = (pager: Pager, sort: any[]) => {
-            console.debug(this.invoiceIdent, this.asnBarcode, this.codeList);
+            //console.debug(this.invoiceIdent, this.asnBarcode, this.codeList);
 
             if (!this.invoiceIdent && !this.asnBarcode && this.codeList.length === 0) {
                 return EMPTY;
@@ -129,6 +131,18 @@ export class AsnReportComponent implements OnInit {
         window.open(url);
 
         setTimeout(() => this.printWorksheetList(rows), 2000);
+    }
+
+
+    modifyReceiveCount(rows: any[]) {
+        let row = rows[0];
+        if (!row) { return; }
+
+        this.prDialog.lineitemId = row['lineitem.id'];
+
+        this.prDialog.open({size: 'md'});
+
+        // TODO refresh anything?
     }
 }
 
