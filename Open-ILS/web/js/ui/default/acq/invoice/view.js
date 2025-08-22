@@ -146,7 +146,7 @@ function renderInvoice() {
     if (provider && provider.edi_default()) {
         var ediAccount = pcrud.retrieve("acqedi", provider.edi_default());
         if (ediAccount) {
-            invoice._edi_account = ediAccount;
+            document.getElementById('acq-invoice-edi-account-num').innerHTML = ediAccount.account();
         }
     }
 
@@ -1348,22 +1348,6 @@ function drawInvoicePane(parentNode, inv, args) {
     if (!readOnly && (!inv || !inv.erp_export_date())) 
         suppress.push('erp_export_date');
 
-    if (inv._edi_account) {
-        // TODO figure out why this is not displaying in the EditPane!
-        override.edi_account = {
-            dijitArgs: {
-                fmClass: "acqedi",
-                fmObject: inv._edi_account,
-                fmField: 'account',
-                widgetValue: inv._edi_account.account(),
-                labelAttr: 'label',
-                label: 'Vendor Account #'
-            }
-        };
-    }
-
-    console.log(override);
-
     pane = new openils.widget.EditPane({
         fmObject : inv,
         paneStackCount : 2,
@@ -1384,7 +1368,7 @@ function drawInvoicePane(parentNode, inv, args) {
             'recv_method', 
             'inv_type', 
             'provider', 
-            'shipper'
+            'shipper',
         ],
         suppressFields : suppress
     });
