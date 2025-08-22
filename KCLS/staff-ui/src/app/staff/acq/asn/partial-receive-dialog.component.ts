@@ -1,7 +1,9 @@
 import {Component, OnInit, Input, ViewChild} from '@angular/core';
-import {Observable} from 'rxjs';
+import {Observable, from} from 'rxjs';
+import {concatMap, tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
+import {OrgService} from '@eg/core/org.service';
 import {EventService} from '@eg/core/event.service';
 import {ToastService} from '@eg/share/toast/toast.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -35,6 +37,7 @@ export class PartialReceiveDialogComponent
         private modal: NgbModal, // required for passing to parent
         private toast: ToastService,
         private net: NetService,
+        private org: OrgService,
         private evt: EventService,
         private pcrud: PcrudService,
         private auth: AuthService) {
@@ -45,6 +48,8 @@ export class PartialReceiveDialogComponent
         this.onOpen$.subscribe(_ => {
             this.lineitem = null;
             this.liTitle = '';
+            this.processing = false;
+            this.nonViableItemCount = 0;
 
             this.net.request(
                 'open-ils.acq',
@@ -71,12 +76,47 @@ export class PartialReceiveDialogComponent
     modify() {
         this.processing = true;
 
-        console.log('nonViableItemCount is ', this.nonViableItemCount);
+        let receivedItems = this.lineitem.lineitem_details().filter(d => Boolean(d.recv_time()));
 
-        setTimeout(() => {
+        console.log(receivedItems + ' are marked as received');
+
+        if (receivedItems.length < this.nonViableItemCount) {
+            alert($localize`Non-received item count ${this.nonViableItemCount} exceeds received item count ${receivedItems.length}`);
+            this.processing = false;
+            return;
+        }
+
+        // KCLS un-receives items in reverse alphabetical order of the
+        // owning org unit shortname.
+        receivedItems = receivedItems.sort((a, b) => {
+            const asn = this.org.get(a.owning_lib()).shortname();
+            const bsn = this.org.get(b.owning_lib()).shortname();
+            return asn > bsn ? -1 : 1;
+        })
+
+        receivedItems = receivedItems.slice(0, this.nonViableItemCount);
+        let unReceiveCount = 0;
+
+        from(receivedItems)
+        .pipe(
+            concatMap(lid => {
+                return this.net.request(
+                    'open-ils.acq',
+                    'open-ils.acq.lineitem_detail.receive.rollback',
+                    this.auth.token(), (lid as IdlObject).id()
+                ).pipe(tap(resp => {
+                    let evt = this.evt.parse(resp);
+                    if (evt) {
+                        console.error('Unreceive error', evt);
+                    } else {
+                        unReceiveCount++;
+                    }
+                }));
+            })
+        ).subscribe(_ => {
             this.processing = false;
             this.close();
-        }, 1000); // TODO simulating
+        });
     }
 }
 
