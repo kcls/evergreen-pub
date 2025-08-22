@@ -147,6 +147,7 @@ export class AsnReportComponent implements OnInit {
         if (!row) { return; }
 
         this.prDialog.lineitemId = row['lineitem.id'];
+        this.prDialog.asnItemCount = row['item_count_for_lineitem'];
 
         this.prDialog.open({size: 'md'}).subscribe(count => {
             console.debug('Modified ', count);
