@@ -109,7 +109,7 @@ export class PartialReceiveDialogComponent
                     if (evt) {
                         console.error('Unreceive error', evt);
                     } else {
-                        unReceiveCount++;
+                        this.respond(++unReceiveCount);
                     }
                 }));
             })

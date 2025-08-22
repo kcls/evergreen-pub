@@ -9,7 +9,7 @@ import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
 import {LineitemService} from '../lineitem/lineitem.service';
 import {Pager} from '@eg/share/util/pager';
-import {GridDataSource, GridColumn, GridCellTextGenerator} from '@eg/share/grid/grid';
+import {GridDataSource, GridColumn, GridCellTextGenerator, GridRowFlairEntry} from '@eg/share/grid/grid';
 import {GridComponent} from '@eg/share/grid/grid.component';
 import {GridFlatDataService} from '@eg/share/grid/grid-flat-data.service';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
@@ -27,6 +27,8 @@ export class AsnReportComponent implements OnInit {
     @ViewChild('grid') grid: GridComponent;
     @ViewChild('progress') progress: ProgressInlineComponent;
     @ViewChild('prDialog') prDialog: PartialReceiveDialogComponent;
+
+    rowFlairCallback: (row: any) => GridRowFlairEntry;
 
     dataSource: GridDataSource = new GridDataSource();
     index = 0;
@@ -91,6 +93,12 @@ export class AsnReportComponent implements OnInit {
             }));
         };
 
+        this.rowFlairCallback = (row: any): GridRowFlairEntry => {
+            if (row._isPartial) {
+                return {icon: 'priority_high'};
+            }
+        };
+
         setTimeout(() => this.focusInput());
     }
 
@@ -140,9 +148,10 @@ export class AsnReportComponent implements OnInit {
 
         this.prDialog.lineitemId = row['lineitem.id'];
 
-        this.prDialog.open({size: 'md'});
-
-        // TODO refresh anything?
+        this.prDialog.open({size: 'md'}).subscribe(count => {
+            console.debug('Modified ', count);
+            row._isPartial = true;
+        });
     }
 }
 
