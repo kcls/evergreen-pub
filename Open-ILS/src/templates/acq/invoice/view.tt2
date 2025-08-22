@@ -46,10 +46,14 @@
     </div>
 
     <div dojoType="dijit.layout.ContentPane" layoutAlign="client">
-        <div id='acq-invoice-summary-needs-attention' style="display:flex; padding:5px">
-          <div style="flex:1">
-            <span>EDI Account # </span>
+        <div id='acq-invoice-summary-needs-attention' style="padding: 5px">
+          <div>
+            <span>EDI Account #</span>
             <span id='acq-invoice-edi-account-num'></span>
+          </div>
+          <div id="acq-invoice-summary-partial" 
+            style="color: darkred; margin-top: 5px; font-weight: bold; display:none">
+            Invoice has incomplete line items.
           </div>
         </div>
     </div>
