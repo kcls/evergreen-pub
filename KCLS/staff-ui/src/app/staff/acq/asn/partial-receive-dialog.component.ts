@@ -1,7 +1,7 @@
 import {Component, OnInit, Input, ViewChild} from '@angular/core';
 import {Observable, from} from 'rxjs';
 import {concatMap, tap} from 'rxjs/operators';
-import {IdlObject} from '@eg/core/idl.service';
+import {IdlService, IdlObject} from '@eg/core/idl.service';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
 import {EventService} from '@eg/core/event.service';
@@ -13,6 +13,7 @@ import {NgbModal, NgbModalOptions} from '@ng-bootstrap/ng-bootstrap';
 import {StringComponent} from '@eg/share/string/string.component';
 import {ComboboxEntry} from '@eg/share/combobox/combobox.component';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
+import {StaffService} from '@eg/staff/share/staff.service';
 
 /* Dialog for modifying circulation due dates. */
 
@@ -28,7 +29,10 @@ export class PartialReceiveDialogComponent
     lineitemId = 0;
     liTitle = '';
     nonViableItemCount = 0;
+    asnItemCount = 0;
     processing = false;
+    lineitemNote = '';
+    staffInitials = '';
 
     // Maybe show progress, depending on how quick this generally is.
     // @ViewChild('loadProgress') loadProgress: ProgressInlineComponent;
@@ -38,8 +42,10 @@ export class PartialReceiveDialogComponent
         private toast: ToastService,
         private net: NetService,
         private org: OrgService,
+        private idl: IdlService,
         private evt: EventService,
         private pcrud: PcrudService,
+        private staff: StaffService,
         private auth: AuthService) {
         super(modal);
     }
@@ -50,6 +56,8 @@ export class PartialReceiveDialogComponent
             this.liTitle = '';
             this.processing = false;
             this.nonViableItemCount = 0;
+            this.lineitemNote = '';
+            this.staffInitials = '';
 
             this.net.request(
                 'open-ils.acq',
@@ -76,6 +84,13 @@ export class PartialReceiveDialogComponent
     modify() {
         this.processing = true;
 
+        this.createLineitemNote()
+            .then(_ => this.modifyItems())
+            .finally(() => this.processing = false);
+
+    }
+
+    modifyItems(): Promise<any> {
         // received, non-canceled lineitem details
         let receivedItems = this.lineitem.lineitem_details()
             .filter(d => Boolean(d.recv_time()) && !Boolean(d.cancel_reason()));
@@ -119,6 +134,32 @@ export class PartialReceiveDialogComponent
             this.processing = false;
             this.close();
         });
+    }
+
+    createLineitemNote(): Promise<any> {
+        if (!this.lineitemNote) {
+            return Promise.resolve();
+        }
+
+        const note = this.idl.create('acqlin');
+        note.isnew(true);
+        note.lineitem(this.lineitemId);
+        note.value(this.staff.appendInitials(this.lineitemNote, this.staffInitials));
+
+        return this.net.request(
+            'open-ils.acq',
+            'open-ils.acq.lineitem_note.cud.batch',
+            this.auth.token(), [note]
+        ).toPromise();
+    }
+
+    canSubmit() {
+        return (
+            this.nonViableItemCount > 0 &&
+            this.nonViableItemCount <= this.asnItemCount &&
+            this.lineitemNote !== '' &&
+            this.staffInitials != ''
+        );
     }
 }
 
