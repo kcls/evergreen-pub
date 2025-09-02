@@ -16022,6 +16022,7 @@ SELECT  usr,
 			<field name="workstation" reporter:datatype="text" reporter:label="Payment Workstation"/>
 			<field name="cc_order_number" reporter:datatype="text" reporter:label="Credit Card Transaction #"/>
 			<field name="cc_processor" reporter:datatype="text" reporter:label="Credit Card Processor"/>
+			<field name="approval_code" reporter:datatype="text" reporter:label="Credit Card Approval Code"/>
 		</fields>
 		<links>
 			<link field="payment" reltype="has_a" key="id" map="" class="mp"/>
