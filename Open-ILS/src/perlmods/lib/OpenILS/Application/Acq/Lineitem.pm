@@ -1133,4 +1133,72 @@ sub retrieve_lineitem_by_copy_id {
     return $li;
 }
 
+
+__PACKAGE__->register_method(
+    method    => 'lineitem_invoice_shipment_summary',
+    api_name  => 'open-ils.acq.lineitem.invoice_shipment_summary',
+    signature => {
+        desc   => 'Summarize receive info for a lineitem and given invoice',
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => 'Lineitem ID'},
+            {desc => 'Invoice ID'},
+        ],
+        return => {desc => 'Object of counts'}
+    }
+);
+
+sub lineitem_invoice_shipment_summary {
+    my($self, $conn, $auth, $li_id, $inv_id) = @_;
+    my $e = new_editor(xact=>1, authtoken=>$auth);
+
+    return $e->die_event unless $e->checkauth;
+    return $e->die_event unless $e->allowed('VIEW_INVOICE');
+
+    # Get the shipment notices for this lineitem
+
+    my $asns = $e->search_acq_shipment_notification_entry({lineitem => $li_id});
+    my $total_shipped = 0;
+    $total_shipped += $_->item_count for @$asns;
+
+    $logger->info("Lineitem shipments show $total_shipped total shipped");
+
+    my $lids = $e->json_query({
+        select => {acqlid => ['id', 'recv_time']},
+        from => {
+            acqlid => {
+                acqfdeb => {
+                    join => {
+                        acqie => {
+                            field => 'id',
+                            fkey => 'invoice_entry',
+                        }
+                    }
+                }
+            }
+        },
+        where => {
+            '+acqlid' => {
+                lineitem => $li_id,
+            },
+            '+acqie' => {
+                invoice => $inv_id
+            }
+        }
+    });
+
+    my $total_received = 0;
+    $total_received += ($_->{recv_time} ? 1 : 0) for @$lids;
+
+    $logger->info("Lineitem $li_id for invoice $inv_id shows $total_received total received");
+
+    return {
+        lineitem => $li_id,
+        invoice => $inv_id,
+        total_shipped => $total_shipped,
+        total_received => $total_received,
+    };
+}
+
+
 1;
