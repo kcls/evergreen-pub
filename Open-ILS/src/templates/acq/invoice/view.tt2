@@ -103,11 +103,12 @@
                             <th class='acq-invoice-center-col hide-complete'>[% l('Detach') %]</th>
                         </tr>
                     </thead>
+                    <style>.li-needs-attention { border: 2px solid darkred }</style>
                     <tbody id='acq-invoice-entry-tbody' class='hidden'>
                         <tr id='acq-invoice-entry-template' class='acq-invoice-row'>
                             <td colspan='2'>
                                 <div name='title_details'></div>
-                                <div name='note'></div>
+                                <div name='note' style="color:red;font-weight:bold"></div>
                             </td>
                             <td class='acq-invoice-center-col' nowrap='nowrap'>
                                 <span name='inv_item_count'></span>&nbsp;/&nbsp;<span name='phys_item_count'></span>
