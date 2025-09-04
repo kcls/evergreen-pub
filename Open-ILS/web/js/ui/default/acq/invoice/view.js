@@ -150,6 +150,7 @@ function renderInvoice() {
         }
     }
 
+
     /*
     // Async variant in case it's needed.
     pcrud.retrieve("acqpro", invoice.provider());
@@ -942,10 +943,6 @@ function addInvoiceEntry(entry) {
             console.log(dojo.byId('li-title-ref-' + li.id()));
 
             updateReceiveLink(li);
-
-            if (li.order_summary().recv_count() + li.order_summary().cancel_count() < li.order_summary().item_count()) {
-                openils.Util.show(dojo.byId('acq-invoice-summary-partial'));
-            }
 
             // set some default values if otherwise unset
             if (!invoicePane.getFieldValue('receiver')) {
