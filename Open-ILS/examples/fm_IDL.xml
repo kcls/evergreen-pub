@@ -9829,8 +9829,8 @@ SELECT  usr,
     oils_persist:readonly="true"
     reporter:label="Shipment Notification Summary">
     <fields>
-      <field reporter:label="Invoice ID" name="invoice" reporter:datatype="id"/>
-      <field reporter:label="Invoice Identifier" name="inv_ident" reporter:datatype="id"/>
+      <field reporter:label="Invoice ID" name="invoice" reporter:datatype="link"/>
+      <field reporter:label="Invoice Identifier" name="inv_ident" reporter:datatype="text"/>
       <field reporter:label="ASN ID" name="shipment_notification" reporter:datatype="link"/>
       <field reporter:label="Container Code" name="container_code" reporter:datatype="text"/>
       <field reporter:label="Provider" name="provider" reporter:datatype="link"/>

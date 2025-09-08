@@ -1,7 +1,7 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
 import {Location} from '@angular/common';
-import {mergeMap, first, EMPTY, empty, Observable, Observer, of, from} from 'rxjs';
+import {mergeMap, concatMap, first, EMPTY, empty, Observable, Observer, of, from} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -153,6 +153,49 @@ export class AsnReportComponent implements OnInit {
             console.debug('Modified ', count);
             row._isPartial = true;
         });
+    }
+
+    markInvoicesReadyForPayment() {
+        let invoiceIds = [];
+        this.grid.context.getSelectedRows().forEach(row => {
+
+            if (Boolean(row['ready_for_payment_at'])) {
+                return;
+            }
+
+            let id = Number(row['invoice.id']);
+            if (!invoiceIds.includes(id)) {
+                invoiceIds.push(id);
+            }
+        });
+
+        this.pcrud.search('acqinv', {id: invoiceIds}, {}, {atomic: true}).toPromise()
+        .then(invoices => {
+            let toUpdate = [];
+            invoices.forEach(inv => {
+                if (Boolean(inv.ready_for_payment_at())) {
+                    return;
+                }
+
+                inv.ready_for_payment_at('now');
+                inv.ready_for_payment_by(this.auth.user().id());
+                toUpdate.push(inv);
+            });
+
+            this.pcrud.update(toUpdate)
+            .subscribe(
+                resp => {
+                    console.log('Resp', resp);
+                },
+                _ => {},
+                () => {
+                    console.log('all done');
+                }
+            );
+
+        });
+
+        console.log("Marking invoices as ready for payment", invoiceIds);
     }
 }
 

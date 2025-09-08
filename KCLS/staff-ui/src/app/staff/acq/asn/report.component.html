@@ -80,7 +80,15 @@
       <eg-grid-column path="inv_ident" label="Invoice Identifier" i18n-label>
       </eg-grid-column>
 
-      <eg-grid-column path="invoice" label="Invoice ID" i18n-label [hidden]="true">
+      <eg-grid-column path="invoice.id" label="Invoice ID" i18n-label [required]="true" [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="invoice.ready_for_payment_at" 
+        label="Ready for Payment Date" i18n-label [required]="true" [hidden]="true">
+      </eg-grid-column>
+
+      <eg-grid-column path="invoice.ready_for_payment_by.usrname" 
+        label="Ready for Payment By" i18n-label [hidden]="true">
       </eg-grid-column>
 
       <eg-grid-column path="container_code" label="Container Code" i18n-label>
