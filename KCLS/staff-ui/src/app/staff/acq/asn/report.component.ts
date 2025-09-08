@@ -14,6 +14,7 @@ import {GridComponent} from '@eg/share/grid/grid.component';
 import {GridFlatDataService} from '@eg/share/grid/grid-flat-data.service';
 import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.component';
 import {PartialReceiveDialogComponent} from './partial-receive-dialog.component';
+import {ToastService} from '@eg/share/toast/toast.service';
 
 @Component({
   templateUrl: 'report.component.html'
@@ -34,6 +35,7 @@ export class AsnReportComponent implements OnInit {
     index = 0;
 
     constructor(
+        private toast: ToastService,
         private route: ActivatedRoute,
         private router: Router,
         private ngLocation: Location,
@@ -187,15 +189,14 @@ export class AsnReportComponent implements OnInit {
                 resp => {
                     console.log('Resp', resp);
                 },
-                _ => {},
+                err => console.error(err),
                 () => {
-                    console.log('all done');
+                    this.toast.success(toUpdate.length + ' invoices updated');
+                    this.grid.reload();
                 }
             );
 
         });
-
-        console.log("Marking invoices as ready for payment", invoiceIds);
     }
 }
 
