@@ -184,6 +184,11 @@ export class AsnReportComponent implements OnInit {
                 toUpdate.push(inv);
             });
 
+            if (toUpdate.length === 0) {
+                console.warn('No invoices need updating');
+                return;
+            }
+
             this.pcrud.update(toUpdate)
             .subscribe(
                 resp => {
