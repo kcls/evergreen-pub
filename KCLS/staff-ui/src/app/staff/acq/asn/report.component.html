@@ -3,7 +3,7 @@
 <eg-partial-receive-dialog #prDialog></eg-partial-receive-dialog>
 
 <div class="row mt-2">
-  <div class="col-lg-4">
+  <div class="col-lg-7 d-flex">
     <div class="input-group">
       <div class="input-group-prepend">
         <span class="input-group-text" i18n>Invoice Identifier:</span>
@@ -15,9 +15,7 @@
         <button class="btn btn-outline-secondary" (click)="load()" i18n>Go</button>
       </div>
     </div>
-  </div>
-  <div class="col-lg-4">
-    <div class="input-group">
+    <div class="input-group ms-3">
       <div class="input-group-prepend">
         <span class="input-group-text" i18n>ASN Barcode:</span>
       </div>
@@ -29,10 +27,14 @@
       </div>
     </div>
   </div>
-  <div class="col-lg-4">
+  <div class="col-lg-5">
     <button class="btn btn-outline-primary" (click)="printWorksheets()" 
       [disabled]="!grid || grid.context.getSelectedRows().length === 0" i18n>
       Print Selected Worksheets
+    </button>
+    <button class="btn btn-outline-primary ms-3" (click)="markInvoicesReadyForPayment()"
+      [disabled]="!grid || grid.context.getSelectedRows().length === 0" i18n>
+      Mark Selected Invoices Complete
     </button>
   </div>
 </div>
