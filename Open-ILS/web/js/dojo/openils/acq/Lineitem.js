@@ -183,7 +183,7 @@ openils.acq.Lineitem.fetchAndRender = function(liId, args, callback) {
                         (pl) ? 'foo' : '', // ditto
                         encodeURIComponent(location.pathname + location.search),
                         lineitem.order_summary().delay_count() || '0',
-                        lineitem.eg_bib_id()
+                        lineitem.eg_bib_id() || ''
                     ],
                     function(str) {
                         // prevent long titles from filling up the page
