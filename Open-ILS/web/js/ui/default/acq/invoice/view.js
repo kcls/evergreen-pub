@@ -141,33 +141,16 @@ function init2() {
 function renderInvoice() {
     // Fetch the provider default edi account so we can display the account value.
 
-    var pcrud = new openils.PermaCrud();
-    var provider = pcrud.retrieve("acqpro", invoice.provider());
-    if (provider && provider.edi_default()) {
-        var ediAccount = pcrud.retrieve("acqedi", provider.edi_default());
-        if (ediAccount) {
-            document.getElementById('acq-invoice-edi-account-num').innerHTML = ediAccount.account();
+    if (invoice && invoice.provider()) {
+        var pcrud = new openils.PermaCrud();
+        var provider = pcrud.retrieve("acqpro", invoice.provider());
+        if (provider && provider.edi_default()) {
+            var ediAccount = pcrud.retrieve("acqedi", provider.edi_default());
+            if (ediAccount) {
+                document.getElementById('acq-invoice-edi-account-num').innerHTML = ediAccount.account();
+            }
         }
     }
-
-
-    /*
-    // Async variant in case it's needed.
-    pcrud.retrieve("acqpro", invoice.provider());
-        "oncomplete": function(r) {
-            openils.Util.hide("ident-validation-spinner");
-            var provider = openils.Util.readResponse(r);
-
-            if (!provider || !provider.edi_default()) { return; }
-
-            pcrud.retrieve("acqedi", provider.edi_default(), {
-                oncomplete: function(r) {
-                    var ediAccount = openils.Util.readResponse(r);
-                }
-            });
-        }
-    });
-    */
 
     // in create mode, let the LI or PO render the invoice with seed data
     if( !(cgi.param('create') && (attachPo.length || attachLi.length)) ) {
