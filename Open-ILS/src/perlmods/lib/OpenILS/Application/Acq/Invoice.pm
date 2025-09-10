@@ -1044,4 +1044,45 @@ sub finalize_blanket_po {
     return undef;
 }
 
+__PACKAGE__->register_method(
+    method => 'set_lineitem_needs_attention',
+    api_name    => 'open-ils.acq.invoice.lineitem.set_needs_attention',
+    signature => {
+        desc => q/
+        /,
+        params => [
+            {desc => 'Authentication token', type => 'string'},
+            {desc => q/Invoice id/, type => 'number'},
+            {desc => q/Lineitem id/, type => 'number'}
+        ],
+        return => {desc => '1 on success, event on error'}
+    }
+);
+
+sub set_lineitem_needs_attention {
+    my ($self, $client, $auth, $inv_id, $li_id) = @_;
+
+    my $e = new_editor(xact => 1, authtoken=>$auth);
+    return $e->die_event unless $e->checkauth;
+
+    my $invoice = $e->retrieve_acq_invoice($inv_id) or return $e->die_event;
+
+    return $e->die_event unless
+        $e->allowed('CREATE_INVOICE', $invoice->receiver);
+
+    my $entry = $e->search_acq_invoice_entry({
+        invoice => $inv_id,
+        lineitem => $li_id,
+    })->[0];
+
+    return 0 if !$entry || $U->is_true($entry->needs_attention);
+
+    $entry->needs_attention('t');
+    $e->update_acq_invoice_entry($entry) or return $e->die_event;
+
+    $e->commit;
+
+    return 1;
+}
+
 1;

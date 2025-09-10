@@ -25,3 +25,4 @@
 0020-pr-edited-by [0019-pr-filters] 2025-06-30T14:38:33Z berick <berick@kcls24> # PR last edited by
 0021-refund-payment-approval-code [0019-pr-filters] 2025-09-02T16:29:11Z berick <berick@kcls24> # Refund approval code
 0022-invoice-ready-for-payment [0021-refund-payment-approval-code] 2025-09-08T17:41:12Z berick <berick@kcls24> # yep, ready
+0023-invoice-entry-needs-attention [0021-refund-payment-approval-code] 2025-09-10T15:18:42Z berick <berick@kcls24> # entry needs attention

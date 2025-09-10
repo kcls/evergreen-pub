@@ -152,8 +152,21 @@ export class AsnReportComponent implements OnInit {
         this.prDialog.asnItemCount = row['item_count_for_lineitem'];
 
         this.prDialog.open({size: 'md'}).subscribe(count => {
-            console.debug('Modified ', count);
+            if (Number(count) === 0) { return; }
+
             row._isPartial = true;
+
+            // Partials require we tag the related invoice entry
+            // as neededing staff attention.
+            this.net.request(
+                'open-ils.acq',
+                'open-ils.acq.invoice.lineitem.set_needs_attention',
+                this.auth.token(),
+                row['invoice.id'],
+                row['lineitem.id']
+            ).toPromise().then(resp => {
+                console.debug('set_needs_attention returned', resp);
+            });
         });
     }
 
