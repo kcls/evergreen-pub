@@ -9688,6 +9688,7 @@ SELECT  usr,
 			<field reporter:label="Cost Billed" name="cost_billed" reporter:datatype="money" />
 			<field reporter:label="Actual Cost" name="actual_cost" reporter:datatype="money" />
 			<field reporter:label="Amount Paid" name="amount_paid" reporter:datatype="money" />
+			<field reporter:label="Needs Attention" name="needs_attention" reporter:datatype="bool" />
 		</fields>
 		<links>
 			<link field="invoice" reltype="has_a" key="id" map="" class="acqinv"/>

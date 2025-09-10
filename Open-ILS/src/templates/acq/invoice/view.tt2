@@ -46,10 +46,13 @@
     </div>
 
     <div dojoType="dijit.layout.ContentPane" layoutAlign="client">
-        <div id='acq-invoice-summary-needs-attention' style="display:flex; padding:5px">
-          <div style="flex:1">
+        <div id='acq-invoice-summary-needs-attention' style="padding:5px">
+          <div>
             <span>EDI Account # </span>
             <span id='acq-invoice-edi-account-num'></span>
+          </div>
+          <div style="font-weight: bold; display:none; color: red; margin-top: 5px" id="acq-invoice-needs-attention">
+            Invoice Needs Attention
           </div>
         </div>
     </div>

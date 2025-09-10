@@ -26,3 +26,4 @@
 0021-refund-payment-approval-code [0019-pr-filters] 2025-09-02T16:29:11Z berick <berick@kcls24> # Refund approval code
 XXXX-checkout-emails [0004-damaged-item-letter] 2024-09-19T15:23:11Z berick <berick@kcls311> # Checkout Emails
 XXXX-invoice-ready-for-payment 2025-09-08T17:41:12Z berick <berick@kcls24> # yep, ready
+XXXX-invoice-entry-needs-attention [0021-refund-payment-approval-code] 2025-09-10T15:18:42Z berick <berick@kcls24> # entry needs attention
