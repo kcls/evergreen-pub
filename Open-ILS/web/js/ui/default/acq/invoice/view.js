@@ -152,6 +152,8 @@ function renderInvoice() {
                 }
             }
 
+            document.getElementById('acq-invoice-vendor-name').innerHTML = provider.name();
+
             var addresses = pcrud.search("acqpa", {provider: provider.id()});
             // TODO is there a specific address type we should display?
             // Show them all?

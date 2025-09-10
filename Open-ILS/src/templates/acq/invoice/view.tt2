@@ -52,7 +52,7 @@
             <span id='acq-invoice-edi-account-num'></span>
           </div>
           <div>
-            <div>Vendor Address </div>
+            <div><span>Vendor: </span><span id='acq-invoice-vendor-name'></span></div>
             <div id='acq-invoice-vendor-addr'></div>
           </div>
           <div style="font-weight: bold; display:none; color: red; margin-top: 5px" id="acq-invoice-needs-attention">
