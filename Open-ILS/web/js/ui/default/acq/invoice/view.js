@@ -144,10 +144,28 @@ function renderInvoice() {
     if (invoice && invoice.provider()) {
         var pcrud = new openils.PermaCrud();
         var provider = pcrud.retrieve("acqpro", invoice.provider());
-        if (provider && provider.edi_default()) {
-            var ediAccount = pcrud.retrieve("acqedi", provider.edi_default());
-            if (ediAccount) {
-                document.getElementById('acq-invoice-edi-account-num').innerHTML = ediAccount.account();
+        if (provider) {
+            if (provider.edi_default()) {
+                var ediAccount = pcrud.retrieve("acqedi", provider.edi_default());
+                if (ediAccount) {
+                    document.getElementById('acq-invoice-edi-account-num').innerHTML = ediAccount.account();
+                }
+            }
+
+            var addresses = pcrud.search("acqpa", {provider: provider.id()});
+            // TODO is there a specific address type we should display?
+            // Show them all?
+            let addr = addresses[0];
+            if (addr) {
+                // So fun, so kludge!
+                let s = 
+                    (addr.address_type() || '') + '<br/>' +
+                    (addr.street1() || '') + ' ' + (addr.street2() || '') + '<br/>' + 
+                    (addr.city() || '') + ', ' + (addr.state() || '') + ' ' + (addr.post_code() || '');
+
+                console.log(s);
+
+                document.getElementById('acq-invoice-vendor-addr').innerHTML = s;
             }
         }
     }
