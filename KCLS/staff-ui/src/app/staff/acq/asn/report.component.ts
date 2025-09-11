@@ -202,6 +202,11 @@ export class AsnReportComponent implements OnInit {
                 return;
             }
 
+            if (!confirm($localize`Mark ${toUpdate.length} invoice(s) as ready for payment?`)) {
+                // TODO this will be removed in the future.
+                return;
+            }
+
             this.pcrud.update(toUpdate)
             .subscribe(
                 resp => {
