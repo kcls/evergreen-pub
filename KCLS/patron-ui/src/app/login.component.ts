@@ -47,11 +47,14 @@ export class LoginComponent implements OnInit {
         this.loginFailed = false;
         this.app.clearAuthtoken();
 
+        const ident = (this.controls.identifier.value || '').trim();
+        const pass = (this.controls.password.value || '').trim();
+
         this.gateway.requestOne(
             'open-ils.auth',
             'open-ils.auth.login', {
-                identifier: this.controls.identifier.value,
-                password: this.controls.password.value,
+                identifier: ident,
+                password: pass,
                 type: 'opac'
             }
         ).then((r: unknown) => {
