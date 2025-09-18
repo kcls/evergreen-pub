@@ -10,7 +10,7 @@ import {BucketDialogComponent
     } from '@eg/staff/share/buckets/bucket-dialog.component';
 import {ProgressDialogComponent} from '@eg/share/dialog/progress.component';
 
-const MAX_FROM_SEARCH_RESULTS = 1000;
+const MAX_FROM_SEARCH_RESULTS = 10000;
 
 @Component({
   selector: 'eg-catalog-basket-actions',
