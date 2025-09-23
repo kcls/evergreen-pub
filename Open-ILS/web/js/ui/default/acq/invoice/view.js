@@ -1350,6 +1350,10 @@ function drawInvoicePane(parentNode, inv, args) {
     // Display the close date/by data for closed invoices.
     var readOnly = inv && inv.close_date();
     var suppress = readOnly ? ['id'] : ['id', 'close_date', 'closed_by'];
+
+    // XXX AHAHA this will try to load every user in the database 
+    // into an autoselect.
+    suppress.push('ready_for_payment_by');
     
     // Only hide the ERP export date when the invoice is still open
     // and no value is present.  A re-opened invoice can have an export
