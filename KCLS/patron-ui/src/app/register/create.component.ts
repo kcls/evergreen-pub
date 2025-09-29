@@ -89,6 +89,8 @@ export class RegisterCreateComponent implements OnInit {
     formNeedsWork = false;
     homeOrgs: Hash[] = [];
 
+    calculatedHomeOrg: number | null = null;
+
     emailSettings: UserSettingType[] = [];
     phoneSettings: UserSettingType[] = [];
     textSettings: UserSettingType[] = [];
@@ -223,6 +225,8 @@ export class RegisterCreateComponent implements OnInit {
 
     ngOnInit() {
 
+        // TODO homeOrgs needs to be pref hold pickup location
+
         // Users are allowed to select a home lib from the set of
         // org units where the opac.allow_pending_user setting is true.
         this.app.getOrgTree().then(tree => {
@@ -353,6 +357,46 @@ export class RegisterCreateComponent implements OnInit {
         this.formGroup.controls.city.setValue(addr.city);
         this.formGroup.controls.state.setValue(addr.state);
         this.formGroup.controls.zipCode.setValue(addr.zipcode);
+
+        this.applyHomeOrgFromAddr(addr);
+    }
+
+    applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<void> {
+        // In theory the tested address should return a single result
+        // since the address provided is a normalized value returned
+        // from the address API.
+        return this.gateway.requestOne(
+			'open-ils.rs-addrs',
+            'open-ils.rs-addrs.lookup',
+            'TODOTODOTODOTODO', // TODO
+            {
+                street: addr.street_line,
+                city: addr.city,
+                state: addr.state,
+                zipcode: addr.zipcode,
+            }
+        ).then(found => {
+            if (!found) { return; }
+
+            let lat = (found as any).metadata.latitude;
+            let long = (found as any).metadata.longitude;
+
+            return this.gateway.requestOne(
+                'open-ils.rs-addrs',
+                'open-ils.rs-addrs.home-org',
+                'TODOTODOTODO', lat, long
+            );
+
+        }).then(homeOrg => {
+            console.log('Got home org', homeOrg);
+            if (homeOrg) {
+                this.calculatedHomeOrg = (homeOrg as any).home_ou;
+            }
+        });
+    }
+
+    homeOrgUnit(): Hash {
+        return this.app.getOrgUnit(this.calculatedHomeOrg ?? 0) ?? {};
     }
 
     populateMailAddrFromSuggestion() {
@@ -398,7 +442,7 @@ export class RegisterCreateComponent implements OnInit {
 			'open-ils.rs-addrs',
 		    'open-ils.rs-addrs.autocomplete',
             'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
-            {"search": filterValue}
+            {"state_filter": "WA", "search": filterValue}
         ).pipe(
             map(suggestion => {
                 //console.debug('Found matching address', suggestion);

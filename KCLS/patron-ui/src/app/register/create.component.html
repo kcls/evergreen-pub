@@ -465,7 +465,7 @@
       <span i18n> I will pick up at my home library
         <span class="italic text-sm">(Available same day.)</span>
       </span>
-      <b>TODO show calculated home lib here?</b>
+      <b *ngIf="homeOrgUnit().name" class="ml-2">Home Library: {{homeOrgUnit().name}}</b>
     </mat-radio-button>
   </mat-radio-group>
 
