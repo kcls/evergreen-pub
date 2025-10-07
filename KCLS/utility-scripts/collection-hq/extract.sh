@@ -30,15 +30,17 @@ function format_data {
 }
 
 function upload_data {
-  gzip --best $FILE
-  scp $FILE.gz $SFTPSITE
+    gzip --best $FILE
+
+    # TODO
+    # scp $FILE.gz $SFTPSITE
 }
 
 function clean_up {
   bzip2 bibs-$DATE.txt
   bzip2 items-$DATE.txt
-  mkdir -p ~/chq_archive
-  mv bibs-$DATE.txt.bz2 items-$DATE.txt.bz2 $FILE.gz ~/chq_archive/
+  mkdir -p ~/collection-hq-archive
+  mv bibs-$DATE.txt.bz2 items-$DATE.txt.bz2 $FILE.gz ~/collection-hq-archive/
   echo The extract for $DATE has finished. We uploaded data on $NUMBIBS bibs and $NUMITEMS items.
 
 #  echo The extract for $DATE has finished. We uploaded data on $NUMBIBS bibs and $NUMITEMS items. | \
@@ -48,10 +50,6 @@ function clean_up {
 
 get_data_from_sql && \
       format_data && \
-         clean_up
-
-#get_data_from_sql && \
-#      format_data && \
-#      upload_data && \
-#         clean_up #.
+      upload_data && \
+         clean_up #.
 exit

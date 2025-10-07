@@ -1,4 +1,0 @@
-
-# change FTPUSER AND FTPPASS to suit
-#0 2 20 * * cd /home/opensrf/Evergreen/KCLS/misc-scripts/collectionHQ && FTPUSER=<user> && FTPPASS=<pass> ./extract.sh
-
