@@ -157,7 +157,15 @@ CREATE OR REPLACE FUNCTION collectionHQ.write_item_rows_to_stdout (TEXT, INT) RE
   BEGIN
 
     FOR item IN
-      SELECT id FROM asset.copy WHERE NOT deleted AND circ_lib IN (SELECT id FROM actor.org_unit_descendants(org_unit_id)) ORDER BY id
+      SELECT acp.id 
+      FROM asset.copy acp
+      JOIN asset.call_number acn ON acn.id = acp.call_number
+      WHERE 
+        NOT acp.deleted 
+        AND NOT acn.deleted -- meh
+        AND acn.record > 0
+        AND acp.circ_lib IN (SELECT id FROM actor.org_unit_descendants(org_unit_id)) 
+      ORDER BY id
     LOOP
 
       SELECT cn.record, cn.label, collectionHQ.attempt_isbn(cn.record::BIGINT)
@@ -271,11 +279,18 @@ CREATE OR REPLACE FUNCTION collectionHQ.write_bib_rows_to_stdout (TEXT, INT) RET
   BEGIN
 
     FOR lms_bib_id IN
-      SELECT DISTINCT bre.id FROM biblio.record_entry bre JOIN asset.call_number acn ON (acn.record = bre.id) WHERE acn.owning_lib IN (SELECT id FROM actor.org_unit_descendants(org_unit_id)) AND NOT acn.deleted AND NOT bre.deleted
+      SELECT DISTINCT bre.id 
+      FROM biblio.record_entry bre 
+      JOIN asset.call_number acn ON (acn.record = bre.id) 
+      WHERE 
+        acn.owning_lib IN (SELECT id FROM actor.org_unit_descendants(org_unit_id)) 
+        AND NOT acn.deleted 
+        AND NOT bre.deleted
+        AND bre.id > 0
     LOOP
 
       SELECT collectionHQ.attempt_isbn(r.id::BIGINT),
-             SUBSTRING(r.title FROM 1 FOR 100),
+             SUBSTRING(r.title_proper FROM 1 FOR 100),
              SUBSTRING(r.author FROM 1 FOR 50)
       INTO isbn, title, author
       FROM reporter.materialized_simple_record r
