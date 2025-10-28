@@ -15,6 +15,10 @@
     max-width: 100px;
 }
 
+.record-format-image {
+  max-width: 40px;
+}
+
 .shelving-locations {
     margin-inline-start: calc(var(--bs-gutter-x) * .5);
     padding-inline-start: 0;

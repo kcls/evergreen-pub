@@ -163,7 +163,7 @@
           <ng-container *ngIf="summary.attributes.mattype && summary.attributes.mattype[0]">
             <ng-container *ngFor="let icon of summary.attributes.mattype">
             <span>
-              <img title="{{iconFormatLabel(icon)}}" 
+              <img class="record-format-image" title="{{iconFormatLabel(icon)}}" 
                 src="/images/format_icons/mattype/{{icon}}.png"/>
             </span>
             </ng-container>
