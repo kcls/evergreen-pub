@@ -737,9 +737,6 @@ sub request_permissions {
 
     my $active = $e->search_actor_user_item_request(
         {   usr => $patron->id,
-            cancel_date => undef,
-            complete_date => undef,
-            reject_date => undef,
             create_date => {'>=' => $window_date->iso8601}
         }, {idlist => 1}
     );
