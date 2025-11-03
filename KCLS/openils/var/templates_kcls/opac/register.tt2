@@ -538,7 +538,8 @@ a:hover {
                   value='Mail' [% IF !kiosk %]checked='checked'[% END %]/>
                 <label id='delivery-by-mail'>Mail my card.
                   <span style='font-size:85%; font-style:italic'>
-                    (You’ll receive your card and activation instructions within 1-2 weeks.)
+                    (You’ll receive your card and activation instructions within 1-2 weeks.  
+                      Please do <u>not</u> choose this option if you are currently visiting a library.)
                   </span>
                 </label>
               </li>
@@ -549,7 +550,7 @@ a:hover {
                 <label id='delivery-by-pickup'>
                   I will pick up at my home library
                   <span style='font-size:85%; font-style:italic'>
-                    (Available same day.)
+                    (Available same day. Best option if you are currently visiting a library.)
                   </span>
                 </label>
               </li>
