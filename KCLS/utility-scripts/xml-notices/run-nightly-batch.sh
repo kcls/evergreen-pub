@@ -39,7 +39,7 @@ rm -fv /tmp/action-trigger-LOCK*
 ./generate-notices.sh $SEND_XML --granularity Predue-2-Day-Email --end-date $TOMORROW --file-date $TODAY
 
 # PRINT
-./generate-notices.sh $SEND_XML --granularity Daily-Export-Ecard-Print
+./generate-notices.sh $SEND_XML --granularity --realtime Daily-Export-Ecard-Print
 ./generate-notices.sh $SEND_XML --granularity Daily-Export-Hold-Ready-Print
 ./generate-notices.sh $SEND_XML --granularity Daily-Export-OD2-14-Print --end-date $TOMORROW --file-date $TODAY
 ./generate-notices.sh $SEND_XML --granularity Daily-Export-OD-7-Print --end-date $TOMORROW --file-date $TODAY
