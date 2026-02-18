@@ -10,7 +10,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 END_DATE=$(date +'%F');
 FILE_DATE=""
 SCP_DEST="kingco@sftp.unique-mgmt.com:incoming"
-SCP_REALIMTE_DEST="kingco@sftp2.unique-mgmt.com:directload"
+SCP_REALTIME_DEST="kingco@sftp2.unique-mgmt.com:directload"
 AT_FILTERS="/openils/conf/a_t_filters/"
 WINDOW=""
 SKIP_ACTION_TRIGGER=""
@@ -111,7 +111,7 @@ export NO_GENERATE_XML
 export FORCE_GENERATE_XML
 export SEND_XML
 export SCP_DEST
-export SCP_REALIMTE_DEST
+export SCP_REALTIME_DEST
 export END_DATE
 export FILE_DATE
 export WINDOW
