@@ -9,7 +9,7 @@ set -eu
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )" 
 END_DATE=$(date +'%F');
 FILE_DATE=""
-SCP_DEST="kingco@sftp.unique-mgmt.com:incoming"
+SCP_DEST="kingco@sftp2.unique-mgmt.com:incoming"
 SCP_REALTIME_DEST="kingco@sftp2.unique-mgmt.com:directload"
 AT_FILTERS="/openils/conf/a_t_filters/"
 WINDOW=""
