@@ -75,14 +75,15 @@ if [ -n "$SEND_XML" ]; then
         announce "No content to deliver for $LOCAL_FILE";
     else
 
+        # Replace ':' with '-' for Windows sftp server
+        FILE_NAME_SCRUBBED="${FILE_NAME//:/-}"
+
         if [ -n "$IS_REALTIME" ]; then
-            # Replace ':' with '-' for Windows sftp server
-            FILE_NAME_SCRUBBED="${FILE_NAME//:/-}"                            
             announce "SCP'ing $LOCAL_FILE => $SCP_REALTIME_DEST/$FILE_NAME_SCRUBBED"
             scp "$LOCAL_FILE" "$SCP_REALTIME_DEST/$FILE_NAME_SCRUBBED" 
         else 
-            announce "SCP'ing $LOCAL_FILE => $SCP_DEST/$FILE_NAME"
-            scp "$LOCAL_FILE" "$SCP_DEST/$FILE_NAME"
+            announce "SCP'ing $LOCAL_FILE => $SCP_DEST/$FILE_NAME_SCRUBBED"
+            scp "$LOCAL_FILE" "$SCP_DEST/$FILE_NAME_SCRUBBED"
         fi;
 
         if [ $? == 0 ]; then
