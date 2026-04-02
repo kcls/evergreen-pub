@@ -149,7 +149,6 @@ export class RegisterCreateComponent implements OnInit {
         allEmailNotices: false,
         allTextNotices: false,
         allPhoneNotices: false,
-        allPrintNotices: false,
         smsNumber: '',
     }, {validators: sameEmailValidator});
 
@@ -293,12 +292,6 @@ export class RegisterCreateComponent implements OnInit {
 
         this.formGroup.controls.allPhoneNotices.valueChanges.subscribe(val => {
             this.phoneSettings.forEach(set => {
-                this.formGroup.controls[set.name].setValue(val);
-            });
-        });
-
-        this.formGroup.controls.allPrintNotices.valueChanges.subscribe(val => {
-            this.printSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
         });
