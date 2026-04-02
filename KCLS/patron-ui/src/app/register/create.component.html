@@ -355,20 +355,24 @@
 </mat-step>
 <mat-step label="Preferences">
 
+  <div class="columns-1 mt-4">
+    <h3 i18n>What library is your preferred hold pickup location?</h3>
 
+    <p class="mt-4" *ngIf="!register.inKioskMode" i18n>
+      Not sure? Find your nearest library on this
+      <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
+    </p>
 
-  <!--
-  <div class="m-6 p-2 border border-slate-300 bg-blue-300">
-    <b>NEW PAGE</b>
-  </div>
-  <h2 i18n>Contact Preferences</h2>
-  <hr/>
-
-  -->
-
-
-  <div class="m-6 p-2">
-    <b>TODO: HOLD PICKUP LIB SELECTOR GOES HERE</b>
+    <div class="columns-2 mt-6">
+      <div>
+        <mat-form-field class="w-full">
+          <mat-label i18n>Hold Pickup Library</mat-label>
+          <mat-select formControlName="pickupLib">
+            <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
   </div>
 
   <div class="columns-1 mt-6">
@@ -378,6 +382,8 @@
         <mat-checkbox formControlName="wantsLibNews" i18n>
           Tell me about library news and events
         </mat-checkbox>
+      </div>
+      <div class="pl-4">
         <mat-checkbox formControlName="wantsFoundationInfo" i18n>
           Send me information about supporting the King County Library System Foundation.
         </mat-checkbox>
@@ -470,31 +476,6 @@
       <b *ngIf="homeOrgUnit().name" class="ml-2">Home Library: {{homeOrgUnit().name}}</b>
     </mat-radio-button>
   </mat-radio-group>
-
-
-
-  <ng-container *ngIf="false">
-    <h3 i18n>What library is closest to your residence?</h3>
-
-    <p class="mt-4" *ngIf="!register.inKioskMode" i18n>
-      Not sure? Find your nearest library on this
-      <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
-    </p>
-
-    <div class="columns-2 mt-6">
-      <div>
-        <mat-form-field class="w-full">
-          <mat-label i18n>Home Library</mat-label>
-          <mat-select formControlName="homeOrg">
-            <mat-option [value]="org.id" *ngFor="let org of homeOrgs">{{org.name}}</mat-option>
-          </mat-select>
-          <mat-error *ngIf="formGroup.controls.homeOrg.hasError('homeOrg')" i18n>
-              Home Library is <strong>required</strong>
-          </mat-error>
-        </mat-form-field>
-      </div>
-    </div>
-  </ng-container>
 
   <div class="mt-6"></div>
 
