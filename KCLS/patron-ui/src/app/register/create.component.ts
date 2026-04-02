@@ -87,7 +87,7 @@ export class RegisterCreateComponent implements OnInit {
     juvMinDob: Date;
 
     formNeedsWork = false;
-    homeOrgs: Hash[] = [];
+    pickupLibs: Hash[] = [];
 
     calculatedHomeOrg: number | null = null;
 
@@ -131,7 +131,6 @@ export class RegisterCreateComponent implements OnInit {
         phone: ['', [Validators.required, Validators.pattern(PHONE_REGEX)]],
         email: ['', Validators.email],
         email2: ['', Validators.email],
-        homeOrg: ['', Validators.required],
         wantsLibNews: false,
         wantsFoundationInfo: false,
         street1: ['', Validators.required],
@@ -149,6 +148,7 @@ export class RegisterCreateComponent implements OnInit {
         allEmailNotices: false,
         allTextNotices: false,
         allPhoneNotices: false,
+        pickupLib: 0,
         smsNumber: '',
     }, {validators: sameEmailValidator});
 
@@ -224,26 +224,7 @@ export class RegisterCreateComponent implements OnInit {
 
     ngOnInit() {
 
-        // TODO homeOrgs needs to be pref hold pickup location
-
-        // Users are allowed to select a home lib from the set of
-        // org units where the opac.allow_pending_user setting is true.
-        this.app.getOrgTree().then(tree => {
-            this.settings.settingValueForOrgs('opac.allow_pending_user')
-            .then((list: Hash[]) => {
-                list.forEach(setting => {
-                    if ((setting.summary as Hash).value) {
-                        let org = this.app.getOrgUnit(setting.org_unit as number);
-                        if (org) {
-                            this.homeOrgs.push(org);
-                        }
-                    }
-                });
-
-                this.homeOrgs = this.homeOrgs.sort((a: Hash, b: Hash) =>
-                    (a.name as string) < (b.name as string) ? -1 : 1);
-            });
-        });
+        this.loadPickupLibs();
 
         this.getOptInSettings();
 
@@ -309,7 +290,35 @@ export class RegisterCreateComponent implements OnInit {
 			distinctUntilChanged(), // Only emit if the value has changed
             switchMap(value => this.mailAddrStreet1Filter('' + value)), // Or call API here
         );
+    }
 
+    loadPickupLibs(): Promise<Hash[]> {
+        if (this.pickupLibs.length > 0) {
+            return Promise.resolve(this.pickupLibs);
+        }
+
+        // Users are allowed to select a hold pickup lib from the set of
+        // org units where the opac.holds.org_unit_not_pickup_lib setting
+        // is false/unset and the org unit is "can have vols"
+        return this.app.getOrgTree().then(tree => {
+            return this.settings.settingValueForOrgs('opac.holds.org_unit_not_pickup_lib')
+            .then((list: Hash[]) => {
+                list.forEach(setting => {
+                    if (!(setting.summary as Hash).value) {
+                        let org = this.app.getOrgUnit(setting.org_unit as number);
+                        if (org && (org.ou_type as Hash).can_have_vols === 't') {
+                            org.id = Number(org.id);
+                            this.pickupLibs.push(org);
+                        }
+                    }
+                });
+
+                this.pickupLibs = this.pickupLibs.sort((a: Hash, b: Hash) =>
+                    (a.name as string) < (b.name as string) ? -1 : 1);
+
+                return this.pickupLibs;
+            });
+        });
     }
 
     street1AutoSelected(event: MatAutocompleteSelectedEvent) {
@@ -383,7 +392,14 @@ export class RegisterCreateComponent implements OnInit {
         }).then(homeOrg => {
             console.log('Got home org', homeOrg);
             if (homeOrg) {
-                this.calculatedHomeOrg = (homeOrg as any).home_ou;
+                this.calculatedHomeOrg = Number(homeOrg);
+
+                if (!this.formGroup.controls.pickupLib.value) {
+                    console.debug('Applying default pickup lib', this.calculatedHomeOrg);
+                    // Use the calculted home org unit as the default hold
+                    // pickup location if no value has already been applied
+                    this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
+                }
             }
         });
     }
@@ -589,7 +605,7 @@ export class RegisterCreateComponent implements OnInit {
                 dob: dobstr,
                 day_phone: ctls.phone.value,
                 email: ctls.email.value,
-                home_ou: ctls.homeOrg.value,
+                home_ou: this.homeOrgUnit().id,
                 ident_value2: ctls.guardian.value, // KCLS
             },
             billing_address: {
@@ -608,6 +624,7 @@ export class RegisterCreateComponent implements OnInit {
             },
             settings: [
                 {name: 'opac.default_sms_notify', value: ctls.smsNumber.value},
+                {name: 'opac.default_pickup_location', value: ctls.pickupLib.value},
             ],
             stat_cats: [
                 {stat_cat: STAT_CAT_LIB_NEWS,
