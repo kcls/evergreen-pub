@@ -2867,9 +2867,17 @@ static char* searchValueTransform( const jsonObject* array ) {
 		return NULL;
 	}
 
-	growing_buffer* sql_buf = buffer_init( 32 );
+	char* func_item_string = jsonObjectGetString( func_item );
+	if (!is_identifier(func_item_string)) {
+		osrfLogError( OSRF_LOG_MARK, "%s: Expected function name, found \"%s\"\n",
+				modulename, func_item_string );
+		osrf_buffer_free( sql_buf );
+		return NULL;
+	}
 
-	OSRF_BUFFER_ADD( sql_buf, jsonObjectGetString( func_item ) );
+	growing_buffer* sql_buf = osrf_buffer_init( 32 );
+
+	OSRF_BUFFER_ADD( sql_buf, func_item_string );
 	OSRF_BUFFER_ADD( sql_buf, "( " );
 
 	// Get the parameters
