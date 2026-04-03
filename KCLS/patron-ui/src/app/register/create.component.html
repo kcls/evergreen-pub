@@ -502,6 +502,18 @@
 </mat-step>
 </mat-stepper>
 
+<div class="stepper-nav">
+  <button mat-raised-button type="button"
+      (click)="stepper.previous()"
+      *ngIf="stepper.selectedIndex > 0"
+      i18n>Back</button>
+  <button mat-raised-button type="button"
+      (click)="stepper.next()"
+      *ngIf="stepper.selectedIndex < stepper.steps.length - 1"
+      style="margin-left: auto"
+      i18n>Continue</button>
+</div>
+
 </form>
 
 
