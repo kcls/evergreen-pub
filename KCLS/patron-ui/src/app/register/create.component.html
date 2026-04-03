@@ -482,6 +482,109 @@
 </mat-step>
 <mat-step label="Submit">
 
+  <!-- Summary -->
+  <div class="submit-summary mt-6">
+
+    <div class="summary-section">
+      <div class="summary-section-title" i18n>Name</div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Name</span>
+        <span class="summary-value">
+          {{formGroup.controls.first.value}}
+          <ng-container *ngIf="formGroup.controls.middle.value"> {{formGroup.controls.middle.value}}</ng-container>
+          {{formGroup.controls.last.value}}
+        </span>
+      </div>
+      <div class="summary-row" *ngIf="!formGroup.controls.legalIsSame.value">
+        <span class="summary-label" i18n>Legal Name</span>
+        <span class="summary-value">
+          {{formGroup.controls.legalFirst.value}}
+          <ng-container *ngIf="formGroup.controls.legalMiddle.value"> {{formGroup.controls.legalMiddle.value}}</ng-container>
+          {{formGroup.controls.legalLast.value}}
+        </span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Date of Birth</span>
+        <span class="summary-value">{{$any(formGroup.controls.dob.value) | date:'mediumDate'}}</span>
+      </div>
+      <div class="summary-row" *ngIf="isJuvenile">
+        <span class="summary-label" i18n>Parent / Guardian</span>
+        <span class="summary-value">{{formGroup.controls.guardian.value}}</span>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title" i18n>Address</div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Residential</span>
+        <span class="summary-value">
+          {{formGroup.controls.street1.value}}<ng-container *ngIf="formGroup.controls.street2.value">, {{formGroup.controls.street2.value}}</ng-container>,
+          {{formGroup.controls.city.value}}, {{formGroup.controls.state.value}} {{formGroup.controls.zipCode.value}}
+        </span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Mailing</span>
+        <span class="summary-value" *ngIf="formGroup.controls.mailingIsSame.value" i18n>Same as residential</span>
+        <span class="summary-value" *ngIf="!formGroup.controls.mailingIsSame.value">
+          {{formGroup.controls.mailingStreet1.value}}<ng-container *ngIf="formGroup.controls.mailingStreet2.value">, {{formGroup.controls.mailingStreet2.value}}</ng-container>,
+          {{formGroup.controls.mailingCity.value}}, {{formGroup.controls.mailingState.value}} {{formGroup.controls.mailingZipCode.value}}
+        </span>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title" i18n>Contact</div>
+      <div class="summary-row" *ngIf="formGroup.controls.email.value">
+        <span class="summary-label" i18n>Email</span>
+        <span class="summary-value">{{formGroup.controls.email.value}}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Phone</span>
+        <span class="summary-value">{{formGroup.controls.phone.value}}</span>
+      </div>
+      <div class="summary-row" *ngIf="formGroup.controls.smsNumber.value">
+        <span class="summary-label" i18n>SMS/Text</span>
+        <span class="summary-value">{{formGroup.controls.smsNumber.value}}</span>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title" i18n>Preferences</div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Pickup Library</span>
+        <span class="summary-value">{{pickupLibName()}}</span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Notices</span>
+        <span class="summary-value">
+          <ng-container *ngIf="!formGroup.controls.allEmailNotices.value && !formGroup.controls.allTextNotices.value && !formGroup.controls.allPhoneNotices.value" i18n>None</ng-container>
+          <ng-container *ngIf="formGroup.controls.allEmailNotices.value" i18n>Email </ng-container>
+          <ng-container *ngIf="formGroup.controls.allTextNotices.value" i18n>Text </ng-container>
+          <ng-container *ngIf="formGroup.controls.allPhoneNotices.value" i18n>Phone</ng-container>
+        </span>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-section-title" i18n>Card</div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Design</span>
+        <span class="summary-value">
+          <img *ngIf="formGroup.controls.design.value"
+               class="summary-card-image"
+               [src]="cardOptionUrl($any(formGroup.controls.design.value))"
+               alt="{{formGroup.controls.design.value}}"/>
+          <span *ngIf="!formGroup.controls.design.value" i18n>Not selected</span>
+        </span>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Delivery</span>
+        <span class="summary-value">{{formGroup.controls.delivery.value}}</span>
+      </div>
+    </div>
+
+  </div>
+
   <div class="columns-1 mt-6">
     <div>
       <mat-checkbox formControlName="termsOfService" i18n>
@@ -492,10 +595,8 @@
     </div>
   </div>
 
-  <div class="columns-1 mt-6">
-    <button mat-raised-button [disabled]="!canSubmit()" (click)="submit()" i18n>Apply</button>
-    <button mat-raised-button (click)="cancel()" class="ml-4" i18n>Cancel</button>
-    <span *ngIf="formNeedsWork" class="ml-4 p-2 mat-mdc-form-field-error border-2 rounded-md">
+  <div class="mt-4" *ngIf="formNeedsWork">
+    <span class="p-2 mat-mdc-form-field-error border-2 rounded-md" i18n>
       Please provide values for all required fields.
     </span>
   </div>
@@ -511,7 +612,13 @@
       (click)="stepper.next()"
       *ngIf="stepper.selectedIndex < stepper.steps.length - 1"
       style="margin-left: auto"
-      i18n>Continue</button>
+      i18n>Continue &#187;</button>
+  <button mat-raised-button type="button"
+      [disabled]="!canSubmit()"
+      (click)="submit()"
+      *ngIf="stepper.selectedIndex === stepper.steps.length - 1"
+      style="margin-left: auto"
+      i18n>Apply</button>
 </div>
 
 </form>

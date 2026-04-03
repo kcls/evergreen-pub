@@ -671,4 +671,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     cardOptionUrl(name: string): string {
         return `/images/patron_cards/${name}.png`;
     }
+
+    pickupLibName(): string {
+        const id = this.formGroup.controls.pickupLib.value;
+        return this.pickupLibs.find(l => l['id'] === id)?.['name'] as string ?? '';
+    }
 }
