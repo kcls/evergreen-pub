@@ -356,26 +356,26 @@
 <mat-step label="Preferences">
 
   <div class="columns-1 mt-4">
-    <h3 i18n>What library is your preferred hold pickup location?</h3>
+    <div class="w-full">
+      <h3 i18n>Preferred hold pickup location</h3>
 
-    <p class="mt-4" *ngIf="!register.inKioskMode" i18n>
-      Not sure? Find your nearest library on this
-      <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
-    </p>
 
-    <div class="columns-2 mt-6">
-      <div>
-        <mat-form-field class="w-full">
+      <div class="pl-4">
+        <mat-form-field class="w-1/2">
           <mat-label i18n>Hold Pickup Library</mat-label>
           <mat-select formControlName="pickupLib">
             <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
+      <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
+        Not sure? Find your nearest library on this
+        <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
+      </div>
     </div>
   </div>
 
-  <div class="columns-1 mt-6">
+  <div class="columns-1 mt-4">
     <div class="w-full">
       <h3 i18n>May we contact you?</h3>
       <div class="pl-4">
@@ -390,56 +390,23 @@
       </div>
     </div>
   </div>
-
-  <h2 i18n>Notification Preferences</h2>
-     
-  <hr/>
-
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
-    <!-- 
-      Hide the detailed notice types and only show the high-level grouping,
-      e.g. Email Notices.  Leaving commented code in place for now.
-    -->
-    <!--
-    <div *ngIf="formGroup.controls.allEmailNotices.value">
-      <div class="ml-3" *ngFor="let set of emailSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
+  <div class="columns-1 mt-4">
+    <div class="w-full">
+      <h3 i18n>Notification Preferences</h3>
+      <div class="pl-4">
+        <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
+      </div>
+      <div class="pl-4">
+        <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
+      </div>
+      <div class="pl-4">
+        <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
       </div>
     </div>
-    -->
-  </div>
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
-    <!--
-    <div class="mb-4" *ngIf="formGroup.controls.allTextNotices.value">
-      <div class="ml-3" *ngFor="let set of textSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
-      </div>
-    </div>
-    -->
-  </div>
-  <div class="columns-1 mt-4 border border-slate-300 rounded-lg">
-    <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
-    <!--
-    <div class="mb-4" *ngIf="formGroup.controls.allPhoneNotices.value">
-      <div class="ml-3" *ngFor="let set of phoneSettings">
-        <mat-checkbox [formControlName]="set.name">{{set.label}}</mat-checkbox>
-      </div>
-    </div>
-    -->
   </div>
 
 </mat-step>
 <mat-step label="Card Options">
-
-  <!--
-  <div class="m-6 p-2 border border-slate-300 bg-blue-300">
-    <b>NEW PAGE</b>
-  </div>
-
-  <h2 i18n>Card Options</h2>
-  -->
 
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 
