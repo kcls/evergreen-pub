@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild} from '@angular/core';
 import {Router} from '@angular/router';
 import {FormBuilder, FormControl, Validators, AbstractControl,
     FormRecord, ValidationErrors, ValidatorFn} from '@angular/forms';
@@ -11,6 +11,7 @@ import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {RegisterService} from './register.service';
 import {MatAutocompleteSelectedEvent} from '@angular/material/autocomplete';
+import {MatStepper} from '@angular/material/stepper';
 
 const JUV_AGE = 18; // years
 const DEFAULT_STATE = 'WA';
@@ -78,7 +79,9 @@ export const sameEmailValidator: ValidatorFn = (
   templateUrl: './create.component.html',
   styleUrls: ['./create.component.scss']
 })
-export class RegisterCreateComponent implements OnInit {
+export class RegisterCreateComponent implements OnInit, AfterViewInit {
+
+    @ViewChild('stepper') stepper!: MatStepper;
 
     minDob = new Date("1900-01-01");
     maxDob = new Date();
@@ -217,9 +220,14 @@ export class RegisterCreateComponent implements OnInit {
         private app: AppService,
         private settings: Settings,
         public register: RegisterService,
+        private cdRef: ChangeDetectorRef,
     ) {
         this.juvMinDob = new Date();
         this.juvMinDob.setFullYear(new Date().getFullYear() - JUV_AGE);
+    }
+
+    ngAfterViewInit() {
+        this.cdRef.detectChanges();
     }
 
     ngOnInit() {
