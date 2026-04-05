@@ -193,6 +193,84 @@ sub delete_user_stage {
     return 1;
 }
 
+__PACKAGE__->register_method (
+    method      => 'search_user_stage',
+    api_name    => 'open-ils.actor.user.stage.search',
+    signature => {
+        desc => 'Performs a keyword search for staged (pending) users',
+        params => [
+            {desc => 'authtoken', type => 'string'},
+            {desc => 'query', type => 'object'},
+        ],
+        return => {
+            desc => 'Stream of matched stage user objects',
+        }
+
+    }
+);
+
+# Translates a space-separated set of search key terms into a 
+# into a string we can pass to TO_TSQUERY in the database.
+sub format_keyword_query {
+    my $keywords = shift;
+
+    # Remove characters that to_tsquery might treat as operators.
+    # Note using plainto_tsquery to ignore operators won't let us
+    # also do prefix matching.
+    $keywords =~ s/[^\w\s\.\-']//g;
+
+    my @parts = split(' ', $keywords);
+
+    # tsquery on multiple names joined w/ '&'
+    # Adding :* gives us prefix matching
+    my $formatted = join(' & ', map { "$_:*" } @parts);
+
+    return $formatted;
+}
+
+
+# TODOs
+# limit / offset support
+# basic order_by
+# move keywords normalization into the DB search function?
+sub search_user_stage {
+    my ($self, $client, $auth, $query) = @_;
+
+    my $e = new_editor(authtoken => $auth);
+    return $e->event unless $e->checkauth;
+
+    $query = {} unless ref $query eq 'HASH';
+
+    my $org_id = $query->{org_unit} || $e->requestor->ws_ou;
+
+    return $e->event unless $e->allowed('VIEW_USER', $org_id);
+
+    my $keywords = format_keyword_query($query->{keywords})
+        or return OpenILS::Event->new('BAD_PARAMS');
+
+    $logger->info("Staged user keyword query: '$keywords'");
+
+    my $users = $e->search_staging_user_stage({
+        home_ou => {
+            in => {
+                select => {aou => [{
+                    column => 'id', 
+                    transform => 'actor.org_unit_descendants', 
+                    result_field => 'id'
+                }]},
+                from => 'aou',
+                where => {id => $org_id}
+            }
+        },
+        keywords_tsvector => {'@@' => {value => ['to_tsquery', $keywords]}}
+    });
+
+    $client->respond(flesh_user_stage($e, $_)) for map { $_->row_id } @$users;
+
+    undef
+}
+
+
 
 1;
 

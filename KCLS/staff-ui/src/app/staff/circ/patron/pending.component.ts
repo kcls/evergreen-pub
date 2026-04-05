@@ -1,7 +1,7 @@
 import {Component, Input, OnInit, AfterViewInit, ViewChild} from '@angular/core';
 import {Location} from '@angular/common';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
-import {from, empty, range} from 'rxjs';
+import {Observable, from, empty, range} from 'rxjs';
 import {concatMap, tap, map, takeLast} from 'rxjs/operators';
 import {NgbNav, NgbNavChangeEvent} from '@ng-bootstrap/ng-bootstrap';
 import {IdlObject} from '@eg/core/idl.service';
@@ -25,6 +25,7 @@ import {ProgressInlineComponent} from '@eg/share/dialog/progress-inline.componen
 export class PendingPatronsComponent implements OnInit {
 
     gridDataSource: GridDataSource = new GridDataSource();
+    searchTerms = '';
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('confirmDelete') private confirmDelete: ConfirmDialogComponent;
@@ -54,17 +55,33 @@ export class PendingPatronsComponent implements OnInit {
 
             const orgs = this.org.descendants(this.contextOrg, true);
 
-            return this.net.request(
+        let observable: Observable<IdlObject> | null = null;
+
+        if (this.searchTerms.length > 2) {
+            observable = this.net.request(
+                'open-ils.actor',
+                'open-ils.actor.user.stage.search',
+                this.auth.token(),
+                {org_id: this.org.root().id(), keywords: this.searchTerms}
+            );
+        } else if (this.searchTerms.length > 0) {
+            return empty();
+        } else {
+
+            observable = this.net.request(
                 'open-ils.actor',
                 'open-ils.actor.user.stage.retrieve.by_org',
                 this.auth.token(), orgs,
                 pager.limit, pager.offset
+            );
+        }
 
-            ).pipe(
+        return observable
+            .pipe(
                 map(data => {
                     this.loadProgress.increment();
 
-                    const user = data.user;
+                    const user = data.user || data;
                     data.id = user.row_id();
                     user.home_ou(this.org.get(user.home_ou()));
 
@@ -81,6 +98,10 @@ export class PendingPatronsComponent implements OnInit {
             console.debug('Broadcast received for "eg.pending_usr.update"');
             this.grid.reload();
         });
+    }
+
+    userSearch() {
+        this.grid.reload();
     }
 
     homeLibChanged(org: IdlObject) {
