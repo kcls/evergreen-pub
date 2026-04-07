@@ -1,49 +1,19 @@
 
 BEGIN;
 
-ALTER TABLE staging.user_stage ADD COLUMN keywords_tsvector TSVECTOR;
+CREATE INDEX staging_user_first_given_name_idx ON staging.user_stage (LOWER(first_given_name));
+CREATE INDEX staging_user_second_given_name_idx ON staging.user_stage (LOWER(second_given_name));
+CREATE INDEX staging_user_family_name_idx ON staging.user_stage (LOWER(family_name));
 
-CREATE OR REPLACE FUNCTION staging.user_ingest_name_keywords()
- RETURNS TRIGGER
- LANGUAGE PLPGSQL
-AS $FUNK$
-BEGIN
-    NEW.keywords_tsvector := TO_TSVECTOR(
-		COALESCE(NEW.email, '') || ' ' ||
-		COALESCE(NEW.first_given_name, '') || ' ' ||
-		COALESCE(evergreen.unaccent_and_squash(NEW.first_given_name), '') || ' ' ||
-		COALESCE(NEW.second_given_name, '') || ' ' ||
-		COALESCE(evergreen.unaccent_and_squash(NEW.second_given_name), '') || ' ' ||
-		COALESCE(NEW.family_name, '') || ' ' ||
-		COALESCE(evergreen.unaccent_and_squash(NEW.family_name), '') || ' ' ||
-		COALESCE(NEW.pref_first_given_name, '') || ' ' ||
-		COALESCE(evergreen.unaccent_and_squash(NEW.pref_first_given_name), '') || ' ' ||
-		COALESCE(NEW.pref_second_given_name, '') || ' ' ||
-		COALESCE(evergreen.unaccent_and_squash(NEW.pref_second_given_name), '') || ' ' ||
-		COALESCE(NEW.pref_family_name, '') || ' ' ||
-		COALESCE(evergreen.unaccent_and_squash(NEW.pref_family_name), '') || ' ' ||
-		COALESCE(NEW.day_phone, '') || ' ' ||
-        COALESCE(REGEXP_REPLACE(NEW.day_phone, '[^\d]', '', 'g'), '') || ' ' ||
-		COALESCE(NEW.evening_phone, '') || ' ' ||
-        COALESCE(REGEXP_REPLACE(NEW.evening_phone, '[^\d]', '', 'g'), '')
-    );
-    RETURN NEW;
-END;
-$FUNK$;
+CREATE INDEX staging_user_first_given_name_squashed_idx 
+    ON staging.user_stage (evergreen.unaccent_and_squash(first_given_name));
+CREATE INDEX staging_user_second_given_name_squashed_idx 
+    ON staging.user_stage (evergreen.unaccent_and_squash(second_given_name));
+CREATE INDEX staging_user_family_name_squashed_idx 
+    ON staging.user_stage (evergreen.unaccent_and_squash(family_name));
 
-CREATE TRIGGER user_ingest_name_keywords_tgr
-    BEFORE INSERT OR UPDATE ON staging.user_stage
-    FOR EACH ROW EXECUTE PROCEDURE staging.user_ingest_name_keywords();
-
--- Force the new trigger to run on every entry.
--- Assumes staging.user_stage is not huge.
-UPDATE staging.user_stage SET usrname = usrname;
-
-/*
-ALTER TABLE staging.user_stage DROP TRIGGER user_ingest_name_keywords_tgr;
-DROP FUNCTION IF EXISTS staging.user_ingest_name_keywords();
-ALTER TABLE staging.user_stage DROP COLUMN keywords_tsvector;
-*/
+CREATE INDEX staging_user_email_idx ON staging.user_stage (LOWER(email));
+CREATE INDEX staging_user_day_phone_idx ON staging.user_stage (day_phone);
 
 COMMIT;
 

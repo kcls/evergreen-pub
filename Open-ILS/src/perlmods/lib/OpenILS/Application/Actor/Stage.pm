@@ -209,30 +209,6 @@ __PACKAGE__->register_method (
     }
 );
 
-# Translates a space-separated set of search key terms into a 
-# into a string we can pass to TO_TSQUERY in the database.
-sub format_keyword_query {
-    my $keywords = shift;
-
-    # Remove characters that to_tsquery might treat as operators.
-    # Note using plainto_tsquery to ignore operators won't let us
-    # also do prefix matching.
-    $keywords =~ s/[^\w\s\.\-']//g;
-
-    my @parts = split(' ', $keywords);
-
-    # tsquery on multiple names joined w/ '&'
-    # Adding :* gives us prefix matching
-    my $formatted = join(' & ', map { "$_:*" } @parts);
-
-    return $formatted;
-}
-
-
-# TODOs
-# limit / offset support
-# basic order_by
-# move keywords normalization into the DB search function?
 sub search_user_stage {
     my ($self, $client, $auth, $query) = @_;
 
@@ -245,12 +221,23 @@ sub search_user_stage {
 
     return $e->event unless $e->allowed('VIEW_USER', $org_id);
 
-    my $keywords = format_keyword_query($query->{keywords})
-        or return OpenILS::Event->new('BAD_PARAMS');
+    my $keywords = $query->{keywords} || '';
 
-    $logger->info("Staged user keyword query: '$keywords'");
+    # Scrub the input so it plays nicely with like searches, etc.
+    $keywords =~ s/[^\w\s\.\-\@']//g;
 
-    my $users = $e->search_staging_user_stage({
+    my @ands;
+    for my $term (split(' ', $keywords)) {
+        my @field_likes;
+        for my $field (qw/first_given_name second_given_name family_name day_phone email/) {
+            push(@field_likes, {$field => {ilike => "$term%"}});
+        }
+        push(@ands, {'-or' => \@field_likes});
+    }
+
+    return OpenILS::Event->new('BAD_PARAMS') unless @ands;
+
+    my $search = {
         home_ou => {
             in => {
                 select => {aou => [{
@@ -262,8 +249,14 @@ sub search_user_stage {
                 where => {id => $org_id}
             }
         },
-        keywords_tsvector => {'@@' => {value => ['to_tsquery', $keywords]}}
-    });
+        '-and' => \@ands
+    };
+
+    # TODO support paging
+    my $users = $e->search_staging_user_stage([
+        $search, 
+        {limit => 500, order_by => {stgu => 'family_name ASC'}}
+    ]);
 
     $client->respond(flesh_user_stage($e, $_)) for map { $_->row_id } @$users;
 
