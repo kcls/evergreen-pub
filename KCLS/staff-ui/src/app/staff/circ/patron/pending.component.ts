@@ -58,14 +58,19 @@ export class PendingPatronsComponent implements OnInit {
         let observable: Observable<IdlObject> | null = null;
 
         if (this.searchTerms.length > 2) {
+            // Enforce a minimum search string length
+
             observable = this.net.request(
                 'open-ils.actor',
                 'open-ils.actor.user.stage.search',
                 this.auth.token(),
-                {org_id: this.org.root().id(), keywords: this.searchTerms}
+                {org_unit: this.org.root().id(), keywords: this.searchTerms}
             );
+
         } else if (this.searchTerms.length > 0) {
+
             return empty();
+
         } else {
 
             observable = this.net.request(
@@ -105,6 +110,7 @@ export class PendingPatronsComponent implements OnInit {
     }
 
     homeLibChanged(org: IdlObject) {
+        this.searchTerms = '';
         this.contextOrg = org ? org.id() : null;
         this.grid.reload();
     }
