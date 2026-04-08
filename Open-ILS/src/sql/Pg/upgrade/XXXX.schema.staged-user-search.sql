@@ -18,12 +18,12 @@ CREATE INDEX staging_user_day_phone_idx ON staging.user_stage USING GIN (day_pho
 COMMIT;
 
 /*
-DROP INDEX staging.staging_user_first_given_name_idx;
-DROP INDEX staging.staging_user_second_given_name_idx;
-DROP INDEX staging.staging_user_family_name_idx;
-DROP INDEX staging.staging_user_first_given_name_squashed_idx;
-DROP INDEX staging.staging_user_second_given_name_squashed_idx;
-DROP INDEX staging.staging_user_family_name_squashed_idx;
-DROP INDEX staging.staging_user_email_idx;
-DROP INDEX staging.staging_user_day_phone_idx;
+DROP INDEX IF EXISTS staging.staging_user_first_given_name_idx;
+DROP INDEX IF EXISTS staging.staging_user_second_given_name_idx;
+DROP INDEX IF EXISTS staging.staging_user_family_name_idx;
+DROP INDEX IF EXISTS staging.staging_user_first_given_name_squashed_idx;
+DROP INDEX IF EXISTS staging.staging_user_second_given_name_squashed_idx;
+DROP INDEX IF EXISTS staging.staging_user_family_name_squashed_idx;
+DROP INDEX IF EXISTS staging.staging_user_email_idx;
+DROP INDEX IF EXISTS staging.staging_user_day_phone_idx;
 */
