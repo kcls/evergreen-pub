@@ -64,7 +64,8 @@ export class PendingPatronsComponent implements OnInit {
                 'open-ils.actor',
                 'open-ils.actor.user.stage.search',
                 this.auth.token(),
-                {org_unit: this.org.root().id(), keywords: this.searchTerms}
+                this.org.root().id(),
+                {keywords: this.searchTerms}
             );
 
         } else if (this.searchTerms.length > 0) {
