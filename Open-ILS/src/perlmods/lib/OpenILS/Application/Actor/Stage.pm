@@ -210,32 +210,31 @@ __PACKAGE__->register_method (
 );
 
 sub search_user_stage {
-    my ($self, $client, $auth, $query) = @_;
+    my ($self, $client, $auth, $org_id, $query) = @_;
 
     my $e = new_editor(authtoken => $auth);
     return $e->event unless $e->checkauth;
 
-    $query = {} unless ref $query eq 'HASH';
-
-    my $org_id = $query->{org_unit} || $e->requestor->ws_ou;
-
+    $org_id ||= $e->requestor->ws_ou;
     return $e->event unless $e->allowed('VIEW_USER', $org_id);
+
+    $query = {} unless ref $query eq 'HASH';
 
     my $keywords = $query->{keywords} || '';
 
     # Scrub the input so it plays nicely with like searches, etc.
-    $keywords =~ s/[^\w\s\.\-\@']//g;
+    $keywords =~ s/[^\w\s\.'-@]//g;
 
-    my @ands;
-    for my $term (split(' ', $keywords)) {
-        my @field_likes;
+    my @term_groups;
+    for my $term (split(/\s+/, $keywords)) {
+        my @field_term_matches;
         for my $field (qw/first_given_name second_given_name family_name day_phone email/) {
-            push(@field_likes, {$field => {ilike => "$term%"}});
+            push(@field_term_matches, {$field => {ilike => "$term%"}});
         }
-        push(@ands, {'-or' => \@field_likes});
+        push(@term_groups, {'-or' => \@field_term_matches});
     }
 
-    return OpenILS::Event->new('BAD_PARAMS') unless @ands;
+    return OpenILS::Event->new('BAD_PARAMS') unless @term_groups;
 
     my $search = {
         home_ou => {
@@ -249,7 +248,7 @@ sub search_user_stage {
                 where => {id => $org_id}
             }
         },
-        '-and' => \@ands
+        '-and' => \@term_groups
     };
 
     # TODO support paging
