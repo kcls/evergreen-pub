@@ -1,73 +1,31 @@
-<div class="grid sm:grid-cols-1 md:grid-cols-5 gap-3">
-  <div class=""></div>
+<!--
+<div class="grid sm:grid-cols-1 md:grid-cols-5 gap-3 border border-slate-600">
+-->
+<div class="w-100 flex">
+  <div class="w-1/5"></div>
 
   <!--
-  <div class="w-5/6 md:w-4/6 xl:w-4/6 2xl:w-2/5 p-1 md:p-3 lg:p-5">
+  <div class="sm:col-span-1 md:col-span-3 lg:col-span-3 xl:col-span-3 2xl:col-span-2 border border-yellow-500">
   -->
-  <div class="sm:col-span-1 md:col-span-3 lg:col-span-3 xl:col-span-3 2xl:col-span-2">
+  
+  <div class="w-3/5">
     <div class="flex justify-center">
-      <h1 i18n>Get a Library Card</h1>
+      <h1 i18n>Welcome to King County Library System!</h1>
     </div>
-    <div class="flex justify-center mt-4">
-
-      <p class="mt-4">Introductory wording here</p>
-
-      <div *ngIf="false">
-        <p class="mt-4">
-          Get access to all the 
-          <span *ngIf="register.inKioskMode">services</span>
-          <span *ngIf="!register.inKioskMode">
-            <a href="https://kcls.org/library-cards/#allaccess">services</a> 
-          </span>
-          that are available from the King County Library System. 
-        </p>
-        <p class="mt-4">
-          Fill out the application below to apply for your All-Access Library Card.
-        </p>
-        <p class="mt-4">
-          You'll need to 
-          <span *ngIf="register.inKioskMode">
-            bring proof of address and photo ID that shows your date of birth
-          </span>
-          <span *ngIf="!register.inKioskMode">
-            <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
-              bring proof of address and photo ID that shows your date of birth
-            </a>
-          </span>
-          to a library to activate your card. (Parents or guardians can help 
-          with this for applicants younger than age 18.)  
-        </p>
-        <p class="mt-4 italic">
-          Reasonable accommodation for individuals with disabilities is available 
-          upon request. Accommodations include modifications to policies, 
-          programs, appropriate equipment, and services. Contact your 
-          <span *ngIf="register.inKioskMode">community library</span>
-          <span *ngIf="!register.inKioskMode">
-            community library or visit 
-            <a href="https://kcls.org/accessibility/">our accessibility page</a>
-          </span>
-          to request accommodation. 
-        </p>
-        <ng-container *ngIf="!register.inKioskMode">
-          <p class="mt-4" *ngIf="!register.inKioskMode">
-            <a href="https://kcls.org/faq/library-cards/">
-              Learn about All-Access cards in our frequently asked questions. 
-            </a>
-          </p>
-          <p class="mt-4">
-            Read our <a href="https://kcls.bibliocommons.com/info/privacy">Privacy Policy.</a>
-          </p>
-        </ng-container>
-      </div>
-
+    <div class="mt-4 flex justify-center text-lg">
+      Your library card is key to unlocking your curiosity. Let's get
+      started by finding the right card for you!
     </div>
-    <div class="flex justify-center">
+    <div class="flex">
       <router-outlet></router-outlet>
     </div>
   </div>
 
+  <div class="w-1/5"></div>
+
+  <!--
+  <ng-container *ngIf="false">
   <div class="flex-1 pt-8">
-<ng-container *ngIf="false">
     <ng-container *ngIf="!register.inKioskMode">
       <a href='https://kcls.bibliocms.com/faq/library-cards/' i18n>Related FAQs</a>
 
@@ -86,8 +44,10 @@
         </li>
       </ul>
     </ng-container>
-</ng-container>
   </div>
+  </ng-container>
+  -->
+
 </div>
 
 

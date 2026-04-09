@@ -3,12 +3,7 @@
 <mat-stepper #stepper>
   <mat-step label="Your Information">
 
-  <!--
-  <h2 i18n>Your Information</h2>
-  <hr/>
-  -->
-
-  <h3 i18n>Enter Your Name</h3>
+  <h3 i18n>Tell us about yourself. This information is used for verification purposes.</h3>
 
   <div class="columns-2 mt-6">
     <div>
@@ -277,9 +272,49 @@
 
 </mat-step>
 
-<mat-step label="Account Type">
+<mat-step label="Eligibility">
+  <div>
 
-  <b class="mt-5 ml-5">You can have an eCard or a full access card, etc.</b>
+    <div class="mt-5 p-3 border border-sky-500">
+    Congratulations, you're eligible for an all-access library card!  
+    Complete your application to start enjoying all the library has to offer.  
+    </div>
+
+    <div class="mt-5 p-3 border border-sky-500">
+    Congratulations, you're eligible for a digital library card Complete
+    your application to enjoy instant 24/7 access to our complete
+    digital collection of eBooks, audiobooks, video streaming, and more
+    </div>
+
+    <div class="mt-5 p-3 border border-sky-500">
+    Congratulations! You're eligible for both an all-access library     
+    card and a digital library card!  You have the option to enjoy      
+    instant digital access today with a digital library card, or you    
+    may choose an all-access library card for full borrowing privileges 
+    online and at our library locations. To receive an all-access       
+    library card, you must complete the form and choose to pick up your 
+    library card at any KCLS location or have it sent by mail.          
+
+    Which card would you prefer? 
+
+    All-access library card Route to form. 
+
+    Digital library card Route to form. 
+    </div>
+
+    <div class="mt-5 p-3 border border-sky-500">
+    This location is not in our service area.  Unfortunately, we are    
+    unable to provide library card access to this area. Find more       
+    information here. Route to FAQ “Who can get a library card”.    
+    </div>
+
+    <div class="mt-5 p-3 border border-sky-500">
+    Whoops! We noticed that you already have a library card on file.    
+    Please proceed to the login page to access everything the library   
+    has to offer.  Route back to login page.                            
+    </div>
+
+  </div>
   
 </mat-step>
 
@@ -436,12 +471,14 @@
         </span>
       </span>
     </mat-radio-button>
+    <div>
     <mat-radio-button value="Pick up">
       <span i18n> I will pick up at my home library
         <span class="italic text-sm">(Available same day.)</span>
       </span>
       <b *ngIf="homeOrgUnit().name" class="ml-2">Home Library: {{homeOrgUnit().name}}</b>
     </mat-radio-button>
+    </div>
   </mat-radio-group>
 
   <div class="mt-6"></div>
