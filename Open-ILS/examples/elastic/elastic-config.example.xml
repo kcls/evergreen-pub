@@ -54,6 +54,9 @@
       <field name="search_format" filter="true"/>
       <field name="sr_format" filter="true"/>
       <field name="vr_format" filter="true"/>
+      <field name="008_30" filter="true"/>
+      <field name="008_31" filter="true"/>
+      <field name="008_33" filter="true"/>
 
       <!-- sorters -->
       <field name="authorsort" sorter="true"/>
