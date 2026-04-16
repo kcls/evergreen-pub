@@ -964,6 +964,18 @@
       </xsl:with-param>
     </xsl:call-template>
 
+    <xsl:call-template name="add_filter_entry">
+      <xsl:with-param name="name">008_33</xsl:with-param>
+      <xsl:with-param name="value">
+        <xsl:call-template name="controlfield_value">
+          <xsl:with-param name="tag">008</xsl:with-param>
+          <xsl:with-param name="offset">33</xsl:with-param>
+          <xsl:with-param name="length">1</xsl:with-param>
+        </xsl:call-template>
+      </xsl:with-param>
+    </xsl:call-template>
+
+
 
     <!-- use the extracted raw filters to create composite filters -->
 
