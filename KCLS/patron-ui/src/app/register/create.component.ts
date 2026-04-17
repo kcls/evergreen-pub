@@ -376,8 +376,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // since the address provided is a normalized value returned
         // from the address API.
         return this.gateway.requestOne(
-			'open-ils.rs-addrs',
-            'open-ils.rs-addrs.lookup',
+			'kcls.address',
+            'kcls.address.lookup',
             'TODOTODOTODOTODO', // TODO
             {
                 street: addr.street_line,
@@ -392,8 +392,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             let long = (found as any).metadata.longitude;
 
             return this.gateway.requestOne(
-                'open-ils.rs-addrs',
-                'open-ils.rs-addrs.home-org',
+                'kcls.address',
+                'kcls.address.home-org',
                 'TODOTODOTODO', lat, long
             );
 
@@ -456,8 +456,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         if (!value || value.length < 5) { return EMPTY; }
 
         return this.gateway.request(
-			'open-ils.rs-addrs',
-		    'open-ils.rs-addrs.autocomplete',
+			'kcls.address',
+		    'kcls.address.autocomplete',
             'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
             {"state_filter": "WA", "search": filterValue}
         ).pipe(
