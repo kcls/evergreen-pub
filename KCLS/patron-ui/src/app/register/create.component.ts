@@ -156,62 +156,62 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }, {validators: sameEmailValidator});
 
     // TODO move these somewhere common
-	STATES = {
-	  'AL': $localize`Alabama`,
-	  'AK': $localize`Alaska`,
-	  'AZ': $localize`Arizona`,
-	  'AR': $localize`Arkansas`,
-	  'CA': $localize`California`,
-	  'CO': $localize`Colorado`,
-	  'CT': $localize`Connecticut`,
-	  'DE': $localize`Delaware`,
-	  'DC': $localize`District of Columbia`,
-	  'FL': $localize`Florida`,
-	  'GA': $localize`Georgia`,
-	  'HI': $localize`Hawaii`,
-	  'ID': $localize`Idaho`,
-	  'IL': $localize`Illinois`,
-	  'IN': $localize`Indiana`,
-	  'IA': $localize`Iowa`,
-	  'KS': $localize`Kansas`,
-	  'KY': $localize`Kentucky`,
-	  'LA': $localize`Louisiana`,
-	  'ME': $localize`Maine`,
-	  'MD': $localize`Maryland`,
-	  'MA': $localize`Massachusetts`,
-	  'MI': $localize`Michigan`,
-	  'MN': $localize`Minnesota`,
-	  'MS': $localize`Mississippi`,
-	  'MO': $localize`Missouri`,
-	  'MT': $localize`Montana`,
-	  'NE': $localize`Nebraska`,
-	  'NV': $localize`Nevada`,
-	  'NH': $localize`New Hampshire`,
-	  'NJ': $localize`New Jersey`,
-	  'NM': $localize`New Mexico`,
-	  'NY': $localize`New York`,
-	  'NC': $localize`North Carolina`,
-	  'ND': $localize`North Dakota`,
-	  'OH': $localize`Ohio`,
-	  'OK': $localize`Oklahoma`,
-	  'OR': $localize`Oregon`,
-	  'PA': $localize`Pennsylvania`,
-	  'RI': $localize`Rhode Island`,
-	  'SC': $localize`South Carolina`,
-	  'SD': $localize`South Dakota`,
-	  'TN': $localize`Tennessee`,
-	  'TX': $localize`Texas`,
-	  'UT': $localize`Utah`,
-	  'VT': $localize`Vermont`,
-	  'VA': $localize`Virginia`,
-	  'WA': $localize`Washington`,
-	  'WV': $localize`West Virginia`,
-	  'WI': $localize`Wisconsin`,
-	  'WY': $localize`Wyoming`,
-	  'AA': $localize`Armed Forces Americas`,
-	  'AE': $localize`Armed Forces Europe`,
-	  'AP': $localize`Armed Forces Pacific`
-	};
+    STATES = {
+      'AL': $localize`Alabama`,
+      'AK': $localize`Alaska`,
+      'AZ': $localize`Arizona`,
+      'AR': $localize`Arkansas`,
+      'CA': $localize`California`,
+      'CO': $localize`Colorado`,
+      'CT': $localize`Connecticut`,
+      'DE': $localize`Delaware`,
+      'DC': $localize`District of Columbia`,
+      'FL': $localize`Florida`,
+      'GA': $localize`Georgia`,
+      'HI': $localize`Hawaii`,
+      'ID': $localize`Idaho`,
+      'IL': $localize`Illinois`,
+      'IN': $localize`Indiana`,
+      'IA': $localize`Iowa`,
+      'KS': $localize`Kansas`,
+      'KY': $localize`Kentucky`,
+      'LA': $localize`Louisiana`,
+      'ME': $localize`Maine`,
+      'MD': $localize`Maryland`,
+      'MA': $localize`Massachusetts`,
+      'MI': $localize`Michigan`,
+      'MN': $localize`Minnesota`,
+      'MS': $localize`Mississippi`,
+      'MO': $localize`Missouri`,
+      'MT': $localize`Montana`,
+      'NE': $localize`Nebraska`,
+      'NV': $localize`Nevada`,
+      'NH': $localize`New Hampshire`,
+      'NJ': $localize`New Jersey`,
+      'NM': $localize`New Mexico`,
+      'NY': $localize`New York`,
+      'NC': $localize`North Carolina`,
+      'ND': $localize`North Dakota`,
+      'OH': $localize`Ohio`,
+      'OK': $localize`Oklahoma`,
+      'OR': $localize`Oregon`,
+      'PA': $localize`Pennsylvania`,
+      'RI': $localize`Rhode Island`,
+      'SC': $localize`South Carolina`,
+      'SD': $localize`South Dakota`,
+      'TN': $localize`Tennessee`,
+      'TX': $localize`Texas`,
+      'UT': $localize`Utah`,
+      'VT': $localize`Vermont`,
+      'VA': $localize`Virginia`,
+      'WA': $localize`Washington`,
+      'WV': $localize`West Virginia`,
+      'WI': $localize`Wisconsin`,
+      'WY': $localize`Wyoming`,
+      'AA': $localize`Armed Forces Americas`,
+      'AE': $localize`Armed Forces Europe`,
+      'AP': $localize`Armed Forces Pacific`
+    };
 
     constructor(
         private router: Router,
@@ -287,15 +287,15 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         this.filteredResAddrOptions = this.formGroup.controls.street1.valueChanges.pipe(
             startWith(''),
-			debounceTime(300), // Wait for 300ms of inactivity
-			distinctUntilChanged(), // Only emit if the value has changed
+            debounceTime(300), // Wait for 300ms of inactivity
+            distinctUntilChanged(), // Only emit if the value has changed
             switchMap(value => this.resAddrStreet1Filter('' + value)), // Or call API here
         );
 
         this.filteredMailAddrOptions = this.formGroup.controls.mailingStreet1.valueChanges.pipe(
             startWith(''),
-			debounceTime(300), // Wait for 300ms of inactivity
-			distinctUntilChanged(), // Only emit if the value has changed
+            debounceTime(300), // Wait for 300ms of inactivity
+            distinctUntilChanged(), // Only emit if the value has changed
             switchMap(value => this.mailAddrStreet1Filter('' + value)), // Or call API here
         );
     }
@@ -376,7 +376,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // since the address provided is a normalized value returned
         // from the address API.
         return this.gateway.requestOne(
-			'kcls.address',
+            'kcls.address',
             'kcls.address.lookup',
             'TODOTODOTODOTODO', // TODO
             {
@@ -430,7 +430,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.formGroup.controls.mailingZipCode.setValue(addr.zipcode);
     }
 
-	private resAddrStreet1Filter(value: string): Observable<string[]> {
+    private resAddrStreet1Filter(value: string): Observable<string[]> {
         this.resAddressSuggestions = [];
 
         if (value === this.selectedResAddress) {
@@ -438,9 +438,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         }
 
         return this.addrStreet1Fitler(value, this.resAddressSuggestions);
-	}
+    }
 
-	private mailAddrStreet1Filter(value: string): Observable<string[]> {
+    private mailAddrStreet1Filter(value: string): Observable<string[]> {
         this.mailAddressSuggestions = [];
 
         if (value === this.selectedMailAddress) {
@@ -448,16 +448,16 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         }
 
         return this.addrStreet1Fitler(value, this.mailAddressSuggestions);
-	}
+    }
 
-	private addrStreet1Fitler(value: string, suggestions: AddressSuggestion[]): Observable<string[]> {
-		const filterValue = value.toLowerCase();
+    private addrStreet1Fitler(value: string, suggestions: AddressSuggestion[]): Observable<string[]> {
+        const filterValue = value.toLowerCase();
 
         if (!value || value.length < 5) { return EMPTY; }
 
         return this.gateway.request(
-			'kcls.address',
-		    'kcls.address.autocomplete',
+            'kcls.address',
+            'kcls.address.autocomplete',
             'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
             {"state_filter": "WA", "search": filterValue}
         ).pipe(
@@ -470,7 +470,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             }),
             toArray()
         );
-	}
+    }
 
 
     // Note: we could call this after the pickup lib has changed to
