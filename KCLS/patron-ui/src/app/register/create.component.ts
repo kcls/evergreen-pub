@@ -21,6 +21,7 @@ const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
 const STAT_CAT_LIB_NEWS = 3;
 const STAT_CAT_FOUNDATION_NEWS = 4;
 const STAT_CAT_CARD_STYLE = 10;
+const STAT_CAT_DISTRICT_OF_RESIDENCE = 12;
 
 const COMMON_USER_SETTING_TYPES = [
   'circ.holds_behind_desk',
@@ -75,6 +76,8 @@ export const sameEmailValidator: ValidatorFn = (
     return null;
 };
 
+const DEFAULT_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
+
 @Component({
   templateUrl: './create.component.html',
   styleUrls: ['./create.component.scss']
@@ -91,6 +94,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     formNeedsWork = false;
     pickupLibs: Hash[] = [];
+    districtOfResidence: null | string = null;
 
     calculatedHomeOrg: number | null = null;
 
@@ -375,6 +379,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // In theory the tested address should return a single result
         // since the address provided is a normalized value returned
         // from the address API.
+        let latitude = 0;
+        let longitude = 0;
+
         return this.gateway.requestOne(
             'kcls.address',
             'kcls.address.lookup',
@@ -388,27 +395,49 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         ).then(found => {
             if (!found) { return; }
 
-            let lat = (found as any).metadata.latitude;
-            let long = (found as any).metadata.longitude;
+            latitude = (found as any).metadata.latitude;
+            longitude = (found as any).metadata.longitude;
 
             return this.gateway.requestOne(
                 'kcls.address',
                 'kcls.address.home-org',
-                'TODOTODOTODO', lat, long
+                'TODO',
+                latitude,
+                longitude
             );
 
         }).then(homeOrg => {
             console.log('Got home org', homeOrg);
-            if (homeOrg) {
-                this.calculatedHomeOrg = Number(homeOrg);
+            if (!homeOrg) { return; }
 
-                if (!this.formGroup.controls.pickupLib.value) {
-                    console.debug('Applying default pickup lib', this.calculatedHomeOrg);
-                    // Use the calculted home org unit as the default hold
-                    // pickup location if no value has already been applied
-                    this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
-                }
+            this.calculatedHomeOrg = Number(homeOrg);
+
+            if (!this.formGroup.controls.pickupLib.value) {
+                console.debug('Applying default pickup lib', this.calculatedHomeOrg);
+                // Use the calculted home org unit as the default hold
+                // pickup location if no value has already been applied
+                this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
             }
+
+            // If we have a home org unit that means we are either in the
+            // main service area or one of the reciprical service areas.
+
+            return this.gateway.requestOne(
+                "kcls.address",
+                "kcls.address.district-of-residence",
+                "TODO",
+                latitude,
+                longitude
+            ).then(found => {
+                if (found) {
+                    this.districtOfResidence = found as string;
+                } else {
+                    // If no value is found, that means we're in the main
+                    // service aread.
+                    this.districtOfResidence = DEFAULT_DISTRICT_OF_RESIDENCE;
+                }
+                console.debug('District set to ' + this.districtOfResidence);
+            });
         });
     }
 
@@ -640,9 +669,15 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                 {stat_cat: STAT_CAT_FOUNDATION_NEWS,
                     value: ctls.wantsFoundationInfo.value ? 'Y' : 'N'},
                 {stat_cat: STAT_CAT_CARD_STYLE,
-                    value: ctls.design.value ? 'Y' : 'N'}
+                    value: ctls.design.value ? 'Y' : 'N'},
             ]
         };
+
+        if (this.districtOfResidence) {
+            payload.stat_cats.push(
+                {stat_cat: STAT_CAT_DISTRICT_OF_RESIDENCE, value: this.districtOfResidence}
+            );
+        }
 
         // Propagate the notification settings
         for (const field in ctls) {
