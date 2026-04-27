@@ -78,6 +78,15 @@ export const sameEmailValidator: ValidatorFn = (
 
 const DEFAULT_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 
+type AccountTypeSelection = 'ecard' | 'full';
+
+export enum AccountTypeOption {
+    Either,
+    None,
+    Ecard,
+    AllAccess
+}
+
 @Component({
   templateUrl: './create.component.html',
   styleUrls: ['./create.component.scss']
@@ -98,6 +107,12 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     calculatedHomeOrg: number | null = null;
 
+    // Make the enum visible in the template
+    AccountTypeOption = AccountTypeOption;
+
+    accountTypeSelection: AccountTypeSelection | null = null;
+    accountTypeOption = AccountTypeOption.None;
+
     emailSettings: UserSettingType[] = [];
     phoneSettings: UserSettingType[] = [];
     textSettings: UserSettingType[] = [];
@@ -110,6 +125,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     filteredMailAddrOptions: Observable<string[]> = EMPTY;
     mailAddressSuggestions: AddressSuggestion[] = [];
     selectedMailAddress = '';
+
+    foundDuplicateAccount = false;
 
     cardOptions = [
         '2025-Barry-Johnson',
@@ -157,6 +174,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         allPhoneNotices: false,
         pickupLib: 0,
         smsNumber: '',
+        selectedAccountType: '',
     }, {validators: sameEmailValidator});
 
     // TODO move these somewhere common
@@ -273,15 +291,28 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             this.emailSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
-            this.checkNoticeRequiredFields();
+            this.checkContactInfoRequired();
         });
 
         this.formGroup.controls.allTextNotices.valueChanges.subscribe(val => {
             this.textSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
-            this.checkNoticeRequiredFields();
+            this.checkContactInfoRequired();
         });
+
+        this.formGroup.controls.email.valueChanges.subscribe(val => {
+            this.checkContactInfoRequired();
+        });
+
+        this.formGroup.controls.phone.valueChanges.subscribe(val => {
+            this.checkContactInfoRequired();
+        });
+
+        this.formGroup.controls.selectedAccountType.valueChanges.subscribe(val => {
+            this.checkContactInfoRequired();
+        });
+
 
         this.formGroup.controls.allPhoneNotices.valueChanges.subscribe(val => {
             this.phoneSettings.forEach(set => {
@@ -431,14 +462,27 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             ).then(found => {
                 if (found) {
                     this.districtOfResidence = found as string;
+                    this.accountTypeOption = AccountTypeOption.AllAccess;
                 } else {
                     // If no value is found, that means we're in the main
                     // service aread.
                     this.districtOfResidence = DEFAULT_DISTRICT_OF_RESIDENCE;
+                    this.accountTypeOption = AccountTypeOption.Either;
                 }
-                console.debug('District set to ' + this.districtOfResidence);
             });
         });
+    }
+
+    wantsEcard(): boolean {
+        console.log('wants ecard => ', this.formGroup.controls.selectedAccountType.value);
+        console.log('wants ecard => ', typeof this.formGroup.controls.selectedAccountType.value);
+        console.log('wants ecard => ', this.formGroup.controls.selectedAccountType.value == AccountTypeOption.Ecard);
+        console.log('wants ecard => ', typeof AccountTypeOption.Ecard);
+        return this.formGroup.controls.selectedAccountType.value == AccountTypeOption.Ecard;
+    }
+
+    wantsAllAccess(): boolean {
+        return this.formGroup.controls.selectedAccountType.value == AccountTypeOption.AllAccess;
     }
 
     homeOrgUnit(): Hash {
@@ -538,33 +582,60 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         })).toPromise();
     }
 
-    // Sets the email or sms field to required if any email/sms notices
-    // are active, or not-required otherwise.
-    checkNoticeRequiredFields() {
-        let ctl = this.formGroup.controls.email;
-        if (this.emailSettings
-            .filter(set => this.formGroup.controls[set.name].value).length > 0) {
-            // At least one email notice is enabled
-            if (!ctl.hasValidator(Validators.required)) {
-                ctl.addValidators(Validators.required);
-                ctl.updateValueAndValidity();
-            }
-        } else {
-            ctl.clearValidators();
-            ctl.updateValueAndValidity();
+    // Determines if a contact type (phone/email/etc) is required based
+    // on notice and account type prerences.
+    checkContactInfoRequired() {
+        let emailCtl = this.formGroup.controls.email;
+        let phoneCtl = this.formGroup.controls.phone;
+        let smsCtl = this.formGroup.controls.smsNumber;
+
+        // Phone is required if its all-access and there's no email value
+        let phoneRequired = this.wantsAllAccess() && !this.formGroup.controls.email.value;
+
+        // SMS is required if any text notices are enabled
+        let smsRequired = this.textSettings.some(set => this.formGroup.controls[set.name].value);
+
+        let emailRequired = false;
+
+        if (this.wantsEcard()) {
+            emailRequired = true;
+        } else if (this.wantsAllAccess() && !this.formGroup.controls.phone.value) {
+            emailRequired = true;
+        } else if (this.emailSettings.some(set => this.formGroup.controls[set.name].value)) {
+            emailRequired = true;
         }
 
-        ctl = this.formGroup.controls.smsNumber;
-        if (this.textSettings
-            .filter(set => this.formGroup.controls[set.name].value).length > 0) {
-            // At least one text notice is enabled
-            if (!ctl.hasValidator(Validators.required)) {
-                ctl.addValidators(Validators.required);
-                ctl.updateValueAndValidity();
+        if (emailCtl.hasValidator(Validators.required)) {
+            if (!emailRequired) { // type is not required
+                emailCtl.clearValidators();
+                emailCtl.updateValueAndValidity();
             }
-        } else {
-            ctl.clearValidators();
-            ctl.updateValueAndValidity();
+        } else if (emailRequired) {
+            // type is required and must be marked as such.
+            emailCtl.addValidators(Validators.required);
+            emailCtl.updateValueAndValidity();
+        }
+
+        if (phoneCtl.hasValidator(Validators.required)) {
+            if (!phoneRequired) { // type is not required
+                phoneCtl.clearValidators();
+                phoneCtl.updateValueAndValidity();
+            }
+        } else if (phoneRequired) {
+            // type is required and must be marked as such.
+            phoneCtl.addValidators(Validators.required);
+            phoneCtl.updateValueAndValidity();
+        }
+
+        if (smsCtl.hasValidator(Validators.required)) {
+            if (!smsRequired) { // type is not required
+                smsCtl.clearValidators();
+                smsCtl.updateValueAndValidity();
+            }
+        } else if (smsRequired) {
+            // type is required and must be marked as such.
+            smsCtl.addValidators(Validators.required);
+            smsCtl.updateValueAndValidity();
         }
     }
 

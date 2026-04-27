@@ -101,23 +101,23 @@
   <h3 i18n>Residential Address</h3>
 
   <div class="columns-1 mt-6">
-		<mat-form-field class="w-full">
-			<mat-label>Street Address</mat-label>
-			<input type="text"
-						 placeholder="Street address..."
-						 aria-label="Street 1"
-						 matInput
+    <mat-form-field class="w-full">
+      <mat-label>Street Address</mat-label>
+      <input type="text"
+             placeholder="Street address..."
+             aria-label="Street 1"
+             matInput
              formControlName="street1"
-						 [matAutocomplete]="street1Auto">
+             [matAutocomplete]="street1Auto">
       <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
         Street address is <strong>required</strong>
       </mat-error>
-			<mat-autocomplete #street1Auto="matAutocomplete" (optionSelected)="street1AutoSelected($event)">
+      <mat-autocomplete #street1Auto="matAutocomplete" (optionSelected)="street1AutoSelected($event)">
         <mat-option *ngFor="let option of filteredResAddrOptions | async" [value]="option">
           {{option}} <!-- Or {{option.name}} if options are objects -->
         </mat-option>
-			</mat-autocomplete>
-		</mat-form-field>
+      </mat-autocomplete>
+    </mat-form-field>
   </div>
 
 <!--
@@ -273,67 +273,89 @@
 </mat-step>
 
 <mat-step label="Eligibility">
-  <div>
+  <div class="mt-5 p-3 banner">
 
-    <div class="mt-5 p-3 border border-sky-500">
-    Congratulations, you're eligible for an all-access library card!  
-    Complete your application to start enjoying all the library has to offer.  
-    </div>
+    <ng-template *ngIf="foundDuplicateAccount; else notADupe">
+      Whoops! We noticed that you already have a library card on file.
+      Please proceed to the login page to access everything the library
+      has to offer.  Route back to login page.
+    </ng-template>
 
-    <div class="mt-5 p-3 border border-sky-500">
-    Congratulations, you're eligible for a digital library card Complete
-    your application to enjoy instant 24/7 access to our complete
-    digital collection of eBooks, audiobooks, video streaming, and more
-    </div>
+    <ng-template #notADupe>
 
-    <div class="mt-5 p-3 border border-sky-500">
-    Congratulations! You're eligible for both an all-access library     
-    card and a digital library card!  You have the option to enjoy      
-    instant digital access today with a digital library card, or you    
-    may choose an all-access library card for full borrowing privileges 
-    online and at our library locations. To receive an all-access       
-    library card, you must complete the form and choose to pick up your 
-    library card at any KCLS location or have it sent by mail.          
+      @switch (accountTypeOption) {
 
-    Which card would you prefer? 
+        @case (AccountTypeOption.Ecard) {
+          <p>
+            Congratulations, you're eligible for a digital library card Complete
+            your application to enjoy instant 24/7 access to our complete
+            digital collection of eBooks, audiobooks, video streaming, and more
+          </p>
+        }
 
-    All-access library card Route to form. 
+        @case (AccountTypeOption.AllAccess) {
+          <p>
+            Congratulations, you're eligible for an all-access library card!  
+            Complete your application to start enjoying all the library has to offer.  
+          </p>
+        }
 
-    Digital library card Route to form. 
-    </div>
+        @case (AccountTypeOption.Either) {
+          <div class="columns-1 mt-4">
+            <div class="w-full">
 
-    <div class="mt-5 p-3 border border-sky-500">
-    This location is not in our service area.  Unfortunately, we are    
-    unable to provide library card access to this area. Find more       
-    information here. Route to FAQ “Who can get a library card”.    
-    </div>
+              <div>
+              Congratulations! You're eligible for both an all-access library
+              card and a digital library card!  You have the option to enjoy
+              instant digital access today with a digital library card, or you
+              may choose an all-access library card for full borrowing privileges
+              online and at our library locations.
+              </div>
 
-    <div class="mt-5 p-3 border border-sky-500">
-    Whoops! We noticed that you already have a library card on file.    
-    Please proceed to the login page to access everything the library   
-    has to offer.  Route back to login page.                            
-    </div>
+              <div class="mt-4">
+              To receive an all-access
+              library card, you must complete the form and choose to pick up your
+              library card at any KCLS location or have it sent by mail.
+              </div>
 
+              <h3 i18n>Which card would you prefer?</h3>
+              <div class="pl-4">
+                <mat-radio-group class="flex flex-col" required 
+                  aria-label="Select an option" formControlName="selectedAccountType">
+                  <mat-radio-button [value]="AccountTypeOption.AllAccess">All-access library card</mat-radio-button>
+                  <mat-radio-button [value]="AccountTypeOption.Ecard">Digital library card</mat-radio-button>
+                </mat-radio-group>
+              </div>
+            </div>
+
+          </div>
+        }
+        @default {
+          <p>
+            This location is not in our service area.  Unfortunately, we are
+            unable to provide library card access to this area. Find more
+            information <a href="https://kcls.org/faq/library-cards/">here</a>.
+          </p>
+        }
+      }
+    </ng-template>
   </div>
   
 </mat-step>
 
 <mat-step label="Contact Information">
-
-  <!--
-  <div class="m-6 p-2 border border-slate-300 bg-blue-300">
-    <b>NEW PAGE</b>
-  </div>
-  -->
-
-
   <div class="columns-2 mt-6">
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Email Address</mat-label>
         <input type="email" matInput formControlName="email"/>
         <mat-error *ngIf="formGroup.controls.email.hasError('required')" i18n>
-          Email is <strong>required</strong> to receive email notices.
+          <ng-template *ngIf="wantsEcard()">
+            Email is <strong>required</strong> to receive email notices.
+          </ng-template>
+          <ng-template *ngIf="wantsAllAccess()">
+            All-access library cards require either a phone number or email address.
+          </ng-template>
         </mat-error>
         <mat-error *ngIf="formGroup.controls.email.hasError('email')" i18n>
           Email format is <strong>not valid</strong>
@@ -356,19 +378,17 @@
     </div>
   </div>
 
-  <b>TODO phone only required for all-access cards</b>
-
   <div class="columns-2 mt-6">
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Phone Number</mat-label>
         <input type="tel" matInput formControlName="phone"/>
         <mat-hint>111-222-3333</mat-hint>
-        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
-            Phone Number <strong>required</strong>
-        </mat-error>
         <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
             Phone Number format is <strong>111-222-3333</strong>
+        </mat-error>
+        <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
+          All-access library cards require either a phone number or email address.
         </mat-error>
       </mat-form-field>
     </div>
