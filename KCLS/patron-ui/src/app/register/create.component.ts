@@ -305,6 +305,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             this.phoneSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
             });
+            this.checkContactInfoRequired();
         });
 
         this.formGroup.controls.email.valueChanges.subscribe(val => {
@@ -574,6 +575,19 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         })).toPromise();
     }
 
+    wantsPhoneNotices(): boolean {
+        return this.phoneSettings.some(set => this.formGroup.controls[set.name].value);
+    }
+
+    wantsEmailNotices(): boolean {
+        return this.emailSettings.some(set => this.formGroup.controls[set.name].value);
+    }
+
+    wantsTextNotices(): boolean {
+        return this.textSettings.some(set => this.formGroup.controls[set.name].value);
+    }
+
+
     // Determines if a contact type (phone/email/etc) is required based
     // on notice and account type prerences.
     checkContactInfoRequired() {
@@ -581,26 +595,18 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         let phoneCtl = this.formGroup.controls.phone;
         let smsCtl = this.formGroup.controls.smsNumber;
 
-        let emailRequired = false;
-        let phoneRequired = false
-        // SMS is only required if text notices are enabled
-        let smsRequired = this.textSettings.some(set => this.formGroup.controls[set.name].value);
+        let emailRequired = (
+            this.wantsEcard() ||
+            this.wantsEmailNotices() ||
+            (this.wantsAllAccess() && !this.formGroup.controls.phone.value)
+        );
 
-        if (this.wantsEcard()) {
-            emailRequired = true;
-        } else if (this.wantsAllAccess() && !this.formGroup.controls.phone.value) {
-            // All-access card requires either phone or email
-            emailRequired = true;
-        } else if (this.emailSettings.some(set => this.formGroup.controls[set.name].value)) {
-            // Email notices are enabled
-            emailRequired = true;
-        }
+        let phoneRequired = (
+            this.wantsPhoneNotices() ||
+            (this.wantsAllAccess() && !this.formGroup.controls.email.value)
+        );
 
-        if (this.wantsAllAccess() && !this.formGroup.controls.email.value) {
-            phoneRequired = true;
-        } else if (this.phoneSettings.some(set => this.formGroup.controls[set.name].value)) {
-            phoneRequired = true;
-        }
+        let smsRequired = this.wantsTextNotices();
 
         if (emailCtl.hasValidator(Validators.required)) {
             if (!emailRequired) {
