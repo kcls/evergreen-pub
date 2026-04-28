@@ -473,7 +473,7 @@
     </div>
   </ng-container>
 </mat-step>
-<mat-step label="Card Options">
+<mat-step label="Card Options" *ngIf="wantsAllAccess()">
 
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 
@@ -584,7 +584,7 @@
       </div>
     </div>
 
-    <div class="summary-section">
+    <div class="summary-section" *ngIf="wantsAllAccess()">
       <div class="summary-section-title" i18n>Preferences</div>
       <div class="summary-row">
         <span class="summary-label" i18n>Pickup Library</span>
@@ -601,7 +601,7 @@
       </div>
     </div>
 
-    <div class="summary-section">
+    <div class="summary-section" *ngIf="wantsAllAccess()">
       <div class="summary-section-title" i18n>Card</div>
       <div class="summary-row">
         <span class="summary-label" i18n>Design</span>

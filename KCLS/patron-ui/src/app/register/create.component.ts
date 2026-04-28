@@ -11,7 +11,7 @@ import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {RegisterService} from './register.service';
 import {MatAutocompleteSelectedEvent} from '@angular/material/autocomplete';
-import {MatStepper} from '@angular/material/stepper';
+//import {MatStepper} from '@angular/material/stepper';
 
 const JUV_AGE = 18; // years
 const DEFAULT_STATE = 'WA';
@@ -93,7 +93,7 @@ export enum AccountTypeOption {
 })
 export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
-    @ViewChild('stepper') stepper!: MatStepper;
+    //@ViewChild('stepper') stepper!: MatStepper;
 
     minDob = new Date("1900-01-01");
     maxDob = new Date();
