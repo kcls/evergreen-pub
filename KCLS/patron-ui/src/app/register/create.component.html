@@ -410,11 +410,9 @@
 </mat-step>
 <mat-step label="Preferences">
 
-  <div class="columns-1 mt-4">
+  <div class="columns-1 mt-4" *ngIf="wantsAllAccess()">
     <div class="w-full">
       <h3 i18n>Preferred hold pickup location</h3>
-
-
       <div class="pl-4">
         <mat-form-field class="w-1/2">
           <mat-label i18n>Hold Pickup Library</mat-label>

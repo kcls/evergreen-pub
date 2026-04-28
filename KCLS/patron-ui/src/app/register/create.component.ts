@@ -474,10 +474,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     wantsEcard(): boolean {
-        console.log('wants ecard => ', this.formGroup.controls.selectedAccountType.value);
-        console.log('wants ecard => ', typeof this.formGroup.controls.selectedAccountType.value);
-        console.log('wants ecard => ', this.formGroup.controls.selectedAccountType.value == AccountTypeOption.Ecard);
-        console.log('wants ecard => ', typeof AccountTypeOption.Ecard);
         return this.formGroup.controls.selectedAccountType.value == AccountTypeOption.Ecard;
     }
 
@@ -600,40 +596,39 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         if (this.wantsEcard()) {
             emailRequired = true;
         } else if (this.wantsAllAccess() && !this.formGroup.controls.phone.value) {
+            // All-access card requires either phone or email
             emailRequired = true;
         } else if (this.emailSettings.some(set => this.formGroup.controls[set.name].value)) {
+            // Email notices are enabled
             emailRequired = true;
         }
 
         if (emailCtl.hasValidator(Validators.required)) {
-            if (!emailRequired) { // type is not required
+            if (!emailRequired) {
                 emailCtl.clearValidators();
                 emailCtl.updateValueAndValidity();
             }
         } else if (emailRequired) {
-            // type is required and must be marked as such.
             emailCtl.addValidators(Validators.required);
             emailCtl.updateValueAndValidity();
         }
 
         if (phoneCtl.hasValidator(Validators.required)) {
-            if (!phoneRequired) { // type is not required
+            if (!phoneRequired) {
                 phoneCtl.clearValidators();
                 phoneCtl.updateValueAndValidity();
             }
         } else if (phoneRequired) {
-            // type is required and must be marked as such.
             phoneCtl.addValidators(Validators.required);
             phoneCtl.updateValueAndValidity();
         }
 
         if (smsCtl.hasValidator(Validators.required)) {
-            if (!smsRequired) { // type is not required
+            if (!smsRequired) {
                 smsCtl.clearValidators();
                 smsCtl.updateValueAndValidity();
             }
         } else if (smsRequired) {
-            // type is required and must be marked as such.
             smsCtl.addValidators(Validators.required);
             smsCtl.updateValueAndValidity();
         }
