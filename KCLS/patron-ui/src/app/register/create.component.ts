@@ -301,6 +301,12 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             this.checkContactInfoRequired();
         });
 
+        this.formGroup.controls.allPhoneNotices.valueChanges.subscribe(val => {
+            this.phoneSettings.forEach(set => {
+                this.formGroup.controls[set.name].setValue(val);
+            });
+        });
+
         this.formGroup.controls.email.valueChanges.subscribe(val => {
             this.checkContactInfoRequired();
         });
@@ -311,13 +317,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         this.formGroup.controls.selectedAccountType.valueChanges.subscribe(val => {
             this.checkContactInfoRequired();
-        });
-
-
-        this.formGroup.controls.allPhoneNotices.valueChanges.subscribe(val => {
-            this.phoneSettings.forEach(set => {
-                this.formGroup.controls[set.name].setValue(val);
-            });
         });
 
         this.filteredResAddrOptions = this.formGroup.controls.street1.valueChanges.pipe(
@@ -546,7 +545,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     // ensure the setting types are correctly scoped to the org
     // unit.  Not necessary for KCLS at the moment.
     getOptInSettings(): Promise<any> {
-
         this.emailSettings = [];
         this.phoneSettings = [];
         this.textSettings = [];
@@ -571,8 +569,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                 this.printSettings.push(set);
             }
 
-            //console.log('email options', this.emailSettings);
-
             this.formGroup.addControl(name, new FormControl(false));
 
         })).toPromise();
@@ -585,13 +581,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         let phoneCtl = this.formGroup.controls.phone;
         let smsCtl = this.formGroup.controls.smsNumber;
 
-        // Phone is required if its all-access and there's no email value
-        let phoneRequired = this.wantsAllAccess() && !this.formGroup.controls.email.value;
-
-        // SMS is required if any text notices are enabled
-        let smsRequired = this.textSettings.some(set => this.formGroup.controls[set.name].value);
-
         let emailRequired = false;
+        let phoneRequired = false
+        // SMS is only required if text notices are enabled
+        let smsRequired = this.textSettings.some(set => this.formGroup.controls[set.name].value);
 
         if (this.wantsEcard()) {
             emailRequired = true;
@@ -601,6 +594,12 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         } else if (this.emailSettings.some(set => this.formGroup.controls[set.name].value)) {
             // Email notices are enabled
             emailRequired = true;
+        }
+
+        if (this.wantsAllAccess() && !this.formGroup.controls.email.value) {
+            phoneRequired = true;
+        } else if (this.phoneSettings.some(set => this.formGroup.controls[set.name].value)) {
+            phoneRequired = true;
         }
 
         if (emailCtl.hasValidator(Validators.required)) {

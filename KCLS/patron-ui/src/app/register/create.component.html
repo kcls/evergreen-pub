@@ -407,26 +407,10 @@
     </div>
   </div>
 
+<!--
 </mat-step>
 <mat-step label="Preferences">
-
-  <div class="columns-1 mt-4" *ngIf="wantsAllAccess()">
-    <div class="w-full">
-      <h3 i18n>Preferred hold pickup location</h3>
-      <div class="pl-4">
-        <mat-form-field class="w-1/2">
-          <mat-label i18n>Hold Pickup Library</mat-label>
-          <mat-select formControlName="pickupLib">
-            <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
-        Not sure? Find your nearest library on this
-        <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
-      </div>
-    </div>
-  </div>
+-->
 
   <div class="columns-1 mt-4">
     <div class="w-full">
@@ -446,17 +430,36 @@
   <div class="columns-1 mt-4">
     <div class="w-full">
       <h3 i18n>Notification Preferences</h3>
-      <div class="pl-4">
+      <div class="pl-4" *ngIf="emailSettings.length > 0">
         <mat-checkbox formControlName="allEmailNotices" i18n>Email Notices</mat-checkbox>
       </div>
-      <div class="pl-4">
+      <div class="pl-4" *ngIf="textSettings.length > 0">
         <mat-checkbox formControlName="allTextNotices" i18n>Text Notices</mat-checkbox>
       </div>
-      <div class="pl-4">
+      <div class="pl-4" *ngIf="phoneSettings.length > 0">
         <mat-checkbox formControlName="allPhoneNotices" i18n>Phone Notices</mat-checkbox>
       </div>
     </div>
   </div>
+
+  <div class="columns-1 mt-4" *ngIf="wantsAllAccess()">
+    <div class="w-full">
+      <h3 i18n>Preferred hold pickup location</h3>
+      <div class="pl-4">
+        <mat-form-field class="w-1/2">
+          <mat-label i18n>Hold Pickup Library</mat-label>
+          <mat-select formControlName="pickupLib">
+            <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
+        Not sure? Find your nearest library on this
+        <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">map</a>.
+      </div>
+    </div>
+  </div>
+
 
 </mat-step>
 <mat-step label="Card Options">
