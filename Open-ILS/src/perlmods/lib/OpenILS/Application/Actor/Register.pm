@@ -45,7 +45,9 @@ __PACKAGE__->register_method(
 );
 
 sub register {
-    my ($self, $client, $values) = @_;
+    my ($self, $client, $captcha, $values) = @_;
+
+    # TODO CAPTCHA
 
     return OpenILS::Event->new('BAD_PARAMS') unless ref $values eq 'HASH';
 
@@ -221,5 +223,78 @@ sub normalize {
 
     return $value;
 }
+
+__PACKAGE__->register_method(
+    method      => 'maybe_has_existing_account',
+    api_name    => 'open-ils.actor.register.maybe_has_existing_account',
+    signature => {
+        desc => 'See if the provided user data might match an existing account',
+        params => [
+            {desc => 'Values', type => 'object'}
+        ],
+        return => {
+            desc => 'True(1) if potential duplicates are found, False (0) otherwise',
+            type => 'number',
+        }
+    }
+);
+
+sub maybe_has_existing_account {
+    my ($self, $client, $captcha, $values) = @_;
+    my $e = new_editor();
+
+    # TODO CAPTCHA
+
+    my $first_given_name = $values->{first_given_name};
+    my $family_name = $values->{family_name};
+    my $dob = $values->{dob};
+    my $dob_year = substr($dob, 0, 4);
+    my $street1 = $values->{street1};
+
+    return OpenILS::Event->new('BAD_PARAMS') unless 
+        $first_given_name
+        && $family_name
+        && $dob_year
+        && $street1;
+
+    my $search = {
+        first_given_name => {value => $first_given_name, group => 0},
+        family_name => {value => $family_name, group => 0},
+        dob => {value => $dob_year, group => 0}
+    };
+
+    # KCLS searches everywhere
+    my $root_org = $e->search_actor_org_unit({parent_ou => undef})->[0];
+
+    my $ids = $U->storagereq(
+        'open-ils.storage.actor.user.crazy_search', 
+        $search,
+        1000,           # search limit
+        undef,          # sort
+        1,              # include inactive
+        $root_org->id,  # ws_ou
+        $root_org->id   # search_ou
+    );
+
+    return 0 if @$ids == 0; # no matching users found.
+
+    $logger->info("Found potential duplicate patrons: @$ids; checking address: $street1");
+
+    # The Ecard code this was copied from explicitly did not check if the
+    # address matched any of the duplicate users.  Retaining that logic for now.
+    my $addr_ids = $e->search_actor_user_address(
+        {   usr => $ids,
+            street1 => {'~*' => "(^| )$street1( |\$)"}
+        }, {idlist => 1}
+    );
+
+    if (@$addr_ids) {
+        $logger->info("Secondary address check found matches: @$addr_ids");
+        return 1;
+    }
+
+    return 0
+}
+
 
 1;
