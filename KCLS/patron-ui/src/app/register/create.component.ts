@@ -764,6 +764,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         return this.gateway.request(
             'open-ils.actor',
             'open-ils.actor.register',
+            'TODO CAPTCHA',
             payload
         ).toPromise().then(r => {
             const response = r as ApiResponse;
