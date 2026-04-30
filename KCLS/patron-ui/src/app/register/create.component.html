@@ -275,12 +275,12 @@
 <mat-step label="Eligibility">
   <div class="mt-5 p-3 banner">
 
-    <ng-template *ngIf="maybeDupeAccount; else notADupe">
+    <ng-container *ngIf="maybeDupeAccount; else notADupe">
       Whoops! We noticed that you already have a library card on file.
       Please proceed to the 
       <a href="https://kcls.bibliocommons.com/user/login">login page</a> 
       to access everything the library has to offer.
-    </ng-template>
+    </ng-container>
 
     <ng-template #notADupe>
 
