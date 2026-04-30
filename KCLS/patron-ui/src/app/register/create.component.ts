@@ -126,7 +126,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     mailAddressSuggestions: AddressSuggestion[] = [];
     selectedMailAddress = '';
 
-    foundDuplicateAccount = false;
+    maybeDupeAccount: boolean | null = null;
 
     cardOptions = [
         '2025-Barry-Johnson',
@@ -143,14 +143,23 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     formGroup = this.formBuilder.record({
         design: ['', Validators.required],
         delivery: ['Mail', Validators.required],
-        first: ['', Validators.required],
+        first: ['', {
+            validators: [Validators.required],
+            updateOn: 'blur'
+        }],
         middle: '',
-        last: ['', Validators.required],
+        last: ['', {
+            validators: [Validators.required],
+            updateOn: 'blur'
+        }],
         legalIsSame: true,
-        legalFirst: '',
+        legalFirst: ['', {updateOn: 'blur'}],
         legalMiddle: '',
-        legalLast: '',
-        dob: ['', Validators.required],
+        legalLast: ['', {updateOn: 'blur'}],
+        dob: ['', {
+            validators: [Validators.required],
+            updateOn: 'blur'
+        }],
         guardian: '',
         phone: ['', [Validators.required, Validators.pattern(PHONE_REGEX)]],
         email: ['', Validators.email],
@@ -287,6 +296,14 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             });
         });
 
+        // Fire the duplicate account checker
+        // street1 is handled in populateResAddrFromSuggestion()
+        this.formGroup.controls.first.valueChanges.subscribe(val => this.checkForExistingAccount());
+        this.formGroup.controls.last.valueChanges.subscribe(val => this.checkForExistingAccount());
+        this.formGroup.controls.legalFirst.valueChanges.subscribe(val => this.checkForExistingAccount());
+        this.formGroup.controls.legalLast.valueChanges.subscribe(val => this.checkForExistingAccount());
+        this.formGroup.controls.dob.valueChanges.subscribe(val => this.checkForExistingAccount());
+
         this.formGroup.controls.allEmailNotices.valueChanges.subscribe(val => {
             this.emailSettings.forEach(set => {
                 this.formGroup.controls[set.name].setValue(val);
@@ -333,6 +350,61 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             distinctUntilChanged(), // Only emit if the value has changed
             switchMap(value => this.mailAddrStreet1Filter('' + value)), // Or call API here
         );
+    }
+
+    checkForExistingAccount() {
+        let controls = this.formGroup.controls;
+
+        if (   !controls.first.value
+            || !controls.last.value
+            || !controls.dob.value
+            || !controls.street1.value) {
+            return;
+        }
+
+        this.gateway.requestOne(
+            'open-ils.actor',
+            'open-ils.actor.register.has_account',
+            'TODO TODO', {
+                first_given_name: controls.first.value,
+                family_name: controls.last.value,
+                dob: controls.dob.value,
+                street1: controls.street1.value
+            }
+        ).then(resp => {
+
+            if (Number(resp) === 1) {
+                console.debug('Possible existing account found');
+                this.maybeDupeAccount = true;
+                return;
+            }
+
+            this.maybeDupeAccount = false;
+
+            // If the user has legal name values, do a secondary lookup
+            // on the legal names.
+            if (controls.legalFirst.value || controls.legalLast.value) {
+
+                let first = controls.first.value || controls.legalFirst.value;
+                let last = controls.last.value || controls.legalLast.value;
+
+                this.gateway.requestOne(
+                    'open-ils.actor',
+                    'open-ils.actor.register.has_account',
+                    'TODO TODO', {
+                        first_given_name: first,
+                        family_name: last,
+                        dob: controls.dob.value,
+                        street1: controls.street1.value
+                    }
+                ).then(resp => {
+                    this.maybeDupeAccount = Number(resp) === 1;
+                    if (this.maybeDupeAccount) {
+                        console.debug('Possible existing account found');
+                    }
+                });
+            }
+        });
     }
 
     loadPickupLibs(): Promise<Hash[]> {
@@ -402,6 +474,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.formGroup.controls.city.setValue(addr.city);
         this.formGroup.controls.state.setValue(addr.state);
         this.formGroup.controls.zipCode.setValue(addr.zipcode);
+
+        // Now that we have an address, run the dupe checker again.
+        this.checkForExistingAccount();
 
         this.applyHomeOrgFromAddr(addr);
     }

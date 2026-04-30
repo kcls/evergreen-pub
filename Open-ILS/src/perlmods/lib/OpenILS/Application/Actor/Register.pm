@@ -225,8 +225,8 @@ sub normalize {
 }
 
 __PACKAGE__->register_method(
-    method      => 'maybe_has_existing_account',
-    api_name    => 'open-ils.actor.register.maybe_has_existing_account',
+    method      => 'has_account',
+    api_name    => 'open-ils.actor.register.has_account',
     signature => {
         desc => 'See if the provided user data might match an existing account',
         params => [
@@ -239,7 +239,7 @@ __PACKAGE__->register_method(
     }
 );
 
-sub maybe_has_existing_account {
+sub has_account {
     my ($self, $client, $captcha, $values) = @_;
     my $e = new_editor();
 
