@@ -29,3 +29,4 @@
 0024-collection-hq-refresh [0021-refund-payment-approval-code] 2025-10-07T15:42:28Z berick <berick@kcls24> # Update colleciton hq sql
 0025-pcrud-security-patches [0024-collection-hq-refresh] 2026-04-13T18:23:06Z berick <berick@kcls24> # pcrud patches
 0026-sip-sorter-configs [0025-pcrud-security-patches] 2026-04-27T14:20:18Z Bill Erickson <berick@orbit> # sorter configs
+0027-tote-checkin-sip-configs [0026-sip-sorter-configs] 2026-05-06T21:23:04Z Bill Erickson <berick@orbit> # tote checkin sip configs
