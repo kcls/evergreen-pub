@@ -24,6 +24,7 @@ INSERT INTO sip.setting (setting_group, name, description, value)
 
 -- These accounts were previously linked to setting_group id 1001
 UPDATE sip.account
-  SET setting_group = (SELECT id FROM sip.setting_group WHERE label = 'KCLS Tote Checkin');
+  SET setting_group = (SELECT id FROM sip.setting_group WHERE label = 'KCLS Tote Checkin')
+  WHERE sip_username LIKE 'tote%';
 
 COMMIT;
