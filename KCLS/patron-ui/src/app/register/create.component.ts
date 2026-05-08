@@ -76,7 +76,7 @@ export const sameEmailValidator: ValidatorFn = (
     return null;
 };
 
-const DEFAULT_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
+const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 
 type AccountTypeSelection = 'ecard' | 'full';
 
@@ -485,9 +485,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // In theory the tested address should return a single result
         // since the address provided is a normalized value returned
         // from the address API.
-        let latitude = 0;
-        let longitude = 0;
-
         return this.gateway.requestOne(
             'kcls.address',
             'kcls.address.lookup',
@@ -501,48 +498,44 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         ).then(found => {
             if (!found) { return; }
 
-            latitude = (found as any).metadata.latitude;
-            longitude = (found as any).metadata.longitude;
+            const latitude = (found as any).metadata.latitude;
+            const longitude = (found as any).metadata.longitude;
 
-            return this.gateway.requestOne(
-                'kcls.address',
-                'kcls.address.home-org',
-                'TODO',
-                latitude,
-                longitude
-            );
+            return Promise.all([
+                this.gateway.requestOne(
+                    'kcls.address',
+                    'kcls.address.home-org',
+                    'TODO',
+                    latitude,
+                    longitude
+                ),
+                this.gateway.requestOne(
+                    'kcls.address',
+                    'kcls.address.district-of-residence',
+                    'TODO',
+                    latitude,
+                    longitude
+                )
+            ]).then(([homeOrg, district]) => {
+                console.debug('Home org unit reported as', homeOrg);
+                console.debug('District of Residence reported as "' + district + '"');
 
-        }).then(homeOrg => {
-            console.log('Got home org', homeOrg);
-            if (!homeOrg) { return; }
+                if (homeOrg) {
+                    this.calculatedHomeOrg = Number(homeOrg);
 
-            this.calculatedHomeOrg = Number(homeOrg);
+                    if (!this.formGroup.controls.pickupLib.value) {
+                        console.debug('Applying default pickup lib', this.calculatedHomeOrg);
+                        this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
+                    }
+                }
 
-            if (!this.formGroup.controls.pickupLib.value) {
-                console.debug('Applying default pickup lib', this.calculatedHomeOrg);
-                // Use the calculted home org unit as the default hold
-                // pickup location if no value has already been applied
-                this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
-            }
-
-            // If we have a home org unit that means we are either in the
-            // main service area or one of the reciprical service areas.
-
-            return this.gateway.requestOne(
-                "kcls.address",
-                "kcls.address.district-of-residence",
-                "TODO",
-                latitude,
-                longitude
-            ).then(found => {
-                if (found) {
-                    this.districtOfResidence = found as string;
-                    this.accountTypeOption = AccountTypeOption.AllAccess;
-                } else {
-                    // If no value is found, that means we're in the main
-                    // service aread.
-                    this.districtOfResidence = DEFAULT_DISTRICT_OF_RESIDENCE;
-                    this.accountTypeOption = AccountTypeOption.Either;
+                if (district) {
+                    this.districtOfResidence = district as string;
+                    if (district === MAIN_DISTRICT_OF_RESIDENCE) {
+                        this.accountTypeOption = AccountTypeOption.Either;
+                    } else {
+                        this.accountTypeOption = AccountTypeOption.AllAccess;
+                    }
                 }
             });
         });
