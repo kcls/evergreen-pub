@@ -5,11 +5,13 @@ import {RegisterRoutingModule} from './routing.module';
 import {RegisterService} from './register.service';
 import {RegisterComponent} from './register.component';
 import {RegisterCreateComponent} from './create.component';
+import {AutoPhoneDashDirective} from './auto-phone-dash.directive';
 
 @NgModule({
   declarations: [
     RegisterComponent,
     RegisterCreateComponent,
+    AutoPhoneDashDirective,
   ],
   imports: [
     CommonModule,

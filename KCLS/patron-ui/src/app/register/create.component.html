@@ -388,7 +388,7 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Phone Number</mat-label>
-        <input type="tel" matInput formControlName="phone"/>
+        <input type="tel" matInput formControlName="phone" autoPhoneDash/>
         <mat-hint>111-222-3333</mat-hint>
         <mat-error *ngIf="formGroup.controls.phone.hasError('pattern')" i18n>
             Phone Number format is <strong>111-222-3333</strong>
@@ -406,7 +406,7 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>SMS/Text Number</mat-label>
-        <input matInput formControlName="smsNumber" type="text"/>
+        <input matInput formControlName="smsNumber" type="text" autoPhoneDash/>
         <mat-hint>111-222-3333</mat-hint>
         <mat-error *ngIf="formGroup.controls.smsNumber.hasError('required')" i18n>
             SMS/Text Number is <strong>required</strong> to receive text notices.
