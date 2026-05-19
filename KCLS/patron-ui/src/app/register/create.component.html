@@ -70,7 +70,7 @@
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Birth Date</mat-label>
-        <input matInput [matDatepicker]="dobPicker" formControlName="dob" [max]="maxDob" [min]="minDob"/>
+        <input matInput [matDatepicker]="dobPicker" formControlName="dob" [max]="maxDob" [min]="minDob" autoDateSlash/>
         <mat-hint>MM/DD/YYYY</mat-hint>
         <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>
         <mat-datepicker #dobPicker></mat-datepicker>
