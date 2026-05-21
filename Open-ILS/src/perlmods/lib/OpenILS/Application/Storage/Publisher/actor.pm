@@ -689,6 +689,7 @@ sub patron_search {
     my $opt_boundary = shift || 0;
     my $offset = shift || 0;
 
+
     my $penalty_sort = 0;
 
     my $strict_opt_in = OpenSRF::Utils::SettingsClient->new->config_value( share => user => 'opt_in' );
@@ -697,7 +698,7 @@ sub patron_search {
     $sort = ['family_name','first_given_name'] unless ($$sort[0]);
     push @$sort,'id';
 
-    if (grep {'penalties'} @$sort) {
+    if (grep {$_ eq 'penalties'} @$sort) {
         $sort = [ grep { $_ ne 'penalties' } @$sort];
         $penalty_sort = 1;
     }
