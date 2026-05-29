@@ -13,13 +13,17 @@ import {Title}  from '@angular/platform-browser';
 export class RegisterCompleteComponent implements OnInit {
 
     constructor(
+        private router: Router,
         private title: Title,
         public register: RegisterService,
     ) {}
 
     ngOnInit() {
-
         this.title.setTitle($localize`Registration Complete`);
+
+        if (!this.register.registerResult.complete) {
+          this.router.navigate(['/register/create']);
+        }
     }
 }
 

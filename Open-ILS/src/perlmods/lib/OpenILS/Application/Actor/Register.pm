@@ -11,6 +11,8 @@ use OpenILS::Event;
 use OpenILS::Utils::KCLSNormalize;
 use DateTime;
 use JSON;
+use Data::Dumper;
+$Data::Dumper::Indent = 0;
 my $U = "OpenILS::Application::AppUtils";
 
 # We only allow certain user values to be provided by the caller.
@@ -69,15 +71,20 @@ sub register {
     # TODO along with the Captcha we should cache session info like
     # which account types the user may select from.
 
-    if ($values->{requested_acount_type} eq 'ecard') {
+    if ($values->{requested_account_type} eq 'full') {
         return create_pending_account($values);
-    } else {
+    } elsif ($values->{requested_account_type} eq 'ecard') {
         return create_ecard_account($values);
+    } else {
+        $logger->error("Invalid account type requested");
+        return {success => 0};
     }
 }
 
 sub create_pending_account {
     my $values = shift;
+
+    $logger->info("Creating all-access account");
 
     my $user = Fieldmapper::staging::user_stage->new;
 
@@ -242,7 +249,7 @@ sub normalize {
     my ($field, $value) = @_;
 
     # KCLS JBAS-1133: Upper-case most patron field values.
-    $value = uc($value) unless $field =~ /usrname|passwd|email/;
+    $value = uc($value || '') unless $field =~ /usrname|passwd|email/;
 
     # Trim start/end spaces.
     $value =~ s/(^\s*|\s*$)//g;
@@ -253,6 +260,9 @@ sub normalize {
 
 sub create_ecard_account {
     my $values = shift;
+
+    $logger->info("Creating ecard account");
+
     my $response = {success => 0};
 
     # Create an internal auth session for API calls that require one.

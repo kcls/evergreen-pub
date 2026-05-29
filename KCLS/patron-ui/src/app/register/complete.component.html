@@ -1,25 +1,25 @@
 <ng-container *ngIf="register.registerResult.success">
 
-  <h1 i18n>Registration successful!</h1>
+  <h2 class="mt-5" i18n>Registration successful!</h2>
 
   <!-- All-Access card success -->
   <ng-container *ngIf="register.registerResult.accountType === 'full'">
 
     <ng-container *ngIf="register.registerResult.deliveryMethod === 'Mail'">
-      <h2 i18n>
+      <h3 class="mt-5" i18n>
         You have chosen to have your library card mailed to you.
         It will arrive within 1-2 weeks.
-      </h2>
+      </h3>
     </ng-container>
 
     <ng-container *ngIf="register.registerResult.deliveryMethod !== 'Mail'">
-      <h2 i18n>
+      <h3 class="mt-5" i18n>
         You have chosen to pick up your library card at your selected
         home library: {{register.registerResult.homeOrgName}}.
-      </h2>
+      </h3>
     </ng-container>
 
-    <p i18n>
+    <p i18n class="mt-5">
       You'll need to
       <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
         bring proof of address and photo ID that shows your date of birth
@@ -28,7 +28,7 @@
       with this for applicants younger than age 18.)
     </p>
 
-    <p class="italic" i18n>
+    <p class="italic mt-5" i18n>
       Reasonable accommodation for individuals with disabilities is available
       upon request. Accommodations include modifications to policies,
       programs, appropriate equipment, and services. Contact your
@@ -36,7 +36,47 @@
       our accessibility page</a> to request accommodation.
     </p>
 
-    <!-- TODO Verification Requirements -->
+    <hr class="mt-6"/>
+
+    <h4 i18n>Verification Requirements</h4>
+
+    <div class="verification-reqs mt-4">
+      <p i18n>
+        1. Photo identification with birth date (one piece required for adults).
+        Acceptable examples are as follows and may be current or expired:
+      </p>
+      <ul class="list-disc ml-6 mt-2">
+        <li i18n>Driver's License</li>
+        <li i18n>Passport</li>
+        <li i18n>Washington ID Card</li>
+        <li i18n>U.S. Military ID</li>
+        <li i18n>Matricula Consular (issued by Mexican government)</li>
+      </ul>
+
+      <p class="mt-4" i18n>
+        2. Address verification matching qualifying residential address and given name
+        (one piece required for adults and minors).
+        Acceptable examples&mdash;chosen document must be current:
+      </p>
+      <ul class="list-disc ml-6 mt-2">
+        <li i18n>Washington Driver's License</li>
+        <li i18n>Washington ID Card</li>
+        <li i18n>Printed Checks</li>
+        <li i18n>Utility Bill (printout of online bill acceptable)</li>
+        <li i18n>Apartment Lease</li>
+        <li i18n>Voter's Registration</li>
+        <li i18n>King County Tax Bill</li>
+        <li i18n>Other (Must be of a legal or permanent nature)</li>
+      </ul>
+
+      <p class="mt-4" i18n>
+        If residence address differs from mailing address, the residence address
+        determines patron eligibility. You may get a library card today without
+        address verification, but you will be limited to checking out 2 items.
+        If you do not bring address verification, the card will expire after
+        6 months.
+      </p>
+    </div>
 
   </ng-container>
 
@@ -48,7 +88,7 @@
 </ng-container>
 
 <ng-container *ngIf="register.registerResult.complete && !register.registerResult.success">
-  <h1 i18n>Registration could not be completed</h1>
+  <h2 i18n>Registration could not be completed</h2>
   <p i18n>
     An error occurred while processing your registration.
     Please try again or contact your local library for assistance.

@@ -335,6 +335,16 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         this.formGroup.controls.selectedAccountType.valueChanges.subscribe(val => {
             this.checkContactInfoRequired();
+
+            // Card design is not required for ecards
+            const design = this.formGroup.controls.design;
+            if (this.wantsEcard()) {
+                design.clearValidators();
+            } else if (!design.hasValidator(Validators.required)) {
+                design.addValidators(Validators.required);
+            }
+
+            design.updateValueAndValidity();
         });
 
         this.filteredResAddrOptions = this.formGroup.controls.street1.valueChanges.pipe(
