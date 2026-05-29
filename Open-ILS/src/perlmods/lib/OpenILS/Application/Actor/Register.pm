@@ -6,9 +6,11 @@ use OpenILS::Application::AppUtils;
 use OpenILS::Utils::CStoreEditor q/:funcs/;
 use OpenILS::Utils::Fieldmapper;
 use OpenSRF::Utils::JSON;
+use OpenSRF::Utils qw/:datetime/;
 use OpenILS::Event;
 use OpenILS::Utils::KCLSNormalize;
 use DateTime;
+use JSON;
 my $U = "OpenILS::Application::AppUtils";
 
 # We only allow certain user values to be provided by the caller.
@@ -28,6 +30,17 @@ my @USER_FIELDS = (
 
 
 my @ALLOWED_STAT_CATS = (3, 4, 10);
+
+my $PROVISIONAL_ECARD_GRP = 951;
+my $ECARD_VERIFY_IDENT = 102;
+my @ECARD_ALLOWED_STAT_CATS = (3, 4, 10, 12);
+
+my @ecard_code_chars = ('C','D','F','H','J'..'N','P','R','T','V','W','X','3','4','7','9');
+sub generate_verify_code {
+    my $string = '';
+    $string .= $ecard_code_chars[rand @ecard_code_chars] for 1..6;
+    return $string;
+}
 
 __PACKAGE__->register_method(
     method      => 'register',
@@ -52,6 +65,19 @@ sub register {
     return OpenILS::Event->new('BAD_PARAMS') unless ref $values eq 'HASH';
 
     $logger->info("Patron self-reg: " . OpenSRF::Utils::JSON->perl2JSON($values));
+
+    # TODO along with the Captcha we should cache session info like
+    # which account types the user may select from.
+
+    if ($values->{requested_acount_type} eq 'ecard') {
+        return create_pending_account($values);
+    } else {
+        return create_ecard_account($values);
+    }
+}
+
+sub create_pending_account {
+    my $values = shift;
 
     my $user = Fieldmapper::staging::user_stage->new;
 
@@ -223,6 +249,184 @@ sub normalize {
 
     return $value;
 }
+
+
+sub create_ecard_account {
+    my $values = shift;
+    my $response = {success => 0};
+
+    # Create an internal auth session for API calls that require one.
+    my $auth = $U->simplereq(
+        'open-ils.auth_internal',
+        'open-ils.auth_internal.session.create',
+        {user_id => 1, login_type => 'temp'}
+    );
+
+    unless ($auth && $auth->{textcode} eq 'SUCCESS') {
+        $logger->error("Ecard self-reg: failed to create auth session");
+        return $response;
+    }
+
+    my $authtoken = $auth->{payload}->{authtoken};
+    my $e = new_editor();
+
+    # --- Create user object ---
+
+    my $au = Fieldmapper::actor::user->new;
+    $au->isnew(1);
+    $au->ident_type($ECARD_VERIFY_IDENT);
+    $au->net_access_level(101);
+    $au->ident_value(generate_verify_code());
+    $au->profile($PROVISIONAL_ECARD_GRP);
+
+    my $grp = $e->retrieve_permission_grp_tree($PROVISIONAL_ECARD_GRP);
+    $au->expire_date(
+        DateTime->now(time_zone => 'local')->add(
+            seconds => interval_to_seconds($grp->perm_interval)
+        )->iso8601()
+    );
+
+    for my $field (@USER_FIELDS) {
+        my $val = normalize($field, $values->{user}->{$field} || '');
+        # actor.usr uses 'guardian'; the staging table uses 'ident_value2'
+        my $col = $field eq 'ident_value2' ? 'guardian' : $field;
+        $au->$col($val);
+    }
+
+    # --- Billing address ---
+
+    my $addr_data = $values->{billing_address};
+
+    if ($addr_data && $addr_data->{street1}) {
+        my $bill_addr = Fieldmapper::actor::user_address->new;
+        $bill_addr->isnew(1);
+        $bill_addr->address_type('RESIDENTIAL');
+        $bill_addr->within_city_limits('f');
+        $bill_addr->id(-1);
+
+        my ($s1, $s2) = OpenILS::Utils::KCLSNormalize::normalize_address_street(
+            $addr_data->{street1}, $addr_data->{street2});
+
+        $bill_addr->street1(normalize('street1', $s1));
+        $bill_addr->street2(normalize('street2', $s2)) if $s2;
+        $bill_addr->city(normalize('city', $addr_data->{city} || ''));
+        $bill_addr->state(normalize('state', $addr_data->{state} || ''));
+        $bill_addr->post_code($addr_data->{post_code} || '');
+        $bill_addr->country(normalize('country', 'US'));
+
+        $au->billing_address(-1);
+        $au->mailing_address(-1);
+        $au->addresses([$bill_addr]);
+
+        # --- Mailing address (if provided and different from billing) ---
+
+        my $maddr_data = $values->{mailing_address};
+
+        if ($maddr_data && $maddr_data->{street1}) {
+            my $mail_addr = Fieldmapper::actor::user_address->new;
+            $mail_addr->isnew(1);
+            $mail_addr->address_type('MAILING');
+            $mail_addr->within_city_limits('f');
+            $mail_addr->id(-2);
+
+            my ($ms1, $ms2) = OpenILS::Utils::KCLSNormalize::normalize_address_street(
+                $maddr_data->{street1}, $maddr_data->{street2});
+
+            $mail_addr->street1(normalize('street1', $ms1));
+            $mail_addr->street2(normalize('street2', $ms2)) if $ms2;
+            $mail_addr->city(normalize('city', $maddr_data->{city} || ''));
+            $mail_addr->state(normalize('state', $maddr_data->{state} || ''));
+            $mail_addr->post_code($maddr_data->{post_code} || '');
+            $mail_addr->country(normalize('country', 'US'));
+
+            unless (addrs_match($bill_addr, $mail_addr)) {
+                $au->mailing_address(-2);
+                push(@{$au->addresses}, $mail_addr);
+            }
+        }
+    }
+
+    # --- Stat cats ---
+
+    my @stat_maps;
+    for my $cat_id (@ECARD_ALLOWED_STAT_CATS) {
+        if (my ($sc) = grep { $_->{stat_cat} == $cat_id } @{$values->{stat_cats}}) {
+            my $map = Fieldmapper::actor::stat_cat_entry_user_map->new;
+            $map->isnew(1);
+            $map->stat_cat($cat_id);
+            $map->stat_cat_entry($sc->{value});
+            push(@stat_maps, $map);
+        }
+    }
+    $au->stat_cat_entries(\@stat_maps);
+
+    # --- Generate barcode and card ---
+
+    my $bc = $e->json_query({from => [
+        'actor.generate_barcode',
+        '934',
+        7,
+        'actor.auto_barcode_ecard_seq'
+    ]})->[0];
+
+    my $barcode = $bc->{'actor.generate_barcode'};
+    $logger->info("Ecard self-reg using generated barcode: $barcode");
+
+    my $card = Fieldmapper::actor::card->new;
+    $card->id(-1);
+    $card->isnew(1);
+    $card->barcode($barcode);
+
+    $au->usrname($barcode);
+    $au->card($card);
+    $au->cards([$card]);
+
+    # --- Save user ---
+
+    my $resp = $U->simplereq(
+        'open-ils.actor',
+        'open-ils.actor.patron.update',
+        $authtoken, $au
+    );
+
+    $resp = {textcode => 'UNKNOWN_ERROR'} unless $resp;
+
+    if ($U->is_event($resp)) {
+        $logger->error(
+            "Ecard self-reg: Error creating account: " . $resp->{textcode});
+        return $response;
+    }
+
+    $au = $resp;
+
+    # --- Apply settings ---
+
+    my $settings = {'circ.autorenew.opt_in' => JSON::true};
+    for my $set (@{$values->{settings}}) {
+        $settings->{$set->{name}} = $set->{value};
+    }
+
+    $resp = $U->simplereq(
+        'open-ils.actor',
+        'open-ils.actor.patron.settings.update',
+        $authtoken, $au->id, $settings
+    );
+
+    if ($U->is_event($resp)) {
+        $logger->error(
+            "Ecard self-reg: Error applying settings: " . $resp->{textcode});
+    }
+
+    $U->create_events_for_hook('au.create.ecard', $au, $au->home_ou);
+
+    $response->{success} = 1;
+    $response->{barcode} = $barcode;
+    $logger->info("Ecard self-reg success; barcode $barcode");
+
+    return $response;
+}
+
+
 
 __PACKAGE__->register_method(
     method      => 'has_account',

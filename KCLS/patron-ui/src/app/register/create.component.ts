@@ -38,6 +38,7 @@ interface UserSettingType {
 
 
 interface ApiPayload {
+    requested_account_type: AccountTypeSelection,
     user: Hash,
     billing_address: Hash,
     mailing_address:  Hash,
@@ -47,6 +48,7 @@ interface ApiPayload {
 
 interface ApiResponse {
     success: number, // Perl
+    barcode: string | null,
 }
 
 interface AddressSuggestion {
@@ -137,8 +139,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         '2025-Stacy-Nguyen',
         '2025-Stevie-Shao',
     ];
-
-    registerSuccess = false;
 
     formGroup = this.formBuilder.record({
         design: ['', Validators.required],
@@ -751,7 +751,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     // Map our values to what the API needs and post them to the API.
     submit() {
-        this.registerSuccess = false;
+        this.register.registerResult.complete = false;
+        this.register.registerResult.success = false;
+        this.register.registerResult.barcode = null;
 
         if (!this.preSubmit()) {
             return;
@@ -770,6 +772,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // when it differs from chosen name.
 
         let payload: ApiPayload = {
+            // If the user reaches the submit page, they are allowed to
+            // request at least one of these account types.
+            requested_account_type: this.wantsEcard() ? 'ecard' : 'full',
             user: {
                 delivery_method: '' + ctls.delivery.value,
                 first_given_name: ctls.first.value,
@@ -839,7 +844,16 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
             console.debug('RESPONSE', response);
 
-            this.registerSuccess = Number(response.success) > 0;
+            this.register.registerResult = {
+                complete: true,
+                success: Number(response.success) > 0,
+                barcode: response.barcode || null,
+                accountType: this.wantsEcard() ? 'ecard' : 'full',
+                deliveryMethod: '' + ctls.delivery.value,
+                homeOrgName: this.homeOrgUnit().name as string || '',
+            };
+
+            this.router.navigate(['/register/complete']);
         });
     }
 
