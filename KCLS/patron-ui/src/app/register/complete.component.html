@@ -1,0 +1,56 @@
+<ng-container *ngIf="register.registerResult.success">
+
+  <h1 i18n>Registration successful!</h1>
+
+  <!-- All-Access card success -->
+  <ng-container *ngIf="register.registerResult.accountType === 'full'">
+
+    <ng-container *ngIf="register.registerResult.deliveryMethod === 'Mail'">
+      <h2 i18n>
+        You have chosen to have your library card mailed to you.
+        It will arrive within 1-2 weeks.
+      </h2>
+    </ng-container>
+
+    <ng-container *ngIf="register.registerResult.deliveryMethod !== 'Mail'">
+      <h2 i18n>
+        You have chosen to pick up your library card at your selected
+        home library: {{register.registerResult.homeOrgName}}.
+      </h2>
+    </ng-container>
+
+    <p i18n>
+      You'll need to
+      <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
+        bring proof of address and photo ID that shows your date of birth
+      </a>
+      to a library to activate your card. (Parents or guardians can help
+      with this for applicants younger than age 18.)
+    </p>
+
+    <p class="italic" i18n>
+      Reasonable accommodation for individuals with disabilities is available
+      upon request. Accommodations include modifications to policies,
+      programs, appropriate equipment, and services. Contact your
+      <a href="https://kcls.org/accessibility/">community library or visit
+      our accessibility page</a> to request accommodation.
+    </p>
+
+    <!-- TODO Verification Requirements -->
+
+  </ng-container>
+
+  <!-- E-card success -->
+  <ng-container *ngIf="register.registerResult.accountType === 'ecard'">
+    <!-- TODO ecard success content -->
+  </ng-container>
+
+</ng-container>
+
+<ng-container *ngIf="register.registerResult.complete && !register.registerResult.success">
+  <h1 i18n>Registration could not be completed</h1>
+  <p i18n>
+    An error occurred while processing your registration.
+    Please try again or contact your local library for assistance.
+  </p>
+</ng-container>
