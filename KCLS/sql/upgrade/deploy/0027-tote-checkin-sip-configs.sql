@@ -3,24 +3,28 @@
 
 BEGIN;
 
-INSERT INTO sip.setting_group (label, institution) VALUES ('KCLS Tote Checkin', 'kcls');
+DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN
 
--- Copy existing settings from 'KCLS' group
-INSERT INTO sip.setting (setting_group, name, description, value)
-  SELECT
-    (SELECT id FROM sip.setting_group WHERE label = 'KCLS Tote Checkin'),
-    name,
-    description,
-    value
-  FROM sip.setting WHERE setting_group = 1001;
+    INSERT INTO sip.setting_group (label, institution) VALUES ('KCLS Tote Checkin', 'kcls');
 
-INSERT INTO sip.setting (setting_group, name, description, value)
-  VALUES (
-    (SELECT id FROM sip.setting_group WHERE label = 'KCLS Tote Checkin'),
-    'checkin_block_on_checked_out',
-    'Blocks checkin for checked out items',
-    'true'
-  );
+    -- Copy existing settings from 'KCLS' group
+    INSERT INTO sip.setting (setting_group, name, description, value)
+      SELECT
+        (SELECT id FROM sip.setting_group WHERE label = 'KCLS Tote Checkin'),
+        name,
+        description,
+        value
+      FROM sip.setting WHERE setting_group = 1001;
+
+    INSERT INTO sip.setting (setting_group, name, description, value)
+      VALUES (
+        (SELECT id FROM sip.setting_group WHERE label = 'KCLS Tote Checkin'),
+        'checkin_block_on_checked_out',
+        'Blocks checkin for checked out items',
+        'true'
+      );
+
+END IF; END $INSERT$;
 
 -- These accounts were previously linked to setting_group id 1001
 UPDATE sip.account
