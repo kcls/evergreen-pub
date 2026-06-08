@@ -1,0 +1,87 @@
+<record>
+  <leader>00620cam a22002057i 4500</leader>
+  <controlfield tag="008">070101s                            eng d</controlfield>
+  <datafield tag="010" ind1="" ind2="">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="024" ind1="1" ind2="">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="040" ind1="" ind2="">
+    <subfield code="a">NTG</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="e">rda</subfield>
+    <subfield code="c">NTG</subfield>
+  </datafield>
+  <datafield tag="049" ind1="" ind2="">
+    <subfield code="a">NTGA</subfield>
+  </datafield>
+  <datafield tag="082" ind1="0" ind2="4">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="099" ind1="" ind2="">
+    <subfield code="a">TOOL 001</subfield>
+  </datafield>
+    <datafield tag="245" ind1="0" ind2="0">
+    <subfield code="a"></subfield>
+    <subfield code="b"></subfield>
+    <subfield code="c"></subfield>
+  </datafield>
+    <datafield tag="246" ind1="3" ind2="">
+    <subfield code="a">Issaquah Library of Things</subfield>
+  </datafield>
+    <datafield tag="246" ind1="3" ind2="">
+    <subfield code="a">Curiosity Collection at Issaquah Library</subfield>
+  </datafield>
+  <datafield tag="250" ind1="" ind2="">
+    <subfield code="a">CHECKOUT & RETURN AT ISSAQUAH LIBRARY ONLY.</subfield>
+  </datafield>
+  <datafield tag="264" ind1="" ind2="0">
+    <subfield code="a"></subfield>
+    <subfield code="b"></subfield>
+    <subfield code="c"></subfield>
+  </datafield>
+  <datafield tag="300" ind1="" ind2="">
+    <subfield code="a"></subfield>
+    <subfield code="b"></subfield>
+    <subfield code="c"></subfield>
+  </datafield>
+  <datafield tag="336" ind1="" ind2="">
+    <subfield code="a">three-dimensional form</subfield>
+    <subfield code="b">tdf</subfield>
+    <subfield code="2">rdacontent</subfield>
+  </datafield>
+  <datafield tag="337" ind1="" ind2="">
+    <subfield code="a">unmediated</subfield>
+    <subfield code="b">n</subfield>
+    <subfield code="2">rdamedia</subfield>
+  </datafield>
+  <datafield tag="338" ind1="" ind2="">
+    <subfield code="a">object</subfield>
+    <subfield code="b">nr</subfield>
+    <subfield code="2">rdacarrier</subfield>
+  </datafield>
+  <datafield tag="588" ind1="0" ind2="">
+    <subfield code="a">Title from .</subfield>
+  </datafield>
+  <datafield tag="500" ind1="" ind2="">
+    <subfield code="a">Items in the Curiosity Collection checkout for 1 week; no holds, no renewals. Items must be picked up and returned to Issaquah Library, 10 W Sunset Way.</subfield>
+  </datafield>
+  <datafield tag="520" ind1="" ind2="">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="650" ind1="" ind2="0">
+    <subfield code="a">Tools.</subfield>
+  </datafield>
+  <datafield tag="655" ind1="" ind2="7">
+    <subfield code="a">Curiosity collection.</subfield>
+    <subfield code="2">local</subfield>
+  </datafield>
+  <datafield tag="856" ind1="4" ind2="2">
+    <subfield code="3">Cover image</subfield>
+    <subfield code="u"></subfield>
+  </datafield>
+  <datafield tag="998" ind1="" ind2="">
+    <subfield code="d"></subfield>
+  </datafield>
+ </record>
