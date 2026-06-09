@@ -12,6 +12,36 @@
   */
 }
 
+/* Selectable card-design tiles: de-emphasize the radio "bullet" and
+   show selection via a bordered, highlighted tile instead. */
+.card-option {
+  display: block;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 4px;
+
+  /* hide the radio circle graphic; the whole tile is the selector */
+  ::ng-deep .mdc-radio {
+    display: none;
+  }
+
+  /* let the projected image + description fill the tile */
+  ::ng-deep .mdc-label {
+    display: block;
+    width: 100%;
+  }
+}
+
+.card-option-selected {
+  border-color: #06436e;
+  background: rgba(6, 67, 110, 0.06);
+}
+
+.card-option-desc {
+  padding: 0 12px 8px;
+  color: #333;
+}
+
 .mat-mdc-button:not(:disabled) {
     color: #005cbb;
 }

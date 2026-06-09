@@ -140,6 +140,16 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         '2025-Stevie-Shao',
     ];
 
+    cardDescriptions: {[key: string]: string} = {
+        '2025-Barry-Johnson': $localize`A portrait of everyday Black life, illustrated by Barry Johnson`,
+        '2025-Bethany-Fackrell': $localize`Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell`,
+        '2025-Invisible-Creature': $localize`A Pacific Northwest legend brought to life, illustrated by Don Clark`,
+        '2025-Hernan-Paganini': $localize`An abstract multicultural flow, illustrated by Hernan Paganini`,
+        '2025-Marisol-Ortega': $localize`Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega`,
+        '2025-Stacy-Nguyen': $localize`A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen`,
+        '2025-Stevie-Shao': $localize`Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao`,
+    };
+
     formGroup = this.formBuilder.record({
         design: ['', Validators.required],
         delivery: ['Mail', Validators.required],
@@ -882,6 +892,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     cardOptionUrl(name: string): string {
         return `/images/patron_cards/${name}.png`;
+    }
+
+    cardDescription(name: string): string {
+        return this.cardDescriptions[name] ?? '';
     }
 
     pickupLibName(): string {

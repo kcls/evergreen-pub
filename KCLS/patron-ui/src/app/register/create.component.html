@@ -476,11 +476,11 @@
 
   </ng-container>
 </mat-step>
-<mat-step label="Card Options" *ngIf="wantsAllAccess()">
+<mat-step label="My Library Card" *ngIf="wantsAllAccess()">
 
   <div class="columns-1 mt-4">
     <div class="w-full">
-      <h3 i18n>Preferred hold pickup location</h3>
+      <h3 i18n>What library location would you like to receive your holds?</h3>
       <div class="pl-4">
         <mat-form-field class="w-1/2">
           <mat-label i18n>Hold Pickup Library</mat-label>
@@ -496,13 +496,17 @@
     </div>
   </div>
 
+  <h3 i18n>Select your preferred library card design.</h3>
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 
   <mat-radio-group i18n-aria-label aria-label="Card Design" formControlName="design">
     <div class="grid grid-cols-2 xs:grid-cols-1">
       <div *ngFor="let card of cardOptions" class="mb-3">
-        <mat-radio-button [value]="card" aria-label="{{card}}">
-          <img class="card-image-horiz p-3" [src]="cardOptionUrl(card)" alt="{{card}}"/>
+        <mat-radio-button [value]="card" aria-label="{{cardDescription(card)}}"
+            class="card-option"
+            [class.card-option-selected]="formGroup.controls.design.value === card">
+          <img class="card-image-horiz p-3" [src]="cardOptionUrl(card)" alt="{{cardDescription(card)}}"/>
+          <div class="card-option-desc text-sm">{{cardDescription(card)}}</div>
         </mat-radio-button>
       </div>
     </div>
@@ -514,24 +518,22 @@
     </a>
   </p>
 
-  <h3 i18n>Choose How To Receive Your Card</h3>
+  <h3 i18n>How would you like to receive your All-Access Library Card?</h3>
 
-  <mat-radio-group formControlName="delivery">
-    <mat-radio-button value="Mail">
-      <span i18n>Mail my card.  
-        <span class="italic text-sm">
-          (You’ll receive your card and activation instructions within 1-2 weeks.)
-        </span>
-      </span>
-    </mat-radio-button>
-    <div>
+  <mat-radio-group class="flex flex-col" formControlName="delivery">
     <mat-radio-button value="Pick up">
-      <span i18n> I will pick up at my home library
-        <span class="italic text-sm">(Available same day.)</span>
-      </span>
-      <b *ngIf="homeOrgUnit().name" class="ml-2">Home Library: {{homeOrgUnit().name}}</b>
+      <span i18n>Pickup at my local branch</span>
+      <span class="italic text-sm ml-1" i18n>(Available now.)</span>
+      <b *ngIf="homeOrgUnit().name" class="ml-2">{{homeOrgUnit().name}}</b>
     </mat-radio-button>
-    </div>
+
+    <!-- TODO (deferred): "Pickup at a different library" (Available same day)
+         needs its own card-pickup-location chooser and backend mapping. -->
+
+    <mat-radio-button value="Mail">
+      <span i18n>By mail</span>
+      <span class="italic text-sm ml-1" i18n>(Wait 1-2 weeks for your card to be mailed to your home address.)</span>
+    </mat-radio-button>
   </mat-radio-group>
 
   <div class="mt-6"></div>
