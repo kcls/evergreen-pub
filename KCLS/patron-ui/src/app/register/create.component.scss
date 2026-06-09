@@ -74,13 +74,44 @@ h3 {font-size: large}
   }
 }
 
+.summary-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .summary-section-title {
   font-weight: 600;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #003f6b;
-  margin-bottom: 8px;
+}
+
+.summary-edit-btn {
+  min-width: auto;
+  line-height: 1.5;
+}
+
+/* "Your new library card" hero — fills the empty space at the top right
+   of the review page with a large preview of the selected design. */
+.review-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.review-hero-label {
+  font-weight: 600;
+  color: #003f6b;
+  margin-bottom: 6px;
+}
+
+.review-hero-image {
+  max-height: 150px;
+  border-radius: 6px;
 }
 
 .summary-row {

@@ -541,11 +541,22 @@
 </mat-step>
 <mat-step label="Review &amp; Submit">
 
+  <div class="review-hero" *ngIf="wantsAllAccess() && formGroup.controls.design.value">
+    <span class="review-hero-label" i18n>Your new library card:</span>
+    <img class="review-hero-image"
+         [src]="cardOptionUrl($any(formGroup.controls.design.value))"
+         alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
+  </div>
+
   <!-- Summary -->
   <div class="submit-summary mt-6">
 
     <div class="summary-section">
-      <div class="summary-section-title" i18n>Name</div>
+      <div class="summary-section-header">
+        <span class="summary-section-title" i18n>Your Information</span>
+        <button mat-button type="button" class="summary-edit-btn"
+            (click)="stepper.selectedIndex = 0" i18n>Edit</button>
+      </div>
       <div class="summary-row">
         <span class="summary-label" i18n>Name</span>
         <span class="summary-value">
@@ -570,10 +581,6 @@
         <span class="summary-label" i18n>Parent / Guardian</span>
         <span class="summary-value">{{formGroup.controls.guardian.value}}</span>
       </div>
-    </div>
-
-    <div class="summary-section">
-      <div class="summary-section-title" i18n>Address</div>
       <div class="summary-row">
         <span class="summary-label" i18n>Residential</span>
         <span class="summary-value">
@@ -592,7 +599,11 @@
     </div>
 
     <div class="summary-section">
-      <div class="summary-section-title" i18n>Contact</div>
+      <div class="summary-section-header">
+        <span class="summary-section-title" i18n>Communication Preferences</span>
+        <button mat-button type="button" class="summary-edit-btn"
+            (click)="stepper.selectedIndex = 2" i18n>Edit</button>
+      </div>
       <div class="summary-row" *ngIf="formGroup.controls.email.value">
         <span class="summary-label" i18n>Email</span>
         <span class="summary-value">{{formGroup.controls.email.value}}</span>
@@ -605,15 +616,13 @@
         <span class="summary-label" i18n>SMS/Text</span>
         <span class="summary-value">{{formGroup.controls.smsNumber.value}}</span>
       </div>
-    </div>
-
-    <div class="summary-section" *ngIf="wantsAllAccess()">
-      <div class="summary-section-title" i18n>Preferences</div>
       <div class="summary-row">
-        <span class="summary-label" i18n>Pickup Library</span>
-        <span class="summary-value">{{pickupLibName()}}</span>
+        <span class="summary-label" i18n>Stay in touch</span>
+        <span class="summary-value">
+          <ng-container i18n>System Messages</ng-container><ng-container *ngIf="formGroup.controls.wantsLibNews.value" i18n>, Library News and Events</ng-container><ng-container *ngIf="formGroup.controls.wantsFoundationInfo.value" i18n>, KCLS Foundation Information</ng-container>
+        </span>
       </div>
-      <div class="summary-row">
+      <div class="summary-row" *ngIf="wantsAllAccess()">
         <span class="summary-label" i18n>Notices</span>
         <span class="summary-value">
           <ng-container *ngIf="!formGroup.controls.allEmailNotices.value && !formGroup.controls.allTextNotices.value && !formGroup.controls.allPhoneNotices.value" i18n>None</ng-container>
@@ -625,14 +634,22 @@
     </div>
 
     <div class="summary-section" *ngIf="wantsAllAccess()">
-      <div class="summary-section-title" i18n>Card</div>
+      <div class="summary-section-header">
+        <span class="summary-section-title" i18n>Your Library Card</span>
+        <button mat-button type="button" class="summary-edit-btn"
+            (click)="stepper.selectedIndex = 3" i18n>Edit</button>
+      </div>
+      <div class="summary-row">
+        <span class="summary-label" i18n>Pickup Library</span>
+        <span class="summary-value">{{pickupLibName()}}</span>
+      </div>
       <div class="summary-row">
         <span class="summary-label" i18n>Design</span>
         <span class="summary-value">
           <img *ngIf="formGroup.controls.design.value"
                class="summary-card-image"
                [src]="cardOptionUrl($any(formGroup.controls.design.value))"
-               alt="{{formGroup.controls.design.value}}"/>
+               alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
           <span *ngIf="!formGroup.controls.design.value" i18n>Not selected</span>
         </span>
       </div>
