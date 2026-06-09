@@ -2,8 +2,35 @@
 
 Source: `/home/berick/Library Card Content.odt` (includes 6 embedded images)
 Related branch: `dev/berick/6332897196-self-register-angular-v7`
+Code location: `KCLS/patron-ui/src/app/register/`
 
-## Graphics/Colors/Fonts
+## Progress
+
+- [x] **1. Graphics/Colors/Fonts** — done, committed `c3db357ad6`
+- [ ] 2. Your Information page revisions
+- [ ] 3. Eligibility notices copy updates
+- [ ] 4. Contact Information page → Communication Preferences
+- [ ] 5. Card Options page → My Library Card
+- [ ] 6. Review Application page revisions
+- [ ] 7. `/`'s not auto-populating — **DEFERRED to end**
+
+---
+
+## Graphics/Colors/Fonts  — ✅ DONE (commit c3db357ad6)
+
+Implementation notes:
+- Branding scoped to the registration form via a new `.kcls-register` wrapper class
+  (other patron-ui features — login, requests — keep the stock theme).
+- App uses the prebuilt **indigo-pink** Material theme; its *accent* palette (`#ff4081`)
+  is the pink. Overrode accent tokens → `#06436e` for checkboxes, radio buttons,
+  focused form-field underline/label/caret, and stepper "pathway step" icon circles
+  in `src/styles.scss`.
+- Fonts loaded in `src/index.html` plus both generator templates
+  (`src/tools/index.html.dist`, `index.html.tt2`) so they survive `create-index`/`revert-index`.
+- NOTE: Bebas Neue is uppercase-only (no lowercase glyphs). The follow-up request to
+  make headers non-all-caps was dropped for now — revisit if mixed-case headers are wanted.
+- Not covered: `mat-select`/datepicker overlay popups render outside `.kcls-register`,
+  so any stray pink there would need separate overlay overrides.
 - Switch the pink outline everywhere → dark blue `#06436e`
 - Update the pathway-step icon circles at top of form → dark blue `#06436e`
 - Header font: **Bebas Neue**
