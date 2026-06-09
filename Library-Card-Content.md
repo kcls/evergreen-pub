@@ -7,12 +7,14 @@ Code location: `KCLS/patron-ui/src/app/register/`
 ## Progress
 
 - [x] **1. Graphics/Colors/Fonts** — done, committed `c3db357ad6`
-- [ ] 2. Your Information page revisions
-- [ ] 3. Eligibility notices copy updates
-- [ ] 4. Contact Information page → Communication Preferences
+- [x] **2. Your Information page** — done except deferred required-field items (see below); not yet committed
+- [x] **3. Eligibility notices copy** — done (fixed Digital copy/punctuation; out-of-service link → kcls.org/cards; others already matched)
+- [x] **4. Communication Preferences** — done except deferred sub-items (#9 preferred-method multi-select, #10 double-entry). Renamed step + intro; "Let's stay in touch." (System Messages locked + Library News + Foundation); "Same for text/SMS" checkbox; moved pickup location to Card Options.
 - [ ] 5. Card Options page → My Library Card
 - [ ] 6. Review Application page revisions
 - [ ] 7. `/`'s not auto-populating — **DEFERRED to end**
+- [ ] 8. Required-field changes (indicator + revised warning text) — **DEFERRED to end** (per user)
+- [ ] 9. 'Preferred method of contact?' multi-select — **DEFERRED to end** (per user)
 
 ---
 
@@ -39,10 +41,10 @@ Implementation notes:
 ## Your Information Page
 - `/`'s are not auto-populating as the form is filled out
 - Remove the "Legal Name" header; lead with an auto-selected checkbox beneath the Last Name field: *"Legal name is the same as above."*
-  - If unchecked, show the Legal Name fields.
-- First/Last name fields are missing the required indicator
-- Revise the required-field warning, e.g. *"First Name required, as appears on valid ID."*
-- Change "Residential Address" → *"Let us know where you live or own property in King County:"*
+  - If unchecked, show the Legal Name fields. — ✅ DONE (header removed, checkbox text updated; `legalIsSame` already defaulted to checked + reveals legal fields when unchecked)
+- First/Last name fields are missing the required indicator — ⏸ DEFERRED to end (task 8)
+- Revise the required-field warning, e.g. *"First Name required, as appears on valid ID."* — ⏸ DEFERRED to end (task 8)
+- Change "Residential Address" → *"Let us know where you live or own property in King County:"* — ✅ DONE
 
 ## Eligibility (notices per card type)
 - **All-access eligible:** "Congratulations, you're eligible for an all-access library card! Complete your application to start enjoying all the library has to offer."
