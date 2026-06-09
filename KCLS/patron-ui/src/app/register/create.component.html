@@ -647,18 +647,17 @@
         <span class="summary-value">{{pickupLibName()}}</span>
       </div>
       <div class="summary-row">
-        <span class="summary-label" i18n>Design</span>
-        <span class="summary-value">
-          <img *ngIf="formGroup.controls.design.value"
-               class="summary-card-image"
-               [src]="cardOptionUrl($any(formGroup.controls.design.value))"
-               alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
-          <span *ngIf="!formGroup.controls.design.value" i18n>Not selected</span>
-        </span>
-      </div>
-      <div class="summary-row">
         <span class="summary-label" i18n>Delivery</span>
         <span class="summary-value">{{formGroup.controls.delivery.value}}</span>
+      </div>
+      <div class="summary-row" *ngIf="formGroup.controls.design.value">
+        <span class="summary-label" i18n>Card Design</span>
+        <span class="summary-value">
+          <img class="summary-card-image"
+               [src]="cardOptionUrl($any(formGroup.controls.design.value))"
+               alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
+          <div class="summary-card-desc text-sm">{{cardDescription($any(formGroup.controls.design.value))}}</div>
+        </span>
       </div>
     </div>
 
