@@ -10,7 +10,7 @@ Code location: `KCLS/patron-ui/src/app/register/`
 - [x] **2. Your Information page** — done except deferred required-field items (see below); not yet committed
 - [x] **3. Eligibility notices copy** — done (fixed Digital copy/punctuation; out-of-service link → kcls.org/cards; others already matched)
 - [x] **4. Communication Preferences** — done except deferred sub-items (#9 preferred-method multi-select, #10 double-entry). Renamed step + intro; "Let's stay in touch." (System Messages locked + Library News + Foundation); "Same for text/SMS" checkbox; moved pickup location to Card Options.
-- [ ] 5. Card Options page → My Library Card
+- [x] **5. My Library Card** — done except deferred #11 ("different library" delivery option). Renamed step; relabeled holds-pickup question; selectable card tiles w/ artist descriptions; delivery copy ("local branch / by mail"). Auto-suggest of closest hold pickup lib already existed (applyHomeOrgFromAddr).
 - [ ] 6. Review Application page revisions
 - [ ] 7. `/`'s not auto-populating — **DEFERRED to end**
 - [ ] 8. Required-field changes (indicator + revised warning text) — **DEFERRED to end** (per user)
