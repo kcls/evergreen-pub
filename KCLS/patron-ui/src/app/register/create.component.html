@@ -345,7 +345,11 @@
   
 </mat-step>
 
-<mat-step label="Contact Information">
+<mat-step label="Communication Preferences">
+
+  <h3 i18n>Please share your communication preferences. This will be your
+    preferred method for staying connected with the library.</h3>
+
   <div class="columns-2 mt-6">
     <div>
       <mat-form-field class="w-full">
@@ -404,7 +408,7 @@
         </mat-error>
       </mat-form-field>
     </div>
-    <div>
+    <div *ngIf="!formGroup.controls.smsIsSame.value">
       <mat-form-field class="w-full">
         <mat-label i18n>SMS/Text Number</mat-label>
         <input matInput formControlName="smsNumber" type="text" autoPhoneDash/>
@@ -419,6 +423,12 @@
     </div>
   </div>
 
+  <div class="columns-1 mt-2">
+    <mat-checkbox formControlName="smsIsSame" i18n>
+      My text/SMS number is the same as my phone number.
+    </mat-checkbox>
+  </div>
+
 <!--
 </mat-step>
 <mat-step label="Preferences">
@@ -426,16 +436,24 @@
 
   <div class="columns-1 mt-4">
     <div class="w-full">
-      <h3 i18n>May we contact you?</h3>
+      <h3 i18n>Let's stay in touch.</h3>
+      <div class="pl-4">
+        <mat-checkbox [checked]="true" [disabled]="true" i18n>
+          System Messages*
+        </mat-checkbox>
+      </div>
       <div class="pl-4">
         <mat-checkbox formControlName="wantsLibNews" i18n>
-          Tell me about library news and events
+          Library News and Events
         </mat-checkbox>
       </div>
       <div class="pl-4">
         <mat-checkbox formControlName="wantsFoundationInfo" i18n>
-          Send me information about supporting the King County Library System Foundation.
+          KCLS Foundation Information
         </mat-checkbox>
+      </div>
+      <div class="pl-4 mt-1 text-sm" i18n>
+        * Required messages about your account and the services you use.
       </div>
     </div>
   </div>
@@ -456,26 +474,27 @@
       </div>
     </div>
 
-    <div class="columns-1 mt-4">
-      <div class="w-full">
-        <h3 i18n>Preferred hold pickup location</h3>
-        <div class="pl-4">
-          <mat-form-field class="w-1/2">
-            <mat-label i18n>Hold Pickup Library</mat-label>
-            <mat-select formControlName="pickupLib">
-              <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
-          Not sure? Find your nearest library
-          <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
-        </div>
-      </div>
-    </div>
   </ng-container>
 </mat-step>
 <mat-step label="Card Options" *ngIf="wantsAllAccess()">
+
+  <div class="columns-1 mt-4">
+    <div class="w-full">
+      <h3 i18n>Preferred hold pickup location</h3>
+      <div class="pl-4">
+        <mat-form-field class="w-1/2">
+          <mat-label i18n>Hold Pickup Library</mat-label>
+          <mat-select formControlName="pickupLib">
+            <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
+        Not sure? Find your nearest library
+        <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
+      </div>
+    </div>
+  </div>
 
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
 

@@ -183,6 +183,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         allPhoneNotices: false,
         pickupLib: 0,
         smsNumber: '',
+        smsIsSame: true,
         selectedAccountType: '',
     }, {validators: sameEmailValidator});
 
@@ -330,7 +331,19 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         });
 
         this.formGroup.controls.phone.valueChanges.subscribe(val => {
+            // When the SMS number mirrors the phone number, keep it in sync.
+            if (this.formGroup.controls.smsIsSame.value) {
+                this.formGroup.controls.smsNumber.setValue(val, {emitEvent: false});
+            }
             this.checkContactInfoRequired();
+        });
+
+        // "Same for text/SMS": mirror the phone number into the SMS field
+        // when checked; clear it so the user can supply a different number
+        // when unchecked.
+        this.formGroup.controls.smsIsSame.valueChanges.subscribe(isSame => {
+            const phone = this.formGroup.controls.phone.value;
+            this.formGroup.controls.smsNumber.setValue(isSame ? phone : '', {emitEvent: false});
         });
 
         this.formGroup.controls.selectedAccountType.valueChanges.subscribe(val => {
