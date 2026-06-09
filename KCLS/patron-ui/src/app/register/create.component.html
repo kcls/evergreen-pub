@@ -541,12 +541,15 @@
 </mat-step>
 <mat-step label="Review &amp; Submit">
 
+  <!-- Hidden for now; the selected design is shown (larger) in the
+       "Your Library Card" summary section below instead.
   <div class="review-hero" *ngIf="wantsAllAccess() && formGroup.controls.design.value">
     <span class="review-hero-label" i18n>Your new library card:</span>
     <img class="review-hero-image"
          [src]="cardOptionUrl($any(formGroup.controls.design.value))"
          alt="{{cardDescription($any(formGroup.controls.design.value))}}"/>
   </div>
+  -->
 
   <!-- Summary -->
   <div class="submit-summary mt-6">
