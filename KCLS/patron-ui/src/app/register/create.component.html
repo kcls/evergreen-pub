@@ -35,11 +35,11 @@
     </div>
   </div>
 
-  <h3 i18n>Legal Name</h3>
-
-  <mat-checkbox formControlName="legalIsSame">
-    Same as above; uncheck to submit a legal name that appears on valid photo ID.
-  </mat-checkbox>
+  <div class="columns-1 mt-2">
+    <mat-checkbox formControlName="legalIsSame" i18n>
+      Legal name is the same as above.
+    </mat-checkbox>
+  </div>
 
   <div class="mt-6" *ngIf="!formGroup.controls.legalIsSame.value">
     <div class="columns-2 mt-4">
@@ -98,7 +98,7 @@
     </div>
   </div>
 
-  <h3 i18n>Residential Address</h3>
+  <h3 i18n>Let us know where you live or own property in King County:</h3>
 
   <div class="columns-1 mt-6">
     <mat-form-field class="w-full">
