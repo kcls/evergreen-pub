@@ -1,5 +1,7 @@
 import {AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild} from '@angular/core';
-import {Router} from '@angular/router';
+import {Router, ActivatedRoute} from '@angular/router';
+import {MatStepper} from '@angular/material/stepper';
+import {StepperSelectionEvent} from '@angular/cdk/stepper';
 import {FormBuilder, FormControl, Validators, AbstractControl,
     FormRecord, ValidationErrors, ValidatorFn} from '@angular/forms';
 import {EMPTY, Observable, from, of} from 'rxjs';
@@ -95,7 +97,11 @@ export enum AccountTypeOption {
 })
 export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
-    //@ViewChild('stepper') stepper!: MatStepper;
+    @ViewChild('stepper') stepper!: MatStepper;
+
+    // Ordered URL slug for each stepper section.  Tracks the section
+    // currently reflected in the URL so we can avoid redundant navigation.
+    currentSlug = 'your-information';
 
     minDob = new Date("1900-01-01");
     maxDob = new Date();
@@ -257,6 +263,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     constructor(
         private router: Router,
+        private route: ActivatedRoute,
         private gateway: Gateway,
         private formBuilder: FormBuilder,
         private app: AppService,
@@ -269,10 +276,57 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     ngAfterViewInit() {
+        // The stepper isn't available while ngOnInit handles the initial
+        // route, so apply the section requested by the URL here.
+        const index = this.stepSlugs.indexOf(this.currentSlug);
+        if (index > 0) {
+            this.stepper.selectedIndex = index;
+        }
         this.cdRef.detectChanges();
     }
 
+    // URL slugs for each rendered stepper section, in order.  The
+    // "My Library Card" section only exists for all-access applicants,
+    // mirroring the *ngIf on that mat-step so slug<->index stays aligned.
+    get stepSlugs(): string[] {
+        const slugs = ['your-information', 'eligibility', 'communication-preferences'];
+        if (this.wantsAllAccess()) { slugs.push('my-library-card'); }
+        slugs.push('review');
+        return slugs;
+    }
+
+    // Stepper -> URL: navigate when the active section changes (Back /
+    // Continue buttons, review-page Edit buttons, or step-header clicks).
+    onStepChange(event: StepperSelectionEvent) {
+        const slug = this.stepSlugs[event.selectedIndex];
+        if (slug && slug !== this.currentSlug) {
+            this.router.navigate(['/register/create', slug]);
+        }
+    }
+
     ngOnInit() {
+
+        // URL -> stepper: keep the active section in sync with the route
+        // so deep links and the browser back/forward buttons work.
+        this.route.paramMap.subscribe(params => {
+            const slug = params.get('step') || 'your-information';
+            const index = this.stepSlugs.indexOf(slug);
+
+            if (index < 0) {
+                // Unknown or currently-unavailable section; reset to the start.
+                this.router.navigate(
+                    ['/register/create', 'your-information'], {replaceUrl: true});
+                return;
+            }
+
+            this.currentSlug = slug;
+
+            // During the initial navigation the stepper view isn't ready
+            // yet; ngAfterViewInit applies the starting section instead.
+            if (this.stepper && this.stepper.selectedIndex !== index) {
+                this.stepper.selectedIndex = index;
+            }
+        });
 
         this.loadPickupLibs();
 

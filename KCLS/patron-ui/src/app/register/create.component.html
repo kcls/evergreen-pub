@@ -1,6 +1,6 @@
 <form [formGroup]="formGroup">
 
-<mat-stepper #stepper>
+<mat-stepper #stepper (selectionChange)="onStepChange($event)">
   <mat-step label="Your Information">
 
   <h3 i18n>Tell us about yourself. This information is used for verification purposes.</h3>
