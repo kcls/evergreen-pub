@@ -488,7 +488,11 @@ export class EditComponent implements OnInit {
         }
 
         stageData.settings.forEach(setting => {
-            this.userSettings[setting.setting()] = Boolean(setting.value());
+            if (setting.setting() === 'opac.default_pickup_location') {
+                this.userSettings[setting.setting()] = Number(setting.value());
+            } else {
+                this.userSettings[setting.setting()] = Boolean(setting.value());
+            }
         });
 
         stageData.statcats.forEach(entry => {

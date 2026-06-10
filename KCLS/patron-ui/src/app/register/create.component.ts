@@ -899,8 +899,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                     value: ctls.wantsLibNews.value ? 'Y' : 'N'},
                 {stat_cat: STAT_CAT_FOUNDATION_NEWS,
                     value: ctls.wantsFoundationInfo.value ? 'Y' : 'N'},
-                {stat_cat: STAT_CAT_CARD_STYLE,
-                    value: ctls.design.value ? 'Y' : 'N'},
+                {stat_cat: STAT_CAT_CARD_STYLE, value: ctls.design.value},
             ]
         };
 

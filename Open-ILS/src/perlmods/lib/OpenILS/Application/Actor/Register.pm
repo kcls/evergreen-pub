@@ -31,11 +31,10 @@ my @USER_FIELDS = (
 );
 
 
-my @ALLOWED_STAT_CATS = (3, 4, 10);
+my @ALLOWED_STAT_CATS = (3, 4, 10, 12);
 
 my $PROVISIONAL_ECARD_GRP = 951;
 my $ECARD_VERIFY_IDENT = 102;
-my @ECARD_ALLOWED_STAT_CATS = (3, 4, 10, 12);
 
 my @ecard_code_chars = ('C','D','F','H','J'..'N','P','R','T','V','W','X','3','4','7','9');
 sub generate_verify_code {
@@ -359,7 +358,7 @@ sub create_ecard_account {
     # --- Stat cats ---
 
     my @stat_maps;
-    for my $cat_id (@ECARD_ALLOWED_STAT_CATS) {
+    for my $cat_id (@ALLOWED_STAT_CATS) {
         if (my ($sc) = grep { $_->{stat_cat} == $cat_id } @{$values->{stat_cats}}) {
             my $map = Fieldmapper::actor::stat_cat_entry_user_map->new;
             $map->isnew(1);
