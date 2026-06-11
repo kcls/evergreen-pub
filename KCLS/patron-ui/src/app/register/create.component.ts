@@ -569,6 +569,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<void> {
+        this.calculatedHomeOrg = null;
+        this.districtOfResidence = null;
+
         // In theory the tested address should return a single result
         // since the address provided is a normalized value returned
         // from the address API.
