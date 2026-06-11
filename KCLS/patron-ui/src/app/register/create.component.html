@@ -100,6 +100,12 @@
 
   <h3 i18n>Let us know where you live or own property in King County:</h3>
 
+  <div class="columns-1 mt-2 border-2 border-red-500 p-3">
+    <h3>For Debugging</h3>
+    <div>Calculated Home Library: <b>{{homeOrgUnit() ? homeOrgUnit().name : ''}}</b></div>
+    <div>Calculated District of Residence: <b>{{this.districtOfResidence}}</b></div>
+  </div>
+
   <div class="columns-1 mt-6">
     <mat-form-field class="w-full">
       <mat-label>Street Address</mat-label>
