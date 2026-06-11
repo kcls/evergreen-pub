@@ -115,6 +115,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     calculatedHomeOrg: number | null = null;
 
+    reportedLatitude: string | number | null = null;
+    reportedLongitude: string | number | null = null;
+
     // Make the enum visible in the template
     AccountTypeOption = AccountTypeOption;
 
@@ -571,6 +574,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<void> {
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;
+        this.reportedLatitude = null;
+        this.reportedLongitude = null;
 
         // In theory the tested address should return a single result
         // since the address provided is a normalized value returned
@@ -590,6 +595,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
             const latitude = (found as any).metadata.latitude;
             const longitude = (found as any).metadata.longitude;
+
+            // Debugging
+            this.reportedLatitude = latitude;
+            this.reportedLongitude = longitude;
 
             return Promise.all([
                 this.gateway.requestOne(
