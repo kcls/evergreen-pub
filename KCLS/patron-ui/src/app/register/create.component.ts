@@ -302,6 +302,15 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                 return;
             }
 
+            // The residential street address drives eligibility and the
+            // home-library lookup, so don't allow advancing past the first
+            // section until it's provided.
+            if (slug !== 'your-information' && !this.formGroup.controls.street1.value) {
+                this.router.navigate(
+                    ['/register/create', 'your-information'], {replaceUrl: true});
+                return;
+            }
+
             this.currentSlug = slug;
 
             // During the initial navigation the stepper view isn't ready
