@@ -181,7 +181,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         allTextNotices: false,
         allPhoneNotices: false,
         pickupLib: 0,
-        smsNumber: '',
+        smsNumber: [{value: '', disabled: true}],
         smsIsSame: true,
         selectedAccountType: '',
     });
@@ -391,6 +391,11 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.formGroup.controls.smsIsSame.valueChanges.subscribe(isSame => {
             const phone = this.formGroup.controls.phone.value;
             this.formGroup.controls.smsNumber.setValue(isSame ? phone : '', {emitEvent: false});
+            if (isSame) {
+                this.formGroup.controls.smsNumber.disable();
+            } else {
+                this.formGroup.controls.smsNumber.enable();
+            }
         });
 
         this.formGroup.controls.selectedAccountType.valueChanges.subscribe(val => {

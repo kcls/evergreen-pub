@@ -382,7 +382,7 @@
     </div>
   </div>
 
-  <div class="columns-2 mt-6">
+  <div class="columns-2 mt-4">
     <div>
       <mat-form-field class="w-full">
         <mat-label i18n>Phone Number</mat-label>
@@ -401,7 +401,14 @@
         </mat-error>
       </mat-form-field>
     </div>
-    <div *ngIf="!formGroup.controls.smsIsSame.value">
+  </div>
+  <div class="columns-1 mt-2">
+    <mat-checkbox formControlName="smsIsSame" i18n>
+      My text/SMS number is the same as my phone number.
+    </mat-checkbox>
+  </div>
+  <div class="columns-2 mt-4">
+    <div>
       <mat-form-field class="w-full">
         <mat-label i18n>SMS/Text Number</mat-label>
         <input matInput formControlName="smsNumber" type="text" autoPhoneDash/>
@@ -416,11 +423,6 @@
     </div>
   </div>
 
-  <div class="columns-1 mt-2">
-    <mat-checkbox formControlName="smsIsSame" i18n>
-      My text/SMS number is the same as my phone number.
-    </mat-checkbox>
-  </div>
 
 <!--
 </mat-step>
