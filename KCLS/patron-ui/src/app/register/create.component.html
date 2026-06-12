@@ -380,20 +380,6 @@
         </mat-error>
       </mat-form-field>
     </div>
-    <div>
-      <mat-form-field class="w-full">
-        <mat-label i18n>Confirm Email Address</mat-label>
-        <input type="email" matInput formControlName="email2"/>
-        <mat-error *ngIf="formGroup.controls.email2.hasError('email')" i18n>
-            Email format is <strong>not valid</strong>
-        </mat-error>
-      </mat-form-field>
-      <!-- for some reason, form-level errors cannot be used
-        reliably within a <mat-error> container -->
-      <div *ngIf="formGroup.hasError('sameEmailValidator')" class="mat-mdc-form-field-error" i18n>
-        Email addresses do not match
-      </div>
-    </div>
   </div>
 
   <div class="columns-2 mt-6">

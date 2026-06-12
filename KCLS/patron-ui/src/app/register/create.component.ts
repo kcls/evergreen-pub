@@ -2,8 +2,7 @@ import {AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild} from '@a
 import {Router, ActivatedRoute} from '@angular/router';
 import {MatStepper} from '@angular/material/stepper';
 import {StepperSelectionEvent} from '@angular/cdk/stepper';
-import {FormBuilder, FormControl, Validators, AbstractControl,
-    FormRecord, ValidationErrors, ValidatorFn} from '@angular/forms';
+import {FormBuilder, FormControl, Validators, FormRecord} from '@angular/forms';
 import {EMPTY, Observable, from, of} from 'rxjs';
 import {toArray, debounceTime, distinctUntilChanged} from 'rxjs/operators';
 import {tap} from 'rxjs/operators';
@@ -61,24 +60,6 @@ interface AddressSuggestion {
     full_string?: string,
 }
 
-
-export const sameEmailValidator: ValidatorFn = (
-  control: AbstractControl,
-): ValidationErrors | null => {
-    const email = control.get('email');
-    const email2 = control.get('email2');
-
-    if (email &&
-        email2 &&
-        email.value &&
-        (email2.touched || email2.dirty) &&
-        email.value !== email2.value
-    ) {
-        return {sameEmailValidator: true};
-    }
-
-    return null;
-};
 
 const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 
@@ -182,7 +163,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         guardian: '',
         phone: ['', [Validators.required, Validators.pattern(PHONE_REGEX)]],
         email: ['', Validators.email],
-        email2: ['', Validators.email],
         wantsLibNews: false,
         wantsFoundationInfo: false,
         street1: ['', Validators.required],
@@ -204,7 +184,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         smsNumber: '',
         smsIsSame: true,
         selectedAccountType: '',
-    }, {validators: sameEmailValidator});
+    });
 
     // TODO move these somewhere common
     STATES = {
