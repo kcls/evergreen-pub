@@ -15,6 +15,9 @@ Code location: `KCLS/patron-ui/src/app/register/`
 - [ ] 7. `/`'s not auto-populating — **DEFERRED to end**
 - [ ] 8. Required-field changes (indicator + revised warning text) — **DEFERRED to end** (per user)
 - [ ] 9. 'Preferred method of contact?' multi-select — **DEFERRED to end** (per user)
+- [x] **10. Phone/email double-entry** — RESOLVED: removed confirm-email field + sameEmailValidator (commit b4c225fe5d). Single email entry.
+- [ ] 11. Card delivery "Pickup at a different library" option — **DEFERRED to end** (needs card-pickup chooser + backend mapping)
+- [x] **12. Stepper sections → browser routes** — done (commit 5e778ba12d). create/:step param; route<->stepper two-way sync; Back/Continue + browser back/forward navigate sections.
 
 ---
 
