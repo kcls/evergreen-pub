@@ -105,8 +105,14 @@ $kcls-blue: #06436e;
 .kcls-register {
   font-family: 'Lato', Arial, Helvetica, sans-serif;
 
-  h1, h2, h3 {
+  h1 {
     font-family: 'Bebas Neue', Arial, Helvetica, sans-serif;
+  }
+
+  /* Bebas Neue doesn't render well at these smaller header sizes;
+     keep the prior (pre-branding) sans-serif font for them. */
+  h2, h3, h4 {
+    font-family: 'Lato', Arial, Helvetica, sans-serif;
   }
 
   /* Checkboxes (default token defined at html level) */
