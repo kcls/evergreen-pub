@@ -4408,7 +4408,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 			<link field="name" reltype="has_a" key="name" map="" class="coust"/>
 		</links>
 	</class>
-	<class id="aouc" controller="open-ils.cstore" oils_obj:fieldmapper="actor::org_unit_coords" oils_persist:tablename="actor.org_unit_coords" reporter:label="Organizational Unit Coords">
+	<class id="aouc" 
+		controller="open-ils.cstore open-ils.pcrud" 
+		oils_obj:fieldmapper="actor::org_unit_coords" 
+		oils_persist:tablename="actor.org_unit_coords" 
+		reporter:label="Organizational Unit Coords">
 		<fields oils_persist:primary="org_unit">
 			<field name="org_unit" reporter:datatype="org_unit"/>
 			<field name="latitude"  reporter:datatype="number"/>
