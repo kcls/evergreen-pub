@@ -2,6 +2,6 @@
 
 BEGIN;
 
--- XXX Add DDLs here.
+DROP TABLE actor.org_unit_coords;
 
 COMMIT;

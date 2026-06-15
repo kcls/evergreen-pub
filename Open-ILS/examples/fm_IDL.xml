@@ -4408,6 +4408,24 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 			<link field="name" reltype="has_a" key="name" map="" class="coust"/>
 		</links>
 	</class>
+	<class id="aouc" controller="open-ils.cstore" oils_obj:fieldmapper="actor::org_unit_coords" oils_persist:tablename="actor.org_unit_coords" reporter:label="Organizational Unit Coords">
+		<fields oils_persist:primary="org_unit">
+			<field name="org_unit" reporter:datatype="org_unit"/>
+			<field name="latitude"  reporter:datatype="number"/>
+			<field name="longitude"  reporter:datatype="number"/>
+		</fields>
+		<links>
+			<link field="org_unit" reltype="has_a" key="id" map="" class="aou"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_ORG_UNIT_COORDS" context_field="org_unit"/>
+				<retrieve/>
+				<update permission="ADMIN_ORG_UNIT_COORDS" context_field="org_unit"/>
+				<delete permission="ADMIN_ORG_UNIT_COORDS" context_field="org_unit"/>
+			</actions>
+		</permacrud>
+	</class>
 	<class id="acpn" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="asset::copy_note" oils_persist:tablename="asset.copy_note" reporter:label="Copy Note">
 		<fields oils_persist:primary="id" oils_persist:sequence="asset.copy_note_id_seq">
 			<field reporter:label="Note Creation Date/Time" name="create_date" reporter:datatype="timestamp"/>
