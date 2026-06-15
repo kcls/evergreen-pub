@@ -114,6 +114,11 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     resAddressSuggestions: AddressSuggestion[] = [];
     selectedResAddress = '';
 
+    // Explicit "Verify Address" lookup state (for hand-typed addresses).
+    resLookupResults: AddressSuggestion[] = [];
+    resLookupPerformed = false;
+    resLookupNotFound = false;
+
     filteredMailAddrOptions: Observable<string[]> = EMPTY;
     mailAddressSuggestions: AddressSuggestion[] = [];
     selectedMailAddress = '';
@@ -285,6 +290,18 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         if (slug && slug !== this.currentSlug) {
             this.router.navigate(['/register/create', slug]);
         }
+    }
+
+    // Continue-button handler.  On the Your Information pane we can't
+    // advance until we've resolved a home library, which only happens once
+    // the user picks a known address.  If we don't have one yet, run the
+    // address lookup (instead of advancing) so they can choose a match.
+    onContinue() {
+        if (this.stepper.selectedIndex === 0 && this.calculatedHomeOrg == null) {
+            this.findResAddress();
+            return;
+        }
+        this.stepper.next();
     }
 
     ngOnInit() {
@@ -660,6 +677,42 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.formGroup.controls.mailingZipCode.setValue(addr.zipcode);
     }
 
+    // Run an explicit residential-address lookup for the value the user
+    // typed and present the matches for selection.  Selecting one runs the
+    // same flow as picking an autocomplete suggestion, which is what fires
+    // the home-library and district-of-residence lookups.
+    findResAddress() {
+        const street = ('' + (this.formGroup.controls.street1.value ?? '')).trim();
+        const street2 = ('' + (this.formGroup.controls.street2.value ?? '')).trim();
+        const city = ('' + (this.formGroup.controls.city.value ?? '')).trim();
+
+        // Include street2 and city in the search when provided to narrow results.
+        let value = street2 ? `${street} ${street2}` : street;
+        value = city ? `${value} ${city}` : value;
+
+        this.resLookupPerformed = true;
+        this.resLookupNotFound = false;
+        this.resLookupResults = [];
+
+        this.addrStreet1Fitler(value, this.resLookupResults).subscribe({
+            complete: () => {
+                this.resLookupNotFound = this.resLookupResults.length === 0;
+            },
+            error: () => {
+                this.resLookupNotFound = true;
+            }
+        });
+    }
+
+    selectResLookupResult(addr: AddressSuggestion) {
+        this.selectedResAddress = addr.full_string || '';
+        // populateResAddrFromSuggestion() resolves the selection out of
+        // resAddressSuggestions, so point that at our lookup results.
+        this.resAddressSuggestions = this.resLookupResults;
+        this.populateResAddrFromSuggestion();
+        this.resLookupPerformed = false;
+    }
+
     private resAddrStreet1Filter(value: string): Observable<string[]> {
         this.resAddressSuggestions = [];
 
@@ -684,6 +737,11 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         const filterValue = value.toLowerCase();
 
         if (!value || value.length < 5) { return EMPTY; }
+
+        this.calculatedHomeOrg = null;
+        this.districtOfResidence = null;
+        this.reportedLatitude = null;
+        this.reportedLongitude = null;
 
         return this.gateway.request(
             'kcls.address',

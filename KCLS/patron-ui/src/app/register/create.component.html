@@ -200,6 +200,32 @@
     </div>
   </div>
 
+  <!-- Hand-typed addresses don't trigger the home-library / district
+       lookup the way picking an autocomplete suggestion does.  Clicking
+       Continue (see onContinue()) runs the lookup and shows these matches;
+       choosing one runs the same populate flow that sets calculatedHomeOrg. -->
+  <div class="columns-1 mt-4 border-2 p-3 rounded border-red-500" *ngIf="resLookupPerformed">
+    <ng-container *ngIf="resLookupResults.length > 0">
+      <h3 i18n>Confirm your address</h3>
+      <p class="text-sm mb-2" i18n>
+        Please confirm your address below so we can complete your application.
+      </p>
+      <div class="flex flex-col gap-1 pl-4">
+        <button mat-stroked-button type="button" class="text-left"
+            *ngFor="let addr of resLookupResults"
+            (click)="selectResLookupResult(addr)">
+          {{addr.full_string}}
+        </button>
+      </div>
+      <div class="mt-4">
+        Don't see your address above?  Do this or that...
+      </div>
+    </ng-container>
+    <div *ngIf="resLookupNotFound" class="mat-mdc-form-field-error" i18n>
+      We couldn't find that address. Please double-check your entry and try again.
+    </div>
+  </div>
+
   <h3 i18n>Mailing Address</h3>
 
   <div class="columns-1">
@@ -674,7 +700,7 @@
       *ngIf="stepper.selectedIndex > 0"
       i18n>Back</button>
   <button mat-raised-button type="button"
-      (click)="stepper.next()"
+      (click)="onContinue()"
       *ngIf="stepper.selectedIndex < stepper.steps.length - 1"
       style="margin-left: auto"
       i18n>Continue &#187;</button>
