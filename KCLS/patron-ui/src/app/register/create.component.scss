@@ -12,6 +12,64 @@
   */
 }
 
+/* Residential address suggestion / selection area (below Street Address). */
+.res-addr-area {
+  margin-top: 4px;
+}
+
+/* The expanded chooser and the collapsed selected address share the same
+   bordered, tinted box. */
+.res-addr-list,
+.res-addr-selected {
+  border: 1px solid rgba(6, 67, 110, 0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.res-addr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.res-addr-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  color: #555;
+}
+
+.res-addr-list-label {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.res-addr-option {
+  /* left-align the address text within the stroked button */
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.res-addr-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 67, 110, 0.06);
+}
+
+.res-addr-check {
+  color: #06436e;
+}
+
+.res-addr-selected-text {
+  flex: 1;
+}
+
+.res-addr-notfound {
+  padding-left: 1rem;
+}
+
 /* Selectable card-design tiles: de-emphasize the radio "bullet" and
    show selection via a bordered, highlighted tile instead. */
 .card-option {

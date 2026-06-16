@@ -4,7 +4,7 @@ import {MatStepper} from '@angular/material/stepper';
 import {StepperSelectionEvent} from '@angular/cdk/stepper';
 import {FormBuilder, FormControl, Validators, FormRecord} from '@angular/forms';
 import {EMPTY, Observable, from, of} from 'rxjs';
-import {toArray, debounceTime, distinctUntilChanged} from 'rxjs/operators';
+import {toArray, debounceTime, distinctUntilChanged, catchError} from 'rxjs/operators';
 import {tap} from 'rxjs/operators';
 import {map, startWith, switchMap} from 'rxjs/operators';
 import {Gateway, Hash} from '../gateway.service';
@@ -110,14 +110,15 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     textSettings: UserSettingType[] = [];
     printSettings: UserSettingType[] = [];
 
-    filteredResAddrOptions: Observable<string[]> = EMPTY;
     resAddressSuggestions: AddressSuggestion[] = [];
     selectedResAddress = '';
 
-    // Explicit "Verify Address" lookup state (for hand-typed addresses).
-    resLookupResults: AddressSuggestion[] = [];
-    resLookupPerformed = false;
+    // Residential address selection state.  Suggestions populate from the
+    // street/city fields (debounced); the user must choose one, after which
+    // the chooser collapses to show just the selected address.
+    addressSelected = false;
     resLookupNotFound = false;
+    resLookupLoading = false;
 
     filteredMailAddrOptions: Observable<string[]> = EMPTY;
     mailAddressSuggestions: AddressSuggestion[] = [];
@@ -292,16 +293,11 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         }
     }
 
-    // Continue-button handler.  On the Your Information pane we can't
-    // advance until we've resolved a home library, which only happens once
-    // the user picks a known address.  If we don't have one yet, run the
-    // address lookup (instead of advancing) so they can choose a match.
-    onContinue() {
-        if (this.stepper.selectedIndex === 0 && this.calculatedHomeOrg == null) {
-            this.findResAddress();
-            return;
-        }
-        this.stepper.next();
+    // The Your Information pane can't be left until the user has chosen an
+    // address and we've resolved a home library from it.  (Other panes are
+    // unrestricted.)
+    canContinue(): boolean {
+        return this.stepper?.selectedIndex !== 0 || this.calculatedHomeOrg != null;
     }
 
     ngOnInit() {
@@ -438,12 +434,46 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             design.updateValueAndValidity();
         });
 
-        this.filteredResAddrOptions = this.formGroup.controls.street1.valueChanges.pipe(
+        // Editing the street after an address was chosen invalidates that
+        // choice: de-select it and clear the values it applied.  Fires
+        // immediately (no debounce); programmatic writes use emitEvent:false
+        // so applying a selection doesn't trip this.
+        this.formGroup.controls.street1.valueChanges.subscribe(() => {
+            if (this.selectedResAddress) {
+                this.deselectResAddress();
+            }
+        });
+
+        // Street Address is the only address field shown; its value drives
+        // the suggestion lookup (debounced).  Choosing a suggestion is what
+        // resolves the home library / district and fills in the hidden
+        // city/state/zip controls.
+        this.formGroup.controls.street1.valueChanges.pipe(
             startWith(''),
-            debounceTime(300), // Wait for 300ms of inactivity
-            distinctUntilChanged(), // Only emit if the value has changed
-            switchMap(value => this.resAddrStreet1Filter('' + value)), // Or call API here
-        );
+            debounceTime(300),
+            map(() => this.resSearchValue()),
+            distinctUntilChanged(),
+            switchMap(value => {
+                this.resAddressSuggestions = [];
+                this.resLookupNotFound = false;
+
+                if (value.length < 5) {
+                    this.resLookupLoading = false;
+                    return of([] as string[]);
+                }
+
+                this.resLookupLoading = true;
+                // catchError keeps the stream alive (and clears the spinner)
+                // if the address API fails.
+                return this.addrStreet1Fitler(value, this.resAddressSuggestions).pipe(
+                    catchError(() => of([] as string[]))
+                );
+            }),
+        ).subscribe(() => {
+            this.resLookupLoading = false;
+            this.resLookupNotFound =
+                this.resAddressSuggestions.length === 0 && this.resSearchValue().length >= 5;
+        });
 
         this.filteredMailAddrOptions = this.formGroup.controls.mailingStreet1.valueChanges.pipe(
             startWith(''),
@@ -537,19 +567,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         });
     }
 
-    street1AutoSelected(event: MatAutocompleteSelectedEvent) {
-        if (event) {
-            if (event.option) {
-                if (event.option.value) {
-                    this.selectedResAddress = event.option.value;
-                    return this.populateResAddrFromSuggestion();
-                }
-            }
-        }
-
-        this.selectedResAddress = '';
-    }
-
     mailStreet1AutoSelected(event: MatAutocompleteSelectedEvent) {
         if (event) {
             if (event.option) {
@@ -571,10 +588,12 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             return;
         }
 
-        this.formGroup.controls.street1.setValue(addr.street_line);
-        this.formGroup.controls.city.setValue(addr.city);
-        this.formGroup.controls.state.setValue(addr.state);
-        this.formGroup.controls.zipCode.setValue(addr.zipcode);
+        // Suppress value-change events so writing these fields doesn't
+        // re-trigger the suggestion lookup (which would clear the selection).
+        this.formGroup.controls.street1.setValue(addr.street_line, {emitEvent: false});
+        this.formGroup.controls.city.setValue(addr.city, {emitEvent: false});
+        this.formGroup.controls.state.setValue(addr.state, {emitEvent: false});
+        this.formGroup.controls.zipCode.setValue(addr.zipcode, {emitEvent: false});
 
         // Now that we have an address, run the dupe checker again.
         this.checkForExistingAccount();
@@ -677,50 +696,42 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.formGroup.controls.mailingZipCode.setValue(addr.zipcode);
     }
 
-    // Run an explicit residential-address lookup for the value the user
-    // typed and present the matches for selection.  Selecting one runs the
-    // same flow as picking an autocomplete suggestion, which is what fires
-    // the home-library and district-of-residence lookups.
-    findResAddress() {
-        const street = ('' + (this.formGroup.controls.street1.value ?? '')).trim();
-        const street2 = ('' + (this.formGroup.controls.street2.value ?? '')).trim();
-        const city = ('' + (this.formGroup.controls.city.value ?? '')).trim();
-
-        // Include street2 and city in the search when provided to narrow results.
-        let value = street2 ? `${street} ${street2}` : street;
-        value = city ? `${value} ${city}` : value;
-
-        this.resLookupPerformed = true;
-        this.resLookupNotFound = false;
-        this.resLookupResults = [];
-
-        this.addrStreet1Fitler(value, this.resLookupResults).subscribe({
-            complete: () => {
-                this.resLookupNotFound = this.resLookupResults.length === 0;
-            },
-            error: () => {
-                this.resLookupNotFound = true;
-            }
-        });
+    // Search string for the residential address lookup.  Street Address is
+    // the only address field the user enters directly.
+    resSearchValue(): string {
+        return ('' + (this.formGroup.controls.street1.value ?? '')).trim();
     }
 
-    selectResLookupResult(addr: AddressSuggestion) {
+    // Choose a suggestion: apply it to the address fields (which resolves the
+    // home library / district) and collapse the chooser.
+    selectResAddress(addr: AddressSuggestion) {
         this.selectedResAddress = addr.full_string || '';
-        // populateResAddrFromSuggestion() resolves the selection out of
-        // resAddressSuggestions, so point that at our lookup results.
-        this.resAddressSuggestions = this.resLookupResults;
         this.populateResAddrFromSuggestion();
-        this.resLookupPerformed = false;
+        this.addressSelected = true;
     }
 
-    private resAddrStreet1Filter(value: string): Observable<string[]> {
-        this.resAddressSuggestions = [];
+    // Re-open the chooser to pick a different address.  The previously
+    // selected address stays applied until another is chosen.
+    changeResAddress() {
+        this.addressSelected = false;
+    }
 
-        if (value === this.selectedResAddress) {
-            return EMPTY;
-        }
+    // Drop a previously chosen address and clear everything derived from it.
+    // Called when the user edits the street again after a selection.
+    deselectResAddress() {
+        this.addressSelected = false;
+        this.selectedResAddress = '';
+        this.calculatedHomeOrg = null;
+        this.districtOfResidence = null;
+        this.reportedLatitude = null;
+        this.reportedLongitude = null;
+        this.accountTypeOption = AccountTypeOption.None;
 
-        return this.addrStreet1Fitler(value, this.resAddressSuggestions);
+        const c = this.formGroup.controls;
+        c.street2.setValue('', {emitEvent: false});
+        c.city.setValue('', {emitEvent: false});
+        c.state.setValue(DEFAULT_STATE, {emitEvent: false});
+        c.zipCode.setValue('', {emitEvent: false});
     }
 
     private mailAddrStreet1Filter(value: string): Observable<string[]> {
@@ -747,7 +758,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             'kcls.address',
             'kcls.address.autocomplete',
             'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
-            {"state_filter": "WA", "search": filterValue}
+            {"state_filter": "WA", "search": filterValue, "limit": 7}
         ).pipe(
             map(suggestion => {
                 //console.debug('Found matching address', suggestion);
