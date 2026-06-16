@@ -11,7 +11,6 @@ import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {RegisterService} from './register.service';
-import {MatAutocompleteSelectedEvent} from '@angular/material/autocomplete';
 //import {MatStepper} from '@angular/material/stepper';
 
 const JUV_AGE = 18; // years
@@ -120,9 +119,13 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     resLookupNotFound = false;
     resLookupLoading = false;
 
-    filteredMailAddrOptions: Observable<string[]> = EMPTY;
     mailAddressSuggestions: AddressSuggestion[] = [];
     selectedMailAddress = '';
+
+    // Mailing address selection state (mirrors the residential fields).
+    mailAddressSelected = false;
+    mailLookupNotFound = false;
+    mailLookupLoading = false;
 
     maybeDupeAccount: boolean | null = null;
 
@@ -293,11 +296,16 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         }
     }
 
-    // The Your Information pane can't be left until the user has chosen an
-    // address and we've resolved a home library from it.  (Other panes are
-    // unrestricted.)
+    // The Your Information pane can't be left until the residential address
+    // resolves a home library and, when the mailing address differs, a
+    // mailing address has been chosen too.  (Other panes are unrestricted.)
     canContinue(): boolean {
-        return this.stepper?.selectedIndex !== 0 || this.calculatedHomeOrg != null;
+        if (this.stepper?.selectedIndex !== 0) { return true; }
+
+        const mailingOk =
+            !!this.formGroup.controls.mailingIsSame.value || !!this.selectedMailAddress;
+
+        return this.calculatedHomeOrg != null && mailingOk;
     }
 
     ngOnInit() {
@@ -475,12 +483,38 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                 this.resAddressSuggestions.length === 0 && this.resSearchValue().length >= 5;
         });
 
-        this.filteredMailAddrOptions = this.formGroup.controls.mailingStreet1.valueChanges.pipe(
+        // Mailing address uses the same single-field + suggestion pattern as
+        // the residential address (minus the home-library lookup).
+        this.formGroup.controls.mailingStreet1.valueChanges.subscribe(() => {
+            if (this.selectedMailAddress) {
+                this.deselectMailAddress();
+            }
+        });
+
+        this.formGroup.controls.mailingStreet1.valueChanges.pipe(
             startWith(''),
-            debounceTime(300), // Wait for 300ms of inactivity
-            distinctUntilChanged(), // Only emit if the value has changed
-            switchMap(value => this.mailAddrStreet1Filter('' + value)), // Or call API here
-        );
+            debounceTime(300),
+            map(() => this.mailSearchValue()),
+            distinctUntilChanged(),
+            switchMap(value => {
+                this.mailAddressSuggestions = [];
+                this.mailLookupNotFound = false;
+
+                if (value.length < 5) {
+                    this.mailLookupLoading = false;
+                    return of([] as string[]);
+                }
+
+                this.mailLookupLoading = true;
+                return this.addrStreet1Fitler(value, this.mailAddressSuggestions).pipe(
+                    catchError(() => of([] as string[]))
+                );
+            }),
+        ).subscribe(() => {
+            this.mailLookupLoading = false;
+            this.mailLookupNotFound =
+                this.mailAddressSuggestions.length === 0 && this.mailSearchValue().length >= 5;
+        });
     }
 
     checkForExistingAccount() {
@@ -565,19 +599,6 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                 return this.pickupLibs;
             });
         });
-    }
-
-    mailStreet1AutoSelected(event: MatAutocompleteSelectedEvent) {
-        if (event) {
-            if (event.option) {
-                if (event.option.value) {
-                    this.selectedMailAddress = event.option.value;
-                    return this.populateMailAddrFromSuggestion();
-                }
-            }
-        }
-
-        this.selectedMailAddress = '';
     }
 
     populateResAddrFromSuggestion() {
@@ -690,10 +711,38 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             return;
         }
 
-        this.formGroup.controls.mailingStreet1.setValue(addr.street_line);
-        this.formGroup.controls.mailingCity.setValue(addr.city);
-        this.formGroup.controls.mailingState.setValue(addr.state);
-        this.formGroup.controls.mailingZipCode.setValue(addr.zipcode);
+        // Suppress events so applying a selection doesn't re-trigger the
+        // lookup / immediate de-select (see residential equivalent).
+        this.formGroup.controls.mailingStreet1.setValue(addr.street_line, {emitEvent: false});
+        this.formGroup.controls.mailingCity.setValue(addr.city, {emitEvent: false});
+        this.formGroup.controls.mailingState.setValue(addr.state, {emitEvent: false});
+        this.formGroup.controls.mailingZipCode.setValue(addr.zipcode, {emitEvent: false});
+    }
+
+    // Search string for the mailing address lookup.
+    mailSearchValue(): string {
+        return ('' + (this.formGroup.controls.mailingStreet1.value ?? '')).trim();
+    }
+
+    selectMailAddress(addr: AddressSuggestion) {
+        this.selectedMailAddress = addr.full_string || '';
+        this.populateMailAddrFromSuggestion();
+        this.mailAddressSelected = true;
+    }
+
+    changeMailAddress() {
+        this.mailAddressSelected = false;
+    }
+
+    deselectMailAddress() {
+        this.mailAddressSelected = false;
+        this.selectedMailAddress = '';
+
+        const c = this.formGroup.controls;
+        c.mailingStreet2.setValue('', {emitEvent: false});
+        c.mailingCity.setValue('', {emitEvent: false});
+        c.mailingState.setValue(DEFAULT_STATE, {emitEvent: false});
+        c.mailingZipCode.setValue('', {emitEvent: false});
     }
 
     // Search string for the residential address lookup.  Street Address is
@@ -734,25 +783,15 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         c.zipCode.setValue('', {emitEvent: false});
     }
 
-    private mailAddrStreet1Filter(value: string): Observable<string[]> {
-        this.mailAddressSuggestions = [];
-
-        if (value === this.selectedMailAddress) {
-            return EMPTY;
-        }
-
-        return this.addrStreet1Fitler(value, this.mailAddressSuggestions);
-    }
-
     private addrStreet1Fitler(value: string, suggestions: AddressSuggestion[]): Observable<string[]> {
         const filterValue = value.toLowerCase();
 
         if (!value || value.length < 5) { return EMPTY; }
 
-        this.calculatedHomeOrg = null;
-        this.districtOfResidence = null;
-        this.reportedLatitude = null;
-        this.reportedLongitude = null;
+        // NOTE: do not clear residential-only state (calculatedHomeOrg,
+        // district, lat/long) here — this helper is shared by the mailing
+        // lookup too.  The residential edit path clears it via
+        // deselectResAddress().
 
         return this.gateway.request(
             'kcls.address',
