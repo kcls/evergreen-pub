@@ -6,11 +6,11 @@ BEGIN;
 -- Repair these notices and make the opac_visible so they appear
 -- in the angular patron register UI.
 
-UPDATE config.usr_setting_type 
+UPDATE config.usr_setting_type
     SET opac_visible = TRUE, datatype = 'bool' WHERE name ~ '^notification.';
 
 CREATE TABLE actor.org_unit_coords (
-    org_unit    INTEGER NOT NULL REFERENCES actor.org_unit(id) 
+    org_unit    INTEGER NOT NULL REFERENCES actor.org_unit(id)
                 ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
     latitude    NUMERIC(10, 8) NOT NULL,
     longitude   NUMERIC(11, 8) NOT NULL
@@ -94,6 +94,73 @@ INSERT INTO actor.org_unit_coords (org_unit, latitude, longitude) VALUES
     (164, 47.361165, -122.081921);
 
 END IF; END $INSERT$;
+
+-- Districts of residence assignable to new patron registrations.
+CREATE TABLE config.district_of_residence (
+    id      SERIAL PRIMARY KEY,
+    name    TEXT NOT NULL UNIQUE,
+    notes   TEXT
+);
+
+DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN
+
+INSERT INTO config.district_of_residence (name) VALUES
+    (' KCLS'),
+    ('Everett Public Library'),
+    ('Fort Vancouver Regional Library'),
+    ('Jefferson County Rural Library District'),
+    ('Kitsap Regional Library'),
+    ('NCW Libraries'),
+    ('North Olympic Library System'),
+    ('Pierce County Library System'),
+    ('Port Townsend Public Library'),
+    ('Puyallup Public Library'),
+    ('Seattle Public Library'),
+    ('Sno-Isle Regional Library'),
+    ('Tacoma Public Library'),
+    ('Timberland Regional Library'),
+    ('Unset'),
+    ('_Property Owner'),
+    ('_Visitor');
+
+END IF; END $INSERT$;
+
+-- Table for tracking addresses which should be explicitly blocked
+-- or allowed for new patron registration.
+
+CREATE TABLE config.usr_address_exception (
+    id              SERIAL PRIMARY KEY,
+    reason          TEXT NOT NULL,
+    enabled         BOOLEAN NOT NULL DEFAULT TRUE,
+    is_allowed      BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by      INTEGER NOT NULL REFERENCES actor.usr(id)
+                    ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    street1         TEXT,
+    street2         TEXT,
+    city            TEXT,
+    state           TEXT,
+    post_code       TEXT,
+    district_of_residence INTEGER REFERENCES config.district_of_residence(id)
+        ON DELETE RESTRICT,
+    home_ou         INTEGER REFERENCES actor.org_unit(id)
+        ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    -- 1. allowed addresses must specify street1
+    -- 2. otherwise at least one of street1, street2, city, or post_code is required
+    CONSTRAINT usr_address_exception_fields CHECK (
+        CASE WHEN is_allowed THEN
+            street1 IS NOT NULL
+        ELSE
+            street1 IS NOT NULL OR street2 IS NOT NULL
+            OR city IS NOT NULL OR post_code IS NOT NULL
+        END
+    ),
+    -- allowed addresses must specify the resulting district and home library
+    CONSTRAINT usr_address_exception_allowed_target CHECK (
+        NOT is_allowed
+        OR (district_of_residence IS NOT NULL AND home_ou IS NOT NULL)
+    )
+);
 
 
 COMMIT;

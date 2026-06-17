@@ -4430,6 +4430,60 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 			</actions>
 		</permacrud>
 	</class>
+	<class id="cdor"
+		controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::district_of_residence"
+		oils_persist:tablename="config.district_of_residence"
+		reporter:label="District of Residence">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.district_of_residence_id_seq">
+			<field reporter:label="ID" name="id" reporter:datatype="id"/>
+			<field reporter:label="Name" name="name" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Notes" name="notes" reporter:datatype="text"/>
+		</fields>
+		<links/>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_ADDRESS_ALERT"/>
+				<retrieve/>
+				<update permission="ADMIN_ADDRESS_ALERT"/>
+				<delete permission="ADMIN_ADDRESS_ALERT"/>
+			</actions>
+		</permacrud>
+	</class>
+	<class id="cuae"
+		controller="open-ils.cstore open-ils.pcrud"
+		oils_obj:fieldmapper="config::usr_address_exception"
+		oils_persist:tablename="config.usr_address_exception"
+		reporter:label="User Address Exception">
+		<fields oils_persist:primary="id" oils_persist:sequence="config.usr_address_exception_id_seq">
+			<field reporter:label="ID" name="id" reporter:datatype="id"/>
+			<field reporter:label="Reason" name="reason" reporter:datatype="text" oils_obj:required="true"/>
+			<field reporter:label="Enabled" name="enabled" reporter:datatype="bool"/>
+			<field reporter:label="Is Allowed" name="is_allowed" reporter:datatype="bool"/>
+			<field reporter:label="Creation Date/Time" name="created_at" reporter:datatype="timestamp"/>
+			<field reporter:label="Created By" name="created_by" reporter:datatype="link" oils_obj:required="true"/>
+			<field reporter:label="Street (1)" name="street1" reporter:datatype="text"/>
+			<field reporter:label="Street (2)" name="street2" reporter:datatype="text"/>
+			<field reporter:label="City" name="city" reporter:datatype="text"/>
+			<field reporter:label="State" name="state" reporter:datatype="text"/>
+			<field reporter:label="Postal Code" name="post_code" reporter:datatype="text"/>
+			<field reporter:label="District of Residence" name="district_of_residence" reporter:datatype="link"/>
+			<field reporter:label="Home Library" name="home_ou" reporter:datatype="org_unit"/>
+		</fields>
+		<links>
+			<link field="created_by" reltype="has_a" key="id" map="" class="au"/>
+			<link field="district_of_residence" reltype="has_a" key="id" map="" class="cdor"/>
+			<link field="home_ou" reltype="has_a" key="id" map="" class="aou"/>
+		</links>
+		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
+			<actions>
+				<create permission="ADMIN_ADDRESS_ALERT"/>
+				<retrieve permission="ADMIN_ADDRESS_ALERT CREATE_USER"/>
+				<update permission="ADMIN_ADDRESS_ALERT"/>
+				<delete permission="ADMIN_ADDRESS_ALERT"/>
+			</actions>
+		</permacrud>
+	</class>
 	<class id="acpn" controller="open-ils.cstore open-ils.pcrud" oils_obj:fieldmapper="asset::copy_note" oils_persist:tablename="asset.copy_note" reporter:label="Copy Note">
 		<fields oils_persist:primary="id" oils_persist:sequence="asset.copy_note_id_seq">
 			<field reporter:label="Note Creation Date/Time" name="create_date" reporter:datatype="timestamp"/>

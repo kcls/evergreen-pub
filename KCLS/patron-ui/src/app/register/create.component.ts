@@ -57,6 +57,10 @@ interface AddressSuggestion {
     state: string,
     zipcode: string,
     full_string?: string,
+    home_ou?: number,
+    is_exception?: boolean,
+    is_allowed?: boolean,
+    district_of_residence?: string,
 }
 
 
@@ -622,11 +626,30 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.applyHomeOrgFromAddr(addr);
     }
 
-    applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<void> {
+    applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<any> {
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;
         this.reportedLatitude = null;
         this.reportedLongitude = null;
+
+        if (addr.is_exception) {
+            // Address exceptions contain the calcualted home org and
+            // district of residence values.  For blocked exception
+            // addresses, no value will be present, and that's intentional.
+            console.log('Found address exception: ', addr);
+
+            if (addr.is_allowed) {
+                this.applyOrgAndDistrictValues(addr.home_ou || null, addr.district_of_residence || null);
+                return Promise.resolve();
+
+            } else {
+                // For blocked addressed, apply a home org value so the
+                // user can continue to the next page, where they'll
+                // be told the address is not in the service area, since
+                // it does not have a district of residence.
+                return this.app.getOrgTree().then(root => this.calculatedHomeOrg = Number(root.id));
+            }
+        }
 
         // In theory the tested address should return a single result
         // since the address provided is a normalized value returned
@@ -667,28 +690,32 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                     longitude
                 )
             ]).then(([homeOrg, district]) => {
-                console.debug('Home org unit reported as', homeOrg);
-                console.debug('District of Residence reported as "' + district + '"');
-
-                if (homeOrg) {
-                    this.calculatedHomeOrg = Number(homeOrg);
-
-                    if (!this.formGroup.controls.pickupLib.value) {
-                        console.debug('Applying default pickup lib', this.calculatedHomeOrg);
-                        this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
-                    }
-                }
-
-                if (district) {
-                    this.districtOfResidence = district as string;
-                    if (district === MAIN_DISTRICT_OF_RESIDENCE) {
-                        this.accountTypeOption = AccountTypeOption.Either;
-                    } else {
-                        this.accountTypeOption = AccountTypeOption.AllAccess;
-                    }
-                }
+                this.applyOrgAndDistrictValues(homeOrg as number, district as string);
             });
         });
+    }
+
+    applyOrgAndDistrictValues(homeOrg: number | null, district: string | null) {
+        console.debug('Home org unit reported as', homeOrg);
+        console.debug('District of Residence reported as "' + district + '"');
+
+        if (homeOrg) {
+            this.calculatedHomeOrg = Number(homeOrg);
+
+            if (!this.formGroup.controls.pickupLib.value) {
+                console.debug('Applying default pickup lib', this.calculatedHomeOrg);
+                this.formGroup.controls.pickupLib.setValue(this.calculatedHomeOrg);
+            }
+        }
+
+        if (district) {
+            this.districtOfResidence = district as string;
+            if (district === MAIN_DISTRICT_OF_RESIDENCE) {
+                this.accountTypeOption = AccountTypeOption.Either;
+            } else {
+                this.accountTypeOption = AccountTypeOption.AllAccess;
+            }
+        }
     }
 
     wantsEcard(): boolean {
