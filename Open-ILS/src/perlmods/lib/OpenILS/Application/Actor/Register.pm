@@ -61,14 +61,16 @@ __PACKAGE__->register_method(
 sub register {
     my ($self, $client, $captcha, $values) = @_;
 
-    # TODO CAPTCHA
+    # TODO CAPTCHA / cache
 
     return OpenILS::Event->new('BAD_PARAMS') unless ref $values eq 'HASH';
 
     $logger->info("Patron self-reg: " . OpenSRF::Utils::JSON->perl2JSON($values));
 
-    # TODO along with the Captcha we should cache session info like
-    # which account types the user may select from.
+    # TODO call the address service with the final form of the selected
+    # address to verify the provided home org and district are valid.
+    # If we have an address_exception_id value in the payload use that
+    # to find the address in the DB directly.
 
     if ($values->{requested_account_type} eq 'full') {
         return create_pending_account($values);

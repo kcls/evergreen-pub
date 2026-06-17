@@ -39,6 +39,7 @@ interface UserSettingType {
 
 interface ApiPayload {
     requested_account_type: AccountTypeSelection,
+    address_exception_id: number | null,
     user: Hash,
     billing_address: Hash,
     mailing_address:  Hash,
@@ -59,6 +60,7 @@ interface AddressSuggestion {
     full_string?: string,
     home_ou?: number,
     is_exception?: boolean,
+    exception_id?: number,
     is_allowed?: boolean,
     district_of_residence?: string,
 }
@@ -98,6 +100,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     districtOfResidence: null | string = null;
 
     calculatedHomeOrg: number | null = null;
+    addressExceptionId: number | null = null;
 
     reportedLatitude: string | number | null = null;
     reportedLongitude: string | number | null = null;
@@ -631,12 +634,14 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.districtOfResidence = null;
         this.reportedLatitude = null;
         this.reportedLongitude = null;
+        this.addressExceptionId = null;
 
         if (addr.is_exception) {
             // Address exceptions contain the calcualted home org and
             // district of residence values.  For blocked exception
             // addresses, no value will be present, and that's intentional.
             console.log('Found address exception: ', addr);
+            this.addressExceptionId = Number(addr.exception_id);
 
             if (addr.is_allowed) {
                 this.applyOrgAndDistrictValues(addr.home_ou || null, addr.district_of_residence || null);
@@ -1003,6 +1008,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             // If the user reaches the submit page, they are allowed to
             // request at least one of these account types.
             requested_account_type: this.wantsEcard() ? 'ecard' : 'full',
+            address_exception_id: this.addressExceptionId,
             user: {
                 delivery_method: '' + ctls.delivery.value,
                 first_given_name: ctls.first.value,
