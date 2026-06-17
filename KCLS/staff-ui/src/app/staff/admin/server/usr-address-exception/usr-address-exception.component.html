@@ -1,0 +1,26 @@
+<ng-template i18n #helpTemplate>
+  <ul>
+    <li>If an address "is allowed", provide as many address field
+      values as possible for improved matching.</li>
+    <li>Sometimes different variations of an "is allowed" address can be
+      helpful (e.g. 123 N St vs. 123 North St).</li>
+    <li>"Is allowed" addresses require a Home Library and District of Residence.</li>
+    <li>Addresses where "is allowed" is false do not need Home Library
+      or District of Residence values.</li>
+  </ul>
+</ng-template>
+
+<eg-title i18n-prefix prefix="User Address Exceptions"></eg-title>
+<eg-staff-banner bannerText="User Address Exception Administration" i18n-bannerText>
+</eg-staff-banner>
+
+<eg-admin-page
+    idlClass="cuae"
+    disableOrgFilter="true"
+    persistKey="admin.server.usr_address_exception"
+    hideGridFields="id,created_by"
+    readonlyFields="created_at,created_by"
+    fieldOrder="reason,enabled,is_allowed,street1,street2,city,state,post_code,district_of_residence,home_ou,created_at"
+    [helpTemplate]="helpTemplate"
+    [defaultNewRecord]="defaultNewRecord">
+</eg-admin-page>
