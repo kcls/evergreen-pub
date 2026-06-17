@@ -4477,10 +4477,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 		</links>
 		<permacrud xmlns="http://open-ils.org/spec/opensrf/IDL/permacrud/v1">
 			<actions>
-				<create permission="ADMIN_ADDRESS_ALERT"/>
-				<retrieve permission="ADMIN_ADDRESS_ALERT CREATE_USER"/>
-				<update permission="ADMIN_ADDRESS_ALERT"/>
-				<delete permission="ADMIN_ADDRESS_ALERT"/>
+				<create permission="ADMIN_ADDRESS_ALERT" global_required="true"/>
+				<retrieve permission="ADMIN_ADDRESS_ALERT CREATE_USER" global_required="true"/>
+				<update permission="ADMIN_ADDRESS_ALERT" global_required="true"/>
+				<delete permission="ADMIN_ADDRESS_ALERT" global_required="true"/>
 			</actions>
 		</permacrud>
 	</class>
