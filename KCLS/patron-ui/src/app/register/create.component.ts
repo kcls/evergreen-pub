@@ -793,7 +793,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     // via a second autocomplete; otherwise the address is applied (which
     // resolves the home library / district) and the chooser collapses.
     selectResAddress(addr: AddressSuggestion) {
-        if (addr.entries > 0) {
+        if (addr.entries > 1) {
             this.refineResAddress(addr);
             return;
         }
@@ -804,10 +804,14 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     // Drill into the unit/apartment entries of a multi-entry address by
-    // re-running the autocomplete.  Appending the street + secondary and an
-    // open paren asks the address API to expand the building's entries.
+    // re-running the autocomplete with the API's secondary-expansion inputs:
+    // 'search' is the suggestion text up to the open paren, and 'selected' is
+    // the full suggestion text including the (entries) count.
     refineResAddress(addr: AddressSuggestion) {
-        const search = `${addr.street_line} ${addr.secondary} ( `;
+        const search = `${addr.street_line} ${addr.secondary} `;
+        const selected =
+            `${addr.street_line} ${addr.secondary} (${addr.entries}) `
+            + `${addr.city} ${addr.state} ${addr.zipcode}`;
 
         // Keep the chooser open (no final selection yet) and show progress.
         this.selectedResAddress = '';
@@ -816,7 +820,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.resLookupLoading = true;
         this.resAddressSuggestions = [];
 
-        this.addrStreet1Fitler(search, this.resAddressSuggestions, 10).pipe(
+        this.addrStreet1Fitler(search, this.resAddressSuggestions, selected).pipe(
             catchError(() => of([] as string[]))
         ).subscribe(() => {
             this.resLookupLoading = false;
@@ -849,7 +853,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     private addrStreet1Fitler(
-        value: string, suggestions: AddressSuggestion[], limit: number = 7): Observable<string[]> {
+        value: string, suggestions: AddressSuggestion[],
+        selected?: string): Observable<string[]> {
         const filterValue = value.toLowerCase();
 
         if (!value || value.length < 5) { return EMPTY; }
@@ -859,17 +864,24 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // lookup too.  The residential edit path clears it via
         // deselectResAddress().
 
+        // No result limit is sent; we use the API default and cap the
+        // display to the first 10 in the template.
+        const search: Hash = {"state_filter": "WA", "search": filterValue};
+
+        // 'selected' drives the API's secondary (unit/apartment) expansion.
+        if (selected) { search['selected'] = selected; }
+
         return this.gateway.request(
             'kcls.address',
             'kcls.address.autocomplete',
             'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
-            {"state_filter": "WA", "search": filterValue, "limit": limit}
+            search
         ).pipe(
             map(suggestion => {
                 //console.debug('Found matching address', suggestion);
                 let addr: AddressSuggestion = suggestion as AddressSuggestion;
 
-                if (addr.entries > 0) {
+                if (addr.entries > 1) {
                     // A building with multiple unit/apartment entries.  Show
                     // the entry count so the user knows to refine further.
                     addr.full_string =

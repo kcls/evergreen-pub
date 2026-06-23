@@ -144,10 +144,13 @@
         <div *ngIf="!resLookupLoading && resAddressSuggestions.length > 0" class="res-addr-list">
           <h3 class="res-addr-list-label" i18n>Select Your Address</h3>
           <button mat-stroked-button type="button" class="res-addr-option"
-              *ngFor="let addr of resAddressSuggestions"
+              *ngFor="let addr of resAddressSuggestions | slice:0:5"
               (click)="selectResAddress(addr)">
             {{addr.full_string}}
           </button>
+          <div class="res-addr-more" *ngIf="resAddressSuggestions.length > 5" i18n>
+            Showing 5 of {{resAddressSuggestions.length}} matches. Refine your search to narrow results.
+          </div>
         </div>
         <div *ngIf="!resLookupLoading && resLookupNotFound" class="res-addr-notfound mat-mdc-form-field-error" i18n>
           We couldn't find that address. Please check your entry.
@@ -198,10 +201,13 @@
           <div *ngIf="!mailLookupLoading && mailAddressSuggestions.length > 0" class="res-addr-list">
             <h3 class="res-addr-list-label" i18n>Select Your Address</h3>
             <button mat-stroked-button type="button" class="res-addr-option"
-                *ngFor="let addr of mailAddressSuggestions"
+                *ngFor="let addr of mailAddressSuggestions | slice:0:5"
                 (click)="selectMailAddress(addr)">
               {{addr.full_string}}
             </button>
+            <div class="res-addr-more" *ngIf="mailAddressSuggestions.length > 5" i18n>
+              Showing 5 of {{mailAddressSuggestions.length}} matches. Refine your search to narrow results.
+            </div>
           </div>
           <div *ngIf="!mailLookupLoading && mailLookupNotFound" class="res-addr-notfound mat-mdc-form-field-error" i18n>
             We couldn't find that address. Please check your entry.
