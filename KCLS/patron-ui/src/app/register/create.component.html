@@ -108,7 +108,7 @@
   </div>
 
   <div class="columns-1 mt-6">
-    <p class="mt-2 mb-2">Start typing an address, for example: 960 Newport Way</p>
+    <p class="mt-2 mb-2">Start typing an address...
     <mat-form-field class="w-full">
       <mat-label>Street Address</mat-label>
       <input type="text"
@@ -148,8 +148,8 @@
               (click)="selectResAddress(addr)">
             {{addr.full_string}}
           </button>
-          <div class="res-addr-more" *ngIf="resAddressSuggestions.length > 5" i18n>
-            Showing 5 of {{resAddressSuggestions.length}} matches. Refine your search to narrow results.
+          <div class="res-addr-more ml-2 mt-2" *ngIf="resAddressSuggestions.length > 5" i18n>
+            ... {{resAddressSuggestions.length - 5}} more are returned by not shown here. Refine your search to narrow results.
           </div>
         </div>
         <div *ngIf="!resLookupLoading && resLookupNotFound" class="res-addr-notfound mat-mdc-form-field-error" i18n>
