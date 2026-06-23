@@ -752,6 +752,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // Suppress events so applying a selection doesn't re-trigger the
         // lookup / immediate de-select (see residential equivalent).
         this.formGroup.controls.mailingStreet1.setValue(addr.street_line, {emitEvent: false});
+        this.formGroup.controls.mailingStreet2.setValue(addr.secondary || '', {emitEvent: false});
         this.formGroup.controls.mailingCity.setValue(addr.city, {emitEvent: false});
         this.formGroup.controls.mailingState.setValue(addr.state, {emitEvent: false});
         this.formGroup.controls.mailingZipCode.setValue(addr.zipcode, {emitEvent: false});
@@ -762,10 +763,41 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         return ('' + (this.formGroup.controls.mailingStreet1.value ?? '')).trim();
     }
 
+    // Choose a mailing suggestion.  A building with multiple entries is
+    // drilled into via a second autocomplete; otherwise the address is
+    // applied and the chooser collapses.
     selectMailAddress(addr: AddressSuggestion) {
+        if (addr.entries > 1) {
+            this.refineMailAddress(addr);
+            return;
+        }
+
         this.selectedMailAddress = addr.full_string || '';
         this.populateMailAddrFromSuggestion();
         this.mailAddressSelected = true;
+    }
+
+    // Mailing equivalent of refineResAddress: drill into the unit/apartment
+    // entries of a multi-entry address via the API's secondary expansion.
+    refineMailAddress(addr: AddressSuggestion) {
+        const search = `${addr.street_line} ${addr.secondary} `;
+        const selected =
+            `${addr.street_line} ${addr.secondary} (${addr.entries}) `
+            + `${addr.city} ${addr.state} ${addr.zipcode}`;
+
+        // Keep the chooser open (no final selection yet) and show progress.
+        this.selectedMailAddress = '';
+        this.mailAddressSelected = false;
+        this.mailLookupNotFound = false;
+        this.mailLookupLoading = true;
+        this.mailAddressSuggestions = [];
+
+        this.addrStreet1Fitler(search, this.mailAddressSuggestions, selected).pipe(
+            catchError(() => of([] as string[]))
+        ).subscribe(() => {
+            this.mailLookupLoading = false;
+            this.mailLookupNotFound = this.mailAddressSuggestions.length === 0;
+        });
     }
 
     changeMailAddress() {
