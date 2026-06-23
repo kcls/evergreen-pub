@@ -72,6 +72,8 @@ sub register {
     # If we have an address_exception_id value in the payload use that
     # to find the address in the DB directly.
 
+    # TODO verify herein no existing account is present (prevent api abuse).
+
     if ($values->{requested_account_type} eq 'full') {
         return create_pending_account($values);
     } elsif ($values->{requested_account_type} eq 'ecard') {
