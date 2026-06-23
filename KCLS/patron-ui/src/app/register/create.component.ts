@@ -54,9 +54,14 @@ interface ApiResponse {
 
 interface AddressSuggestion {
     street_line: string,
+    // Unit / apartment designator (e.g. "Apt 4") returned by the address API.
+    secondary: string,
     city: string,
     state: string,
     zipcode: string,
+    // Number of secondary (unit/apartment) addresses within this primary
+    // address.  When > 0 the suggestion is a building the user must refine.
+    entries: number,
     full_string?: string,
     home_ou?: number,
     is_exception?: boolean,
@@ -619,6 +624,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // Suppress value-change events so writing these fields doesn't
         // re-trigger the suggestion lookup (which would clear the selection).
         this.formGroup.controls.street1.setValue(addr.street_line, {emitEvent: false});
+        this.formGroup.controls.street2.setValue(addr.secondary || '', {emitEvent: false});
         this.formGroup.controls.city.setValue(addr.city, {emitEvent: false});
         this.formGroup.controls.state.setValue(addr.state, {emitEvent: false});
         this.formGroup.controls.zipCode.setValue(addr.zipcode, {emitEvent: false});
@@ -783,12 +789,39 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         return ('' + (this.formGroup.controls.street1.value ?? '')).trim();
     }
 
-    // Choose a suggestion: apply it to the address fields (which resolves the
-    // home library / district) and collapse the chooser.
+    // Choose a suggestion.  A building with multiple entries is drilled into
+    // via a second autocomplete; otherwise the address is applied (which
+    // resolves the home library / district) and the chooser collapses.
     selectResAddress(addr: AddressSuggestion) {
+        if (addr.entries > 0) {
+            this.refineResAddress(addr);
+            return;
+        }
+
         this.selectedResAddress = addr.full_string || '';
         this.populateResAddrFromSuggestion();
         this.addressSelected = true;
+    }
+
+    // Drill into the unit/apartment entries of a multi-entry address by
+    // re-running the autocomplete.  Appending the street + secondary and an
+    // open paren asks the address API to expand the building's entries.
+    refineResAddress(addr: AddressSuggestion) {
+        const search = `${addr.street_line} ${addr.secondary} ( `;
+
+        // Keep the chooser open (no final selection yet) and show progress.
+        this.selectedResAddress = '';
+        this.addressSelected = false;
+        this.resLookupNotFound = false;
+        this.resLookupLoading = true;
+        this.resAddressSuggestions = [];
+
+        this.addrStreet1Fitler(search, this.resAddressSuggestions, 10).pipe(
+            catchError(() => of([] as string[]))
+        ).subscribe(() => {
+            this.resLookupLoading = false;
+            this.resLookupNotFound = this.resAddressSuggestions.length === 0;
+        });
     }
 
     // Re-open the chooser to pick a different address.  The previously
@@ -815,7 +848,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         c.zipCode.setValue('', {emitEvent: false});
     }
 
-    private addrStreet1Fitler(value: string, suggestions: AddressSuggestion[]): Observable<string[]> {
+    private addrStreet1Fitler(
+        value: string, suggestions: AddressSuggestion[], limit: number = 7): Observable<string[]> {
         const filterValue = value.toLowerCase();
 
         if (!value || value.length < 5) { return EMPTY; }
@@ -829,12 +863,24 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             'kcls.address',
             'kcls.address.autocomplete',
             'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
-            {"state_filter": "WA", "search": filterValue, "limit": 7}
+            {"state_filter": "WA", "search": filterValue, "limit": limit}
         ).pipe(
             map(suggestion => {
                 //console.debug('Found matching address', suggestion);
                 let addr: AddressSuggestion = suggestion as AddressSuggestion;
-                addr.full_string = `${addr.street_line} ${addr.city}, ${addr.state} ${addr.zipcode}`;
+
+                if (addr.entries > 0) {
+                    // A building with multiple unit/apartment entries.  Show
+                    // the entry count so the user knows to refine further.
+                    addr.full_string =
+                        `${addr.street_line} ${addr.secondary} (${addr.entries}) `
+                        + `${addr.city}, ${addr.state} ${addr.zipcode}`;
+                } else {
+                    const secondary = addr.secondary ? `${addr.secondary} ` : '';
+                    addr.full_string =
+                        `${addr.street_line} ${secondary}${addr.city}, ${addr.state} ${addr.zipcode}`;
+                }
+
                 suggestions.push(addr);
                 return addr.full_string;
             }),
