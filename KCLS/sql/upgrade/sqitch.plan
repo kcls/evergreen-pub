@@ -30,3 +30,4 @@
 0025-pcrud-security-patches [0024-collection-hq-refresh] 2026-04-13T18:23:06Z berick <berick@kcls24> # pcrud patches
 0026-sip-sorter-configs [0025-pcrud-security-patches] 2026-04-27T14:20:18Z Bill Erickson <berick@orbit> # sorter configs
 0027-tote-checkin-sip-configs [0026-sip-sorter-configs] 2026-05-06T21:23:04Z Bill Erickson <berick@orbit> # tote checkin sip configs
+0028-collection-hq-aged-circs [0027-tote-checkin-sip-configs] 2026-06-25T21:23:31Z Bill Erickson <berick@orbit> # see code
