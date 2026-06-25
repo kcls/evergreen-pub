@@ -68,6 +68,8 @@ interface AddressSuggestion {
     exception_id?: number,
     is_allowed?: boolean,
     district_of_residence?: string,
+    is_viable_mailing?: boolean,
+    is_viable_residential?: boolean,
 }
 
 
@@ -131,6 +133,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     resLookupNotFound = false;
     resLookupLoading = false;
 
+    // Set when the chosen residential address is not usable as a residence
+    // (e.g. a commercial address, PO box, or mail-receiving agency).
+    resAddressNotViable = false;
+
     mailAddressSuggestions: AddressSuggestion[] = [];
     selectedMailAddress = '';
 
@@ -138,6 +144,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     mailAddressSelected = false;
     mailLookupNotFound = false;
     mailLookupLoading = false;
+
+    // Set when the chosen mailing address is not usable for mail delivery.
+    mailAddressNotViable = false;
 
     maybeDupeAccount: boolean | null = null;
 
@@ -315,7 +324,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         if (this.stepper?.selectedIndex !== 0) { return true; }
 
         const mailingOk =
-            !!this.formGroup.controls.mailingIsSame.value || !!this.selectedMailAddress;
+            !!this.formGroup.controls.mailingIsSame.value ||
+            (!!this.selectedMailAddress && !this.mailAddressNotViable);
 
         return this.calculatedHomeOrg != null && mailingOk;
     }
@@ -635,12 +645,31 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.applyHomeOrgFromAddr(addr);
     }
 
+    // Look up the normalized details for a chosen address.  The response
+    // carries the geocode (metadata.latitude/longitude) plus viability flags
+    // (is_viable_residential / is_viable_mailing).
+    lookupAddress(addr: AddressSuggestion): Promise<any> {
+        return this.gateway.requestOne(
+            'kcls.address',
+            'kcls.address.lookup',
+            'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
+            {
+                street: addr.street_line,
+                secondary: addr.secondary,
+                city: addr.city,
+                state: addr.state,
+                zipcode: addr.zipcode,
+            }
+        );
+    }
+
     applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<any> {
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;
         this.reportedLatitude = null;
         this.reportedLongitude = null;
         this.addressExceptionId = null;
+        this.resAddressNotViable = false;
 
         if (addr.is_exception) {
             // Address exceptions contain the calcualted home org and
@@ -665,18 +694,16 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // In theory the tested address should return a single result
         // since the address provided is a normalized value returned
         // from the address API.
-        return this.gateway.requestOne(
-            'kcls.address',
-            'kcls.address.lookup',
-            'TODOTODOTODOTODO', // TODO
-            {
-                street: addr.street_line,
-                city: addr.city,
-                state: addr.state,
-                zipcode: addr.zipcode,
-            }
-        ).then(found => {
+        return this.lookupAddress(addr).then(found => {
             if (!found) { return; }
+
+            if ((found as any).is_viable_residential === false) {
+                // Not usable as a residence; surface a message and skip the
+                // home-org / district lookups, which don't apply.  With no
+                // home org resolved the user cannot continue.
+                this.resAddressNotViable = true;
+                return;
+            }
 
             const latitude = (found as any).metadata.latitude;
             const longitude = (found as any).metadata.longitude;
@@ -775,6 +802,19 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.selectedMailAddress = addr.full_string || '';
         this.populateMailAddrFromSuggestion();
         this.mailAddressSelected = true;
+        this.checkMailingViability(addr);
+    }
+
+    // Verify the chosen mailing address is usable for mail delivery.
+    checkMailingViability(addr: AddressSuggestion): Promise<any> {
+        this.mailAddressNotViable = false;
+
+        return this.lookupAddress(addr).then(found => {
+            if (!found) { return; }
+            if ((found as any).is_viable_mailing === false) {
+                this.mailAddressNotViable = true;
+            }
+        });
     }
 
     // Mailing equivalent of refineResAddress: drill into the unit/apartment
@@ -807,6 +847,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     deselectMailAddress() {
         this.mailAddressSelected = false;
         this.selectedMailAddress = '';
+        this.mailAddressNotViable = false;
 
         const c = this.formGroup.controls;
         c.mailingStreet2.setValue('', {emitEvent: false});
@@ -871,6 +912,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     deselectResAddress() {
         this.addressSelected = false;
         this.selectedResAddress = '';
+        this.resAddressNotViable = false;
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;
         this.reportedLatitude = null;
@@ -910,7 +952,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             search
         ).pipe(
             map(suggestion => {
-                //console.debug('Found matching address', suggestion);
+                // console.debug('Found matching address', suggestion);
                 let addr: AddressSuggestion = suggestion as AddressSuggestion;
 
                 if (addr.entries > 1) {

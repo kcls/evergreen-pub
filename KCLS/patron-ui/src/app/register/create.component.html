@@ -134,6 +134,10 @@
             Choose a different address
           </button>
         </div>
+        <div *ngIf="resAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+          This address can't be used as a residential address. Please choose a
+          different address.
+        </div>
       </ng-container>
 
       <ng-template #resAddrChooser>
@@ -190,6 +194,10 @@
             <button mat-button type="button" (click)="changeMailAddress()" i18n>
               Choose a different address
             </button>
+          </div>
+          <div *ngIf="mailAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+            This address can't be used as a mailing address. Please choose a
+            different address.
           </div>
         </ng-container>
 
