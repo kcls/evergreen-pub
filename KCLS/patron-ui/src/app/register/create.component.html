@@ -308,7 +308,7 @@
           </ng-container>
           <ng-container *ngIf="wantsAllAccess()">
             <ng-container *ngIf="wantsEmailNotices()">
-              Email is required for email notices.
+              Email is <b>required</b> for email notices.
             </ng-container>
             <ng-container *ngIf="!wantsEmailNotices()">
               All-access library cards require either a phone number or email address.
@@ -333,7 +333,7 @@
         </mat-error>
         <mat-error *ngIf="formGroup.controls.phone.hasError('required')" i18n>
           <ng-container *ngIf="wantsPhoneNotices()">
-            Phone Number is required for phone notices
+            Phone Number is <b>required</b> for phone notices.
           </ng-container>
           <ng-container *ngIf="!wantsPhoneNotices()">
             All-access library cards require either a phone number or email address.
