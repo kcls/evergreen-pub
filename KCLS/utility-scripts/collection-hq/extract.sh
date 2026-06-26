@@ -31,7 +31,9 @@ function format_data {
 
 function upload_data {
     gzip --best $FILE
-    scp $FILE.gz $SFTPSITE
+    # SCP does not work for this site.
+    # scp $FILE.gz $SFTPSITE
+    echo "put $FILE.gz $FILE.gz" | sftp $SFTPSITE
 }
 
 function clean_up {
