@@ -11,6 +11,7 @@ import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {RegisterService} from './register.service';
+import {CaptchaSessionService} from '../captcha-session.service';
 //import {MatStepper} from '@angular/material/stepper';
 
 const JUV_AGE = 18; // years
@@ -283,9 +284,24 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         private settings: Settings,
         public register: RegisterService,
         private cdRef: ChangeDetectorRef,
+        private captcha: CaptchaSessionService,
     ) {
         this.juvMinDob = new Date();
         this.juvMinDob.setFullYear(new Date().getFullYear() - JUV_AGE);
+    }
+
+    // All kcls.address.* calls require a CAPTCHA-minted session token as
+    // their first parameter.  These helpers inject the current token
+    // (minting one on demand) so call sites don't repeat the plumbing.
+    private addressRequest(method: string, ...params: unknown[]): Observable<unknown> {
+        return from(this.captcha.getToken()).pipe(
+            switchMap(token => this.gateway.request('kcls.address', method, token, ...params))
+        );
+    }
+
+    private addressRequestOne(method: string, ...params: unknown[]): Promise<unknown> {
+        return this.captcha.getToken().then(token =>
+            this.gateway.requestOne('kcls.address', method, token, ...params));
     }
 
     ngAfterViewInit() {
@@ -331,6 +347,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     ngOnInit() {
+
+        // Mint a CAPTCHA session token up front so the first address lookup
+        // doesn't wait on the challenge.  Errors surface when a call needs it.
+        this.captcha.getToken().catch(() => {});
 
         // URL -> stepper: keep the active section in sync with the route
         // so deep links and the browser back/forward buttons work.
@@ -649,18 +669,13 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     // carries the geocode (metadata.latitude/longitude) plus viability flags
     // (is_viable_residential / is_viable_mailing).
     lookupAddress(addr: AddressSuggestion): Promise<any> {
-        return this.gateway.requestOne(
-            'kcls.address',
-            'kcls.address.lookup',
-            'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
-            {
-                street: addr.street_line,
-                secondary: addr.secondary,
-                city: addr.city,
-                state: addr.state,
-                zipcode: addr.zipcode,
-            }
-        );
+        return this.addressRequestOne('kcls.address.lookup', {
+            street: addr.street_line,
+            secondary: addr.secondary,
+            city: addr.city,
+            state: addr.state,
+            zipcode: addr.zipcode,
+        });
     }
 
     applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<any> {
@@ -713,20 +728,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             this.reportedLongitude = longitude;
 
             return Promise.all([
-                this.gateway.requestOne(
-                    'kcls.address',
-                    'kcls.address.home-org',
-                    'TODO',
-                    latitude,
-                    longitude
-                ),
-                this.gateway.requestOne(
-                    'kcls.address',
-                    'kcls.address.district-of-residence',
-                    'TODO',
-                    latitude,
-                    longitude
-                )
+                this.addressRequestOne('kcls.address.home-org', latitude, longitude),
+                this.addressRequestOne('kcls.address.district-of-residence', latitude, longitude)
             ]).then(([homeOrg, district]) => {
                 this.applyOrgAndDistrictValues(homeOrg as number, district as string);
             });
@@ -945,12 +948,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // 'selected' drives the API's secondary (unit/apartment) expansion.
         if (selected) { search['selected'] = selected; }
 
-        return this.gateway.request(
-            'kcls.address',
-            'kcls.address.autocomplete',
-            'TODOTODOTODOTODO', // TODO request a session token tied to CAPTCHA
-            search
-        ).pipe(
+        return this.addressRequest('kcls.address.autocomplete', search).pipe(
             map(suggestion => {
                 // console.debug('Found matching address', suggestion);
                 let addr: AddressSuggestion = suggestion as AddressSuggestion;
