@@ -1135,6 +1135,9 @@ sub capture_reservation {
             $transit->source($here);
             $transit->dest($reservation->pickup_lib);
 
+            $transit->created_at('now'); # will later default
+            $transit->orig_source($here);
+
             $e->create_action_reservation_transit_copy($transit);
 
             if ($U->is_true(

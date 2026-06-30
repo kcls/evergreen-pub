@@ -144,6 +144,9 @@ sub copy_transit_create {
     $transit->target_copy($copy->id);
     $transit->source_send_time("now");
     $transit->copy_status($copy->status);
+
+    $transit->created_at('now'); # will later default
+    $transit->orig_source($source);
     
     $logger->debug("Creating new copy_transit in DB");
 

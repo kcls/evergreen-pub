@@ -1498,6 +1498,10 @@ sub transit_hold {
     $transit->dest($dest);
     $transit->target_copy($copy->id);
     $transit->source_send_time('now');
+
+    $transit->created_at('now'); # will later default
+    $transit->orig_source($src);
+
     $transit->copy_status(OILS_COPY_STATUS_ON_HOLDS_SHELF);
 
     $copy->status(OILS_COPY_STATUS_IN_TRANSIT);

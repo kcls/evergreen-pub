@@ -3638,6 +3638,9 @@ sub checkin_build_copy_transit {
     $transit->source_send_time('now');
     $transit->copy_status( $U->copy_status($copy->status)->id );
 
+    $transit->created_at('now'); # will later default
+    $transit->orig_source($self->circ_lib);
+
     $logger->debug("circulator: setting copy status on transit: ".$transit->copy_status);
 
     if ($self->remote_hold) {
@@ -3927,6 +3930,9 @@ sub checkin_build_hold_transit {
    $trans->source_send_time("now");
    $trans->target_copy($copy->id);
 
+    $transit->created_at('now'); # will later default
+    $transit->orig_source($self->circ_lib);
+
     # when the copy gets to its destination, it will recover
     # this status - put it onto the holds shelf
    $trans->copy_status(OILS_COPY_STATUS_ON_HOLDS_SHELF);
@@ -4035,6 +4041,7 @@ sub kcls_update_track_intermediate_transit {
     $transit = $e->retrieve_action_transit_copy($transit_id) or return $e->die_event;
     my $old_send_time = $transit->source_send_time;
 
+    # Avoid modifying created_at or orig_source here.
     $transit->source($self->circ_lib);
     $transit->source_send_time('now');
 
