@@ -2,6 +2,7 @@
 -- requires: 0027-tote-checkin-sip-configs
 
 -- PHASE I
+-- No transaction needed/wanted for the first section of the update.
 
 SELECT 'Creating columns', CLOCK_TIMESTAMP();
 
@@ -9,14 +10,10 @@ ALTER TABLE action.transit_copy
     ADD COLUMN orig_source INTEGER REFERENCES actor.org_unit(id),
     ADD COLUMN created_at TIMESTAMPTZ;
 
-COMMIT;
-
 -- PHASE II
 -- Backfill data for all transits.
 -- ~135M rows — run outside a transaction in chunks to avoid
 -- excessive DB churn and lock contention.
-
-SELECT 'Updating rows', CLOCK_TIMESTAMP();
 
 DO $$
 DECLARE
