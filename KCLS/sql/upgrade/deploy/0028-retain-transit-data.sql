@@ -4,6 +4,8 @@
 -- PHASE I
 -- No transaction needed/wanted for the first section of the update.
 
+SET STATEMENT_TIMEOUT = 0;
+
 SELECT 'Creating columns', CLOCK_TIMESTAMP();
 
 ALTER TABLE action.transit_copy
@@ -12,12 +14,12 @@ ALTER TABLE action.transit_copy
 
 -- PHASE II
 -- Backfill data for all transits.
--- ~135M rows — run outside a transaction in chunks to avoid
--- excessive DB churn and lock contention.
+-- ~135M rows — each batch commits independently to avoid
+-- long-running transactions and excessive DB churn.
 
 DO $$
 DECLARE
-    batch_size INTEGER := 50000;
+    batch_size INTEGER := 25000;
     rows_updated INTEGER;
     total_updated INTEGER := 0;
 BEGIN
@@ -35,11 +37,14 @@ BEGIN
 
         EXIT WHEN rows_updated = 0;
 
+        -- DO blocks run in a transaction. 
+        -- commit during each iteration so the full update is not 
+        -- run within a single transaction
+        COMMIT;
+
         total_updated := total_updated + rows_updated;
 
         RAISE NOTICE '% Updated % rows (% total)', CLOCK_TIMESTAMP(), rows_updated, total_updated;
-
-        PERFORM pg_sleep(0.5);
     END LOOP;
 
     RAISE NOTICE '% Backfill complete. Total rows updated: %', CLOCK_TIMESTAMP(), total_updated;
