@@ -3930,8 +3930,8 @@ sub checkin_build_hold_transit {
    $trans->source_send_time("now");
    $trans->target_copy($copy->id);
 
-    $transit->created_at('now'); # will later default
-    $transit->orig_source($self->circ_lib);
+   $trans->created_at('now'); # will later default
+   $trans->orig_source($self->circ_lib);
 
     # when the copy gets to its destination, it will recover
     # this status - put it onto the holds shelf
