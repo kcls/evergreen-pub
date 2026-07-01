@@ -1,0 +1,5 @@
+BEGIN;
+
+DROP FUNCTION REPLACE FUNCTION action.relay_copy_transit(INT, INT);
+
+COMMIT;
