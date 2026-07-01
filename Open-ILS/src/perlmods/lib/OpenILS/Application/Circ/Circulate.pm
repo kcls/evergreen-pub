@@ -3967,7 +3967,7 @@ sub process_received_transit {
 
         my $dest = $transit->dest;
 
-        my $evt = $self->kcls_update_track_intermediate_transit($transit);
+        my $evt = $self->kcls_relay_copy_transit($transit);
         return $self->bail_on_events($evt) if $evt;
 
         $evt = OpenILS::Event->new('ROUTE_ITEM', org => $dest, payload => {});
@@ -4016,7 +4016,7 @@ sub process_received_transit {
     return $hold_transit;
 }
 
-sub kcls_update_track_intermediate_transit {
+sub kcls_relay_copy_transit {
     my ($self, $transit) = @_;
 
     my $transit_id = $transit->id;
@@ -4025,29 +4025,25 @@ sub kcls_update_track_intermediate_transit {
     my $copy_id = $self->copy->id;
 
     # The code branch this is called from returns a bail_on_events which
-    # rolls back the active transaction and any changes made up until
-    # now.  To avoid introducing possible breakage with changing that
+    # rolls back the active transaction.  I.e. these changes would always
+    # be lost.  To avoid introducing possible breakage with changing that
     # behavior, and since the code is about to exit anyway, update 
     # transit/copy in its own transaction.
     my $e = new_editor(xact => 1, requestor => $self->editor->requestor);
 
-    # Get an up to date copy.
-    $transit = $e->retrieve_action_transit_copy($transit_id) or return $e->die_event;
-    my $old_send_time = $transit->source_send_time;
+    my $new_transit_id = $e->json_query({
+        from => ['action.relay_copy_transit', $transit_id, $loc]
+    })->[0]->{'action.relay_copy_transit'};
 
-    $transit->source($self->circ_lib);
-    $transit->source_send_time('now');
-
-    $e->update_action_transit_copy($transit) or return $e->die_event;
-    $transit = $e->retrieve_action_transit_copy($transit_id) or return $e->die_event;
+    # Fetch a copy of the new transit.
+    $transit = $e->retrieve_action_transit_copy($new_transit_id) or return $e->die_event;
 
     # Track the updated transit since it gets returned to the caller.
     $self->transit($transit);
 
     $logger->info("circulator: Fowarding transit on copy which is destined ".
-        "for a different location. transit=$transit_id, copy=$copy_id, current ".
-        "location=$loc, destination location=$transit_dest; replaced original ".
-        "send time of $old_send_time");
+        "for a different location. transit=$transit_id, new_transit=$new_transit_id, ".
+        "copy=$copy_id, current location=$loc, destination location=$transit_dest");
 
     # grab the associated hold object if available
     my $ht = $e->retrieve_action_hold_transit_copy($transit_id);
