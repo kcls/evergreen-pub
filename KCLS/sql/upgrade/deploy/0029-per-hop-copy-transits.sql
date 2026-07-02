@@ -26,12 +26,14 @@ BEGIN
         RAISE EXCEPTION 'Transit % is cancelled', old_transit_id;
     END IF;
 
-    IF old_transit.dest == relay_org THEN
+    IF old_transit.dest = relay_org THEN
         RAISE EXCEPTION 'Transit % has arrived; cannot relay', old_transit_id;
     END IF;
 
-    IF old_transit.source == relay_org THEN
-        RAISE EXCEPTION 'Transit % source already matches relay org; cannot relay', old_transit_id;
+    IF old_transit.source = relay_org THEN
+        -- Item is transiting from the original transit source.
+        -- Re-use the original transit.
+        RETURN old_transit_id;
     END IF;
 
     -- Determine if this is a hold or reservation transit
