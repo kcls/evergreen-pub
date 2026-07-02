@@ -279,18 +279,20 @@ my @full_source_fields = qw(
     pubdate
     item_lang
     identifier|isbn
+    metarecord
+    audience
+    lit_form
 );
+
+my $max_full_size = 100;
 
 __PACKAGE__->register_method(
     method   => 'bib_search_full',
-    api_name => 'open-ils.search.elastic.bib_search.full.staff',
+    api_name => 'open-ils.search.elastic.bib_search.full',
     signature => {
-        desc => q/
-            Staff-only variant of open-ils.search.elastic.bib_search that
-            returns bib metadata fields (title, author, format, date,
-            ISBN, etc.) in each result's _source, allowing external staff
-            integrations to retrieve search results in a single round-trip.
-        /,
+        desc => q/Variant of open-ils.search.elastic.bib_search that returns bib
+            metadata fields in each result's _source, so an external integration
+            can retrieve search results in a single round-trip./,
         params => [
             {type => 'object', query => q/Elastic-compatible search query struct.
                 See open-ils.search.elastic.bib_search for query examples./},
@@ -314,6 +316,12 @@ __PACKAGE__->register_method(
     }
 );
 
+__PACKAGE__->register_method(
+    method   => 'bib_search_full',
+    api_name => 'open-ils.search.elastic.bib_search.full.staff',
+    signature => {desc => q/Staff version of open-ils.search.elastic.bib_search.full /}
+);
+
 sub bib_search_full {
     my ($self, $client, $query, $options) = @_;
     $options ||= {};
@@ -327,6 +335,10 @@ sub bib_search_full {
     # Return bib metadata fields along with the id so callers receive
     # everything they need in a single response.
     $query->{_source} = ['id', @full_source_fields];
+
+    if (defined $query->{size} && $query->{size} > $max_full_size) {
+        $query->{size} = $max_full_size;
+    }
 
     # ES 7 or 8 started limiting the total hits scanned to 10k.
     # We want everything all the time.
