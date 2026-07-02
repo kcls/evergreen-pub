@@ -264,6 +264,120 @@ sub bib_search {
     };
 }
 
+# ---------------------------------------------------------------
+# Full search: returns bib metadata fields in _source so that
+# external tools can get search results in a single call.
+# ---------------------------------------------------------------
+my @full_source_fields = qw(
+    title|maintitle
+    author|combined
+    subject|combined
+    series|seriestitle
+    search_format
+    item_type
+    date1
+    pubdate
+    item_lang
+    identifier|isbn
+    metarecord
+    audience
+    lit_form
+);
+
+my $max_full_size = 100;
+
+__PACKAGE__->register_method(
+    method   => 'bib_search_full',
+    api_name => 'open-ils.search.elastic.bib_search.full',
+    signature => {
+        desc => q/Variant of open-ils.search.elastic.bib_search that returns bib
+            metadata fields in each result's _source, so an external integration
+            can retrieve search results in a single round-trip./,
+        params => [
+            {type => 'object', query => q/Elastic-compatible search query struct.
+                See open-ils.search.elastic.bib_search for query examples./},
+            {type => 'object', options => q/
+                Hash of additional search options:
+
+                    search_org - Holdings filter org unit ID.
+
+                    search_depth - Holdings filter search depth.
+
+                    available - Ensure that at least one item is
+                        considered available within the search scope.
+
+                    disable_facets - If true, disable ES aggregations
+            /}
+        ],
+        return => {
+            desc => q/A search result object whose 'ids' array contains
+                tuples of [bib_id, _source_fields, score]./
+        }
+    }
+);
+
+__PACKAGE__->register_method(
+    method   => 'bib_search_full',
+    api_name => 'open-ils.search.elastic.bib_search.full.staff',
+    signature => {desc => q/Staff version of open-ils.search.elastic.bib_search.full /}
+);
+
+sub bib_search_full {
+    my ($self, $client, $query, $options) = @_;
+    $options ||= {};
+
+    init();
+
+    my $staff = ($self->api_name =~ /staff/);
+
+    return {count => 0, ids => []} unless $query && $query->{query};
+
+    # Return bib metadata fields along with the id so callers receive
+    # everything they need in a single response.
+    $query->{_source} = ['id', @full_source_fields];
+
+    if (defined $query->{size} && $query->{size} > $max_full_size) {
+        $query->{size} = $max_full_size;
+    }
+
+    # ES 7 or 8 started limiting the total hits scanned to 10k.
+    # We want everything all the time.
+    $query->{track_total_hits} = $track_total_hits;
+
+    my $elastic_query = compile_elastic_query($query, $options, $staff);
+
+    my $es = OpenILS::Elastic::BibSearch->new;
+    $es->connect;
+
+    my $results = $es->search($elastic_query);
+
+    $logger->debug("ES elasticsearch returned: ".
+        OpenSRF::Utils::JSON->perl2JSON($results));
+
+    return {count => 0, ids => []} unless $results;
+
+    my $cache_key = md5_hex(OpenSRF::Utils::JSON->perl2JSON($elastic_query));
+
+    my $hits = $results->{hits}->{hits};
+
+    my $ids = [
+        map {[
+            $_->{_id},
+            $_->{_source},
+            $_->{_score}
+        ]} @$hits
+    ];
+
+    return {
+        ids => $ids,
+        count => $results->{hits}->{total}->{value},
+        suggest => $results->{suggest},
+        facets => format_facets($results->{aggregations}),
+        cache_key => $cache_key,
+        facet_key => $cache_key.'_facets'
+    };
+}
+
 sub compile_elastic_query {
     my ($elastic, $options, $staff) = @_;
 
