@@ -221,8 +221,8 @@ sub handle_addresses {
                 $mail_addr->street1, $mail_addr->street2);
 
         $mstreet1 .= " #$mstreet2" if $mstreet2;
-        $bill_addr->street1($mstreet1);
-        $bill_addr->clear_street2;
+        $mail_addr->street1($mstreet1);
+        $mail_addr->clear_street2;
     }
 
     return ($bill_addr, $mail_addr);
