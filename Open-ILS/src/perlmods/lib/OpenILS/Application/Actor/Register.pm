@@ -12,8 +12,18 @@ use OpenILS::Utils::KCLSNormalize;
 use DateTime;
 use JSON;
 use Data::Dumper;
+use OpenSRF::Utils::Cache;
 $Data::Dumper::Indent = 0;
 my $U = "OpenILS::Application::AppUtils";
+
+my $CACHE_KEY_PFX = 'kcls.captcha.session.';
+
+# District-of-residence value that denotes an in-district (KCLS) patron.
+# The leading space is intentional and mirrors the value used elsewhere.
+my $MAIN_DISTRICT = ' KCLS';
+
+# Stat cat carrying the district-of-residence value in the payload.
+my $DISTRICT_STAT_CAT = 12;
 
 # We only allow certain user values to be provided by the caller.
 my @USER_FIELDS = (
@@ -59,29 +69,152 @@ __PACKAGE__->register_method(
 );
 
 sub register {
-    my ($self, $client, $captcha, $values) = @_;
+    my ($self, $client, $token, $values) = @_;
 
-    # TODO CAPTCHA / cache
+    return OpenILS::Event->new('BAD_PARAMS') unless $token && ref $values eq 'HASH';
 
-    return OpenILS::Event->new('BAD_PARAMS') unless ref $values eq 'HASH';
+    # A valid CAPTCHA-minted session token is required to register.  The token
+    # is created by the kcls.address service after Turnstile verification.
+    my $session = OpenSRF::Utils::Cache->new('global')
+        ->get_cache("$CACHE_KEY_PFX$token")
+        || return OpenILS::Event->new('UNAUTHORIZED');
+
+    if (my $evt = verify_address_values($token, $values)) {
+        return $evt;
+    }
 
     $logger->info("Patron self-reg: " . OpenSRF::Utils::JSON->perl2JSON($values));
 
-    # TODO call the address service with the final form of the selected
-    # address to verify the provided home org and district are valid.
-    # If we have an address_exception_id value in the payload use that
-    # to find the address in the DB directly.
-
     # TODO verify herein no existing account is present (prevent api abuse).
 
-    if ($values->{requested_account_type} eq 'full') {
-        return create_pending_account($values);
-    } elsif ($values->{requested_account_type} eq 'ecard') {
-        return create_ecard_account($values);
+    my $type = $values->{requested_account_type} // '';
+    my $response;
+
+    if ($type eq 'full') {
+        $response = create_pending_account($values);
+    } elsif ($type eq 'ecard') {
+        $response = create_ecard_account($values);
     } else {
         $logger->error("Invalid account type requested");
         return {success => 0};
     }
+
+    # One CAPTCHA solve authorizes one registration; invalidate the token so
+    # it cannot be replayed to create additional accounts.
+    if ($response && $response->{success}) {
+        OpenSRF::Utils::Cache->new('global')->delete_cache("$CACHE_KEY_PFX$token");
+    }
+
+    return $response;
+}
+
+sub verify_address_values {
+    my ($token, $values) = @_;
+
+    if (my $eid = $values->{address_exception_id}) {
+        my $e = new_editor();
+
+        # Verify the address exception is allowed.
+        my $addr = $e->retrieve_config_usr_address_exception($eid);
+
+        if (!$addr || !$U->is_true($addr->is_allowed)) {
+            $logger->error("Attempt to register with blocked address exc=$eid");
+            return OpenILS::Event->new('BAD_PARAMS');
+        }
+
+        # TODO: Verify the address exception matches the address values
+        # provided by the user.
+
+        return undef;
+    }
+
+    # Re-verify the submitted addresses server-side so the UI's checks cannot
+    # be bypassed.  We call the address service with the final address values
+    # rather than trusting anything the client computed.
+
+    # 1. Residential (billing) address must be viable as a residence.
+    my $res = lookup_address($token, $values->{billing_address} || {});
+
+    if (!$res || !$U->is_true($res->{is_viable_residential})) {
+        $logger->warn("Self-reg residential address is not viable");
+        return OpenILS::Event->new('BAD_PARAMS');
+    }
+
+    my $lat  = $res->{metadata} ? $res->{metadata}->{latitude}  : undef;
+    my $long = $res->{metadata} ? $res->{metadata}->{longitude} : undef;
+
+    if (!defined $lat || !defined $long) {
+        $logger->warn("Self-reg residential address has no coordinates");
+        return OpenILS::Event->new('BAD_PARAMS');
+    }
+
+    # Derive the authoritative home org and district from the coordinates.
+    my $home_ou = $U->simplereq(
+        'kcls.address', 'kcls.address.home-org', $token, $lat, $long);
+
+    my $district = $U->simplereq(
+        'kcls.address', 'kcls.address.district-of-residence', $token, $lat, $long);
+
+    # 2. Must fall within the service area (a district is required).
+    unless (defined $district && $district ne '') {
+        $logger->warn("Self-reg residential address has no district of residence");
+        return OpenILS::Event->new('BAD_PARAMS');
+    }
+
+    # 3. District must be compatible with the requested card type: e-cards are
+    # only offered to in-district (main) patrons; reciprocal districts require
+    # an all-access (full) card.  Mirrors the UI rule.
+    if ($district ne $MAIN_DISTRICT && ($values->{requested_account_type} // '') eq 'ecard') {
+        $logger->warn("Self-reg e-card requested for reciprocal district '$district'");
+        return OpenILS::Event->new('BAD_PARAMS');
+    }
+
+    # 4. The provided home org and district must match what the address
+    # actually resolves to (prevent injecting different values).
+    if (!defined $home_ou || ($values->{user}->{home_ou} // 0) != $home_ou) {
+        $logger->warn("Self-reg home_ou does not match resolved home org");
+        return OpenILS::Event->new('BAD_PARAMS');
+    }
+
+    my ($provided_district) =
+        map  { $_->{value} }
+        grep { $_->{stat_cat} == $DISTRICT_STAT_CAT } @{$values->{stat_cats} || []};
+
+    if (($provided_district // '') ne $district) {
+        $logger->warn("Self-reg district does not match resolved district");
+        return OpenILS::Event->new('BAD_PARAMS');
+    }
+
+    # 5. Mailing address, when provided (i.e. different from residential),
+    # must be viable for mail delivery.
+    my $mail = $values->{mailing_address} || {};
+    if ($mail->{street1}) {
+        my $mres = lookup_address($token, $mail);
+        if (!$mres || !$U->is_true($mres->{is_viable_mailing})) {
+            $logger->warn("Self-reg mailing address is not viable");
+            return OpenILS::Event->new('BAD_PARAMS');
+        }
+    }
+
+    return undef;
+}
+
+# Look up an address via the kcls.address service and return the best
+# candidate hash, or undef if none.  The candidate carries the is_viable_*
+# flags and metadata coordinates.
+sub lookup_address {
+    my ($token, $addr) = @_;
+
+    my $search = {
+        street  => $addr->{street1},
+        street2 => $addr->{street2},
+        city    => $addr->{city},
+        state   => $addr->{state},
+        zipcode => $addr->{post_code},
+    };
+
+    return $U->simplereq(
+        'kcls.address', 'kcls.address.lookup', $token, $search);
 }
 
 sub create_pending_account {
@@ -457,10 +590,14 @@ __PACKAGE__->register_method(
 );
 
 sub has_account {
-    my ($self, $client, $captcha, $values) = @_;
-    my $e = new_editor();
+    my ($self, $client, $token, $values) = @_;
+    return OpenILS::Event->new('BAD_PARAMS') unless $token && ref $values eq 'HASH';
 
-    # TODO CAPTCHA
+    my $session = OpenSRF::Utils::Cache->new('global')
+        ->get_cache("$CACHE_KEY_PFX.$token")
+        || return OpenILS::Event->new('UNAUTHORIZED');
+
+    my $e = new_editor();
 
     my $first_given_name = $values->{first_given_name};
     my $family_name = $values->{family_name};
