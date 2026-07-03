@@ -1,10 +1,6 @@
 import {Injectable} from '@angular/core';
 import {Gateway, Hash} from './gateway.service';
-
-// Public Cloudflare Turnstile site key.
-// TODO: replace with the real site key (and ideally source it from runtime
-// or build config rather than hard-coding).
-const TURNSTILE_SITEKEY = 'TODO_TURNSTILE_SITEKEY';
+import {ConfigService} from './config.service';
 
 // Explicit render mode so we control when the widget mounts and executes.
 const TURNSTILE_SCRIPT =
@@ -57,7 +53,7 @@ export class CaptchaSessionService {
     private waiters: MintWaiter[] = [];
     private minting = false;
 
-    constructor(private gateway: Gateway) {}
+    constructor(private gateway: Gateway, private config: ConfigService) {}
 
     /**
      * Designate where the Turnstile widget should render.  Optional: when a
@@ -176,7 +172,7 @@ export class CaptchaSessionService {
             }
 
             this.widgetId = window.turnstile!.render(this.container, {
-                sitekey: TURNSTILE_SITEKEY,
+                sitekey: this.config.turnstileSitekey,
                 // Only run the challenge when we call execute().
                 execution: 'execute',
                 // Stay invisible unless interaction is actually required.

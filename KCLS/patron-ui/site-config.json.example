@@ -1,0 +1,6 @@
+{
+    "_comment": "Site-wide runtime config served at /site-config.json. Provision this file once per cluster at <web_root>/site-config.json (e.g. /openils/var/web/site-config.json); it lives outside any app deploy tree so code deployments never overwrite it. The Turnstile sitekey is a public value. Use a per-environment widget: prod gets its own sitekey; non-prod can use a Cloudflare testing key (always-pass: 1x00000000000000000000AA).",
+    "turnstile": {
+        "sitekey": "1x00000000000000000000AA"
+    }
+}
