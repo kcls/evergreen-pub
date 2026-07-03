@@ -35,6 +35,26 @@ my $track_total_hits = 2000000;
 # avoid repetitive calls to DB for org info.
 my %org_data_cache = (ancestors_at => {});
 
+# bib fields returned in _source by the bib_search.full variants
+my @full_source_fields = qw(
+    title|maintitle
+    author|combined
+    subject|combined
+    series|seriestitle
+    search_format
+    item_type
+    date1
+    pubdate
+    item_lang
+    identifier|isbn
+    metarecord
+    audience
+    lit_form
+);
+
+my $max_full_size = 100;
+my $max_result_window = 10000; # ES index.max_result_window default
+
 # bib fields defined in the elastic bib-search index
 my $bib_fields;
 my $hidden_copy_statuses;
@@ -176,6 +196,22 @@ __PACKAGE__->register_method(
     signature => {desc => q/Staff version of open-ils.search.elastic.bib_search /}
 );
 
+__PACKAGE__->register_method(
+    method   => 'bib_search',
+    api_name => 'open-ils.search.elastic.bib_search.full',
+    signature => {
+        desc => q/Variant of open-ils.search.elastic.bib_search whose 'ids'
+            array contains tuples of [bib_id, _source_fields, score], so an
+            external integration can retrieve search results in a single round-trip./
+    }
+);
+
+__PACKAGE__->register_method(
+    method   => 'bib_search',
+    api_name => 'open-ils.search.elastic.bib_search.full.staff',
+    signature => {desc => q/Staff version of open-ils.search.elastic.bib_search.full /}
+);
+
 
 # Augment and relay an Elastic query to the Elasticsearch backend.
 # Translate search results into a structure consistent with a bib search
@@ -188,12 +224,27 @@ sub bib_search {
 
     my $staff = ($self->api_name =~ /staff/);
     my $meta = ($self->api_name =~ /metabib/);
+    my $full = ($self->api_name =~ /\.full/);
 
     return {count => 0, ids => []} unless $query && $query->{query};
 
     # Only ask ES to return the 'id' field from the source bibs in
     # the response object, since that's all we need.
-    $query->{_source} = [$meta ? 'metarecord' : 'id'];
+    $query->{_source} = $full ?
+        ['id', @full_source_fields] : [$meta ? 'metarecord' : 'id'];
+
+    if ($full) {
+        my $fsize = $query->{size};
+        $fsize = 10 unless defined $fsize && $fsize =~ /^\d+$/;
+        $fsize = $max_full_size if $fsize > $max_full_size;
+        my $ffrom = $query->{from};
+        $ffrom = 0 unless defined $ffrom && $ffrom =~ /^\d+$/;
+        $ffrom = $max_result_window - $fsize
+            if $ffrom + $fsize > $max_result_window;
+        $query->{size} = $fsize;
+        $query->{from} = $ffrom;
+        $options->{disable_facets} = 1 unless exists $options->{disable_facets};
+    }
 
     # ES 7 or 8 started limiting the total hits scanned to 10k.
     # We want everything all the time.
@@ -248,129 +299,17 @@ sub bib_search {
 
     my $ids = [
         map {[
-            $meta ? $_->{_source}->{'metarecord'} : $_->{_id}, 
-            undef, 
+            $meta ? $_->{_source}->{'metarecord'} : $_->{_id},
+            $full ? $_->{_source} : undef,
             $_->{_score}
         ]} @$hits
     ];
 
     return {
         ids => $ids,
-        count => $results->{hits}->{total}->{value},
-        suggest => $results->{suggest},
-        facets => format_facets($results->{aggregations}),
-        cache_key => $cache_key,
-        facet_key => $cache_key.'_facets'
-    };
-}
-
-# ---------------------------------------------------------------
-# Full search: returns bib metadata fields in _source so that
-# external tools can get search results in a single call.
-# ---------------------------------------------------------------
-my @full_source_fields = qw(
-    title|maintitle
-    author|combined
-    subject|combined
-    series|seriestitle
-    search_format
-    item_type
-    date1
-    pubdate
-    item_lang
-    identifier|isbn
-    metarecord
-    audience
-    lit_form
-);
-
-my $max_full_size = 100;
-
-__PACKAGE__->register_method(
-    method   => 'bib_search_full',
-    api_name => 'open-ils.search.elastic.bib_search.full',
-    signature => {
-        desc => q/Variant of open-ils.search.elastic.bib_search that returns bib
-            metadata fields in each result's _source, so an external integration
-            can retrieve search results in a single round-trip./,
-        params => [
-            {type => 'object', query => q/Elastic-compatible search query struct.
-                See open-ils.search.elastic.bib_search for query examples./},
-            {type => 'object', options => q/
-                Hash of additional search options:
-
-                    search_org - Holdings filter org unit ID.
-
-                    search_depth - Holdings filter search depth.
-
-                    available - Ensure that at least one item is
-                        considered available within the search scope.
-
-                    disable_facets - If true, disable ES aggregations
-            /}
-        ],
-        return => {
-            desc => q/A search result object whose 'ids' array contains
-                tuples of [bib_id, _source_fields, score]./
-        }
-    }
-);
-
-__PACKAGE__->register_method(
-    method   => 'bib_search_full',
-    api_name => 'open-ils.search.elastic.bib_search.full.staff',
-    signature => {desc => q/Staff version of open-ils.search.elastic.bib_search.full /}
-);
-
-sub bib_search_full {
-    my ($self, $client, $query, $options) = @_;
-    $options ||= {};
-
-    init();
-
-    my $staff = ($self->api_name =~ /staff/);
-
-    return {count => 0, ids => []} unless $query && $query->{query};
-
-    # Return bib metadata fields along with the id so callers receive
-    # everything they need in a single response.
-    $query->{_source} = ['id', @full_source_fields];
-
-    if (defined $query->{size} && $query->{size} > $max_full_size) {
-        $query->{size} = $max_full_size;
-    }
-
-    # ES 7 or 8 started limiting the total hits scanned to 10k.
-    # We want everything all the time.
-    $query->{track_total_hits} = $track_total_hits;
-
-    my $elastic_query = compile_elastic_query($query, $options, $staff);
-
-    my $es = OpenILS::Elastic::BibSearch->new;
-    $es->connect;
-
-    my $results = $es->search($elastic_query);
-
-    $logger->debug("ES elasticsearch returned: ".
-        OpenSRF::Utils::JSON->perl2JSON($results));
-
-    return {count => 0, ids => []} unless $results;
-
-    my $cache_key = md5_hex(OpenSRF::Utils::JSON->perl2JSON($elastic_query));
-
-    my $hits = $results->{hits}->{hits};
-
-    my $ids = [
-        map {[
-            $_->{_id},
-            $_->{_source},
-            $_->{_score}
-        ]} @$hits
-    ];
-
-    return {
-        ids => $ids,
-        count => $results->{hits}->{total}->{value},
+        # the metabib group count above is already a plain number
+        count => $meta ?
+            $results->{hits}->{total} : $results->{hits}->{total}->{value},
         suggest => $results->{suggest},
         facets => format_facets($results->{aggregations}),
         cache_key => $cache_key,
@@ -418,6 +357,8 @@ sub format_facets {
             $_->name eq $name && $_->search_group eq $search_group
         } @$bib_fields;
 
+        next unless $bib_field;
+
         my $hash = $facets->{$bib_field->id} = {};
 
         my $values = $aggregations->{$fname}->{buckets};
@@ -454,9 +395,14 @@ sub add_elastic_holdings_filter {
 
     if ($org_id) {
         my ($org) = $U->fetch_org_unit($org_id);
-        my $types = $U->get_org_types; # pulls from cache
-        my ($type) = grep {$_->id == $org->ou_type} @$types;
-        $depth = defined $depth ? min($depth, $type->depth) : $type->depth;
+        if ($org) {
+            my $types = $U->get_org_types; # pulls from cache
+            my ($type) = grep {$_->id == $org->ou_type} @$types;
+            $depth = defined $depth ? min($depth, $type->depth) : $type->depth;
+        } else {
+            $logger->warn("ES ignoring unknown search_org $org_id");
+            $org_id = undef;
+        }
     }
 
     my $visible_filters = {
@@ -472,7 +418,7 @@ sub add_elastic_holdings_filter {
     
     my $filter = {nested => {path => 'holdings', query => {bool => {}}}};
 
-    if ($depth > 0) {
+    if ($org_id && $depth > 0) {
 
         if (!$org_data_cache{ancestors_at}{$org_id}) {
             $org_data_cache{ancestors_at}{$org_id} = {};
