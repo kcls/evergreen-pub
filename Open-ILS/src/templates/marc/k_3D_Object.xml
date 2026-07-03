@@ -1,48 +1,35 @@
-<record>
-  <leader>00620com a22002057i 4500</leader>
+<?xml version="1.0" encoding="utf-8"?>
+<record xmlns="http://www.loc.gov/MARC21/slim">
+  <leader>00620nom a22      a 4500</leader>
   <controlfield tag="008">070101s           nnn            bneng d</controlfield>
-  <datafield tag="010" ind1="" ind2="">
+  <datafield tag="020" ind1=" " ind2=" ">
     <subfield code="a"></subfield>
   </datafield>
-  <datafield tag="024" ind1="1" ind2="">
+  <datafield tag="024" ind1="1" ind2=" ">
     <subfield code="a"></subfield>
   </datafield>
-  <datafield tag="040" ind1="" ind2="">
+  <datafield tag="040" ind1=" " ind2=" ">
     <subfield code="a">NTG</subfield>
-    <subfield code="b">eng</subfield>
-    <subfield code="e">rda</subfield>
-    <subfield code="c">NTG</subfield>
   </datafield>
-  <datafield tag="049" ind1="" ind2="">
-    <subfield code="a">NTGA</subfield>
-  </datafield>
-  <datafield tag="082" ind1="0" ind2="4">
-    <subfield code="a"></subfield>
-  </datafield>
-  <datafield tag="099" ind1="" ind2="">
+  <datafield tag="099" ind1=" " ind2=" ">
     <subfield code="a">TOOL 001</subfield>
   </datafield>
-    <datafield tag="245" ind1="0" ind2="0">
+  <datafield tag="100" ind1="1" ind2=" ">
     <subfield code="a"></subfield>
-    <subfield code="b"></subfield>
-    <subfield code="c"></subfield>
   </datafield>
-    <datafield tag="246" ind1="3" ind2="">
+  <datafield tag="245" ind1="0" ind2=" ">
+    <subfield code="a"></subfield>
+  </datafield>
+  <datafield tag="246" ind1="3" ind2="0">
     <subfield code="a">Issaquah Library of Things</subfield>
   </datafield>
-    <datafield tag="246" ind1="3" ind2="">
+  <datafield tag="246" ind1="3" ind2="0">
     <subfield code="a">Curiosity Collection at Issaquah Library</subfield>
   </datafield>
   <datafield tag="250" ind1="" ind2="">
     <subfield code="a">CHECKOUT &amp; RETURN AT ISSAQUAH LIBRARY ONLY.</subfield>
   </datafield>
-  <datafield tag="264" ind1="" ind2="0">
-    <subfield code="a"></subfield>
-    <subfield code="b"></subfield>
-    <subfield code="c"></subfield>
-  </datafield>
-  <datafield tag="300" ind1="" ind2="">
-    <subfield code="a"></subfield>
+  <datafield tag="260" ind1=" " ind2=" ">
     <subfield code="b"></subfield>
     <subfield code="c"></subfield>
   </datafield>
@@ -81,7 +68,13 @@
     <subfield code="3">Cover image</subfield>
     <subfield code="u"></subfield>
   </datafield>
-  <datafield tag="998" ind1="" ind2="">
-    <subfield code="d"></subfield>
+  <datafield tag="700" ind1="1" ind2=" ">
+    <subfield code="a"></subfield>
   </datafield>
- </record>
+  <datafield tag="938" ind1=" " ind2=" ">
+    <subfield code="a">(BT)</subfield>
+  </datafield>
+  <datafield tag="998" ind1=" " ind2=" ">
+    <subfield code="d">h</subfield>
+  </datafield>
+</record>
