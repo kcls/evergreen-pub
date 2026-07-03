@@ -594,7 +594,7 @@ sub has_account {
     return OpenILS::Event->new('BAD_PARAMS') unless $token && ref $values eq 'HASH';
 
     my $session = OpenSRF::Utils::Cache->new('global')
-        ->get_cache("$CACHE_KEY_PFX.$token")
+        ->get_cache("$CACHE_KEY_PFX$token")
         || return OpenILS::Event->new('UNAUTHORIZED');
 
     my $e = new_editor();

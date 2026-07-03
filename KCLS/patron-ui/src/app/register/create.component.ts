@@ -569,48 +569,50 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             return;
         }
 
-        this.gateway.requestOne(
-            'open-ils.actor',
-            'open-ils.actor.register.has_account',
-            'TODO TODO', {
-                first_given_name: controls.first.value,
-                family_name: controls.last.value,
-                dob: controls.dob.value,
-                street1: controls.street1.value
-            }
-        ).then(resp => {
+        this.captcha.getToken().then(token => {
+            this.gateway.requestOne(
+                'open-ils.actor',
+                'open-ils.actor.register.has_account',
+                token, {
+                    first_given_name: controls.first.value,
+                    family_name: controls.last.value,
+                    dob: controls.dob.value,
+                    street1: controls.street1.value
+                }
+            ).then(resp => {
 
-            if (Number(resp) === 1) {
-                console.debug('Possible existing account found');
-                this.maybeDupeAccount = true;
-                return;
-            }
+                if (Number(resp) === 1) {
+                    console.debug('Possible existing account found');
+                    this.maybeDupeAccount = true;
+                    return;
+                }
 
-            this.maybeDupeAccount = false;
+                this.maybeDupeAccount = false;
 
-            // If the user has legal name values, do a secondary lookup
-            // on the legal names.
-            if (controls.legalFirst.value || controls.legalLast.value) {
+                // If the user has legal name values, do a secondary lookup
+                // on the legal names.
+                if (controls.legalFirst.value || controls.legalLast.value) {
 
-                let first = controls.first.value || controls.legalFirst.value;
-                let last = controls.last.value || controls.legalLast.value;
+                    let first = controls.first.value || controls.legalFirst.value;
+                    let last = controls.last.value || controls.legalLast.value;
 
-                this.gateway.requestOne(
-                    'open-ils.actor',
-                    'open-ils.actor.register.has_account',
-                    'TODO TODO', {
-                        first_given_name: first,
-                        family_name: last,
-                        dob: controls.dob.value,
-                        street1: controls.street1.value
-                    }
-                ).then(resp => {
-                    this.maybeDupeAccount = Number(resp) === 1;
-                    if (this.maybeDupeAccount) {
-                        console.debug('Possible existing account found');
-                    }
-                });
-            }
+                    this.gateway.requestOne(
+                        'open-ils.actor',
+                        'open-ils.actor.register.has_account',
+                        token, {
+                            first_given_name: first,
+                            family_name: last,
+                            dob: controls.dob.value,
+                            street1: controls.street1.value
+                        }
+                    ).then(resp => {
+                        this.maybeDupeAccount = Number(resp) === 1;
+                        if (this.maybeDupeAccount) {
+                            console.debug('Possible existing account found');
+                        }
+                    });
+                }
+            });
         });
     }
 
@@ -1197,12 +1199,14 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         console.debug('SEND', payload);
 
-        return this.gateway.request(
-            'open-ils.actor',
-            'open-ils.actor.register',
-            'TODO CAPTCHA',
-            payload
-        ).toPromise().then(r => {
+        return this.captcha.getToken().then(token =>
+            this.gateway.requestOne(
+                'open-ils.actor',
+                'open-ils.actor.register',
+                token,
+                payload
+            )
+        ).then(r => {
             const response = r as ApiResponse;
 
             console.debug('RESPONSE', response);
