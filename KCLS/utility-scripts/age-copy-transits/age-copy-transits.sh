@@ -19,7 +19,7 @@ date +"%F %T"
 total=0
 
 while true; do
-    count=$(echo "$TIMEOUT; SELECT action.batch_age_copy_transits('$AGE_AGE', $BATCH_SIZE);" \
+    count=$(echo "$TIMEOUT; CALL action.age_copy_transits('$AGE_AGE', $BATCH_SIZE);" \
         | $PSQL -t -A | tail -1)
 
     total=$((total + count))
