@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <record xmlns="http://www.loc.gov/MARC21/slim">
-  <leader>00620nom a22      a 4500</leader>
-  <controlfield tag="008">070101s           nnn            bneng d</controlfield>
+  <leader>00620nom a22      i 4500</leader>
+  <controlfield tag="008">070101s           nnn e          bneng d</controlfield>
   <datafield tag="020" ind1=" " ind2=" ">
     <subfield code="a"></subfield>
   </datafield>
@@ -10,9 +10,12 @@
   </datafield>
   <datafield tag="040" ind1=" " ind2=" ">
     <subfield code="a">NTG</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="e">rda</subfield>
+    <subfield code="c">NTG</subfield>
   </datafield>
   <datafield tag="099" ind1=" " ind2=" ">
-    <subfield code="a">TOOL 001</subfield>
+    <subfield code="a">ON ORDER</subfield>
   </datafield>
   <datafield tag="100" ind1="1" ind2=" ">
     <subfield code="a"></subfield>
@@ -75,6 +78,6 @@
     <subfield code="a">(BT)</subfield>
   </datafield>
   <datafield tag="998" ind1=" " ind2=" ">
-    <subfield code="d">h</subfield>
+    <subfield code="d">r</subfield>
   </datafield>
 </record>
