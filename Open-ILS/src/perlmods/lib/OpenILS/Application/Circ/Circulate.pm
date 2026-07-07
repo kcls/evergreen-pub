@@ -1869,15 +1869,19 @@ sub check_hold_fulfill_blocks {
 # When an item is checked out, see if we can fulfill a hold for this patron
 # ------------------------------------------------------------------------------
 sub handle_checkout_holds {
-   my $self    = shift;
-   my $copy    = $self->copy;
-   my $patron  = $self->patron;
+    my $self    = shift;
+    my $copy    = $self->copy;
+    my $patron  = $self->patron;
 
-   my $e = $self->editor;
-   $self->fulfilled_holds([]);
+    my $e = $self->editor;
+    $self->fulfilled_holds([]);
 
-   # non-cats can't fulfill a hold
-   return if $self->is_noncat;
+    # non-cats can't fulfill a hold
+    return if $self->is_noncat;
+
+    # Holds should never be filled during renewal, which can happen
+    # if a patron has multiple open holds with the same hold target.
+    return if $self->is_renewal;
 
     my $hold = $e->search_action_hold_request({   
         current_copy        => $copy->id , 
@@ -1995,6 +1999,7 @@ sub find_related_user_hold {
     # holds on precat copies are always copy-level, so this call will
     # always return undef.  Exit early.
     return undef if $self->is_precat;
+    return undef if $self->is_renewal;
 
     return undef unless $U->ou_ancestor_setting_value(        
         $self->circ_lib, 'circ.checkout_fills_related_hold', $e);
