@@ -78,6 +78,66 @@ BEGIN
 END;
 $f$ LANGUAGE PLPGSQL;
 
+-- Bulk-age standalone transits (no prev_hop chain).
+-- Intended for the initial backfill of legacy transits that predate
+-- multi-hop chaining.  Can be deprecated once the backlog is cleared.
+CREATE OR REPLACE PROCEDURE action.age_standalone_copy_transits(
+    age INTERVAL,
+    batch_size INTEGER,
+    max_limit INTEGER,
+    INOUT aged_count INTEGER DEFAULT 0
+) AS $f$
+DECLARE
+    batch_count INTEGER;
+    cutoff TIMESTAMPTZ := NOW() - age;
+BEGIN
+    LOOP
+        WITH candidates AS (
+            SELECT tc.id
+            FROM action.transit_copy tc
+            WHERE tc.prev_hop IS NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM action.transit_copy child
+                WHERE child.prev_hop = tc.id
+            )
+            AND (
+                (tc.dest_recv_time IS NOT NULL AND tc.dest_recv_time < cutoff)
+                OR (tc.cancel_time IS NOT NULL AND tc.cancel_time < cutoff)
+            )
+            ORDER BY tc.source_send_time
+            LIMIT batch_size
+        ),
+        aged AS (
+            INSERT INTO action.aged_copy_transit (
+                id, source_send_time, dest_recv_time, target_copy,
+                source, dest, prev_hop, copy_status, persistant_transfer,
+                prev_dest, cancel_time, hold, reservation
+            )
+            SELECT
+                tc.id, tc.source_send_time, tc.dest_recv_time,
+                tc.target_copy, tc.source, tc.dest,
+                tc.prev_hop, tc.copy_status, tc.persistant_transfer,
+                tc.prev_dest, tc.cancel_time,
+                htc.hold, rtc.reservation
+            FROM candidates c
+            JOIN action.transit_copy tc ON tc.id = c.id
+            LEFT JOIN action.hold_transit_copy htc ON htc.id = c.id
+            LEFT JOIN action.reservation_transit_copy rtc ON rtc.id = c.id
+            RETURNING id
+        )
+        DELETE FROM action.transit_copy
+        WHERE id IN (SELECT id FROM aged);
+
+        GET DIAGNOSTICS batch_count = ROW_COUNT;
+        aged_count := aged_count + batch_count;
+
+        COMMIT;
+
+        EXIT WHEN batch_count = 0 OR aged_count >= max_limit;
+    END LOOP;
+END;
+$f$ LANGUAGE PLPGSQL;
+
 CREATE OR REPLACE PROCEDURE action.age_copy_transits(
     age INTERVAL,
     batch_limit INTEGER,
