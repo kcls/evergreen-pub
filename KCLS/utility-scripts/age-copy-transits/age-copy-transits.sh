@@ -9,8 +9,8 @@ PSQL="psql"
 # 1 hour backstop
 TIMEOUT="SET STATEMENT_TIMEOUT = 36000000" 
 
-AGE_AGE=${AGE_AGE:-"5 years"}
-BATCH_LIMIT=${BATCH_LIMIT:-50000}
+AGE_AGE=${AGE_AGE:-"3 years"}
+BATCH_LIMIT=${BATCH_LIMIT:-100000}
 
 echo -n "Aging copy transits (limit=$BATCH_LIMIT) at "
 date +"%F %T"

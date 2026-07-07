@@ -29,9 +29,6 @@ CREATE OR REPLACE FUNCTION action.age_copy_transit_group(root_transit_id INTEGER
 RETURNS INTEGER AS $f$
 DECLARE
     transit RECORD;
-    old_transit RECORD;
-    hold_id INTEGER;
-    reservation_id INTEGER;
     aged_count INTEGER := 0;
 BEGIN
     FOR transit IN
@@ -39,6 +36,7 @@ BEGIN
         -- all transits in the group, then process newest-first
         -- so child transits are deleted before their parents
         -- (respecting the prev_hop FK).
+        -- LEFT JOINs pull hold/reservation in a single query.
         WITH RECURSIVE chain AS (
             SELECT id FROM action.transit_copy WHERE id = root_transit_id
             UNION ALL
@@ -46,26 +44,18 @@ BEGIN
             FROM action.transit_copy tc
             JOIN chain c ON tc.prev_hop = c.id
         )
-        SELECT c.id FROM chain c
+        SELECT tc.id, tc.source_send_time, tc.dest_recv_time,
+            tc.target_copy, tc.source, tc.dest, tc.prev_hop,
+            tc.copy_status, tc.persistant_transfer, tc.prev_dest,
+            tc.cancel_time, htc.hold, rtc.reservation
+        FROM chain c
         JOIN action.transit_copy tc ON tc.id = c.id
+        LEFT JOIN action.hold_transit_copy htc ON htc.id = c.id
+        LEFT JOIN action.reservation_transit_copy rtc ON rtc.id = c.id
         ORDER BY tc.source_send_time DESC
     LOOP
-        SELECT * INTO old_transit
-            FROM action.transit_copy WHERE id = transit.id;
-
-        IF old_transit.dest_recv_time IS NULL AND old_transit.cancel_time IS NULL THEN
+        IF transit.dest_recv_time IS NULL AND transit.cancel_time IS NULL THEN
             RAISE EXCEPTION 'Transit % is still active', transit.id;
-        END IF;
-
-        hold_id := NULL;
-        reservation_id := NULL;
-
-        SELECT hold INTO hold_id
-            FROM action.hold_transit_copy WHERE id = transit.id;
-
-        IF NOT FOUND THEN
-            SELECT reservation INTO reservation_id
-                FROM action.reservation_transit_copy WHERE id = transit.id;
         END IF;
 
         INSERT INTO action.aged_copy_transit (
@@ -73,10 +63,10 @@ BEGIN
             source, dest, prev_hop, copy_status, persistant_transfer,
             prev_dest, cancel_time, hold, reservation
         ) VALUES (
-            old_transit.id, old_transit.source_send_time, old_transit.dest_recv_time,
-            old_transit.target_copy, old_transit.source, old_transit.dest,
-            old_transit.prev_hop, old_transit.copy_status, old_transit.persistant_transfer,
-            old_transit.prev_dest, old_transit.cancel_time, hold_id, reservation_id
+            transit.id, transit.source_send_time, transit.dest_recv_time,
+            transit.target_copy, transit.source, transit.dest,
+            transit.prev_hop, transit.copy_status, transit.persistant_transfer,
+            transit.prev_dest, transit.cancel_time, transit.hold, transit.reservation
         );
 
         DELETE FROM action.transit_copy WHERE id = transit.id;
@@ -144,3 +134,12 @@ END;
 $f$ LANGUAGE PLPGSQL;
 
 COMMIT;
+
+SET STATEMENT_TIMEOUT = 0;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS transit_copy_prev_hop_idx
+    ON action.transit_copy (prev_hop);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS transit_copy_root_send_time_idx
+    ON action.transit_copy (source_send_time)
+    WHERE prev_hop IS NULL;
