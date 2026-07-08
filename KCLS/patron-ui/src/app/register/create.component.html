@@ -474,7 +474,7 @@
         <mat-radio-button [value]="card" aria-label="{{cardDescription(card)}}"
             class="card-option"
             [class.card-option-selected]="formGroup.controls.design.value === card">
-          <img class="card-image-horiz p-3" [src]="cardOptionUrl(card)" alt="{{cardDescription(card)}}"/>
+          <img class="card-image-horiz" [src]="cardOptionUrl(card)" alt="{{cardDescription(card)}}"/>
           <div class="card-option-desc text-sm">{{cardDescription(card)}}</div>
         </mat-radio-button>
       </div>

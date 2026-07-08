@@ -6,10 +6,9 @@
 }
 
 .card-image-horiz {
-  max-height: 200px;
-  /*
-  width: 250px;
-  */
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* Residential address suggestion / selection area (below Street Address). */
@@ -139,26 +138,52 @@
 /* Selectable card-design tiles: de-emphasize the radio "bullet" and
    show selection via a bordered, highlighted tile instead. */
 .card-option {
-  display: block;
+  /* Size the tile to the card image (plus padding) so the border and the
+     description text wrap at the image's edge rather than the grid column.
+     The image is ~1.59:1; ~320px content ≈ the previous 200px-tall render. */
+  display: inline-block;
+  box-sizing: border-box;
+  width: 340px;
+  max-width: 100%;
   border: 2px solid transparent;
   border-radius: 8px;
-  padding: 4px;
+  padding: 8px;
 
   /* hide the radio circle graphic; the whole tile is the selector */
   ::ng-deep .mdc-radio {
     display: none;
   }
 
-  /* let the projected image + description fill the tile */
+  /* fill the fixed-width tile so the image + description track its width */
+  ::ng-deep .mdc-form-field {
+    width: 100%;
+  }
+
   ::ng-deep .mdc-label {
     display: block;
     width: 100%;
+    cursor: pointer;
+  }
+
+  /* Make it obvious the whole tile is clickable. */
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    border-color: rgba(6, 67, 110, 0.5);
+    box-shadow: 0 4px 12px rgba(6, 67, 110, 0.25);
+    transform: translateY(-2px);
   }
 }
 
 .card-option-selected {
   border-color: #06436e;
   background: rgba(6, 67, 110, 0.06);
+}
+
+/* Keep the selected tile clearly marked even while hovered. */
+.card-option-selected:hover {
+  border-color: #06436e;
 }
 
 .card-option-desc {
