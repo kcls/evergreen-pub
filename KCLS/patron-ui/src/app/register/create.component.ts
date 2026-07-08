@@ -1,4 +1,4 @@
-import {AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {Router, ActivatedRoute} from '@angular/router';
 import {MatStepper} from '@angular/material/stepper';
 import {StepperSelectionEvent} from '@angular/cdk/stepper';
@@ -93,6 +93,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
     @ViewChild('stepper') stepper!: MatStepper;
 
+    // The Address Line 2 (unit) input; focused when it appears for a
+    // multi-unit building.
+    @ViewChild('resStreet2Input') resStreet2Input?: ElementRef<HTMLInputElement>;
+
     // Ordered URL slug for each stepper section.  Tracks the section
     // currently reflected in the URL so we can avoid redundant navigation.
     currentSlug = 'your-information';
@@ -128,11 +132,19 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     selectedResAddress = '';
 
     // Residential address selection state.  Suggestions populate from the
-    // street/city fields (debounced); the user must choose one, after which
-    // the chooser collapses to show just the selected address.
+    // street field (debounced) and appear as a dropdown; choosing one fills
+    // the structured (read-only) fields and resolves the home library.
     addressSelected = false;
     resLookupNotFound = false;
     resLookupLoading = false;
+
+    // Entry count of the chosen residential address.  When > 1 the address is
+    // a multi-unit building and Address Line 2 (unit) becomes required.
+    selectedResEntries = 0;
+
+    // Result of validating an entered unit against the address service:
+    // null = not checked, true = matched (show a check), false = no match.
+    resUnitValid: boolean | null = null;
 
     // Set when the chosen residential address is not usable as a residence
     // (e.g. a commercial address, PO box, or mail-receiving agency).
@@ -343,7 +355,11 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             !!this.formGroup.controls.mailingIsSame.value ||
             (!!this.selectedMailAddress && !this.mailAddressNotViable);
 
-        return this.calculatedHomeOrg != null && mailingOk;
+        // Multi-unit buildings require an Address Line 2 (unit) value.
+        const street2Ok =
+            this.selectedResEntries <= 1 || !!this.formGroup.controls.street2.value;
+
+        return this.calculatedHomeOrg != null && mailingOk && street2Ok;
     }
 
     ngOnInit() {
@@ -500,7 +516,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // city/state/zip controls.
         this.formGroup.controls.street1.valueChanges.pipe(
             startWith(''),
-            debounceTime(300),
+            debounceTime(500),
             map(() => this.resSearchValue()),
             distinctUntilChanged(),
             switchMap(value => {
@@ -525,6 +541,19 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
                 this.resAddressSuggestions.length === 0 && this.resSearchValue().length >= 5;
         });
 
+        // Entering/editing the unit (Address Line 2) re-runs the lookup with
+        // that secondary value to confirm the final form of the address
+        // (viability, coordinates, home library, district).  Programmatic
+        // writes use emitEvent:false so they don't trip this.
+        this.formGroup.controls.street2.valueChanges.pipe(
+            debounceTime(500),
+            distinctUntilChanged(),
+        ).subscribe(() => {
+            if (this.addressSelected) {
+                this.confirmResUnit();
+            }
+        });
+
         // Mailing address uses the same single-field + suggestion pattern as
         // the residential address (minus the home-library lookup).
         this.formGroup.controls.mailingStreet1.valueChanges.subscribe(() => {
@@ -535,7 +564,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         this.formGroup.controls.mailingStreet1.valueChanges.pipe(
             startWith(''),
-            debounceTime(300),
+            debounceTime(500),
             map(() => this.mailSearchValue()),
             distinctUntilChanged(),
             switchMap(value => {
@@ -645,21 +674,21 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         });
     }
 
-    populateResAddrFromSuggestion() {
-        const addr = this.resAddressSuggestions.filter(a => a.full_string === this.selectedResAddress)[0];
-
-        if (!addr) {
-            console.error('Cannot find addr', this.selectedResAddress);
-            return;
-        }
+    populateResAddrFromSuggestion(addr: AddressSuggestion) {
+        const c = this.formGroup.controls;
 
         // Suppress value-change events so writing these fields doesn't
         // re-trigger the suggestion lookup (which would clear the selection).
-        this.formGroup.controls.street1.setValue(addr.street_line, {emitEvent: false});
-        this.formGroup.controls.street2.setValue(addr.secondary || '', {emitEvent: false});
-        this.formGroup.controls.city.setValue(addr.city, {emitEvent: false});
-        this.formGroup.controls.state.setValue(addr.state, {emitEvent: false});
-        this.formGroup.controls.zipCode.setValue(addr.zipcode, {emitEvent: false});
+        c.street1.setValue(addr.street_line, {emitEvent: false});
+
+        // Multi-unit buildings: the user supplies the unit in Address Line 2.
+        // A specific result carries its own secondary (unit) designator.
+        const street2 = addr.entries > 1 ? '' : (addr.secondary || '');
+        c.street2.setValue(street2, {emitEvent: false});
+
+        c.city.setValue(addr.city, {emitEvent: false});
+        c.state.setValue(addr.state, {emitEvent: false});
+        c.zipCode.setValue(addr.zipcode, {emitEvent: false});
 
         // Now that we have an address, run the dupe checker again.
         this.checkForExistingAccount();
@@ -687,6 +716,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.reportedLongitude = null;
         this.addressExceptionId = null;
         this.resAddressNotViable = false;
+        this.resUnitValid = null;
 
         if (addr.is_exception) {
             // Address exceptions contain the calcualted home org and
@@ -714,12 +744,43 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         return this.lookupAddress(addr).then(found => {
             if (!found) { return; }
 
+            console.debug('Address lookup returned', found);
+
             if ((found as any).is_viable_residential === false) {
                 // Not usable as a residence; surface a message and skip the
                 // home-org / district lookups, which don't apply.  With no
                 // home org resolved the user cannot continue.
                 this.resAddressNotViable = true;
                 return;
+            }
+
+            // Addresses that require a secondary (multi-unit buildings) must
+            // resolve to a valid unit before we set the home library etc.
+            // The service reports has_valid_secondary once the supplied unit
+            // matches; until then leave the home org unresolved so the user
+            // can't continue (they must enter a valid Address Line 2).
+            const hasValidSecondary = !!(found as any).has_valid_secondary;
+            const requiresSecondary = this.selectedResEntries > 1;
+            const enteredUnit = ('' + (this.formGroup.controls.street2.value ?? '')).trim();
+
+            // Once a unit has been entered, flag whether it matched so the UI
+            // can show a check (valid) or a "no match" message (invalid).
+            if (requiresSecondary) {
+                this.resUnitValid = enteredUnit ? hasValidSecondary : null;
+            }
+
+            if (requiresSecondary && !hasValidSecondary) {
+                return;
+            }
+
+            // With a validated unit, reflect the service's normalized secondary
+            // (e.g. "Apt AA1001") back into Address Line 2.  emitEvent:false so
+            // this doesn't re-trigger the unit lookup.
+            const comp = (found as any).components || {};
+            if ((found as any).has_valid_secondary && comp.secondary_number) {
+                const unit = [comp.secondary_designator, comp.secondary_number]
+                    .filter(Boolean).join(' ');
+                this.formGroup.controls.street2.setValue(unit, {emitEvent: false});
             }
 
             const latitude = (found as any).metadata.latitude;
@@ -867,49 +928,64 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         return ('' + (this.formGroup.controls.street1.value ?? '')).trim();
     }
 
-    // Choose a suggestion.  A building with multiple entries is drilled into
-    // via a second autocomplete; otherwise the address is applied (which
-    // resolves the home library / district) and the chooser collapses.
+    // The suggestion dropdown is visible while searching, or when results
+    // exist, and no address has been chosen yet.  Once an address is selected
+    // the dropdown collapses; editing the street field re-opens it.
+    showResSuggestions(): boolean {
+        return !this.addressSelected &&
+            (this.resLookupLoading || this.resAddressSuggestions.length > 0);
+    }
+
+    // Choose a suggestion: fill the structured fields and resolve the home
+    // library / district.  A multi-unit building (entries > 1) is applied as
+    // its base address; the user then supplies the unit in Address Line 2.
     selectResAddress(addr: AddressSuggestion) {
-        if (addr.entries > 1) {
-            this.refineResAddress(addr);
-            return;
-        }
-
         this.selectedResAddress = addr.full_string || '';
-        this.populateResAddrFromSuggestion();
+        this.selectedResEntries = addr.entries || 0;
+        this.populateResAddrFromSuggestion(addr);
+        this.applyResStreet2Validator();
         this.addressSelected = true;
+
+        // A required unit needs entry; focus Address Line 2 once it renders.
+        if (this.selectedResEntries > 1) {
+            setTimeout(() => this.resStreet2Input?.nativeElement.focus());
+        }
     }
 
-    // Drill into the unit/apartment entries of a multi-entry address by
-    // re-running the autocomplete with the API's secondary-expansion inputs:
-    // 'search' is the suggestion text up to the open paren, and 'selected' is
-    // the full suggestion text including the (entries) count.
-    refineResAddress(addr: AddressSuggestion) {
-        const search = `${addr.street_line} ${addr.secondary} `;
-        const selected =
-            `${addr.street_line} ${addr.secondary} (${addr.entries}) `
-            + `${addr.city} ${addr.state} ${addr.zipcode}`;
-
-        // Keep the chooser open (no final selection yet) and show progress.
-        this.selectedResAddress = '';
-        this.addressSelected = false;
-        this.resLookupNotFound = false;
-        this.resLookupLoading = true;
-        this.resAddressSuggestions = [];
-
-        this.addrStreet1Fitler(search, this.resAddressSuggestions, selected).pipe(
-            catchError(() => of([] as string[]))
-        ).subscribe(() => {
-            this.resLookupLoading = false;
-            this.resLookupNotFound = this.resAddressSuggestions.length === 0;
-        });
+    // Address Line 2 (unit) is required when the chosen address is a
+    // multi-unit building.
+    applyResStreet2Validator() {
+        const s2 = this.formGroup.controls.street2;
+        if (this.selectedResEntries > 1) {
+            s2.setValidators(Validators.required);
+        } else {
+            s2.clearValidators();
+        }
+        s2.updateValueAndValidity({emitEvent: false});
     }
 
-    // Re-open the chooser to pick a different address.  The previously
-    // selected address stays applied until another is chosen.
-    changeResAddress() {
-        this.addressSelected = false;
+    // Address Line 2 is shown for multi-unit buildings (where a unit is
+    // required) and whenever the selected address already carries a
+    // secondary (unit) value.
+    showResStreet2(): boolean {
+        return this.addressSelected &&
+            (this.selectedResEntries > 1 || !!this.formGroup.controls.street2.value);
+    }
+
+    // Re-run the address lookup using the entered unit (Address Line 2) as the
+    // secondary value, confirming the final form of the selected address.
+    confirmResUnit() {
+        const c = this.formGroup.controls;
+        const str = (v: unknown): string => '' + (v ?? '');
+        const addr: AddressSuggestion = {
+            street_line: str(c.street1.value),
+            secondary: str(c.street2.value),
+            city: str(c.city.value),
+            state: str(c.state.value),
+            zipcode: str(c.zipCode.value),
+            entries: 0,
+        };
+        this.applyHomeOrgFromAddr(addr);
     }
 
     // Drop a previously chosen address and clear everything derived from it.
@@ -917,7 +993,9 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     deselectResAddress() {
         this.addressSelected = false;
         this.selectedResAddress = '';
+        this.selectedResEntries = 0;
         this.resAddressNotViable = false;
+        this.resUnitValid = null;
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;
         this.reportedLatitude = null;
@@ -926,6 +1004,8 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         const c = this.formGroup.controls;
         c.street2.setValue('', {emitEvent: false});
+        c.street2.clearValidators();
+        c.street2.updateValueAndValidity({emitEvent: false});
         c.city.setValue('', {emitEvent: false});
         c.state.setValue(DEFAULT_STATE, {emitEvent: false});
         c.zipCode.setValue('', {emitEvent: false});

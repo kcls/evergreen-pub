@@ -108,57 +108,111 @@
   </div>
 
   <div class="columns-1 mt-6">
-    <p class="mt-2 mb-2">Start typing an address...
+    <!-- Address Line 1 doubles as the address search input. -->
     <mat-form-field class="w-full">
-      <mat-label>Street Address</mat-label>
+      <mat-label i18n>Address</mat-label>
       <input type="text"
-             placeholder="Street Address"
+             placeholder="Start typing an address, e.g. 123 Main..."
+             i18n-placeholder
              aria-label="Street Address"
+             autocomplete="off"
              matInput
              formControlName="street1">
+      <span class="material-icons res-unit-check mr-2" matSuffix
+            *ngIf="addressSelected" aria-hidden="true">check_circle</span>
       <mat-error *ngIf="formGroup.controls.street1.hasError('required')" i18n>
-        Street address is <strong>required</strong>
+        Address is <strong>required</strong>
       </mat-error>
     </mat-form-field>
 
-    <!-- Address suggestion / selection area.  Replaces the old street1
-         autocomplete and the separate confirm-address section.  Populates
-         (debounced) from the street/unit/city fields; Continue stays
-         disabled until a suggestion is chosen. -->
-    <div class="res-addr-area">
-      <ng-container *ngIf="addressSelected; else resAddrChooser">
-        <div class="res-addr-selected">
-          <span class="material-icons res-addr-check">check_circle</span>
-          <span class="res-addr-selected-text">{{selectedResAddress}}</span>
-          <button mat-button type="button" (click)="changeResAddress()" i18n>
-            Choose a different address
-          </button>
-        </div>
-        <div *ngIf="resAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
-          This address is not a valid residential address.
+    <!-- Suggestion dropdown, shown below the address input while searching. -->
+    <div class="res-addr-dropdown" *ngIf="showResSuggestions()">
+      <div *ngIf="resLookupLoading" class="res-addr-loading">
+        <mat-spinner diameter="18"></mat-spinner>
+        <span i18n>Searching addresses…</span>
+      </div>
+
+      <ng-container *ngIf="!resLookupLoading">
+        <button type="button" class="res-addr-suggestion"
+            *ngFor="let addr of resAddressSuggestions | slice:0:5"
+            (click)="selectResAddress(addr)">
+          <span class="material-icons res-addr-pin" aria-hidden="true">place</span>
+          <span class="res-addr-lines">
+            <span class="res-addr-primary">{{addr.street_line}}<ng-container
+                *ngIf="addr.entries > 1"> ({{addr.entries}} units)</ng-container></span>
+            <span class="res-addr-secondary">{{addr.city}}, {{addr.state}} · United States</span>
+          </span>
+        </button>
+
+        <div class="res-addr-more" *ngIf="resAddressSuggestions.length > 5" i18n>
+          {{resAddressSuggestions.length - 5}} more not shown — keep typing to narrow results.
         </div>
       </ng-container>
+    </div>
 
-      <ng-template #resAddrChooser>
-        <div *ngIf="resLookupLoading" class="res-addr-loading">
-          <mat-spinner diameter="20"></mat-spinner>
-          <span i18n>Searching addresses…</span>
+    <div class="res-addr-notfound mat-mdc-form-field-error"
+         *ngIf="!resLookupLoading && resLookupNotFound" i18n>
+      We couldn't find that address. Please check your entry.
+    </div>
+
+    <!-- Address Line 2 (unit) — shown for multi-unit buildings (required) or
+         when the selected address already carries a unit value. -->
+    <mat-form-field class="w-full mt-2"
+        *ngIf="showResStreet2()">
+      <mat-label i18n>Address Line 2</mat-label>
+      <input type="text"
+             #resStreet2Input
+             placeholder="Apt / Suite / Bldg / Unit"
+             i18n-placeholder
+             matInput
+             formControlName="street2">
+      <span class="material-icons res-unit-check mr-2" matSuffix
+            *ngIf="resUnitValid === true" aria-hidden="true">check_circle</span>
+      <mat-error *ngIf="formGroup.controls.street2.hasError('required')" i18n>
+        Apt / Suite / Bldg / Unit is <strong>required</strong> for this address
+      </mat-error>
+    </mat-form-field>
+
+    <div class="res-addr-notfound mat-mdc-form-field-error"
+         *ngIf="resUnitValid === false" i18n>
+      We couldn't match that unit to a known address. Please check the unit number.
+    </div>
+
+    <!-- Structured address fields, filled from the selected suggestion.  Only
+         Address Line 1 / 2 are editable; the rest are shown disabled. -->
+    <ng-container *ngIf="addressSelected">
+      <div class="columns-2 mt-2">
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>City</mat-label>
+            <input matInput disabled [value]="formGroup.controls.city.value">
+          </mat-form-field>
         </div>
-        <div *ngIf="!resLookupLoading && resAddressSuggestions.length > 0" class="res-addr-list">
-          <h3 class="res-addr-list-label" i18n>Select Your Address</h3>
-          <button mat-stroked-button type="button" class="res-addr-option"
-              *ngFor="let addr of resAddressSuggestions | slice:0:5"
-              (click)="selectResAddress(addr)">
-            {{addr.full_string}}
-          </button>
-          <div class="res-addr-more ml-2 mt-2" *ngIf="resAddressSuggestions.length > 5" i18n>
-            ... {{resAddressSuggestions.length - 5}} more are returned by not shown here. Refine your search to narrow results.
-          </div>
+        <div>
+          <mat-form-field class="w-full pl-2">
+            <mat-label i18n>State / Region</mat-label>
+            <input matInput disabled [value]="formGroup.controls.state.value">
+          </mat-form-field>
         </div>
-        <div *ngIf="!resLookupLoading && resLookupNotFound" class="res-addr-notfound mat-mdc-form-field-error" i18n>
-          We couldn't find that address. Please check your entry.
+      </div>
+      <div class="columns-2">
+        <div>
+          <mat-form-field class="w-full">
+            <mat-label i18n>Postal Code</mat-label>
+            <input matInput disabled [value]="formGroup.controls.zipCode.value">
+          </mat-form-field>
         </div>
-      </ng-template>
+        <div>
+          <mat-form-field class="w-full pl-2">
+            <mat-label i18n>Country</mat-label>
+            <input matInput disabled value="United States">
+          </mat-form-field>
+        </div>
+      </div>
+    </ng-container>
+
+    <div *ngIf="resAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+      This address is not a valid residential address.
     </div>
   </div>
 

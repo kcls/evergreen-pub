@@ -70,6 +70,72 @@
   padding-left: 1rem;
 }
 
+/* --- Residential address search dropdown (new borderless style) --- */
+
+.res-addr-dropdown {
+  display: flex;
+  flex-direction: column;
+  margin-top: -8px;
+  margin-bottom: 8px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.res-addr-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover,
+  &:focus {
+    background: rgba(6, 67, 110, 0.08);
+    outline: none;
+  }
+}
+
+.res-addr-pin {
+  color: #06436e;
+  font-size: 20px;
+  line-height: 1.4;
+  flex: 0 0 auto;
+}
+
+.res-addr-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.res-addr-primary {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.res-addr-secondary {
+  font-size: 0.85rem;
+  color: #6a6a6a;
+}
+
+.res-addr-more {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #6a6a6a;
+}
+
+/* Green check shown in Address Line 2 once the unit validates. */
+.res-unit-check {
+  color: #2e7d32;
+}
+
 /* Selectable card-design tiles: de-emphasize the radio "bullet" and
    show selection via a bordered, highlighted tile instead. */
 .card-option {
