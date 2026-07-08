@@ -327,8 +327,7 @@
               </div>
 
               <div class="mt-4">
-              To receive an all-access
-              library card, you must complete the form and choose to pick up your
+              To receive an all-access library card, you must complete the form and choose to pick up your
               library card at any KCLS location or have it sent by mail.
               </div>
 
@@ -429,27 +428,6 @@
   </div>
 
 
-<!--
-</mat-step>
-<mat-step label="Preferences">
--->
-
-  <div class="columns-1 mt-4">
-    <div class="w-full">
-      <h3 i18n>Let's stay in touch.</h3>
-      <div class="pl-4">
-        <mat-checkbox formControlName="wantsLibNews" i18n>
-          Library News and Events
-        </mat-checkbox>
-      </div>
-      <div class="pl-4">
-        <mat-checkbox formControlName="wantsFoundationInfo" i18n>
-          KCLS Foundation Information
-        </mat-checkbox>
-      </div>
-    </div>
-  </div>
-
   <ng-container *ngIf="wantsAllAccess()">
     <div class="columns-1 mt-4">
       <div class="w-full">
@@ -466,27 +444,26 @@
       </div>
     </div>
 
+    <div class="columns-1 mt-4">
+      <div class="w-full">
+        <h3 i18n>What library location would you like to receive your holds?</h3>
+        <div class="pl-4">
+          <mat-form-field class="w-1/2">
+            <mat-label i18n>Hold Pickup Library</mat-label>
+            <mat-select formControlName="pickupLib">
+              <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
+          Not sure? Find your nearest library
+          <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
+        </div>
+      </div>
+    </div>
   </ng-container>
 </mat-step>
 <mat-step label="My Library Card" *ngIf="wantsAllAccess()">
-
-  <div class="columns-1 mt-4">
-    <div class="w-full">
-      <h3 i18n>What library location would you like to receive your holds?</h3>
-      <div class="pl-4">
-        <mat-form-field class="w-1/2">
-          <mat-label i18n>Hold Pickup Library</mat-label>
-          <mat-select formControlName="pickupLib">
-            <mat-option [value]="org.id" *ngFor="let org of pickupLibs">{{org.name}}</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="mt-2 pl-4 text-sm" *ngIf="!register.inKioskMode" i18n>
-        Not sure? Find your nearest library
-        <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
-      </div>
-    </div>
-  </div>
 
   <h3 i18n>Select your preferred library card design.</h3>
   <p class="mt-1 mb-2" i18n>You'll receive one wallet-size and one keychain-size card.</p>
@@ -532,6 +509,23 @@
 
 </mat-step>
 <mat-step label="Review &amp; Submit">
+
+  <div class="columns-1 mt-2">
+    <div class="w-full">
+      <h3 i18n>Let's stay in touch.</h3>
+      <div class="pl-4">
+        <mat-checkbox formControlName="wantsLibNews" i18n>
+          Library News and Events
+        </mat-checkbox>
+      </div>
+      <div class="pl-4">
+        <mat-checkbox formControlName="wantsFoundationInfo" i18n>
+          KCLS Foundation Information
+        </mat-checkbox>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Hidden for now; the selected design is shown (larger) in the
        "Your Library Card" summary section below instead.
