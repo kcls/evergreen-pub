@@ -1028,15 +1028,23 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         // lookup too.  The residential edit path clears it via
         // deselectResAddress().
 
+        // Residential addresses must be an actual residence, so exclude
+        // commercial addresses and PO boxes; mailing addresses may be
+        // either.  base-address (the umbrella entry of a multi-unit location)
+        // is always excluded since it isn't selectable.  Direct pass-thru to
+        // Smarty.
+        const isResidential = suggestions === this.resAddressSuggestions;
+        const exclude = isResidential
+            ? 'base-address,commercial,po-box'
+            : 'base-address';
+
         // No result limit is sent; we use the API default and cap the
         // display to the first 10 in the template.
         const search: Hash = {
             "state_filter": "WA",
             "search": filterValue,
-            // base-address prevents the base address of a multi-unit location
-            // (apts, etc.) from being included.  It has not value to us.
-            // Direct pass-thru to Smarty.
-            "exclude": "base-address",
+            "exclude": exclude,
+
             // We don't want to see entries for the office address of a
             // multi-unit address.
             "exclude_ofc": true
