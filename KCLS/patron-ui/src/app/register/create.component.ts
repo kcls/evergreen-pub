@@ -61,8 +61,13 @@ interface AddressSuggestion {
     state: string,
     zipcode: string,
     // Number of secondary (unit/apartment) addresses within this primary
-    // address.  When > 0 the suggestion is a building the user must refine.
+    // address.  When > 1 the suggestion is an expandable group.
     entries: number,
+    // v2 autocomplete: entry_id identifies an expandable secondary group
+    // (entries > 1) and is passed as 'selected' to expand it; smarty_key
+    // identifies a single (non-expandable) address.
+    entry_id?: string,
+    smarty_key?: string,
     full_string?: string,
     home_ou?: number,
     is_exception?: boolean,
