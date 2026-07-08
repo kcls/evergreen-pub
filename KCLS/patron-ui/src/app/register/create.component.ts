@@ -1030,7 +1030,13 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
 
         // No result limit is sent; we use the API default and cap the
         // display to the first 10 in the template.
-        const search: Hash = {"state_filter": "WA", "search": filterValue};
+        const search: Hash = {
+            "state_filter": "WA",
+            "search": filterValue,
+            // base-address prevents the base address of a multi-unit location
+            // (apts, etc.) from being included.  It has not value to us.
+            "exclude": "base-address"
+        };
 
         // 'selected' drives the API's secondary (unit/apartment) expansion.
         if (selected) { search['selected'] = selected; }
