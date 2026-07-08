@@ -155,22 +155,27 @@
       We couldn't find that address. Please check your entry.
     </div>
 
+    <div i18n *ngIf="showResStreet2()">
+      The selected address requires an Apt / Unit / Suite / Bldg number.
+    </div>
+
     <!-- Address Line 2 (unit) — shown for multi-unit buildings (required) or
          when the selected address already carries a unit value. -->
-    <mat-form-field class="w-full mt-2"
-        *ngIf="showResStreet2()">
-      <mat-label i18n>Address Line 2</mat-label>
+    <mat-form-field class="w-full mt-2" *ngIf="showResStreet2()">
+      <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
       <input type="text"
              #resStreet2Input
-             placeholder="Apt / Suite / Bldg / Unit"
+             ___placeholder="Apt / Suite / Bldg / Unit"
              i18n-placeholder
              matInput
              formControlName="street2">
       <span class="material-icons res-unit-check mr-2" matSuffix
             *ngIf="resUnitValid === true" aria-hidden="true">check_circle</span>
+      <!--
       <mat-error *ngIf="formGroup.controls.street2.hasError('required')" i18n>
         Apt / Suite / Bldg / Unit is <strong>required</strong> for this address
       </mat-error>
+      -->
     </mat-form-field>
 
     <div class="res-addr-notfound mat-mdc-form-field-error"
