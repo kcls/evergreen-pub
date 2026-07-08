@@ -1035,7 +1035,11 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             "search": filterValue,
             // base-address prevents the base address of a multi-unit location
             // (apts, etc.) from being included.  It has not value to us.
-            "exclude": "base-address"
+            // Direct pass-thru to Smarty.
+            "exclude": "base-address",
+            // We don't want to see entries for the office address of a
+            // multi-unit address.
+            "exclude_ofc": true
         };
 
         // 'selected' drives the API's secondary (unit/apartment) expansion.
