@@ -155,6 +155,10 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     // (e.g. a commercial address, PO box, or mail-receiving agency).
     resAddressNotViable = false;
 
+    // Set when the chosen residential address matches a blocked address
+    // exception (valid, but not eligible for online registration).
+    resAddressBlocked = false;
+
     mailAddressSuggestions: AddressSuggestion[] = [];
     selectedMailAddress = '';
 
@@ -715,6 +719,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
     }
 
     applyHomeOrgFromAddr(addr: AddressSuggestion): Promise<any> {
+        this.resAddressBlocked = false;
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;
         this.reportedLatitude = null;
@@ -754,8 +759,14 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
             if ((found as any).is_viable_residential === false) {
                 // Not usable as a residence; surface a message and skip the
                 // home-org / district lookups, which don't apply.  With no
-                // home org resolved the user cannot continue.
-                this.resAddressNotViable = true;
+                // home org resolved the user cannot continue.  A blocked
+                // address exception is valid but ineligible, so flag it
+                // distinctly from a generally non-viable address.
+                if ((found as any).is_exception) {
+                    this.resAddressBlocked = true;
+                } else {
+                    this.resAddressNotViable = true;
+                }
                 return;
             }
 
@@ -1000,6 +1011,7 @@ export class RegisterCreateComponent implements OnInit, AfterViewInit {
         this.selectedResAddress = '';
         this.selectedResEntries = 0;
         this.resAddressNotViable = false;
+        this.resAddressBlocked = false;
         this.resUnitValid = null;
         this.calculatedHomeOrg = null;
         this.districtOfResidence = null;

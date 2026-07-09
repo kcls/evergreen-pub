@@ -219,6 +219,10 @@
     <div *ngIf="resAddressNotViable" class="res-addr-notfound mat-mdc-form-field-error" i18n>
       This address is not a valid residential address.
     </div>
+
+    <div *ngIf="resAddressBlocked" class="res-addr-notfound mat-mdc-form-field-error" i18n>
+      This address isn't eligible for online registration — please contact your library.
+    </div>
   </div>
 
   <h3 i18n>Mailing Address</h3>
