@@ -78,6 +78,10 @@
   gap: 4px;
 }
 
+/* Set the terms-of-service acknowledgement gently apart from the
+   stay-in-touch opt-ins above it. */
 .gac-terms {
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
 }

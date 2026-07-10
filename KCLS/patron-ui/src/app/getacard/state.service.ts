@@ -143,8 +143,9 @@ export class GetacardState {
     // --- My Library Card -------------------------------------------------------
 
     // Selected card design (all-access only) and how to receive the card.
+    // Neither has a default; the patron must choose.
     cardDesign: string | null = null;
-    delivery: 'Pick up' | 'Mail' = 'Mail';
+    delivery: 'Pick up' | 'Mail' | null = null;
 
     cardOptions = [
         '2025-Barry-Johnson',
@@ -216,8 +217,12 @@ export class GetacardState {
         });
 
         // A juvenile birth date makes the parent/guardian field required.
-        this.aboutForm.get('dob')!.valueChanges.subscribe(
-            () => this.applyJuvenileRules());
+        // Debounced: while a date is being typed, the datepicker parses the
+        // partial text (e.g. "05/04/20" -> year 2020) and the guardian field
+        // would otherwise flicker in and out with each keystroke.
+        this.aboutForm.get('dob')!.valueChanges.pipe(
+            debounceTime(700),
+        ).subscribe(() => this.applyJuvenileRules());
 
         // Re-run the existing-account check as identifying values settle.
         this.aboutForm.valueChanges.pipe(debounceTime(500)).subscribe(
@@ -295,7 +300,9 @@ export class GetacardState {
                 || (this.mailingSelected && !this.mailingNotViable);
             return this.contactForm.valid && mailingOk;
         }
-        if (slug === 'card') { return this.cardDesign != null; }
+        if (slug === 'card') {
+            return this.cardDesign != null && this.delivery != null;
+        }
         if (slug === 'review') {
             return !!this.reviewForm.get('termsOfService')!.value && !this.submitting;
         }
@@ -704,7 +711,9 @@ export class GetacardState {
             requested_account_type: this.accountType,
             address_exception_id: this.exceptionId,
             user: {
-                delivery_method: this.delivery,
+                // Unset for e-cards (their flow skips the card step);
+                // ignored server-side either way.
+                delivery_method: this.delivery ?? '',
                 first_given_name: about['first'],
                 second_given_name: about['middle'],
                 family_name: about['last'],
@@ -783,7 +792,7 @@ export class GetacardState {
                 success: Number(r['success']) > 0,
                 barcode: (r['barcode'] as string) || null,
                 accountType: this.accountType || '',
-                deliveryMethod: this.delivery,
+                deliveryMethod: this.delivery ?? '',
                 homeOrgName: this.homeOrgName,
             };
 
@@ -794,7 +803,7 @@ export class GetacardState {
                 success: false,
                 barcode: null,
                 accountType: this.accountType || '',
-                deliveryMethod: this.delivery,
+                deliveryMethod: this.delivery ?? '',
                 homeOrgName: this.homeOrgName,
             };
         }).then(() => {
