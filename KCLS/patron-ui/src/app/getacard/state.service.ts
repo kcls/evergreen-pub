@@ -7,7 +7,11 @@ import {CaptchaSessionService} from '../captcha-session.service';
 
 const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 
+// What the address makes the patron eligible for.
 export type AccountTypeOption = 'either' | 'all-access' | null;
+
+// The account type requested, matching the register API's values.
+export type AccountType = 'ecard' | 'full' | null;
 
 export interface AddressSuggestion {
     street_line: string;
@@ -72,6 +76,12 @@ export class GetacardState {
     accountTypeOption: AccountTypeOption = null;
     exceptionId: number | null = null;
 
+    // --- Choose your account -----------------------------------------------
+
+    // The requested account type.  Chosen by the user when the address
+    // allows either kind; set automatically when only one kind is offered.
+    accountType: AccountType = null;
+
     constructor(
         private gateway: Gateway,
         private app: AppService,
@@ -85,8 +95,15 @@ export class GetacardState {
 
     // --- step gating ---------------------------------------------------------
 
+    // The active steps: e-card holders skip the physical-card step.
+    get steps(): GacStep[] {
+        return GAC_STEPS.filter(
+            s => s.slug !== 'card' || this.accountType !== 'ecard');
+    }
+
     stepComplete(slug: string): boolean {
         if (slug === 'address') { return this.addressComplete; }
+        if (slug === 'account') { return this.accountType != null; }
         return true; // prototype: later steps are placeholders
     }
 
@@ -153,6 +170,8 @@ export class GetacardState {
         this.district = null;
         this.accountTypeOption = null;
         this.exceptionId = null;
+        // A different address can change what's offered.
+        this.accountType = null;
     }
 
     // Verify the selected address (with the given unit) via the address
@@ -243,6 +262,11 @@ export class GetacardState {
             this.district = district;
             this.accountTypeOption =
                 district === MAIN_DISTRICT_OF_RESIDENCE ? 'either' : 'all-access';
+
+            // Only one kind offered: no choice to make.
+            if (this.accountTypeOption === 'all-access') {
+                this.accountType = 'full';
+            }
         }
     }
 

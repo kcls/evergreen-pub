@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {GAC_STEPS, GacStep, GetacardState} from './state.service';
+import {GacStep, GetacardState} from './state.service';
 
 /**
  * Wizard shell: slim progress bar + step title up top, one centered content
@@ -13,7 +13,6 @@ import {GAC_STEPS, GacStep, GetacardState} from './state.service';
 })
 export class GetacardShellComponent implements OnInit {
 
-    steps = GAC_STEPS;
     index = 0;
 
     constructor(
@@ -21,6 +20,11 @@ export class GetacardShellComponent implements OnInit {
         private router: Router,
         public state: GetacardState,
     ) {}
+
+    // The step list is dynamic: e-card holders skip the physical-card step.
+    get steps(): GacStep[] {
+        return this.state.steps;
+    }
 
     ngOnInit() {
         // URL -> step, so deep links and browser back/forward work.

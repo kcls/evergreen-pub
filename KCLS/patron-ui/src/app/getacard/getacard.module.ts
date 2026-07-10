@@ -5,12 +5,14 @@ import {GetacardRoutingModule} from './routing.module';
 import {GetacardState} from './state.service';
 import {GetacardShellComponent} from './shell.component';
 import {AddressStepComponent} from './address-step.component';
+import {AccountStepComponent} from './account-step.component';
 import {PlaceholderStepComponent} from './placeholder-step.component';
 
 @NgModule({
   declarations: [
     GetacardShellComponent,
     AddressStepComponent,
+    AccountStepComponent,
     PlaceholderStepComponent,
   ],
   imports: [
