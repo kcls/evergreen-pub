@@ -1,13 +1,21 @@
 import {Injectable} from '@angular/core';
-import {FormBuilder, FormRecord, Validators} from '@angular/forms';
+import {AbstractControl, FormBuilder, FormRecord, Validators} from '@angular/forms';
 import {Observable, from} from 'rxjs';
 import {debounceTime, map, switchMap, toArray} from 'rxjs/operators';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
+import {Settings} from '../settings.service';
 import {CaptchaSessionService} from '../captcha-session.service';
 
 const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 const JUV_AGE = 18; // years
+const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
+
+export interface UserSettingType {
+    name: string;
+    label: string;
+    grp: string;
+}
 
 // What the address makes the patron eligible for.
 export type AccountTypeOption = 'either' | 'all-access' | null;
@@ -98,9 +106,30 @@ export class GetacardState {
     // Result of the existing-account (dupe) check; null = not checked.
     maybeDupeAccount: boolean | null = null;
 
+    // --- Stay in touch --------------------------------------------------------
+
+    contactForm: FormRecord;
+
+    // Notice opt-in setting types, grouped by delivery mechanism; the
+    // checkboxes only render for groups that have settings.
+    emailSettings: UserSettingType[] = [];
+    phoneSettings: UserSettingType[] = [];
+    textSettings: UserSettingType[] = [];
+    printSettings: UserSettingType[] = [];
+
+    // Orgs eligible as a hold pickup library.
+    pickupLibs: Hash[] = [];
+
+    // Mailing address selection (when it differs from residential).
+    mailingAddress: AddressSuggestion | null = null;
+    mailingSelected = false;
+    mailingNotViable = false;
+    mailingVerifying = false;
+
     constructor(
         private gateway: Gateway,
         private app: AppService,
+        private settings: Settings,
         private captcha: CaptchaSessionService,
         formBuilder: FormBuilder,
     ) {
@@ -131,6 +160,54 @@ export class GetacardState {
         // Re-run the existing-account check as identifying values settle.
         this.aboutForm.valueChanges.pipe(debounceTime(500)).subscribe(
             () => this.checkForExistingAccount());
+
+        this.contactForm = formBuilder.record({
+            email: ['', Validators.email],
+            phone: ['', Validators.pattern(PHONE_REGEX)],
+            smsIsSame: true,
+            smsNumber: [{value: '', disabled: true}, Validators.pattern(PHONE_REGEX)],
+            allEmailNotices: false,
+            allTextNotices: false,
+            allPhoneNotices: false,
+            pickupLib: 0,
+            mailingIsSame: true,
+            mailingStreet2: '',
+        });
+
+        const cf = this.contactForm;
+
+        cf.get('email')!.valueChanges.subscribe(() => this.applyContactRules());
+
+        cf.get('phone')!.valueChanges.subscribe(val => {
+            // When the SMS number mirrors the phone number, keep it in sync.
+            if (cf.get('smsIsSame')!.value) {
+                cf.get('smsNumber')!.setValue(val, {emitEvent: false});
+            }
+            this.applyContactRules();
+        });
+
+        // "Same for text/SMS": mirror the phone number into the SMS field
+        // when checked; clear it so the user can supply a different number
+        // when unchecked.
+        cf.get('smsIsSame')!.valueChanges.subscribe(isSame => {
+            const sms = cf.get('smsNumber')!;
+            sms.setValue(isSame ? cf.get('phone')!.value : '', {emitEvent: false});
+            if (isSame) {
+                sms.disable({emitEvent: false});
+            } else {
+                sms.enable({emitEvent: false});
+            }
+        });
+
+        ['allEmailNotices', 'allTextNotices', 'allPhoneNotices'].forEach(name =>
+            cf.get(name)!.valueChanges.subscribe(() => this.applyContactRules()));
+
+        cf.get('mailingIsSame')!.valueChanges.subscribe(isSame => {
+            if (isSame) { this.clearMailing(); }
+        });
+
+        this.loadOptInSettings();
+        this.loadPickupLibs();
     }
 
     // --- step gating ---------------------------------------------------------
@@ -145,7 +222,19 @@ export class GetacardState {
         if (slug === 'address') { return this.addressComplete; }
         if (slug === 'account') { return this.accountType != null; }
         if (slug === 'about-you') { return this.aboutForm.valid; }
+        if (slug === 'contact') {
+            const mailingOk = !!this.contactForm.get('mailingIsSame')!.value
+                || (this.mailingSelected && !this.mailingNotViable);
+            return this.contactForm.valid && mailingOk;
+        }
         return true; // prototype: later steps are placeholders
+    }
+
+    // Record the requested account type and re-derive the contact rules
+    // that depend on it (e.g. e-cards require an email address).
+    setAccountType(type: AccountType) {
+        this.accountType = type;
+        this.applyContactRules();
     }
 
     get addressComplete(): boolean {
@@ -212,7 +301,7 @@ export class GetacardState {
         this.accountTypeOption = null;
         this.exceptionId = null;
         // A different address can change what's offered.
-        this.accountType = null;
+        this.setAccountType(null);
     }
 
     // Verify the selected address (with the given unit) via the address
@@ -308,8 +397,13 @@ export class GetacardState {
 
             // Only one kind offered: no choice to make.
             if (this.accountTypeOption === 'all-access') {
-                this.accountType = 'full';
+                this.setAccountType('full');
             }
+        }
+
+        // Default the hold pickup library to the home library.
+        if (this.homeOrgId && !this.contactForm.get('pickupLib')!.value) {
+            this.contactForm.get('pickupLib')!.setValue(this.homeOrgId);
         }
     }
 
@@ -372,15 +466,158 @@ export class GetacardState {
         }).catch(err => console.error('Existing account check failed', err));
     }
 
+    // --- Stay in touch rules ---------------------------------------------------
+
+    wantsEmailNotices(): boolean {
+        return this.emailSettings.length > 0
+            && !!this.contactForm.get('allEmailNotices')!.value;
+    }
+
+    wantsPhoneNotices(): boolean {
+        return this.phoneSettings.length > 0
+            && !!this.contactForm.get('allPhoneNotices')!.value;
+    }
+
+    wantsTextNotices(): boolean {
+        return this.textSettings.length > 0
+            && !!this.contactForm.get('allTextNotices')!.value;
+    }
+
+    // Determines if a contact type (phone/email/etc) is required based
+    // on notice and account type preferences.  Only the required validator
+    // is toggled; the format validators always apply.
+    private applyContactRules() {
+        const cf = this.contactForm;
+        const email = cf.get('email')!;
+        const phone = cf.get('phone')!;
+        const sms = cf.get('smsNumber')!;
+
+        const emailRequired =
+            this.accountType === 'ecard' ||
+            this.wantsEmailNotices() ||
+            (this.accountType === 'full' && !phone.value);
+
+        const phoneRequired =
+            this.wantsPhoneNotices() ||
+            (this.accountType === 'full' && !email.value);
+
+        const smsRequired = this.wantsTextNotices();
+
+        this.setRequired(email, emailRequired);
+        this.setRequired(phone, phoneRequired);
+        this.setRequired(sms, smsRequired);
+    }
+
+    private setRequired(ctl: AbstractControl, required: boolean) {
+        if (required === ctl.hasValidator(Validators.required)) { return; }
+        if (required) {
+            ctl.addValidators(Validators.required);
+        } else {
+            ctl.removeValidators(Validators.required);
+        }
+        ctl.updateValueAndValidity({emitEvent: false});
+    }
+
+    private loadOptInSettings() {
+        this.gateway.request(
+            'open-ils.actor',
+            'open-ils.actor.event_def.opt_in.settings.opac_visible'
+        ).subscribe(setting => {
+            const set = setting as UserSettingType;
+            const grp = set.grp || '';
+
+            if (grp.match(/email/)) {
+                this.emailSettings.push(set);
+            } else if (grp.match(/phone/)) {
+                this.phoneSettings.push(set);
+            } else if (grp.match(/text/)) {
+                this.textSettings.push(set);
+            } else if (grp.match(/print/)) {
+                this.printSettings.push(set);
+            }
+        });
+    }
+
+    // Orgs where holds may be picked up: the org unit type can hold volumes
+    // and the org is not flagged as not-a-pickup-lib.
+    private loadPickupLibs() {
+        this.app.getOrgTree().then(() =>
+            this.settings.settingValueForOrgs('opac.holds.org_unit_not_pickup_lib')
+        ).then((list: Hash[]) => {
+            const libs: Hash[] = [];
+
+            list.forEach(setting => {
+                if (!(setting['summary'] as Hash)['value']) {
+                    const org = this.app.getOrgUnit(setting['org_unit'] as number);
+                    if (org && (org['ou_type'] as Hash)['can_have_vols'] === 't') {
+                        org['id'] = Number(org['id']);
+                        libs.push(org);
+                    }
+                }
+            });
+
+            this.pickupLibs = libs.sort((a, b) =>
+                (a['name'] as string) < (b['name'] as string) ? -1 : 1);
+        });
+    }
+
+    // --- mailing address --------------------------------------------------------
+
+    // Apply a chosen mailing address and confirm it's usable for mail
+    // delivery.  (Unlike the residential address, no home-org/district
+    // resolution applies.)
+    selectMailing(addr: AddressSuggestion): Promise<void> {
+        this.mailingAddress = addr;
+        this.mailingSelected = true;
+        this.mailingNotViable = false;
+        this.mailingVerifying = true;
+        this.contactForm.get('mailingStreet2')!.setValue(
+            addr.secondary || '', {emitEvent: false});
+
+        return this.requestOne('kcls.address', 'kcls.address.lookup', {
+            street: addr.street_line,
+            secondary: addr.secondary,
+            city: addr.city,
+            state: addr.state,
+            zipcode: addr.zipcode,
+        }).then(found => {
+            this.mailingVerifying = false;
+            const f = found as Hash | null;
+            if (f && f['is_viable_mailing'] === false) {
+                this.mailingNotViable = true;
+            }
+        }).catch(err => {
+            this.mailingVerifying = false;
+            console.error('Mailing address verification failed', err);
+        });
+    }
+
+    clearMailing() {
+        this.mailingAddress = null;
+        this.mailingSelected = false;
+        this.mailingNotViable = false;
+        this.mailingVerifying = false;
+        this.contactForm.get('mailingStreet2')!.setValue('', {emitEvent: false});
+    }
+
     // --- backend APIs (session token injected) --------------------------------
 
-    autocomplete(term: string): Observable<AddressSuggestion[]> {
+    autocomplete(
+        term: string,
+        kind: 'residential' | 'mailing' = 'residential'
+    ): Observable<AddressSuggestion[]> {
+
+        // A residence can't be commercial or a PO box; mailing addresses can
+        // be either.  The base address of a multi-unit building is never
+        // selectable.
+        const exclude = kind === 'residential'
+            ? 'base-address,commercial,po-box'
+            : 'base-address';
+
         return this.request('kcls.address', 'kcls.address.autocomplete', {
             'state_filter': 'WA',
             'search': term.toLowerCase(),
-            // Residential: a residence can't be commercial or a PO box; the
-            // base address of a multi-unit building isn't selectable.
-            'exclude': 'base-address,commercial,po-box',
+            'exclude': exclude,
             'exclude_ofc': true,
         }).pipe(
             map(s => s as AddressSuggestion),

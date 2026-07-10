@@ -1,0 +1,146 @@
+<p class="gac-help" i18n>
+  Please share your communication preferences. This will be your
+  preferred method for staying connected with the library.
+</p>
+
+<form [formGroup]="state.contactForm">
+
+  <div class="gac-grid-2">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Email Address</mat-label>
+      <input type="email" matInput formControlName="email"/>
+      <mat-error *ngIf="ctrl('email').hasError('required')" i18n>
+        <ng-container *ngIf="state.accountType === 'ecard'">
+          Email is <strong>required</strong> to receive email notices.
+        </ng-container>
+        <ng-container *ngIf="state.accountType !== 'ecard'">
+          <ng-container *ngIf="state.wantsEmailNotices()">
+            Email is <b>required</b> for email notices.
+          </ng-container>
+          <ng-container *ngIf="!state.wantsEmailNotices()">
+            All-access library cards require either a phone number or email address.
+          </ng-container>
+        </ng-container>
+      </mat-error>
+      <mat-error *ngIf="ctrl('email').hasError('email')" i18n>
+        Email format is <strong>not valid</strong>
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Phone Number</mat-label>
+      <input type="tel" matInput formControlName="phone" autoPhoneDash/>
+      <mat-hint>111-222-3333</mat-hint>
+      <mat-error *ngIf="ctrl('phone').hasError('pattern')" i18n>
+        Phone Number format is <strong>111-222-3333</strong>
+      </mat-error>
+      <mat-error *ngIf="ctrl('phone').hasError('required')" i18n>
+        <ng-container *ngIf="state.wantsPhoneNotices()">
+          Phone Number is <b>required</b> for phone notices.
+        </ng-container>
+        <ng-container *ngIf="!state.wantsPhoneNotices()">
+          All-access library cards require either a phone number or email address.
+        </ng-container>
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="gac-check-row">
+    <mat-checkbox formControlName="smsIsSame" i18n>
+      My text/SMS number is the same as my phone number.
+    </mat-checkbox>
+  </div>
+
+  <div class="gac-grid-2" *ngIf="!ctrl('smsIsSame').value">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>SMS/Text Number</mat-label>
+      <input matInput formControlName="smsNumber" type="text" autoPhoneDash/>
+      <mat-hint>111-222-3333</mat-hint>
+      <mat-error *ngIf="ctrl('smsNumber').hasError('required')" i18n>
+        SMS/Text Number is <strong>required</strong> to receive text notices.
+      </mat-error>
+      <mat-error *ngIf="ctrl('smsNumber').hasError('pattern')" i18n>
+        SMS/Text Number format is <strong>111-222-3333</strong>
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <ng-container *ngIf="state.accountType === 'full'">
+
+    <h3 class="gac-subhead" i18n>Notification Preferences</h3>
+    <div class="gac-check-col">
+      <mat-checkbox formControlName="allEmailNotices"
+          *ngIf="state.emailSettings.length > 0" i18n>Email Notices</mat-checkbox>
+      <mat-checkbox formControlName="allTextNotices"
+          *ngIf="state.textSettings.length > 0" i18n>Text Notices</mat-checkbox>
+      <mat-checkbox formControlName="allPhoneNotices"
+          *ngIf="state.phoneSettings.length > 0" i18n>Phone Notices</mat-checkbox>
+    </div>
+
+    <h3 class="gac-subhead" i18n>What library location would you like to receive your holds?</h3>
+    <div class="gac-grid-2">
+      <mat-form-field appearance="outline">
+        <mat-label i18n>Hold Pickup Library</mat-label>
+        <mat-select formControlName="pickupLib">
+          <mat-option [value]="org.id" *ngFor="let org of state.pickupLibs">{{org.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <p class="gac-note" i18n>
+      Not sure? Find your nearest library
+      <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
+    </p>
+
+    <h3 class="gac-subhead" i18n>Mailing Address</h3>
+
+    <div class="gac-check-row">
+      <mat-checkbox formControlName="mailingIsSame" i18n>
+        Same as Residential Address
+      </mat-checkbox>
+    </div>
+
+    <ng-container *ngIf="!ctrl('mailingIsSame').value">
+
+      <ng-container *ngIf="!state.mailingSelected; else mailingSelectedTpl">
+        <gac-address-search #mailSearch kind="mailing" (picked)="pickMailing($event)">
+        </gac-address-search>
+      </ng-container>
+
+      <ng-template #mailingSelectedTpl>
+        <div class="gac-addr-card">
+          <span class="material-icons gac-check" aria-hidden="true">check_circle</span>
+          <span class="gac-addr-lines">
+            <span class="gac-addr-primary">{{state.mailingAddress?.street_line}}<ng-container
+                *ngIf="ctrl('mailingStreet2').value"> {{ctrl('mailingStreet2').value}}</ng-container></span>
+            <span class="gac-addr-secondary">
+              {{state.mailingAddress?.city}}, {{state.mailingAddress?.state}}
+              {{state.mailingAddress?.zipcode}} &#183; United States
+            </span>
+          </span>
+          <button mat-button type="button" class="gac-edit"
+              (click)="editMailing()" i18n>Edit</button>
+        </div>
+
+        <div class="gac-grid-2">
+          <mat-form-field appearance="outline">
+            <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
+            <input type="text" matInput formControlName="mailingStreet2"/>
+          </mat-form-field>
+        </div>
+
+        <div class="gac-async-row" *ngIf="state.mailingVerifying">
+          <mat-spinner diameter="18"></mat-spinner>
+          <span i18n>Verifying address&#8230;</span>
+        </div>
+
+        <div class="gac-error" *ngIf="state.mailingNotViable" i18n>
+          This address can't be used as a mailing address. Please choose a
+          different address.
+        </div>
+      </ng-template>
+
+    </ng-container>
+
+  </ng-container>
+
+</form>

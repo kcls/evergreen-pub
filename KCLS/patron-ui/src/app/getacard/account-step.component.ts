@@ -17,6 +17,6 @@ export class AccountStepComponent {
     constructor(public state: GetacardState) {}
 
     choose(type: AccountType) {
-        this.state.accountType = type;
+        this.state.setAccountType(type);
     }
 }

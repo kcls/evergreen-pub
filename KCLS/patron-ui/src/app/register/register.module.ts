@@ -6,14 +6,15 @@ import {RegisterService} from './register.service';
 import {RegisterComponent} from './register.component';
 import {RegisterCreateComponent} from './create.component';
 import {RegisterCompleteComponent} from './complete.component';
-import {AutoPhoneDashDirective} from './auto-phone-dash.directive';
+
+// NOTE: AutoPhoneDashDirective moved to AppCommonModule so other
+// features (e.g. getacard) can use it.
 
 @NgModule({
   declarations: [
     RegisterComponent,
     RegisterCreateComponent,
     RegisterCompleteComponent,
-    AutoPhoneDashDirective,
   ],
   imports: [
     CommonModule,
