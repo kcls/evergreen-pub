@@ -1,0 +1,162 @@
+/* All colors/radii come from the shell's design tokens (fallbacks included
+   so the component renders sanely in isolation). */
+
+.gac-help {
+  color: var(--gac-ink, #1a1a1a);
+  margin: 0 0 12px;
+}
+
+.gac-field {
+  width: 100%;
+}
+
+/* Suggestion dropdown: borderless rows, pin icon, two-line layout. */
+.gac-dropdown {
+  display: flex;
+  flex-direction: column;
+  margin-top: -12px;
+  margin-bottom: 8px;
+  background: #fff;
+  border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  box-shadow: var(--gac-shadow, 0 2px 12px rgba(0, 63, 107, 0.12));
+  overflow: hidden;
+}
+
+.gac-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover,
+  &:focus {
+    background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+    outline: none;
+  }
+}
+
+.gac-pin {
+  color: var(--gac-blue, #003f6b);
+  font-size: 20px;
+  line-height: 1.4;
+  flex: 0 0 auto;
+}
+
+.gac-sug-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gac-sug-primary {
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-sug-secondary {
+  font-size: 0.85rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-more {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+/* Shared row for async feedback (searching / verifying). */
+.gac-async-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-error {
+  color: var(--gac-error, #b3261e);
+  margin: 4px 0 8px;
+}
+
+/* Confirmed address card. */
+.gac-addr-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+  border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.gac-check {
+  color: var(--gac-green, #2e7d32);
+}
+
+.gac-addr-lines {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.gac-addr-primary {
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-addr-secondary {
+  font-size: 0.9rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-edit {
+  --mdc-text-button-label-text-color: var(--gac-blue, #003f6b);
+  flex: 0 0 auto;
+}
+
+.gac-unit-check {
+  color: var(--gac-green, #2e7d32);
+  margin-right: 8px;
+}
+
+/* Eligibility confirmation panel. */
+.gac-eligible {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(46, 125, 50, 0.06);
+  border: 1px solid rgba(46, 125, 50, 0.35);
+  border-radius: var(--gac-radius, 8px);
+  padding: 12px 16px;
+  margin-top: 12px;
+
+  .material-icons {
+    color: var(--gac-green, #2e7d32);
+  }
+}
+
+.gac-eligible-head {
+  display: block;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-eligible-sub {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+.gac-note {
+  color: var(--gac-muted, #5f6b76);
+  margin-top: 12px;
+}

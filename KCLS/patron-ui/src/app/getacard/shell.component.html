@@ -1,0 +1,34 @@
+<div class="gac-page">
+
+  <div class="gac-overline" i18n>Get a Library Card</div>
+
+  <div class="gac-head">
+    <h1 class="gac-title">{{current.label}}</h1>
+    <span class="gac-count" i18n>Step {{index + 1}} of {{steps.length}}</span>
+  </div>
+
+  <div class="gac-progress" role="progressbar"
+      [attr.aria-valuenow]="index + 1" [attr.aria-valuemin]="1"
+      [attr.aria-valuemax]="steps.length">
+    <div class="gac-progress-fill" [style.width.%]="progressPct"></div>
+  </div>
+
+  <main class="gac-card">
+    <ng-container [ngSwitch]="current.slug">
+      <gac-address-step *ngSwitchCase="'address'"></gac-address-step>
+      <gac-placeholder-step *ngSwitchDefault [slug]="current.slug"></gac-placeholder-step>
+    </ng-container>
+  </main>
+
+  <div class="gac-nav">
+    <button mat-button type="button" class="gac-back"
+        [class.gac-hidden]="index === 0" (click)="back()" i18n>
+      &#171; Back
+    </button>
+    <button mat-flat-button type="button" class="gac-continue"
+        [disabled]="!canContinue() || isLast" (click)="next()" i18n>
+      Continue &#187;
+    </button>
+  </div>
+
+</div>

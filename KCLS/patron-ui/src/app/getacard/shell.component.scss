@@ -1,0 +1,103 @@
+/* Design tokens for the getacard flow: ONE blue, a tint scale of it, one
+   radius, one shadow.  Every box in the flow uses these; custom properties
+   inherit into the step components rendered inside this shell. */
+:host {
+  --gac-blue: #003f6b;
+  --gac-tint-strong: rgba(0, 63, 107, 0.35);
+  --gac-tint-mid: rgba(0, 63, 107, 0.15);
+  --gac-tint-soft: rgba(0, 63, 107, 0.06);
+  --gac-wash: rgba(0, 63, 107, 0.03);
+  --gac-ink: #1a1a1a;
+  --gac-muted: #5f6b76;
+  --gac-green: #2e7d32;
+  --gac-error: #b3261e;
+  --gac-radius: 8px;
+  --gac-shadow: 0 2px 12px rgba(0, 63, 107, 0.12);
+
+  display: block;
+  min-height: 100vh;
+  background: var(--gac-wash);
+}
+
+.gac-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.gac-overline {
+  color: var(--gac-blue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.gac-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gac-title {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--gac-ink);
+  margin: 0 0 10px;
+}
+
+.gac-count {
+  color: var(--gac-muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.gac-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gac-tint-mid);
+  overflow: hidden;
+}
+
+.gac-progress-fill {
+  height: 100%;
+  background: var(--gac-blue);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.gac-card {
+  background: #fff;
+  border-radius: var(--gac-radius);
+  box-shadow: var(--gac-shadow);
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.gac-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.gac-back {
+  --mdc-text-button-label-text-color: var(--gac-blue);
+}
+
+.gac-continue {
+  --mdc-filled-button-container-color: var(--gac-blue);
+  --mdc-filled-button-label-text-color: #fff;
+}
+
+/* Keep the footer layout stable when Back doesn't apply. */
+.gac-hidden {
+  visibility: hidden;
+}
+
+@media (max-width: 480px) {
+  .gac-card { padding: 16px; }
+  .gac-title { font-size: 1.3rem; }
+}

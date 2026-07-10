@@ -9,6 +9,11 @@ const routes: Routes = [{
   path: 'register',
   loadChildren: () =>
     import('./register/register.module').then(m => m.RegisterModule)
+}, {
+  // Prototype of the redesigned registration flow.
+  path: 'getacard',
+  loadChildren: () =>
+    import('./getacard/getacard.module').then(m => m.GetacardModule)
 }];
 
 @NgModule({

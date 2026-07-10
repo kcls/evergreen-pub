@@ -1,0 +1,104 @@
+<ng-container *ngIf="!state.addressSelected; else selectedTpl">
+
+  <p class="gac-help" i18n>Let us know where you live or own property in King County:</p>
+
+  <mat-form-field class="gac-field" appearance="outline">
+    <mat-label i18n>Address</mat-label>
+    <input type="text" matInput autocomplete="off"
+           placeholder="Start typing an address, e.g. 123 Main..."
+           i18n-placeholder
+           aria-label="Street Address"
+           [formControl]="street1"/>
+  </mat-form-field>
+
+  <div class="gac-dropdown" *ngIf="loading || suggestions.length > 0">
+    <div class="gac-async-row" *ngIf="loading">
+      <mat-spinner diameter="18"></mat-spinner>
+      <span i18n>Searching addresses&#8230;</span>
+    </div>
+
+    <ng-container *ngIf="!loading">
+      <button type="button" class="gac-suggestion"
+          *ngFor="let addr of suggestions | slice:0:5"
+          (click)="select(addr)">
+        <span class="material-icons gac-pin" aria-hidden="true">place</span>
+        <span class="gac-sug-lines">
+          <span class="gac-sug-primary">{{addr.street_line}}<ng-container
+              *ngIf="addr.entries > 1"> ({{addr.entries}} units)</ng-container></span>
+          <span class="gac-sug-secondary">{{addr.city}}, {{addr.state}} &#183; United States</span>
+        </span>
+      </button>
+
+      <div class="gac-more" *ngIf="suggestions.length > 5" i18n>
+        {{suggestions.length - 5}} more not shown &#8212; keep typing to narrow results.
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="gac-error" *ngIf="!loading && notFound" i18n>
+    We couldn't find that address. Please check your entry.
+  </div>
+
+</ng-container>
+
+<ng-template #selectedTpl>
+
+  <div class="gac-addr-card">
+    <span class="material-icons gac-check" aria-hidden="true">check_circle</span>
+    <span class="gac-addr-lines">
+      <span class="gac-addr-primary">{{state.address?.street_line}}<ng-container
+          *ngIf="state.unitValid === true && street2.value"> {{street2.value}}</ng-container></span>
+      <span class="gac-addr-secondary">
+        {{state.address?.city}}, {{state.address?.state}}
+        {{state.address?.zipcode}} &#183; United States
+      </span>
+    </span>
+    <button mat-button type="button" class="gac-edit" (click)="edit()" i18n>Edit</button>
+  </div>
+
+  <ng-container *ngIf="showUnitField()">
+    <p class="gac-help" *ngIf="state.unitRequired && state.unitValid !== true" i18n>
+      The selected address requires an Apt / Unit / Suite / Bldg number.
+    </p>
+
+    <mat-form-field class="gac-field" appearance="outline">
+      <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
+      <input type="text" matInput #unitInput [formControl]="street2"/>
+      <span class="material-icons gac-unit-check" matSuffix
+            *ngIf="state.unitValid === true" aria-hidden="true">check_circle</span>
+    </mat-form-field>
+
+    <div class="gac-error" *ngIf="state.unitValid === false" i18n>
+      We couldn't match that unit to a known address. Please check the unit number.
+    </div>
+  </ng-container>
+
+  <div class="gac-async-row" *ngIf="state.verifying">
+    <mat-spinner diameter="18"></mat-spinner>
+    <span i18n>Verifying address&#8230;</span>
+  </div>
+
+  <div class="gac-error" *ngIf="state.notViable" i18n>
+    This address is not a valid residential address.
+  </div>
+
+  <div class="gac-error" *ngIf="state.blocked" i18n>
+    This address isn't eligible for online registration &#8212; please contact your library.
+  </div>
+
+  <div class="gac-eligible" *ngIf="state.homeOrgId != null && state.district">
+    <span class="material-icons" aria-hidden="true">check_circle</span>
+    <span>
+      <span class="gac-eligible-head" i18n>This address is in our service area.</span>
+      <span class="gac-eligible-sub" *ngIf="state.homeOrgName" i18n>
+        Home library: {{state.homeOrgName}}
+      </span>
+    </span>
+  </div>
+
+  <div class="gac-note" *ngIf="state.homeOrgId != null && !state.district" i18n>
+    This address appears to be outside our service area. You can continue, and
+    we'll explain your options on the next step.
+  </div>
+
+</ng-template>
