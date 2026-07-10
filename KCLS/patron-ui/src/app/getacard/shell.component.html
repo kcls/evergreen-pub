@@ -20,7 +20,7 @@
       <gac-about-step *ngSwitchCase="'about-you'"></gac-about-step>
       <gac-contact-step *ngSwitchCase="'contact'"></gac-contact-step>
       <gac-card-step *ngSwitchCase="'card'"></gac-card-step>
-      <gac-placeholder-step *ngSwitchDefault [slug]="current.slug"></gac-placeholder-step>
+      <gac-review-step *ngSwitchCase="'review'"></gac-review-step>
     </ng-container>
   </main>
 
@@ -29,9 +29,13 @@
         [class.gac-hidden]="index === 0" (click)="back()" i18n>
       &#171; Back
     </button>
-    <button mat-flat-button type="button" class="gac-continue"
-        [disabled]="!canContinue() || isLast" (click)="next()" i18n>
+    <button mat-flat-button type="button" class="gac-continue" *ngIf="!isLast"
+        [disabled]="!canContinue()" (click)="next()" i18n>
       Continue &#187;
+    </button>
+    <button mat-flat-button type="button" class="gac-continue" *ngIf="isLast"
+        [disabled]="!canContinue()" (click)="submit()" i18n>
+      Submit
     </button>
   </div>
 

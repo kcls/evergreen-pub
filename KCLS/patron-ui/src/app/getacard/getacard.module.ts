@@ -10,7 +10,8 @@ import {AccountStepComponent} from './account-step.component';
 import {AboutStepComponent} from './about-step.component';
 import {ContactStepComponent} from './contact-step.component';
 import {CardStepComponent} from './card-step.component';
-import {PlaceholderStepComponent} from './placeholder-step.component';
+import {ReviewStepComponent} from './review-step.component';
+import {GetacardCompleteComponent} from './complete.component';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,8 @@ import {PlaceholderStepComponent} from './placeholder-step.component';
     AboutStepComponent,
     ContactStepComponent,
     CardStepComponent,
-    PlaceholderStepComponent,
+    ReviewStepComponent,
+    GetacardCompleteComponent,
   ],
   imports: [
     CommonModule,

@@ -1,0 +1,147 @@
+<div class="gac-summary">
+
+  <div class="gac-section">
+    <div class="gac-section-header">
+      <span class="gac-section-title" i18n>Where You Live</span>
+      <button mat-button type="button" class="gac-edit-btn"
+          (click)="edit('address')" i18n>Edit</button>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Residential</span>
+      <span class="gac-value">
+        {{state.address?.street_line}}<ng-container
+          *ngIf="state.street2">, {{state.street2}}</ng-container>,
+        {{state.address?.city}}, {{state.address?.state}} {{state.address?.zipcode}}
+      </span>
+    </div>
+    <div class="gac-row" *ngIf="state.homeOrgName">
+      <span class="gac-label" i18n>Home Library</span>
+      <span class="gac-value">{{state.homeOrgName}}</span>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Account</span>
+      <span class="gac-value">
+        <ng-container *ngIf="state.accountType === 'ecard'" i18n>Digital library card</ng-container>
+        <ng-container *ngIf="state.accountType === 'full'" i18n>All-access library card</ng-container>
+      </span>
+    </div>
+  </div>
+
+  <div class="gac-section">
+    <div class="gac-section-header">
+      <span class="gac-section-title" i18n>About You</span>
+      <button mat-button type="button" class="gac-edit-btn"
+          (click)="edit('about-you')" i18n>Edit</button>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Name</span>
+      <span class="gac-value">
+        {{about('first').value}}
+        <ng-container *ngIf="about('middle').value"> {{about('middle').value}}</ng-container>
+        {{about('last').value}}
+      </span>
+    </div>
+    <div class="gac-row" *ngIf="!about('legalIsSame').value">
+      <span class="gac-label" i18n>Legal Name</span>
+      <span class="gac-value">
+        {{about('legalFirst').value}}
+        <ng-container *ngIf="about('legalMiddle').value"> {{about('legalMiddle').value}}</ng-container>
+        {{about('legalLast').value}}
+      </span>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Date of Birth</span>
+      <span class="gac-value">{{$any(about('dob').value) | date:'mediumDate'}}</span>
+    </div>
+    <div class="gac-row" *ngIf="state.isJuvenile">
+      <span class="gac-label" i18n>Parent / Guardian</span>
+      <span class="gac-value">{{about('guardian').value}}</span>
+    </div>
+  </div>
+
+  <div class="gac-section">
+    <div class="gac-section-header">
+      <span class="gac-section-title" i18n>Communication Preferences</span>
+      <button mat-button type="button" class="gac-edit-btn"
+          (click)="edit('contact')" i18n>Edit</button>
+    </div>
+    <div class="gac-row" *ngIf="contact('email').value">
+      <span class="gac-label" i18n>Email</span>
+      <span class="gac-value">{{contact('email').value}}</span>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Phone</span>
+      <span class="gac-value">{{contact('phone').value}}</span>
+    </div>
+    <div class="gac-row" *ngIf="contact('smsNumber').value">
+      <span class="gac-label" i18n>SMS/Text</span>
+      <span class="gac-value">{{contact('smsNumber').value}}</span>
+    </div>
+    <div class="gac-row" *ngIf="state.accountType === 'full'">
+      <span class="gac-label" i18n>Notices</span>
+      <span class="gac-value">
+        <ng-container *ngIf="!contact('allEmailNotices').value && !contact('allTextNotices').value && !contact('allPhoneNotices').value" i18n>None</ng-container>
+        <ng-container *ngIf="contact('allEmailNotices').value" i18n>Email </ng-container>
+        <ng-container *ngIf="contact('allTextNotices').value" i18n>Text </ng-container>
+        <ng-container *ngIf="contact('allPhoneNotices').value" i18n>Phone</ng-container>
+      </span>
+    </div>
+    <div class="gac-row" *ngIf="state.accountType === 'full'">
+      <span class="gac-label" i18n>Pickup Library</span>
+      <span class="gac-value">{{pickupLibName()}}</span>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Mailing</span>
+      <span class="gac-value" *ngIf="contact('mailingIsSame').value" i18n>Same as residential</span>
+      <span class="gac-value" *ngIf="!contact('mailingIsSame').value">
+        {{state.mailingAddress?.street_line}}<ng-container
+          *ngIf="contact('mailingStreet2').value">, {{contact('mailingStreet2').value}}</ng-container>,
+        {{state.mailingAddress?.city}}, {{state.mailingAddress?.state}} {{state.mailingAddress?.zipcode}}
+      </span>
+    </div>
+  </div>
+
+  <div class="gac-section" *ngIf="state.accountType === 'full'">
+    <div class="gac-section-header">
+      <span class="gac-section-title" i18n>Your Library Card</span>
+      <button mat-button type="button" class="gac-edit-btn"
+          (click)="edit('card')" i18n>Edit</button>
+    </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Delivery</span>
+      <span class="gac-value">{{state.delivery}}</span>
+    </div>
+    <div class="gac-row" *ngIf="state.cardDesign">
+      <span class="gac-label" i18n>Card Design</span>
+      <span class="gac-value">
+        <img class="gac-summary-card"
+             [src]="state.cardOptionUrl(state.cardDesign)"
+             [alt]="state.cardDescription(state.cardDesign)"/>
+        <span class="gac-summary-card-desc">{{state.cardDescription(state.cardDesign)}}</span>
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<form [formGroup]="state.reviewForm">
+
+  <h3 class="gac-subhead" i18n>Let's stay in touch.</h3>
+  <div class="gac-check-col">
+    <mat-checkbox formControlName="wantsLibNews" i18n>
+      Library News and Events
+    </mat-checkbox>
+    <mat-checkbox formControlName="wantsFoundationInfo" i18n>
+      KCLS Foundation Information
+    </mat-checkbox>
+  </div>
+
+  <div class="gac-terms">
+    <mat-checkbox formControlName="termsOfService" i18n>
+      I assume full responsibility for the use of this card and all
+      charges associated with its use. I will give immediate notice of
+      loss of card or change of address.
+    </mat-checkbox>
+  </div>
+
+</form>

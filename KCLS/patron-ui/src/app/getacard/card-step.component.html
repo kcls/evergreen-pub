@@ -3,14 +3,14 @@
 
 <div class="gac-cards" role="radiogroup" aria-label="Card Design" i18n-aria-label>
   <button type="button" class="gac-card-tile" role="radio"
-      *ngFor="let card of cardOptions"
+      *ngFor="let card of state.cardOptions"
       [attr.aria-checked]="state.cardDesign === card"
       [class.gac-card-tile-selected]="state.cardDesign === card"
       (click)="chooseDesign(card)">
     <span class="material-icons gac-card-check" aria-hidden="true"
         *ngIf="state.cardDesign === card">check_circle</span>
-    <img [src]="cardOptionUrl(card)" [alt]="cardDescription(card)"/>
-    <span class="gac-card-desc">{{cardDescription(card)}}</span>
+    <img [src]="state.cardOptionUrl(card)" [alt]="state.cardDescription(card)"/>
+    <span class="gac-card-desc">{{state.cardDescription(card)}}</span>
   </button>
 </div>
 

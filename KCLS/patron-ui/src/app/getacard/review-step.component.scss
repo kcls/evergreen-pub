@@ -1,0 +1,83 @@
+/* Summary sections share the flow's single box recipe. */
+.gac-summary {
+  border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  overflow: hidden;
+}
+
+.gac-section {
+  padding: 12px 16px;
+
+  & + & {
+    border-top: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  }
+}
+
+.gac-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.gac-section-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gac-blue, #003f6b);
+}
+
+.gac-edit-btn {
+  --mdc-text-button-label-text-color: var(--gac-blue, #003f6b);
+  min-width: auto;
+  line-height: 1.5;
+}
+
+.gac-row {
+  display: flex;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 0.95rem;
+}
+
+.gac-label {
+  flex: 0 0 130px;
+  color: var(--gac-muted, #5f6b76);
+  font-weight: 500;
+}
+
+.gac-value {
+  flex: 1;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-summary-card {
+  display: block;
+  max-height: 150px;
+  border-radius: 6px;
+}
+
+.gac-summary-card-desc {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-subhead {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+  margin: 20px 0 12px;
+}
+
+.gac-check-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gac-terms {
+  margin-top: 20px;
+}

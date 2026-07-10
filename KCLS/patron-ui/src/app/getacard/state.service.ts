@@ -11,10 +11,24 @@ const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 const JUV_AGE = 18; // years
 const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
 
+const STAT_CAT_LIB_NEWS = 3;
+const STAT_CAT_FOUNDATION_NEWS = 4;
+const STAT_CAT_CARD_STYLE = 10;
+const STAT_CAT_DISTRICT_OF_RESIDENCE = 12;
+
 export interface UserSettingType {
     name: string;
     label: string;
     grp: string;
+}
+
+export interface GacRegisterResult {
+    complete: boolean;
+    success: boolean;
+    barcode: string | null;
+    accountType: string;
+    deliveryMethod: string;
+    homeOrgName: string;
 }
 
 // What the address makes the patron eligible for.
@@ -132,6 +146,48 @@ export class GetacardState {
     cardDesign: string | null = null;
     delivery: 'Pick up' | 'Mail' = 'Mail';
 
+    cardOptions = [
+        '2025-Barry-Johnson',
+        '2025-Bethany-Fackrell',
+        '2025-Invisible-Creature',
+        '2025-Hernan-Paganini',
+        '2025-Marisol-Ortega',
+        '2025-Stacy-Nguyen',
+        '2025-Stevie-Shao',
+    ];
+
+    cardDescriptions: {[key: string]: string} = {
+        '2025-Barry-Johnson': $localize`A portrait of everyday Black life, illustrated by Barry Johnson`,
+        '2025-Bethany-Fackrell': $localize`Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell`,
+        '2025-Invisible-Creature': $localize`A Pacific Northwest legend brought to life, illustrated by Don Clark`,
+        '2025-Hernan-Paganini': $localize`An abstract multicultural flow, illustrated by Hernan Paganini`,
+        '2025-Marisol-Ortega': $localize`Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega`,
+        '2025-Stacy-Nguyen': $localize`A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen`,
+        '2025-Stevie-Shao': $localize`Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao`,
+    };
+
+    cardOptionUrl(name: string): string {
+        return `/images/patron_cards/${name}.png`;
+    }
+
+    cardDescription(name: string): string {
+        return this.cardDescriptions[name] ?? '';
+    }
+
+    // --- Review & submit ---------------------------------------------------------
+
+    reviewForm: FormRecord;
+    submitting = false;
+
+    registerResult: GacRegisterResult = {
+        complete: false,
+        success: false,
+        barcode: null,
+        accountType: '',
+        deliveryMethod: '',
+        homeOrgName: '',
+    };
+
     constructor(
         private gateway: Gateway,
         private app: AppService,
@@ -212,6 +268,12 @@ export class GetacardState {
             if (isSame) { this.clearMailing(); }
         });
 
+        this.reviewForm = formBuilder.record({
+            wantsLibNews: false,
+            wantsFoundationInfo: false,
+            termsOfService: false,
+        });
+
         this.loadOptInSettings();
         this.loadPickupLibs();
     }
@@ -234,7 +296,10 @@ export class GetacardState {
             return this.contactForm.valid && mailingOk;
         }
         if (slug === 'card') { return this.cardDesign != null; }
-        return true; // prototype: later steps are placeholders
+        if (slug === 'review') {
+            return !!this.reviewForm.get('termsOfService')!.value && !this.submitting;
+        }
+        return true;
     }
 
     // Record the requested account type and re-derive the contact rules
@@ -605,6 +670,136 @@ export class GetacardState {
         this.mailingNotViable = false;
         this.mailingVerifying = false;
         this.contactForm.get('mailingStreet2')!.setValue('', {emitEvent: false});
+    }
+
+    // --- submit -------------------------------------------------------------------
+
+    // Map the collected values to what the API needs and post them.  The
+    // outcome lands in registerResult for the completion page.
+    submit(): Promise<void> {
+        this.registerResult.complete = false;
+        this.registerResult.success = false;
+        this.registerResult.barcode = null;
+
+        this.submitting = true;
+
+        const about = this.aboutForm.value as Hash;
+        const cf = this.contactForm;
+        const review = this.reviewForm.value as Hash;
+        const addr = this.address;
+
+        // DOB is just the date, but still needs to be in ISO format.
+        const dob = new Date(about['dob'] as string);
+        const dobstr =
+            dob.getFullYear() + '-' +
+            ((dob.getMonth() + 1) + '').padStart(2, '0') + '-' +
+            (dob.getDate() + '').padStart(2, '0');
+
+        const mailingIsSame = !!cf.get('mailingIsSame')!.value;
+        const mailing = this.mailingAddress;
+
+        // Reminder that KCLS uses pref_* fields for the legal name
+        // when it differs from chosen name.
+        const payload: Hash = {
+            requested_account_type: this.accountType,
+            address_exception_id: this.exceptionId,
+            user: {
+                delivery_method: this.delivery,
+                first_given_name: about['first'],
+                second_given_name: about['middle'],
+                family_name: about['last'],
+                pref_first_given_name: about['legalFirst'],
+                pref_second_given_name: about['legalMiddle'],
+                pref_family_name: about['legalLast'],
+                dob: dobstr,
+                day_phone: cf.get('phone')!.value,
+                email: cf.get('email')!.value,
+                home_ou: this.homeOrgId,
+                ident_value2: about['guardian'], // KCLS
+            },
+            billing_address: {
+                street1: addr?.street_line || '',
+                street2: this.street2,
+                city: addr?.city || '',
+                state: addr?.state || '',
+                post_code: addr?.zipcode || '',
+            },
+            mailing_address: {
+                street1: mailingIsSame ? '' : (mailing?.street_line || ''),
+                street2: mailingIsSame ? '' : ('' + (cf.get('mailingStreet2')!.value ?? '')),
+                city: mailingIsSame ? '' : (mailing?.city || ''),
+                state: mailingIsSame ? '' : (mailing?.state || ''),
+                post_code: mailingIsSame ? '' : (mailing?.zipcode || ''),
+            },
+            settings: [],
+            stat_cats: [],
+        };
+
+        const settings = payload['settings'] as Hash[];
+        settings.push(
+            {name: 'opac.default_sms_notify', value: cf.get('smsNumber')!.value},
+            {name: 'opac.default_pickup_location', value: cf.get('pickupLib')!.value},
+        );
+
+        // Propagate the individual notice opt-in settings for each
+        // requested notice mechanism.
+        const optIns: Array<[string, UserSettingType[]]> = [
+            ['allEmailNotices', this.emailSettings],
+            ['allTextNotices', this.textSettings],
+            ['allPhoneNotices', this.phoneSettings],
+        ];
+
+        optIns.forEach(([control, sets]) => {
+            if (cf.get(control)!.value === true) {
+                sets.forEach(set => settings.push({name: set.name, value: true}));
+            }
+        });
+
+        const statCats = payload['stat_cats'] as Hash[];
+        statCats.push(
+            {stat_cat: STAT_CAT_LIB_NEWS,
+                value: review['wantsLibNews'] ? 'Y' : 'N'},
+            {stat_cat: STAT_CAT_FOUNDATION_NEWS,
+                value: review['wantsFoundationInfo'] ? 'Y' : 'N'},
+            {stat_cat: STAT_CAT_CARD_STYLE, value: this.cardDesign ?? ''},
+        );
+
+        if (this.district) {
+            statCats.push(
+                {stat_cat: STAT_CAT_DISTRICT_OF_RESIDENCE, value: this.district});
+        }
+
+        console.debug('SEND', payload);
+
+        return this.requestOne(
+            'open-ils.actor', 'open-ils.actor.register', payload
+        ).then(resp => {
+            const r = (resp || {}) as Hash;
+
+            console.debug('RESPONSE', r);
+
+            this.registerResult = {
+                complete: true,
+                success: Number(r['success']) > 0,
+                barcode: (r['barcode'] as string) || null,
+                accountType: this.accountType || '',
+                deliveryMethod: this.delivery,
+                homeOrgName: this.homeOrgName,
+            };
+
+        }).catch(err => {
+            console.error('Registration failed', err);
+            this.registerResult = {
+                complete: true,
+                success: false,
+                barcode: null,
+                accountType: this.accountType || '',
+                deliveryMethod: this.delivery,
+                homeOrgName: this.homeOrgName,
+            };
+        }).then(() => {
+            this.submitting = false;
+        });
     }
 
     // --- backend APIs (session token injected) --------------------------------

@@ -74,4 +74,12 @@ export class GetacardShellComponent implements OnInit {
             this.router.navigate(['/getacard', this.steps[this.index + 1].slug]);
         }
     }
+
+    // Post the registration and land on the confirmation page (which also
+    // reports failure).
+    submit() {
+        if (!this.canContinue()) { return; }
+        this.state.submit().then(() =>
+            this.router.navigate(['/getacard', 'complete']));
+    }
 }
