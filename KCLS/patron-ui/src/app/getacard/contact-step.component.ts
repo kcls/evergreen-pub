@@ -1,4 +1,4 @@
-import {Component, ViewChild} from '@angular/core';
+import {Component, ElementRef, ViewChild} from '@angular/core';
 import {AbstractControl} from '@angular/forms';
 import {AddressSearchComponent} from './address-search.component';
 import {AddressSuggestion, GetacardState} from './state.service';
@@ -17,6 +17,7 @@ import {AddressSuggestion, GetacardState} from './state.service';
 export class ContactStepComponent {
 
     @ViewChild('mailSearch') mailSearch?: AddressSearchComponent;
+    @ViewChild('mailUnitInput') mailUnitInput?: ElementRef<HTMLInputElement>;
 
     constructor(public state: GetacardState) {}
 
@@ -25,7 +26,20 @@ export class ContactStepComponent {
     }
 
     pickMailing(addr: AddressSuggestion) {
-        this.state.selectMailing(addr);
+        this.state.selectMailing(addr).then(normalized => {
+            if (normalized) {
+                this.ctrl('mailingStreet2').setValue(normalized, {emitEvent: false});
+            }
+        });
+
+        // A required unit needs entry; focus the field once it renders.
+        if (this.state.mailingUnitRequired) {
+            setTimeout(() => this.mailUnitInput?.nativeElement.focus());
+        }
+    }
+
+    showMailingUnitField(): boolean {
+        return this.state.mailingUnitRequired || !!this.ctrl('mailingStreet2').value;
     }
 
     // Drop the mailing selection and return to search mode, seeded with the

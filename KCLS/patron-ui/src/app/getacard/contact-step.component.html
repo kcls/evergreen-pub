@@ -114,7 +114,7 @@
           <span class="material-icons gac-check" aria-hidden="true">check_circle</span>
           <span class="gac-addr-lines">
             <span class="gac-addr-primary">{{state.mailingAddress?.street_line}}<ng-container
-                *ngIf="ctrl('mailingStreet2').value"> {{ctrl('mailingStreet2').value}}</ng-container></span>
+                *ngIf="state.mailingUnitValid === true && ctrl('mailingStreet2').value"> {{ctrl('mailingStreet2').value}}</ng-container></span>
             <span class="gac-addr-secondary">
               {{state.mailingAddress?.city}}, {{state.mailingAddress?.state}}
               {{state.mailingAddress?.zipcode}} &#183; United States
@@ -124,12 +124,27 @@
               (click)="editMailing()" i18n>Edit</button>
         </div>
 
-        <div class="gac-grid-2">
-          <mat-form-field appearance="outline">
-            <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
-            <input type="text" matInput formControlName="mailingStreet2"/>
-          </mat-form-field>
-        </div>
+        <ng-container *ngIf="showMailingUnitField()">
+          <p class="gac-help"
+              *ngIf="state.mailingUnitRequired && state.mailingUnitValid !== true" i18n>
+            The selected address requires an Apt / Unit / Suite / Bldg number.
+          </p>
+
+          <div class="gac-grid-2">
+            <mat-form-field appearance="outline">
+              <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
+              <input type="text" matInput #mailUnitInput
+                     formControlName="mailingStreet2"/>
+              <span class="material-icons gac-unit-check" matSuffix
+                    *ngIf="state.mailingUnitValid === true"
+                    aria-hidden="true">check_circle</span>
+            </mat-form-field>
+          </div>
+
+          <div class="gac-error" *ngIf="state.mailingUnitValid === false" i18n>
+            We couldn't match that unit to a known address. Please check the unit number.
+          </div>
+        </ng-container>
 
         <div class="gac-async-row" *ngIf="state.mailingVerifying">
           <mat-spinner diameter="18"></mat-spinner>

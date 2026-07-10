@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {AbstractControl, FormBuilder, FormRecord, Validators} from '@angular/forms';
 import {Observable, from} from 'rxjs';
-import {debounceTime, map, switchMap, toArray} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, map, switchMap, toArray} from 'rxjs/operators';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
@@ -140,6 +140,11 @@ export class GetacardState {
     mailingNotViable = false;
     mailingVerifying = false;
 
+    // Unit/apartment handling for multi-unit mailing addresses; mirrors the
+    // residential unitRequired / unitValid flow.
+    mailingUnitRequired = false;
+    mailingUnitValid: boolean | null = null;
+
     // --- My Library Card -------------------------------------------------------
 
     // Selected card design (all-access only) and how to receive the card.
@@ -273,6 +278,22 @@ export class GetacardState {
             if (isSame) { this.clearMailing(); }
         });
 
+        // Entering / editing the mailing unit re-verifies the address, as
+        // with the residential unit.  Programmatic writes use emitEvent:false
+        // so they don't re-trigger this.
+        cf.get('mailingStreet2')!.valueChanges.pipe(
+            debounceTime(400),
+            distinctUntilChanged(),
+        ).subscribe(() => {
+            if (!this.mailingSelected) { return; }
+            const unit = ('' + (cf.get('mailingStreet2')!.value ?? '')).trim();
+            this.confirmMailingUnit(unit).then(normalized => {
+                if (normalized) {
+                    cf.get('mailingStreet2')!.setValue(normalized, {emitEvent: false});
+                }
+            });
+        });
+
         this.reviewForm = formBuilder.record({
             wantsLibNews: false,
             wantsFoundationInfo: false,
@@ -297,7 +318,9 @@ export class GetacardState {
         if (slug === 'about-you') { return this.aboutForm.valid; }
         if (slug === 'contact') {
             const mailingOk = !!this.contactForm.get('mailingIsSame')!.value
-                || (this.mailingSelected && !this.mailingNotViable);
+                || (this.mailingSelected
+                    && !this.mailingNotViable
+                    && (!this.mailingUnitRequired || this.mailingUnitValid === true));
             return this.contactForm.valid && mailingOk;
         }
         if (slug === 'card') {
@@ -643,31 +666,86 @@ export class GetacardState {
     // --- mailing address --------------------------------------------------------
 
     // Apply a chosen mailing address and confirm it's usable for mail
-    // delivery.  (Unlike the residential address, no home-org/district
-    // resolution applies.)
-    selectMailing(addr: AddressSuggestion): Promise<void> {
+    // delivery.  Multi-unit buildings wait for a unit (Apt/Suite/etc)
+    // before verifying, as with the residential address.  (Unlike
+    // residential, no home-org/district resolution applies.)
+    selectMailing(addr: AddressSuggestion): Promise<string | null> {
         this.mailingAddress = addr;
         this.mailingSelected = true;
         this.mailingNotViable = false;
+        this.mailingUnitRequired = (addr.entries || 0) > 1;
+        this.mailingUnitValid = null;
+
+        const unit = this.mailingUnitRequired ? '' : (addr.secondary || '');
+        this.contactForm.get('mailingStreet2')!.setValue(unit, {emitEvent: false});
+
+        if (this.mailingUnitRequired) {
+            // Wait for the user to supply a unit before verifying.
+            return Promise.resolve(null);
+        }
+
+        return this.verifyMailing(unit);
+    }
+
+    /**
+     * Re-verify the selected mailing address with the entered unit.
+     * Resolves to the service's normalized unit string when available.
+     */
+    confirmMailingUnit(unit: string): Promise<string | null> {
+        if (!this.mailingSelected) { return Promise.resolve(null); }
+        return this.verifyMailing(unit);
+    }
+
+    private verifyMailing(secondary: string): Promise<string | null> {
+        const addr = this.mailingAddress;
+        if (!addr) { return Promise.resolve(null); }
+
+        this.mailingNotViable = false;
+        this.mailingUnitValid = null;
         this.mailingVerifying = true;
-        this.contactForm.get('mailingStreet2')!.setValue(
-            addr.secondary || '', {emitEvent: false});
 
         return this.requestOne('kcls.address', 'kcls.address.lookup', {
             street: addr.street_line,
-            secondary: addr.secondary,
+            secondary: secondary,
             city: addr.city,
             state: addr.state,
             zipcode: addr.zipcode,
         }).then(found => {
             this.mailingVerifying = false;
+
             const f = found as Hash | null;
-            if (f && f['is_viable_mailing'] === false) {
-                this.mailingNotViable = true;
+            if (!f) {
+                if (this.mailingUnitRequired && secondary) {
+                    this.mailingUnitValid = false;
+                } else {
+                    this.mailingNotViable = true;
+                }
+                return null;
             }
+
+            if (f['is_viable_mailing'] === false) {
+                this.mailingNotViable = true;
+                return null;
+            }
+
+            const hasValidSecondary = !!f['has_valid_secondary'];
+            if (this.mailingUnitRequired) {
+                this.mailingUnitValid = secondary ? hasValidSecondary : null;
+                if (!hasValidSecondary) { return null; }
+            }
+
+            // Reflect the service's normalized unit (e.g. "Apt 4").
+            const comp = (f['components'] || {}) as Hash;
+            if (hasValidSecondary && comp['secondary_number']) {
+                return [comp['secondary_designator'], comp['secondary_number']]
+                    .filter(Boolean).join(' ');
+            }
+
+            return null;
         }).catch(err => {
             this.mailingVerifying = false;
             console.error('Mailing address verification failed', err);
+            return null;
         });
     }
 
@@ -676,6 +754,8 @@ export class GetacardState {
         this.mailingSelected = false;
         this.mailingNotViable = false;
         this.mailingVerifying = false;
+        this.mailingUnitRequired = false;
+        this.mailingUnitValid = null;
         this.contactForm.get('mailingStreet2')!.setValue('', {emitEvent: false});
     }
 

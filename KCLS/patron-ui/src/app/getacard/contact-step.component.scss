@@ -65,6 +65,11 @@
   color: var(--gac-green, #2e7d32);
 }
 
+.gac-unit-check {
+  color: var(--gac-green, #2e7d32);
+  margin-right: 8px;
+}
+
 .gac-addr-lines {
   display: flex;
   flex-direction: column;
