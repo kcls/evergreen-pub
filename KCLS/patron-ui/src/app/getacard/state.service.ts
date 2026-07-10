@@ -126,6 +126,12 @@ export class GetacardState {
     mailingNotViable = false;
     mailingVerifying = false;
 
+    // --- My Library Card -------------------------------------------------------
+
+    // Selected card design (all-access only) and how to receive the card.
+    cardDesign: string | null = null;
+    delivery: 'Pick up' | 'Mail' = 'Mail';
+
     constructor(
         private gateway: Gateway,
         private app: AppService,
@@ -227,6 +233,7 @@ export class GetacardState {
                 || (this.mailingSelected && !this.mailingNotViable);
             return this.contactForm.valid && mailingOk;
         }
+        if (slug === 'card') { return this.cardDesign != null; }
         return true; // prototype: later steps are placeholders
     }
 

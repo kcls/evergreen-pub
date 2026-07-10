@@ -9,6 +9,7 @@ import {AddressStepComponent} from './address-step.component';
 import {AccountStepComponent} from './account-step.component';
 import {AboutStepComponent} from './about-step.component';
 import {ContactStepComponent} from './contact-step.component';
+import {CardStepComponent} from './card-step.component';
 import {PlaceholderStepComponent} from './placeholder-step.component';
 
 @NgModule({
@@ -19,6 +20,7 @@ import {PlaceholderStepComponent} from './placeholder-step.component';
     AccountStepComponent,
     AboutStepComponent,
     ContactStepComponent,
+    CardStepComponent,
     PlaceholderStepComponent,
   ],
   imports: [

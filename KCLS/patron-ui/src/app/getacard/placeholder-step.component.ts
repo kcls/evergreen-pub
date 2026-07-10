@@ -5,9 +5,6 @@ import {Component, Input} from '@angular/core';
   selector: 'gac-placeholder-step',
   template: `
     <div [ngSwitch]="slug">
-      <p *ngSwitchCase="'card'" i18n>
-        The card design gallery and delivery options will live here.
-      </p>
       <p *ngSwitchCase="'review'" i18n>
         The review &amp; submit summary will live here.
       </p>
