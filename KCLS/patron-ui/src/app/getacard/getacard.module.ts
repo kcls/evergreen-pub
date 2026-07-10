@@ -6,6 +6,7 @@ import {GetacardState} from './state.service';
 import {GetacardShellComponent} from './shell.component';
 import {AddressStepComponent} from './address-step.component';
 import {AccountStepComponent} from './account-step.component';
+import {AboutStepComponent} from './about-step.component';
 import {PlaceholderStepComponent} from './placeholder-step.component';
 
 @NgModule({
@@ -13,6 +14,7 @@ import {PlaceholderStepComponent} from './placeholder-step.component';
     GetacardShellComponent,
     AddressStepComponent,
     AccountStepComponent,
+    AboutStepComponent,
     PlaceholderStepComponent,
   ],
   imports: [

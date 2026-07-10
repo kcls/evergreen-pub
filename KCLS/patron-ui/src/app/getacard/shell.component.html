@@ -17,6 +17,7 @@
     <ng-container [ngSwitch]="current.slug">
       <gac-address-step *ngSwitchCase="'address'"></gac-address-step>
       <gac-account-step *ngSwitchCase="'account'"></gac-account-step>
+      <gac-about-step *ngSwitchCase="'about-you'"></gac-about-step>
       <gac-placeholder-step *ngSwitchDefault [slug]="current.slug"></gac-placeholder-step>
     </ng-container>
   </main>

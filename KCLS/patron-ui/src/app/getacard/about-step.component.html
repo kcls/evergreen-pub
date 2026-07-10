@@ -1,0 +1,100 @@
+<p class="gac-help" i18n>
+  Tell us about yourself. This information is used for verification purposes.
+</p>
+
+<form [formGroup]="state.aboutForm">
+
+  <div class="gac-grid-2">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>First Name</mat-label>
+      <input type="text" matInput formControlName="first"/>
+      <mat-error *ngIf="ctrl('first').hasError('required')" i18n>
+        First Name <strong>required</strong>
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Middle Name</mat-label>
+      <input type="text" matInput formControlName="middle"/>
+    </mat-form-field>
+  </div>
+
+  <div class="gac-grid-2">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Last Name</mat-label>
+      <input type="text" matInput formControlName="last"/>
+      <mat-error *ngIf="ctrl('last').hasError('required')" i18n>
+        Last Name <strong>required</strong>
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="gac-check-row">
+    <mat-checkbox formControlName="legalIsSame" i18n>
+      Legal name is the same as above.
+    </mat-checkbox>
+  </div>
+
+  <ng-container *ngIf="!ctrl('legalIsSame').value">
+    <div class="gac-grid-2">
+      <mat-form-field appearance="outline">
+        <mat-label i18n>Legal First Name</mat-label>
+        <input type="text" matInput formControlName="legalFirst"/>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label i18n>Legal Middle Name</mat-label>
+        <input type="text" matInput formControlName="legalMiddle"/>
+      </mat-form-field>
+    </div>
+
+    <div class="gac-grid-2">
+      <mat-form-field appearance="outline">
+        <mat-label i18n>Legal Last Name</mat-label>
+        <input type="text" matInput formControlName="legalLast"/>
+      </mat-form-field>
+    </div>
+  </ng-container>
+
+  <div class="gac-grid-2">
+    <mat-form-field appearance="outline">
+      <mat-label i18n>Birth Date</mat-label>
+      <input matInput [matDatepicker]="dobPicker" formControlName="dob"
+             [min]="state.minDob" [max]="state.maxDob"/>
+      <mat-hint>MM/DD/YYYY</mat-hint>
+      <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>
+      <mat-datepicker #dobPicker></mat-datepicker>
+      <mat-error *ngIf="ctrl('dob').hasError('required')" i18n>
+        Birth Date <strong>required</strong>
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <ng-container *ngIf="state.isJuvenile">
+    <p class="gac-help" i18n>
+      If you&#8217;re younger than age 18, list the names of all
+      parents and guardians who live with you.
+    </p>
+
+    <div class="gac-grid-2">
+      <mat-form-field appearance="outline">
+        <mat-label i18n>Parent or Guardian</mat-label>
+        <input type="text" matInput formControlName="guardian"/>
+        <mat-error *ngIf="ctrl('guardian').hasError('required')" i18n>
+          Parent or Guardian <strong>required</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+  </ng-container>
+
+</form>
+
+<div class="gac-dupe" *ngIf="state.maybeDupeAccount">
+  <span class="material-icons" aria-hidden="true">info</span>
+  <span i18n>
+    Whoops! We noticed that you already have a library card on file.
+    Please proceed to the
+    <a href="https://kcls.bibliocommons.com/user/login">login page</a>
+    to access everything the library has to offer.
+  </span>
+</div>

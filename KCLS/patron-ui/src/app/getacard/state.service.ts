@@ -1,11 +1,13 @@
 import {Injectable} from '@angular/core';
+import {FormBuilder, FormRecord, Validators} from '@angular/forms';
 import {Observable, from} from 'rxjs';
-import {map, switchMap, toArray} from 'rxjs/operators';
+import {debounceTime, map, switchMap, toArray} from 'rxjs/operators';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {CaptchaSessionService} from '../captcha-session.service';
 
 const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
+const JUV_AGE = 18; // years
 
 // What the address makes the patron eligible for.
 export type AccountTypeOption = 'either' | 'all-access' | null;
@@ -82,15 +84,53 @@ export class GetacardState {
     // allows either kind; set automatically when only one kind is offered.
     accountType: AccountType = null;
 
+    // --- About you -----------------------------------------------------------
+
+    aboutForm: FormRecord;
+
+    minDob = new Date('1900-01-01');
+    maxDob = new Date();
+    juvMinDob: Date;
+
+    // Anyone under 18 must supply a parent/guardian.
+    isJuvenile = false;
+
+    // Result of the existing-account (dupe) check; null = not checked.
+    maybeDupeAccount: boolean | null = null;
+
     constructor(
         private gateway: Gateway,
         private app: AppService,
         private captcha: CaptchaSessionService,
+        formBuilder: FormBuilder,
     ) {
         // Warm the CAPTCHA session so the first autocomplete doesn't wait on
         // the challenge, and the org tree so home-library names resolve.
         this.captcha.getToken().catch(() => {});
         this.app.getOrgTree();
+
+        this.juvMinDob = new Date();
+        this.juvMinDob.setFullYear(this.juvMinDob.getFullYear() - JUV_AGE);
+
+        this.aboutForm = formBuilder.record({
+            first: ['', Validators.required],
+            middle: '',
+            last: ['', Validators.required],
+            legalIsSame: true,
+            legalFirst: '',
+            legalMiddle: '',
+            legalLast: '',
+            dob: ['', Validators.required],
+            guardian: '',
+        });
+
+        // A juvenile birth date makes the parent/guardian field required.
+        this.aboutForm.get('dob')!.valueChanges.subscribe(
+            () => this.applyJuvenileRules());
+
+        // Re-run the existing-account check as identifying values settle.
+        this.aboutForm.valueChanges.pipe(debounceTime(500)).subscribe(
+            () => this.checkForExistingAccount());
     }
 
     // --- step gating ---------------------------------------------------------
@@ -104,6 +144,7 @@ export class GetacardState {
     stepComplete(slug: string): boolean {
         if (slug === 'address') { return this.addressComplete; }
         if (slug === 'account') { return this.accountType != null; }
+        if (slug === 'about-you') { return this.aboutForm.valid; }
         return true; // prototype: later steps are placeholders
     }
 
@@ -183,7 +224,7 @@ export class GetacardState {
         this.resetResolution();
         this.verifying = true;
 
-        return this.requestOne('kcls.address.lookup', {
+        return this.requestOne('kcls.address', 'kcls.address.lookup', {
             street: addr.street_line,
             secondary: secondary,
             city: addr.city,
@@ -234,8 +275,10 @@ export class GetacardState {
             if (latitude == null || longitude == null) { return normalized; }
 
             return Promise.all([
-                this.requestOne('kcls.address.home-org', latitude, longitude),
-                this.requestOne('kcls.address.district-of-residence', latitude, longitude),
+                this.requestOne('kcls.address', 'kcls.address.home-org',
+                    latitude, longitude),
+                this.requestOne('kcls.address', 'kcls.address.district-of-residence',
+                    latitude, longitude),
             ]).then(([homeOrg, district]) => {
                 this.applyOrgAndDistrict(
                     homeOrg as number | null, district as string | null);
@@ -270,10 +313,69 @@ export class GetacardState {
         }
     }
 
-    // --- address APIs (session token injected) -------------------------------
+    // --- About you rules ------------------------------------------------------
+
+    private applyJuvenileRules() {
+        const dob = this.aboutForm.get('dob')!.value as Date | null;
+        this.isJuvenile = !!dob && dob > this.juvMinDob;
+
+        const guardian = this.aboutForm.get('guardian')!;
+        if (this.isJuvenile) {
+            guardian.setValidators(Validators.required);
+        } else {
+            guardian.clearValidators();
+        }
+        guardian.updateValueAndValidity({emitEvent: false});
+    }
+
+    // See if the provided identity values match an existing account so the
+    // patron can be pointed at the login page instead.
+    private checkForExistingAccount() {
+        const v = this.aboutForm.value as Hash;
+        const street1 = this.address?.street_line;
+
+        if (!v['first'] || !v['last'] || !v['dob'] || !street1) {
+            this.maybeDupeAccount = null;
+            return;
+        }
+
+        this.requestOne('open-ils.actor', 'open-ils.actor.register.has_account', {
+            first_given_name: v['first'],
+            family_name: v['last'],
+            dob: v['dob'],
+            street1: street1,
+        }).then(resp => {
+
+            if (Number(resp) === 1) {
+                this.maybeDupeAccount = true;
+                return;
+            }
+
+            this.maybeDupeAccount = false;
+
+            // If the user has legal name values, do a secondary lookup
+            // on the legal names.
+            if (!v['legalFirst'] && !v['legalLast']) { return; }
+
+            const first = v['first'] || v['legalFirst'];
+            const last = v['last'] || v['legalLast'];
+
+            return this.requestOne('open-ils.actor', 'open-ils.actor.register.has_account', {
+                first_given_name: first,
+                family_name: last,
+                dob: v['dob'],
+                street1: street1,
+            }).then(resp2 => {
+                this.maybeDupeAccount = Number(resp2) === 1;
+            });
+
+        }).catch(err => console.error('Existing account check failed', err));
+    }
+
+    // --- backend APIs (session token injected) --------------------------------
 
     autocomplete(term: string): Observable<AddressSuggestion[]> {
-        return this.request('kcls.address.autocomplete', {
+        return this.request('kcls.address', 'kcls.address.autocomplete', {
             'state_filter': 'WA',
             'search': term.toLowerCase(),
             // Residential: a residence can't be commercial or a PO box; the
@@ -286,15 +388,17 @@ export class GetacardState {
         );
     }
 
-    private request(method: string, ...params: unknown[]): Observable<unknown> {
+    private request(
+        service: string, method: string, ...params: unknown[]): Observable<unknown> {
         return from(this.captcha.getToken()).pipe(
             switchMap(token =>
-                this.gateway.request('kcls.address', method, token, ...params))
+                this.gateway.request(service, method, token, ...params))
         );
     }
 
-    private requestOne(method: string, ...params: unknown[]): Promise<unknown> {
+    private requestOne(
+        service: string, method: string, ...params: unknown[]): Promise<unknown> {
         return this.captcha.getToken().then(token =>
-            this.gateway.requestOne('kcls.address', method, token, ...params));
+            this.gateway.requestOne(service, method, token, ...params));
     }
 }
