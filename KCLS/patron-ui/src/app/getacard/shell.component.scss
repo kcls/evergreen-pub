@@ -46,6 +46,25 @@
   margin-bottom: 16px;
 }
 
+/* Flow-wide welcome, shown above every step (as on the old register page). */
+.gac-welcome {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.gac-welcome-title {
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--gac-ink);
+  margin: 0 0 8px;
+}
+
+.gac-welcome-sub {
+  font-size: 1.05rem;
+  color: var(--gac-ink);
+  margin: 0;
+}
+
 .gac-head {
   display: flex;
   align-items: baseline;
