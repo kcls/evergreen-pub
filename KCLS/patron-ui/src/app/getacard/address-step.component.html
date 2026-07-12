@@ -67,4 +67,74 @@
     we'll explain your options on the next step.
   </div>
 
+  <!-- Mailing address, once a valid residential address is in hand. -->
+  <form [formGroup]="state.contactForm" *ngIf="state.addressComplete">
+
+    <h3 class="gac-subhead" i18n>Mailing Address</h3>
+
+    <div class="gac-check-row">
+      <mat-checkbox formControlName="mailingIsSame" i18n>
+        Same as Residential Address
+      </mat-checkbox>
+    </div>
+
+    <ng-container *ngIf="!mailCtrl('mailingIsSame').value">
+
+      <ng-container *ngIf="!state.mailingSelected; else mailingSelectedTpl">
+        <gac-address-search #mailSearch kind="mailing" (picked)="pickMailing($event)">
+        </gac-address-search>
+      </ng-container>
+
+      <ng-template #mailingSelectedTpl>
+        <div class="gac-addr-card">
+          <span class="material-icons gac-check" aria-hidden="true">check_circle</span>
+          <span class="gac-addr-lines">
+            <span class="gac-addr-primary">{{state.mailingAddress?.street_line}}<ng-container
+                *ngIf="state.mailingUnitValid === true && mailCtrl('mailingStreet2').value"> {{mailCtrl('mailingStreet2').value}}</ng-container></span>
+            <span class="gac-addr-secondary">
+              {{state.mailingAddress?.city}}, {{state.mailingAddress?.state}}
+              {{state.mailingAddress?.zipcode}} &#183; United States
+            </span>
+          </span>
+          <button mat-button type="button" class="gac-edit"
+              (click)="editMailing()" i18n>Edit</button>
+        </div>
+
+        <ng-container *ngIf="showMailingUnitField()">
+          <p class="gac-help"
+              *ngIf="state.mailingUnitRequired && state.mailingUnitValid !== true" i18n>
+            The selected address requires an Apt / Unit / Suite / Bldg number.
+          </p>
+
+          <div class="gac-grid-2">
+            <mat-form-field appearance="outline">
+              <mat-label i18n>Apt / Unit / Suite / Bldg</mat-label>
+              <input type="text" matInput #mailUnitInput
+                     formControlName="mailingStreet2"/>
+              <span class="material-icons gac-unit-check" matSuffix
+                    *ngIf="state.mailingUnitValid === true"
+                    aria-hidden="true">check_circle</span>
+            </mat-form-field>
+          </div>
+
+          <div class="gac-error" *ngIf="state.mailingUnitValid === false" i18n>
+            We couldn't match that unit to a known address. Please check the unit number.
+          </div>
+        </ng-container>
+
+        <div class="gac-async-row" *ngIf="state.mailingVerifying">
+          <mat-spinner diameter="18"></mat-spinner>
+          <span i18n>Verifying address&#8230;</span>
+        </div>
+
+        <div class="gac-error" *ngIf="state.mailingNotViable" i18n>
+          This address can't be used as a mailing address. Please choose a
+          different address.
+        </div>
+      </ng-template>
+
+    </ng-container>
+
+  </form>
+
 </ng-template>

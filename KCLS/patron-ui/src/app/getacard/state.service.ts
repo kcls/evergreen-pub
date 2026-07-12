@@ -313,16 +313,18 @@ export class GetacardState {
     }
 
     stepComplete(slug: string): boolean {
-        if (slug === 'address') { return this.addressComplete; }
-        if (slug === 'account') { return this.accountType != null; }
-        if (slug === 'about-you') { return this.aboutForm.valid; }
-        if (slug === 'contact') {
+        if (slug === 'address') {
+            // Both the residential and (when different) mailing addresses
+            // are collected on this step.
             const mailingOk = !!this.contactForm.get('mailingIsSame')!.value
                 || (this.mailingSelected
                     && !this.mailingNotViable
                     && (!this.mailingUnitRequired || this.mailingUnitValid === true));
-            return this.contactForm.valid && mailingOk;
+            return this.addressComplete && mailingOk;
         }
+        if (slug === 'account') { return this.accountType != null; }
+        if (slug === 'about-you') { return this.aboutForm.valid; }
+        if (slug === 'contact') { return this.contactForm.valid; }
         if (slug === 'card') {
             return this.cardDesign != null && this.delivery != null;
         }

@@ -1,5 +1,5 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {FormControl} from '@angular/forms';
+import {AbstractControl, FormControl} from '@angular/forms';
 import {debounceTime, distinctUntilChanged} from 'rxjs/operators';
 import {AddressSearchComponent} from './address-search.component';
 import {AddressSuggestion, GetacardState} from './state.service';
@@ -21,6 +21,9 @@ export class AddressStepComponent implements OnInit {
 
     @ViewChild('search') searchComp?: AddressSearchComponent;
     @ViewChild('unitInput') unitInput?: ElementRef<HTMLInputElement>;
+
+    @ViewChild('mailSearch') mailSearch?: AddressSearchComponent;
+    @ViewChild('mailUnitInput') mailUnitInput?: ElementRef<HTMLInputElement>;
 
     street2 = new FormControl('');
 
@@ -76,5 +79,37 @@ export class AddressStepComponent implements OnInit {
 
     showUnitField(): boolean {
         return this.state.unitRequired || !!this.street2.value;
+    }
+
+    // --- mailing address (shown once the residential address resolves) ------
+
+    mailCtrl(name: string): AbstractControl {
+        return this.state.contactForm.get(name)!;
+    }
+
+    pickMailing(addr: AddressSuggestion) {
+        this.state.selectMailing(addr).then(normalized => {
+            if (normalized) {
+                this.mailCtrl('mailingStreet2').setValue(normalized, {emitEvent: false});
+            }
+        });
+
+        // A required unit needs entry; focus the field once it renders.
+        if (this.state.mailingUnitRequired) {
+            setTimeout(() => this.mailUnitInput?.nativeElement.focus());
+        }
+    }
+
+    // Drop the mailing selection and return to search mode, seeded with the
+    // previously chosen street line.
+    editMailing() {
+        const line = this.state.mailingAddress?.street_line || '';
+        this.state.clearMailing();
+        setTimeout(() => this.mailSearch?.seed(line));
+    }
+
+    showMailingUnitField(): boolean {
+        return this.state.mailingUnitRequired
+            || !!this.mailCtrl('mailingStreet2').value;
     }
 }

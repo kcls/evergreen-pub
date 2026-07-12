@@ -99,3 +99,25 @@
   color: var(--gac-muted, #5f6b76);
   margin-top: 12px;
 }
+
+/* Mailing address section (below the confirmed residential address). */
+.gac-subhead {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+  margin: 20px 0 12px;
+}
+
+.gac-check-row {
+  margin: 4px 0 16px;
+}
+
+.gac-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}

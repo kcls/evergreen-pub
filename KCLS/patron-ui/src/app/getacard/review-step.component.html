@@ -14,6 +14,15 @@
         {{state.address?.city}}, {{state.address?.state}} {{state.address?.zipcode}}
       </span>
     </div>
+    <div class="gac-row">
+      <span class="gac-label" i18n>Mailing</span>
+      <span class="gac-value" *ngIf="contact('mailingIsSame').value" i18n>Same as residential</span>
+      <span class="gac-value" *ngIf="!contact('mailingIsSame').value">
+        {{state.mailingAddress?.street_line}}<ng-container
+          *ngIf="contact('mailingStreet2').value">, {{contact('mailingStreet2').value}}</ng-container>,
+        {{state.mailingAddress?.city}}, {{state.mailingAddress?.state}} {{state.mailingAddress?.zipcode}}
+      </span>
+    </div>
     <div class="gac-row" *ngIf="state.homeOrgName">
       <span class="gac-label" i18n>Home Library</span>
       <span class="gac-value">{{state.homeOrgName}}</span>
@@ -89,15 +98,6 @@
     <div class="gac-row" *ngIf="state.accountType === 'full'">
       <span class="gac-label" i18n>Pickup Library</span>
       <span class="gac-value">{{pickupLibName()}}</span>
-    </div>
-    <div class="gac-row">
-      <span class="gac-label" i18n>Mailing</span>
-      <span class="gac-value" *ngIf="contact('mailingIsSame').value" i18n>Same as residential</span>
-      <span class="gac-value" *ngIf="!contact('mailingIsSame').value">
-        {{state.mailingAddress?.street_line}}<ng-container
-          *ngIf="contact('mailingStreet2').value">, {{contact('mailingStreet2').value}}</ng-container>,
-        {{state.mailingAddress?.city}}, {{state.mailingAddress?.state}} {{state.mailingAddress?.zipcode}}
-      </span>
     </div>
   </div>
 
