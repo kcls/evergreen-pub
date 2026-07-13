@@ -5,6 +5,12 @@
 
 <form [formGroup]="state.contactForm">
 
+  <!-- Always-visible reminder; the field-level errors stay short so they
+       fit Material's one-line error area. -->
+  <p class="gac-help" *ngIf="state.accountType === 'full'" i18n>
+    All-access library cards require either a phone number or email address.
+  </p>
+
   <div class="gac-grid-2">
     <mat-form-field appearance="outline">
       <mat-label i18n>Email Address</mat-label>
@@ -18,7 +24,7 @@
             Email is <b>required</b> for email notices.
           </ng-container>
           <ng-container *ngIf="!state.wantsEmailNotices()">
-            All-access library cards require either a phone number or email address.
+            Email is <strong>required</strong>
           </ng-container>
         </ng-container>
       </mat-error>
@@ -39,7 +45,7 @@
           Phone Number is <b>required</b> for phone notices.
         </ng-container>
         <ng-container *ngIf="!state.wantsPhoneNotices()">
-          All-access library cards require either a phone number or email address.
+          Phone Number is <strong>required</strong>
         </ng-container>
       </mat-error>
     </mat-form-field>
