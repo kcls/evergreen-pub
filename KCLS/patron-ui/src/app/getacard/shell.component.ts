@@ -44,6 +44,10 @@ export class GetacardShellComponent implements OnInit {
             }
 
             this.index = index;
+
+            // Arriving from a vertically tall step can leave the viewport
+            // scrolled well past the new step's content; snap back to the top.
+            window.scrollTo(0, 0);
         });
     }
 

@@ -8,7 +8,7 @@
   <div class="gac-grid-2">
     <mat-form-field appearance="outline">
       <mat-label i18n>Email Address</mat-label>
-      <input type="email" matInput formControlName="email"/>
+      <input type="email" matInput #emailInput formControlName="email"/>
       <mat-error *ngIf="ctrl('email').hasError('required')" i18n>
         <ng-container *ngIf="state.accountType === 'ecard'">
           Email is <strong>required</strong> to receive email notices.

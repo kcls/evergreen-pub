@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
 import {AbstractControl} from '@angular/forms';
 import {GetacardState} from './state.service';
 
@@ -13,9 +13,15 @@ import {GetacardState} from './state.service';
   templateUrl: './contact-step.component.html',
   styleUrls: ['./contact-step.component.scss']
 })
-export class ContactStepComponent {
+export class ContactStepComponent implements AfterViewInit {
+
+    @ViewChild('emailInput') emailInput?: ElementRef<HTMLInputElement>;
 
     constructor(public state: GetacardState) {}
+
+    ngAfterViewInit() {
+        setTimeout(() => this.emailInput?.nativeElement.focus());
+    }
 
     ctrl(name: string): AbstractControl {
         return this.state.contactForm.get(name)!;

@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
 import {AbstractControl} from '@angular/forms';
 import {GetacardState} from './state.service';
 
@@ -13,9 +13,15 @@ import {GetacardState} from './state.service';
   templateUrl: './about-step.component.html',
   styleUrls: ['./about-step.component.scss']
 })
-export class AboutStepComponent {
+export class AboutStepComponent implements AfterViewInit {
+
+    @ViewChild('firstInput') firstInput?: ElementRef<HTMLInputElement>;
 
     constructor(public state: GetacardState) {}
+
+    ngAfterViewInit() {
+        setTimeout(() => this.firstInput?.nativeElement.focus());
+    }
 
     ctrl(name: string): AbstractControl {
         return this.state.aboutForm.get(name)!;

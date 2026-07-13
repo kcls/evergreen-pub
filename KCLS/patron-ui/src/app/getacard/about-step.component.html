@@ -7,7 +7,7 @@
   <div class="gac-grid-2">
     <mat-form-field appearance="outline">
       <mat-label i18n>First Name</mat-label>
-      <input type="text" matInput formControlName="first"/>
+      <input type="text" matInput #firstInput formControlName="first"/>
       <mat-error *ngIf="ctrl('first').hasError('required')" i18n>
         First Name <strong>required</strong>
       </mat-error>
