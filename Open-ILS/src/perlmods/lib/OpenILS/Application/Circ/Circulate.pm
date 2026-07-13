@@ -1905,8 +1905,13 @@ sub handle_checkout_holds {
     }
 
     unless($hold) {
+        # See if we can find a hold placed by this patron that we can fulfill.
         $hold = $self->find_related_user_hold($copy, $patron) or return;
         $logger->info("circulator: found related hold to fulfill in checkout");
+
+        if (my $evt = $self->related_hold_replaces_captured_copy($e, $copy, $hold)) {
+            return $self->bail_on_event($evt);
+        }
     }
 
     return if $self->check_hold_fulfill_blocks;
@@ -1925,6 +1930,70 @@ sub handle_checkout_holds {
         unless $e->update_action_hold_request($hold);
 
     return $self->fulfilled_holds([$hold->id]);
+}
+
+# If we find a related hold to fill during checkout that's already been
+# captured, and potentially in transit, uncapture the original copy
+# and cancel the transit if necessary.
+
+# Note that open-ils.circ.transit.abort is more extensive and
+# operates in its own transaction.  Mimicing the needed behavior here.
+sub related_hold_replaces_captured_copy {
+    my ($self, $e, $copy, $hold) = @_;
+
+    return undef unless $hold->capture_time && $hold->current_copy;
+
+    my $hold_id = $hold->id;
+    my $orig_copy_id = $hold->current_copy;
+
+    # Captured copy matches the checked out copy.  All good. 
+    # FWIW this should not happen here.
+    return undef if $copy->id == $orig_copy_id;
+
+    $logger->info("Related hold ($hold_id) captures a different copy ($orig_copy_id)");
+
+    my $orig_copy = $e->retrieve_asset_copy($orig_copy_id) or return $e->die_event;
+
+    if ($orig_copy->status == OILS_COPY_STATUS_ON_HOLDS_SHELF) {
+        $logger->info("Replaced copy ($orig_copy_id) for hold ($hold_id) is on the holds shelf ; reshelving");
+
+        $orig_copy->status(OILS_COPY_STATUS_RESHELVING);
+        $orig_copy->editor($e->requestor->id);
+        $orig_copy->edit_date('now');
+
+        return $e->die_event unless $e->update_asset_copy($orig_copy);
+
+        return undef;
+    }
+
+    if ($orig_copy->status != OILS_COPY_STATUS_IN_TRANSIT) {
+        $logger->info("Replaced copy ($orig_copy_id) on hold ".
+            "($hold_id) is not on-shelf or in-transit; leaving alone");
+
+        return undef;
+    }
+
+    # If the replaced copy is hold-transiting, cancel the transit.
+
+    my $transit = $e->search_action_hold_transit_copy({
+        hold => $hold_id,
+        target_copy => $orig_copy_id,
+        dest_recv_time => undef,
+        cancel_time => undef
+    })->[0] or return undef;
+
+    $logger->info("Canceling replaced hold transit (" . $transit->id . ")");
+
+    $transit->cancel_time('now');
+    return $e->die_event unless $e->update_action_hold_transit_copy($transit);
+
+    $orig_copy->status(OILS_COPY_STATUS_CANCELED_TRANSIT);
+    $orig_copy->editor($e->requestor->id);
+    $orig_copy->edit_date('now');
+
+    return $e->die_event unless $e->update_asset_copy($orig_copy);
+
+    return undef;
 }
 
 
