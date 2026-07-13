@@ -117,6 +117,11 @@ export class GetacardState {
     // Anyone under 18 must supply a parent/guardian.
     isJuvenile = false;
 
+    // Supplied by the About You step: the birth-date input's raw text.
+    // A partially-typed year (e.g. "12/05/20" on the way to 2001) parses
+    // to a spurious Date, so the juvenile check waits for a complete date.
+    dobRawText: (() => string) | null = null;
+
     // Result of the existing-account (dupe) check; null = not checked.
     maybeDupeAccount: boolean | null = null;
 
@@ -513,9 +518,23 @@ export class GetacardState {
 
     // --- About you rules ------------------------------------------------------
 
+    // Re-evaluate the juvenile/guardian rules outside a dob value change --
+    // e.g. on blur, when the datepicker completes a partial year in the
+    // display text without altering the (already parsed) control value.
+    refreshJuvenileRules() {
+        this.applyJuvenileRules();
+    }
+
     private applyJuvenileRules() {
         const dob = this.aboutForm.get('dob')!.value as Date | null;
-        this.isJuvenile = !!dob && dob > this.juvMinDob;
+
+        // Only evaluate once the typed date is complete (4-digit year); the
+        // calendar picker always writes a complete date.  Without a raw-text
+        // source, fall back to trusting the parsed value.
+        const raw = this.dobRawText ? this.dobRawText() : null;
+        const complete = raw == null || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw.trim());
+
+        this.isJuvenile = complete && !!dob && dob > this.juvMinDob;
 
         const guardian = this.aboutForm.get('guardian')!;
         if (this.isJuvenile) {

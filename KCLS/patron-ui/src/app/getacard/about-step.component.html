@@ -59,7 +59,8 @@
   <div class="gac-grid-2">
     <mat-form-field appearance="outline">
       <mat-label i18n>Birth Date</mat-label>
-      <input matInput [matDatepicker]="dobPicker" formControlName="dob"
+      <input matInput #dobInput [matDatepicker]="dobPicker" formControlName="dob"
+             autoDateSlash (blur)="dobBlur()"
              [min]="state.minDob" [max]="state.maxDob"/>
       <mat-hint>MM/DD/YYYY</mat-hint>
       <mat-datepicker-toggle matIconSuffix [for]="dobPicker"></mat-datepicker-toggle>

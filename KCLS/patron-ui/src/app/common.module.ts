@@ -6,9 +6,10 @@ import {Gateway} from './gateway.service';
 import {AppService} from './app.service';
 import {LoginComponent} from './login.component';
 import {AutoPhoneDashDirective} from './register/auto-phone-dash.directive';
+import {AutoDateSlashDirective} from './auto-date-slash.directive';
 
 @NgModule({
-  declarations: [LoginComponent, AutoPhoneDashDirective],
+  declarations: [LoginComponent, AutoPhoneDashDirective, AutoDateSlashDirective],
   imports: [
     CommonModule,
     HttpClientModule,
@@ -18,7 +19,8 @@ import {AutoPhoneDashDirective} from './register/auto-phone-dash.directive';
   exports: [
     MaterialImportsModule,
     LoginComponent,
-    AutoPhoneDashDirective
+    AutoPhoneDashDirective,
+    AutoDateSlashDirective
   ],
 })
 export class AppCommonModule { }
