@@ -320,12 +320,13 @@ export class GetacardState {
     stepComplete(slug: string): boolean {
         if (slug === 'address') {
             // Both the residential and (when different) mailing addresses
-            // are collected on this step.
+            // are collected on this step.  An address outside the service
+            // area (no district of residence) is a dead end.
             const mailingOk = !!this.contactForm.get('mailingIsSame')!.value
                 || (this.mailingSelected
                     && !this.mailingNotViable
                     && (!this.mailingUnitRequired || this.mailingUnitValid === true));
-            return this.addressComplete && mailingOk;
+            return this.addressComplete && this.district != null && mailingOk;
         }
         if (slug === 'account') { return this.accountType != null; }
         if (slug === 'about-you') { return this.aboutForm.valid; }

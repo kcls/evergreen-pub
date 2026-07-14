@@ -64,13 +64,17 @@
     </span>
   </div>
 
-  <div class="gac-note" *ngIf="state.homeOrgId != null && !state.district" i18n>
-    This address appears to be outside our service area. You can continue, and
-    we'll explain your options on the next step.
-  </div>
+  <!-- Out of the service area: a dead end, so say so here rather than on
+       the next step. -->
+  <p class="gac-help" *ngIf="state.homeOrgId != null && !state.district" i18n>
+    This location is not in our service area.  Unfortunately, we are
+    unable to provide library card access to this area. Find more
+    information <a href="https://kcls.org/cards">here</a>.
+  </p>
 
-  <!-- Mailing address, once a valid residential address is in hand. -->
-  <form [formGroup]="state.contactForm" *ngIf="state.addressComplete">
+  <!-- Mailing address, once a valid in-service-area residential address
+       is in hand. -->
+  <form [formGroup]="state.contactForm" *ngIf="state.addressComplete && state.district">
 
     <h3 class="gac-subhead" i18n>Mailing Address</h3>
 
