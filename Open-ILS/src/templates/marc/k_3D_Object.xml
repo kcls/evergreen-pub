@@ -14,11 +14,11 @@
     <subfield code="e">rda</subfield>
     <subfield code="c">NTG</subfield>
   </datafield>
+  <datafield tag="049" ind1=" " ind2=" ">
+    <subfield code="a">NTGA</subfield>
+  </datafield>
   <datafield tag="099" ind1=" " ind2=" ">
     <subfield code="a">ON ORDER</subfield>
-  </datafield>
-  <datafield tag="100" ind1="1" ind2=" ">
-    <subfield code="a"></subfield>
   </datafield>
   <datafield tag="245" ind1="0" ind2=" ">
     <subfield code="a"></subfield>
@@ -32,9 +32,15 @@
   <datafield tag="250" ind1="" ind2="">
     <subfield code="a">CHECKOUT &amp; RETURN AT ISSAQUAH LIBRARY ONLY.</subfield>
   </datafield>
-  <datafield tag="260" ind1=" " ind2=" ">
+  <datafield tag="264" ind1=" " ind2="0">
+    <subfield code="a"></subfield>
     <subfield code="b"></subfield>
     <subfield code="c"></subfield>
+  </datafield>
+  <datafield tag="300" ind1=" " ind2=" ">
+    <subfield code="a"> :</subfield>
+    <subfield code="b"> ;</subfield>
+    <subfield code="c">cm</subfield>
   </datafield>
   <datafield tag="336" ind1="" ind2="">
     <subfield code="a">three-dimensional form</subfield>
@@ -54,11 +60,8 @@
   <datafield tag="588" ind1="0" ind2="">
     <subfield code="a">Title from .</subfield>
   </datafield>
-  <datafield tag="500" ind1="" ind2="">
-    <subfield code="a">Items in the Curiosity Collection checkout for 1 week; no holds, no renewals. Items must be picked up and returned to Issaquah Library, 10 W Sunset Way.</subfield>
-  </datafield>
   <datafield tag="520" ind1="" ind2="">
-    <subfield code="a"></subfield>
+    <subfield code="a">&lt;p&gt;Items in the Curiosity Collection checkout for 1 week; no holds, no renewals. Items must be picked up and returned to Issaquah Library, 10 W Sunset Way. Library only circulates equipment and does not provide consumable or disposable supplies.&lt;/p&gt;&lt;p&gt;[Summary from internet]&lt;/p&gt;</subfield>
   </datafield>
   <datafield tag="650" ind1="" ind2="0">
     <subfield code="a">Tools.</subfield>
@@ -70,6 +73,10 @@
   <datafield tag="856" ind1="4" ind2="2">
     <subfield code="3">Cover image</subfield>
     <subfield code="u"></subfield>
+  </datafield>
+  <datafield tag="915" ind1=" " ind2=" ">
+    <subfield code="a"></subfield>
+    <subfield code="d"></subfield>
   </datafield>
   <datafield tag="700" ind1="1" ind2=" ">
     <subfield code="a"></subfield>
