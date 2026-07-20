@@ -42,7 +42,9 @@
         *ngIf="state.delivery === 'Pick up'">check_circle</span>
   </button>
 
+  <!-- Kiosk registrations are pickup-only; cards can't be mailed. -->
   <button type="button" class="gac-choice" role="radio"
+      *ngIf="!state.inKioskMode"
       [attr.aria-checked]="state.delivery === 'Mail'"
       [class.gac-choice-selected]="state.delivery === 'Mail'"
       (click)="chooseDelivery('Mail')">

@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {GetacardState} from './state.service';
 
 /**
@@ -12,9 +12,17 @@ import {GetacardState} from './state.service';
   templateUrl: './card-step.component.html',
   styleUrls: ['./card-step.component.scss']
 })
-export class CardStepComponent {
+export class CardStepComponent implements OnInit {
 
     constructor(public state: GetacardState) {}
+
+    ngOnInit() {
+        // Kiosk registrations are pickup-only: the mail option is hidden,
+        // so there's no choice to make.
+        if (this.state.inKioskMode && !this.state.delivery) {
+            this.state.delivery = 'Pick up';
+        }
+    }
 
     chooseDesign(card: string) {
         this.state.cardDesign = card;
