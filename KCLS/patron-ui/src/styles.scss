@@ -41,6 +41,19 @@ body {
   z-index: 0;
 }
 
+/*
+ * Kiosk mode (KioskService adds .kiosk-mode to <body>): hide the externally
+ * generated BiblioCommons page chrome that generate-index.pl bakes into the
+ * production index.html.  Its body-level pieces are the screen-reader-nav
+ * span, the <header>, and the footer's bc_core_external div; direct-child
+ * selectors leave the app's own content untouched.
+ */
+body.kiosk-mode > span.bc_core_external,
+body.kiosk-mode > header,
+body.kiosk-mode > div.bc_core_external {
+  display: none !important;
+}
+
 /* BC header navigation stays collapsed for some reason */
 /* min-width may need some adjusting */
 @media screen and (min-width: 1024px) {

@@ -2,6 +2,7 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {GacStep, GetacardState} from './state.service';
 import {GacIdleTimeoutService, IDLE_TIMEOUTS} from './idle-timeout.service';
+import {KioskService} from '../kiosk.service';
 
 /**
  * Wizard shell: slim progress bar + step title up top, one centered content
@@ -20,6 +21,7 @@ export class GetacardShellComponent implements OnInit, OnDestroy {
         private route: ActivatedRoute,
         private router: Router,
         private idle: GacIdleTimeoutService,
+        private kiosk: KioskService,
         public state: GetacardState,
     ) {}
 
@@ -33,7 +35,7 @@ export class GetacardShellComponent implements OnInit, OnDestroy {
         // Abandoned sessions redirect away so the next patron doesn't see
         // (or extend) the previous one's data.
         this.route.queryParams.subscribe(params => {
-            if (params['kiosk']) { this.state.inKioskMode = true; }
+            if (params['kiosk']) { this.kiosk.activate(); }
             this.idle.watch(this.state.inKioskMode
                 ? IDLE_TIMEOUTS.form.kiosk : IDLE_TIMEOUTS.form.web);
         });

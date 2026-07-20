@@ -2,6 +2,7 @@ import {Injectable, EventEmitter} from '@angular/core';
 import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
+import {KioskService} from '../kiosk.service';
 
 interface RegisterResult {
     complete: boolean;
@@ -14,7 +15,17 @@ interface RegisterResult {
 
 @Injectable()
 export class RegisterService {
-    inKioskMode = false;
+
+    // Kiosk mode is app-wide; delegate to the shared service.  The setter
+    // preserves the existing register.component assignment: kiosk mode is
+    // sticky, so setting false is a no-op.
+    get inKioskMode(): boolean {
+        return this.kiosk.active;
+    }
+
+    set inKioskMode(value: boolean) {
+        if (value) { this.kiosk.activate(); }
+    }
 
     registerResult: RegisterResult = {
         complete: false,
@@ -28,7 +39,8 @@ export class RegisterService {
     constructor(
         private app: AppService,
         private settings: Settings,
-        private gateway: Gateway) {
+        private gateway: Gateway,
+        private kiosk: KioskService) {
     }
 }
 

@@ -6,6 +6,7 @@ import {Gateway, Hash} from '../gateway.service';
 import {AppService} from '../app.service';
 import {Settings} from '../settings.service';
 import {CaptchaSessionService} from '../captcha-session.service';
+import {KioskService} from '../kiosk.service';
 
 const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 const JUV_AGE = 18; // years
@@ -77,9 +78,11 @@ export const GAC_STEPS: GacStep[] = [
 @Injectable()
 export class GetacardState {
 
-    // Set from the ?kiosk query param; drives shorter idle timeouts (and,
-    // eventually, kiosk-specific display tweaks).
-    inKioskMode = false;
+    // Kiosk mode is app-wide (see KioskService); it drives shorter idle
+    // timeouts and hides non-kiosk chrome.
+    get inKioskMode(): boolean {
+        return this.kiosk.active;
+    }
 
     // --- Where do you live? ------------------------------------------------
 
@@ -208,6 +211,7 @@ export class GetacardState {
         private app: AppService,
         private settings: Settings,
         private captcha: CaptchaSessionService,
+        private kiosk: KioskService,
         formBuilder: FormBuilder,
     ) {
         // Warm the CAPTCHA session so the first autocomplete doesn't wait on
