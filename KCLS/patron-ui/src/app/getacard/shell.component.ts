@@ -1,6 +1,7 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {GacStep, GetacardState} from './state.service';
+import {GacIdleTimeoutService, IDLE_TIMEOUTS} from './idle-timeout.service';
 
 /**
  * Wizard shell: slim progress bar + step title up top, one centered content
@@ -11,13 +12,14 @@ import {GacStep, GetacardState} from './state.service';
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss']
 })
-export class GetacardShellComponent implements OnInit {
+export class GetacardShellComponent implements OnInit, OnDestroy {
 
     index = 0;
 
     constructor(
         private route: ActivatedRoute,
         private router: Router,
+        private idle: GacIdleTimeoutService,
         public state: GetacardState,
     ) {}
 
@@ -27,6 +29,15 @@ export class GetacardShellComponent implements OnInit {
     }
 
     ngOnInit() {
+        // Kiosk mode (?kiosk=1) times out much sooner than the open web.
+        // Abandoned sessions redirect away so the next patron doesn't see
+        // (or extend) the previous one's data.
+        this.route.queryParams.subscribe(params => {
+            if (params['kiosk']) { this.state.inKioskMode = true; }
+            this.idle.watch(this.state.inKioskMode
+                ? IDLE_TIMEOUTS.form.kiosk : IDLE_TIMEOUTS.form.web);
+        });
+
         // URL -> step, so deep links and browser back/forward work.
         this.route.paramMap.subscribe(params => {
             const slug = params.get('step') || 'address';
@@ -49,6 +60,11 @@ export class GetacardShellComponent implements OnInit {
             // scrolled well past the new step's content; snap back to the top.
             window.scrollTo(0, 0);
         });
+    }
+
+    ngOnDestroy() {
+        // The completion page starts its own watch with its own duration.
+        this.idle.stop();
     }
 
     get current(): GacStep {

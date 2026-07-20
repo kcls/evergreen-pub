@@ -77,6 +77,10 @@ export const GAC_STEPS: GacStep[] = [
 @Injectable()
 export class GetacardState {
 
+    // Set from the ?kiosk query param; drives shorter idle timeouts (and,
+    // eventually, kiosk-specific display tweaks).
+    inKioskMode = false;
+
     // --- Where do you live? ------------------------------------------------
 
     // The chosen suggestion; null while still searching.
