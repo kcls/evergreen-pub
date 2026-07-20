@@ -55,10 +55,15 @@
 
   <!-- No district resolved: outside the service area. -->
   <ng-container *ngSwitchDefault>
-    <p i18n>
-      This location is not in our service area.  Unfortunately, we are
-      unable to provide library card access to this area. Find more
-      information <a href="https://kcls.org/cards">here</a>.
+    <p>
+      <ng-container i18n>
+        This location is not in our service area.  Unfortunately, we are
+        unable to provide library card access to this area.
+      </ng-container>
+      <!-- Kiosks show no links that navigate away from the app. -->
+      <ng-container *ngIf="!state.inKioskMode" i18n>
+        Find more information <a href="https://kcls.org/cards">here</a>.
+      </ng-container>
     </p>
   </ng-container>
 

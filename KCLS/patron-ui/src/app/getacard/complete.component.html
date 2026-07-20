@@ -21,7 +21,9 @@
           home library: {{state.registerResult.homeOrgName}}.
         </p>
 
-        <p i18n>
+        <!-- Kiosks show no links that navigate away from the app; render
+             the same guidance as plain text instead. -->
+        <p *ngIf="!state.inKioskMode" i18n>
           You'll need to
           <a href="https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/">
             bring proof of address and photo ID that shows your date of birth
@@ -29,13 +31,24 @@
           to a library to activate your card. (Parents or guardians can help
           with this for applicants younger than age 18.)
         </p>
+        <p *ngIf="state.inKioskMode" i18n>
+          You'll need to bring proof of address and photo ID that shows your
+          date of birth to a library to activate your card. (Parents or
+          guardians can help with this for applicants younger than age 18.)
+        </p>
 
-        <p class="gac-italic" i18n>
+        <p class="gac-italic" *ngIf="!state.inKioskMode" i18n>
           Reasonable accommodation for individuals with disabilities is available
           upon request. Accommodations include modifications to policies,
           programs, appropriate equipment, and services. Contact your
           <a href="https://kcls.org/accessibility/">community library or visit
           our accessibility page</a> to request accommodation.
+        </p>
+        <p class="gac-italic" *ngIf="state.inKioskMode" i18n>
+          Reasonable accommodation for individuals with disabilities is available
+          upon request. Accommodations include modifications to policies,
+          programs, appropriate equipment, and services. Contact your
+          community library to request accommodation.
         </p>
 
         <hr class="gac-hr"/>

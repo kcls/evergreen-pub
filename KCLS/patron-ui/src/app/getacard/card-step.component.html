@@ -14,7 +14,8 @@
   </button>
 </div>
 
-<p class="gac-note">
+<!-- Kiosks show no links that navigate away from the app. -->
+<p class="gac-note" *ngIf="!state.inKioskMode">
   <a href="https://kcls.org/library-card-artists/" i18n>
     Learn about the artists who created these new designs.
   </a>

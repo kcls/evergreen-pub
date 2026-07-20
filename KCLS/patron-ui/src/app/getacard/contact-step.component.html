@@ -92,7 +92,8 @@
         </mat-select>
       </mat-form-field>
     </div>
-    <p class="gac-note" i18n>
+    <!-- Kiosks show no links that navigate away from the app. -->
+    <p class="gac-note" *ngIf="!state.inKioskMode" i18n>
       Not sure? Find your nearest library
       <a target="_blank" href="https://kcls.bibliocommons.com/v2/locations">here</a>.
     </p>

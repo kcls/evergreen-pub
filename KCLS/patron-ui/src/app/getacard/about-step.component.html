@@ -92,10 +92,15 @@
 
 <div class="gac-dupe" *ngIf="state.maybeDupeAccount">
   <span class="material-icons" aria-hidden="true">info</span>
-  <span i18n>
-    Whoops! We noticed that you already have a library card on file.
-    Please proceed to the
-    <a href="https://kcls.bibliocommons.com/user/login">login page</a>
-    to access everything the library has to offer.
+  <span>
+    <ng-container i18n>
+      Whoops! We noticed that you already have a library card on file.
+    </ng-container>
+    <!-- Kiosks show no links that navigate away from the app. -->
+    <ng-container *ngIf="!state.inKioskMode" i18n>
+      Please proceed to the
+      <a href="https://kcls.bibliocommons.com/user/login">login page</a>
+      to access everything the library has to offer.
+    </ng-container>
   </span>
 </div>
