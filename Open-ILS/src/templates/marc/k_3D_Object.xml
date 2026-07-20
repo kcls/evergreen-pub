@@ -61,7 +61,7 @@
     <subfield code="a">Title from .</subfield>
   </datafield>
   <datafield tag="520" ind1="" ind2="">
-    <subfield code="a"><p>Items in the Curiosity Collection checkout for 1 week; no holds, no renewals. Items must be picked up and returned to Issaquah Library, 10 W Sunset Way. Library only circulates equipment and does not provide consumable or disposable supplies.</p><p>[Summary from internet]</p></subfield>
+    <subfield code="a">&lt;p&gt;Items in the Curiosity Collection checkout for 1 week; no holds, no renewals. Items must be picked up and returned to Issaquah Library, 10 W Sunset Way. Library only circulates equipment and does not provide consumable or disposable supplies.&lt;/p&gt;&lt;p&gt;[Summary from internet]&lt;/p&gt;</subfield>
   </datafield>
   <datafield tag="650" ind1="" ind2="0">
     <subfield code="a">Tools.</subfield>
