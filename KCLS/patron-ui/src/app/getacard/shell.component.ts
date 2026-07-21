@@ -3,6 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {GacStep, GetacardState} from './state.service';
 import {GacIdleTimeoutService, IDLE_TIMEOUTS} from './idle-timeout.service';
 import {KioskService} from '../kiosk.service';
+import {Title}  from '@angular/platform-browser';
 
 /**
  * Wizard shell: slim progress bar + step title up top, one centered content
@@ -23,6 +24,7 @@ export class GetacardShellComponent implements OnInit, OnDestroy {
         private idle: GacIdleTimeoutService,
         private kiosk: KioskService,
         public state: GetacardState,
+        private title: Title,
     ) {}
 
     // The step list is dynamic: e-card holders skip the physical-card step.
@@ -31,6 +33,8 @@ export class GetacardShellComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
+        this.title.setTitle($localize`Get a Library Card`);
+
         // Kiosk mode (?kiosk=1) times out much sooner than the open web.
         // Abandoned sessions redirect away so the next patron doesn't see
         // (or extend) the previous one's data.
