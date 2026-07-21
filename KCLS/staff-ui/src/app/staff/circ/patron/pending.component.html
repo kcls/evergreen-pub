@@ -17,11 +17,21 @@
       </eg-org-select>
     </div>
   </div>
-  <div class="col-lg-3">
+  <div class="col-lg-4">
     <div class="input-group">
-      <input class="form-control" type="text" placeholder="Search all branches..." 
-        (keyup.enter)="userSearch()" [(ngModel)]="searchTerms"/>
+      <div class="input-group-prepend">
+        <div class="input-group-text" i18n>Search All Locations</div>
+      </div>
+      <input class="form-control" type="text"
+        i18n-placeholder placeholder="Name, email, etc. (minimum 3 characters)"
+        i18n-aria-label aria-label="Search pending patrons at all locations"
+        (keyup.enter)="userSearch()"
+        [ngModel]="searchTerms" (ngModelChange)="searchChanged($event)"/>
     </div>
+    <small class="form-text text-muted" i18n>
+      Searches pending patrons at all locations.
+      Clear to list patrons for the assigned Home Library.
+    </small>
   </div>
 </div>
 
