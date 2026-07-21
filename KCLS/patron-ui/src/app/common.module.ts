@@ -5,7 +5,7 @@ import {HttpClientModule} from '@angular/common/http';
 import {Gateway} from './gateway.service';
 import {AppService} from './app.service';
 import {LoginComponent} from './login.component';
-import {AutoPhoneDashDirective} from './register/auto-phone-dash.directive';
+import {AutoPhoneDashDirective} from './auto-phone-dash.directive';
 import {AutoDateSlashDirective} from './auto-date-slash.directive';
 
 @NgModule({
