@@ -1,8 +1,8 @@
 import {Component, Input, OnInit, AfterViewInit, ViewChild} from '@angular/core';
 import {Location} from '@angular/common';
 import {Router, ActivatedRoute, ParamMap} from '@angular/router';
-import {Observable, from, empty, range} from 'rxjs';
-import {concatMap, tap, map, takeLast} from 'rxjs/operators';
+import {Observable, Subject, from, empty, range} from 'rxjs';
+import {concatMap, debounceTime, distinctUntilChanged, tap, map, takeLast} from 'rxjs/operators';
 import {NgbNav, NgbNavChangeEvent} from '@ng-bootstrap/ng-bootstrap';
 import {IdlObject} from '@eg/core/idl.service';
 import {EventService} from '@eg/core/event.service';
@@ -26,6 +26,12 @@ export class PendingPatronsComponent implements OnInit {
 
     gridDataSource: GridDataSource = new GridDataSource();
     searchTerms = '';
+
+    // Debounces all-locations search input; see ngOnInit.
+    private searchInput = new Subject<string>();
+
+    // Minimum characters before the all-locations search runs.
+    static readonly MIN_SEARCH_CHARS = 3;
 
     @ViewChild('grid') private grid: GridComponent;
     @ViewChild('confirmDelete') private confirmDelete: ConfirmDialogComponent;
@@ -104,9 +110,29 @@ export class PendingPatronsComponent implements OnInit {
             console.debug('Broadcast received for "eg.pending_usr.update"');
             this.grid.reload();
         });
+
+        // Search as the user types (debounced).  Too-short values are
+        // ignored; clearing the input falls back to the home-library list.
+        this.searchInput.pipe(
+            debounceTime(400),
+            distinctUntilChanged()
+        ).subscribe(() => this.userSearch());
+    }
+
+    searchChanged(value: string) {
+        this.searchTerms = value;
+        this.searchInput.next(value);
     }
 
     userSearch() {
+        const len = this.searchTerms.length;
+
+        // Wait for enough input to search; an empty value reloads the
+        // default home-library-scoped list.
+        if (len > 0 && len < PendingPatronsComponent.MIN_SEARCH_CHARS) {
+            return;
+        }
+
         this.grid.reload();
     }
 
