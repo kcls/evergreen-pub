@@ -17,7 +17,7 @@
   /* Repaint the prebuilt indigo-pink Material accents in KCLS blue for
      everything inside the flow.  These MDC tokens are custom properties
      defined at the html level by the theme, so redefining them here wins
-     by inheritance proximity (same approach as .kcls-register). */
+     by inheritance proximity. */
   --mdc-checkbox-selected-icon-color: var(--gac-blue);
   --mdc-checkbox-selected-focus-icon-color: var(--gac-blue);
   --mdc-checkbox-selected-hover-icon-color: var(--gac-blue);
