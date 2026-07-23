@@ -22,6 +22,11 @@
   --mdc-checkbox-selected-focus-icon-color: var(--gac-blue);
   --mdc-checkbox-selected-hover-icon-color: var(--gac-blue);
   --mdc-checkbox-selected-pressed-icon-color: var(--gac-blue);
+  /* The focus state-layer (a tinted circle) lingers after clicking a
+     checkbox for as long as it keeps focus, which reads as stuck to
+     patrons; suppress it.  Hover/press ripples still give feedback. */
+  --mdc-checkbox-selected-focus-state-layer-opacity: 0;
+  --mdc-checkbox-unselected-focus-state-layer-opacity: 0;
   --mdc-outlined-text-field-focus-outline-color: var(--gac-blue);
   --mdc-outlined-text-field-focus-label-text-color: var(--gac-blue);
   --mdc-outlined-text-field-caret-color: var(--gac-blue);

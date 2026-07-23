@@ -13,16 +13,7 @@
   <ng-container *ngSwitchCase="'either'">
     <p i18n>
       Congratulations! You're eligible for both an all-access library
-      card and a digital library card!  You have the option to enjoy
-      instant digital access today with a digital library card, or you
-      may choose an all-access library card for full borrowing privileges
-      online and at our library locations.
-    </p>
-
-    <p i18n>
-      To receive an all-access library card, you must complete the form
-      and choose to pick up your library card at any KCLS location or
-      have it sent by mail.
+      card and a digital library card!
     </p>
 
     <h3 class="gac-subhead" i18n>Which card would you prefer?</h3>
@@ -34,8 +25,13 @@
           [attr.aria-checked]="state.accountType === 'full'"
           [class.gac-choice-selected]="state.accountType === 'full'"
           (click)="choose('full')">
-        <span class="material-icons gac-choice-icon" aria-hidden="true">badge</span>
-        <span class="gac-choice-label" i18n>All-access library card</span>
+        <span class="material-icons gac-choice-icon" aria-hidden="true">menu_book</span>
+        <span class="gac-choice-lines">
+          <span class="gac-choice-label" i18n>All-access library card</span>
+          <span class="gac-choice-sub" i18n>
+            Full access and borrowing of physical and digital library items.
+          </span>
+        </span>
         <span class="material-icons gac-choice-check" aria-hidden="true"
             *ngIf="state.accountType === 'full'">check_circle</span>
       </button>
@@ -45,12 +41,23 @@
           [class.gac-choice-selected]="state.accountType === 'ecard'"
           (click)="choose('ecard')">
         <span class="material-icons gac-choice-icon" aria-hidden="true">devices</span>
-        <span class="gac-choice-label" i18n>Digital library card</span>
+        <span class="gac-choice-lines">
+          <span class="gac-choice-label" i18n>Digital library card</span>
+          <span class="gac-choice-sub" i18n>
+            Full access and borrowing from the digital library.
+          </span>
+        </span>
         <span class="material-icons gac-choice-check" aria-hidden="true"
             *ngIf="state.accountType === 'ecard'">check_circle</span>
       </button>
 
     </div>
+
+    <p class="gac-choice-note" *ngIf="state.accountType === 'full'" i18n>
+      To receive an all-access library card, you must complete the form
+      and choose to pick up your card at any KCLS location or have it
+      sent by mail.
+    </p>
   </ng-container>
 
   <!-- No district resolved: outside the service area. -->
