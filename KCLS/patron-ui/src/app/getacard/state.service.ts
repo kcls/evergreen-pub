@@ -62,12 +62,12 @@ export interface GacStep {
 // The registration flow, one decision per step.  The address comes first
 // because it gates everything else (eligibility, account types, card step).
 export const GAC_STEPS: GacStep[] = [
-    {slug: 'address', label: $localize`Where do you live?`},
-    {slug: 'account', label: $localize`Choose your account`},
-    {slug: 'about-you', label: $localize`About you`},
-    {slug: 'contact', label: $localize`Stay in touch`},
+    {slug: 'address', label: $localize`Your Location`},
+    {slug: 'account', label: $localize`Choose your access`},
+    {slug: 'about-you', label: $localize`Your Information`},
+    {slug: 'contact', label: $localize`Communication Preferences`},
     {slug: 'card', label: $localize`My Library Card`},
-    {slug: 'review', label: $localize`Review & submit`},
+    {slug: 'review', label: $localize`Review Application`},
 ];
 
 /**
@@ -175,13 +175,13 @@ export class GetacardState {
     ];
 
     cardDescriptions: {[key: string]: string} = {
-        '2025-Barry-Johnson': $localize`A portrait of everyday Black life, illustrated by Barry Johnson`,
-        '2025-Bethany-Fackrell': $localize`Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell`,
-        '2025-Invisible-Creature': $localize`A Pacific Northwest legend brought to life, illustrated by Don Clark`,
-        '2025-Hernan-Paganini': $localize`An abstract multicultural flow, illustrated by Hernan Paganini`,
-        '2025-Marisol-Ortega': $localize`Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega`,
-        '2025-Stacy-Nguyen': $localize`A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen`,
-        '2025-Stevie-Shao': $localize`Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao`,
+        '2025-Barry-Johnson': $localize`A portrait of everyday Black life, illustrated by Barry Johnson.`,
+        '2025-Bethany-Fackrell': $localize`Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell.`,
+        '2025-Invisible-Creature': $localize`A Pacific Northwest legend brought to life, illustrated by Don Clark.`,
+        '2025-Hernan-Paganini': $localize`An abstract multicultural flow, illustrated by Hernan Paganini.`,
+        '2025-Marisol-Ortega': $localize`Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega.`,
+        '2025-Stacy-Nguyen': $localize`A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen.`,
+        '2025-Stevie-Shao': $localize`Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao.`,
     };
 
     cardOptionUrl(name: string): string {

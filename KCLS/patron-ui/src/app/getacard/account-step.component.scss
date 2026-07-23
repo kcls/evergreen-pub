@@ -51,9 +51,26 @@ p {
   color: var(--gac-blue, #003f6b);
 }
 
-.gac-choice-label {
+.gac-choice-lines {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-width: 0;
+}
+
+.gac-choice-label {
   font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-choice-sub {
+  font-size: 0.9rem;
+  color: var(--gac-muted, #5f6b76);
+}
+
+/* Follow-up note shown once a choice requires explanation. */
+.gac-choice-note {
+  margin: 12px 0 0;
   color: var(--gac-ink, #1a1a1a);
 }
 
