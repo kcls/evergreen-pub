@@ -888,14 +888,14 @@ export class GetacardState {
                 {stat_cat: STAT_CAT_DISTRICT_OF_RESIDENCE, value: this.district});
         }
 
-        console.debug('SEND', payload);
+        // console.debug('SEND', payload);
 
         return this.requestOne(
             'open-ils.actor', 'open-ils.actor.register', payload
         ).then(resp => {
             const r = (resp || {}) as Hash;
 
-            console.debug('RESPONSE', r);
+            // console.debug('RESPONSE', r);
 
             this.registerResult = {
                 complete: true,
