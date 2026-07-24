@@ -1,4 +1,5 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, ElementRef, EventEmitter, HostListener,
+    Input, OnInit, Output} from '@angular/core';
 import {FormControl} from '@angular/forms';
 import {of} from 'rxjs';
 import {catchError, debounceTime, distinctUntilChanged, map,
@@ -31,7 +32,20 @@ export class AddressSearchComponent implements OnInit {
     loading = false;
     notFound = false;
 
-    constructor(private state: GetacardState) {}
+    constructor(
+        private elm: ElementRef,
+        private state: GetacardState,
+    ) {}
+
+    // Clicking outside the search input / suggestion list dismisses the
+    // suggestions.  Typing again re-runs the search.
+    @HostListener('document:mousedown', ['$event'])
+    onDocumentMouseDown(event: MouseEvent) {
+        if (!this.elm.nativeElement.contains(event.target)) {
+            this.suggestions = [];
+            this.notFound = false;
+        }
+    }
 
     ngOnInit() {
         this.search.valueChanges.pipe(
