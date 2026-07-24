@@ -408,6 +408,59 @@ export class GetacardState {
         this.street2 = '';
     }
 
+    /**
+     * Return the whole flow to its pristine state (registerResult excepted,
+     * since the confirmation page displays it).  Called once a registration
+     * succeeds so navigating back from the confirmation page lands on a
+     * cleared first step rather than the submitted values.
+     */
+    resetForm() {
+        this.clearSelection();
+        this.clearMailing();
+
+        this.cardDesign = null;
+        this.delivery = null;
+        this.submitting = false;
+        this.maybeDupeAccount = null;
+        this.isJuvenile = false;
+        this.dobRawText = null;
+
+        // reset() restores values and marks the controls pristine/untouched
+        // so required-field errors don't light up on the emptied form.  The
+        // existing valueChanges subscriptions re-derive the dependent state
+        // (sms mirroring/disable, contact rules, juvenile rules).
+        this.aboutForm.reset({
+            first: '',
+            middle: '',
+            last: '',
+            legalIsSame: true,
+            legalFirst: '',
+            legalMiddle: '',
+            legalLast: '',
+            dob: '',
+            guardian: '',
+        });
+
+        this.contactForm.reset({
+            email: '',
+            phone: '',
+            smsIsSame: true,
+            smsNumber: '',
+            allEmailNotices: false,
+            allTextNotices: false,
+            allPhoneNotices: false,
+            pickupLib: 0,
+            mailingIsSame: true,
+            mailingStreet2: '',
+        });
+
+        this.reviewForm.reset({
+            wantsLibNews: false,
+            wantsFoundationInfo: false,
+            termsOfService: false,
+        });
+    }
+
     private resetResolution() {
         this.unitValid = null;
         this.verifying = false;

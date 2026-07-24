@@ -25,6 +25,13 @@ export class GetacardCompleteComponent implements OnInit, OnDestroy {
             this.router.navigate(['/getacard']);
         }
 
+        // A successful registration is finished: clear the flow so browser
+        // Back lands on a pristine first step rather than the submitted
+        // values.  Failures keep their values so the patron can retry.
+        if (this.state.registerResult.success) {
+            this.state.resetForm();
+        }
+
         // The confirmation page gets its own (shorter) idle window before
         // redirecting away.
         this.idle.watch(this.state.inKioskMode
