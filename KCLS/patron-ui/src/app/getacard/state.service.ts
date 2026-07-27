@@ -9,6 +9,10 @@ import {CaptchaSessionService} from '../captcha-session.service';
 import {KioskService} from '../kiosk.service';
 
 const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
+
+// Tacoma residents must confirm they hold a Tacoma Public Library card
+// before registering for a reciprocal card.
+const TACOMA_DISTRICT_OF_RESIDENCE = 'Tacoma_Public_Library';
 const JUV_AGE = 18; // years
 const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
 
@@ -106,6 +110,14 @@ export class GetacardState {
     district: string | null = null;
     accountTypeOption: AccountTypeOption = null;
     exceptionId: number | null = null;
+
+    // Tacoma residents must confirm they already hold a Tacoma Public
+    // Library card before continuing.
+    tacomaConfirmed = false;
+
+    get requiresTacomaConfirmation(): boolean {
+        return this.district === TACOMA_DISTRICT_OF_RESIDENCE;
+    }
 
     // --- Choose your account -----------------------------------------------
 
@@ -334,7 +346,12 @@ export class GetacardState {
                 || (this.mailingSelected
                     && !this.mailingNotViable
                     && (!this.mailingUnitRequired || this.mailingUnitValid === true));
-            return this.addressComplete && this.district != null && mailingOk;
+
+            const tacomaOk =
+                !this.requiresTacomaConfirmation || this.tacomaConfirmed;
+
+            return this.addressComplete && this.district != null
+                && tacomaOk && mailingOk;
         }
         if (slug === 'account') { return this.accountType != null; }
         if (slug === 'about-you') { return this.aboutForm.valid; }
@@ -471,6 +488,7 @@ export class GetacardState {
         this.district = null;
         this.accountTypeOption = null;
         this.exceptionId = null;
+        this.tacomaConfirmed = false;
         // A different address can change what's offered.
         this.setAccountType(null);
     }
@@ -540,6 +558,8 @@ export class GetacardState {
                 this.requestOne('kcls.address', 'kcls.address.district-of-residence',
                     latitude, longitude),
             ]).then(([homeOrg, district]) => {
+                console.debug('Org unit is', homeOrg, ' and district is ', district);
+
                 this.applyOrgAndDistrict(
                     homeOrg as number | null, district as string | null);
                 return normalized;

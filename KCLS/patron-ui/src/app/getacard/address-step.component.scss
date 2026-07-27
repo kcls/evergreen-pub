@@ -100,6 +100,15 @@
   margin-top: 12px;
 }
 
+/* District-specific confirmation (e.g. Tacoma reciprocal cards). */
+.gac-confirm {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+  border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+}
+
 /* Mailing address section (below the confirmed residential address). */
 .gac-subhead {
   font-size: 1.1rem;
