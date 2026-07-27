@@ -64,6 +64,18 @@
     </span>
   </div>
 
+  <!-- Tacoma residents must hold a Tacoma Public Library card before
+       registering for a reciprocal card; Continue stays disabled until
+       they confirm. -->
+  <div class="gac-confirm" *ngIf="state.requiresTacomaConfirmation">
+    <mat-checkbox [checked]="state.tacomaConfirmed"
+        (change)="state.tacomaConfirmed = $event.checked" i18n>
+      If you live in Tacoma, you must have a valid Tacoma Public Library
+      card before you can get a reciprocal card from us. Do you have a
+      Tacoma Public Library Card?
+    </mat-checkbox>
+  </div>
+
   <!-- Out of the service area: a dead end, so say so here rather than on
        the next step. -->
   <p class="gac-help" *ngIf="state.homeOrgId != null && !state.district">
