@@ -2,25 +2,1091 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
   <file source-language="en" datatype="plaintext" original="ng2.template">
     <body>
+      <trans-unit id="4659487378487979169" datatype="html">
+        <source> Tell us about yourself. This information is used for verification purposes.
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">1,3</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6028371114637047813" datatype="html">
+        <source>First Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4278309797099174412" datatype="html">
+        <source> First Name <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">11,12</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8955767596926635588" datatype="html">
+        <source>Middle Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">17</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4407559560004943843" datatype="html">
+        <source>Last Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">24</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3158212633624247009" datatype="html">
+        <source> Last Name <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">26,27</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4863920013173352015" datatype="html">
+        <source> Legal name is the same as above. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">33,35</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="699880825698634863" datatype="html">
+        <source>Legal First Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">41</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2052712514307090283" datatype="html">
+        <source>Legal Middle Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">46</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4460853473708976863" datatype="html">
+        <source>Legal Last Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5568875939225929320" datatype="html">
+        <source>Birth Date</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">61</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7429764906573109008" datatype="html">
+        <source> Birth Date <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">68,69</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4669178421446203111" datatype="html">
+        <source> If you’re younger than age 18, list the names of all parents and guardians who live with you. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">75,78</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4237951093624511013" datatype="html">
+        <source>Parent or Guardian</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">82</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="695564011993780" datatype="html">
+        <source> Parent or Guardian <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">84,85</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8381533581466272657" datatype="html">
+        <source> Whoops! We noticed that you already have a library card on file. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">96,98</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="610080897148505233" datatype="html">
+        <source> Please proceed to the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://kcls.bibliocommons.com/user/login&quot;&gt;"/>login page<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> to access everything the library has to offer. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/about-step.component.html</context>
+          <context context-type="linenumber">100,104</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8995534479543698188" datatype="html">
+        <source> Congratulations, you&apos;re eligible for an all-access library card! Complete your application to start enjoying all the library has to offer. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">5,9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5351128800635754126" datatype="html">
+        <source> Congratulations! You&apos;re eligible for both an all-access library card and a digital library card! </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">14,17</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1900915591893283958" datatype="html">
+        <source>Which card would you prefer?</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">19</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">22</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8091810109194465160" datatype="html">
+        <source>All-access library card</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="44694551355121171" datatype="html">
+        <source> Full access and borrowing of physical and digital library items. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">31,33</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8640358213493053772" datatype="html">
+        <source>Digital library card</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">45</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">29</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8211534227783669745" datatype="html">
+        <source> Full access and borrowing from the digital library. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">46,48</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6445816131434551537" datatype="html">
+        <source> To receive an all-access library card, you must complete the form and choose to pick up your card at any KCLS location or have it sent by mail. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">56,60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8019026973208561067" datatype="html">
+        <source> This location is not in our service area. Unfortunately, we are unable to provide library card access to this area. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">66,69</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">82,85</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1857915483043599136" datatype="html">
+        <source> Find more information <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://kcls.org/cards&quot;&gt;"/>here<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/account-step.component.html</context>
+          <context context-type="linenumber">71,73</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">87,89</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1240451733512913039" datatype="html">
+        <source>Searching addresses…</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-search.component.html</context>
+          <context context-type="linenumber">12</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="407939107288823096" datatype="html">
+        <source> <x id="INTERPOLATION" equiv-text="{{suggestions.length - 5}}"/> more not shown — keep typing to narrow results. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-search.component.html</context>
+          <context context-type="linenumber">27,29</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2528180475893114464" datatype="html">
+        <source> We couldn&apos;t find that address. Please check your entry.
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-search.component.html</context>
+          <context context-type="linenumber">33,35</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6304432362546770951" datatype="html">
+        <source>Address</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-search.component.ts</context>
+          <context context-type="linenumber">22</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="385111357231878651" datatype="html">
+        <source>Start typing an address, e.g. 123 Main...</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-search.component.ts</context>
+          <context context-type="linenumber">23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6441163130206717610" datatype="html">
+        <source>Let us know where you live or own property in King County:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7585826646011739428" datatype="html">
+        <source>Edit</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">22</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">123</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">39</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">71</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">104</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3435820700197027382" datatype="html">
+        <source> The selected address requires an Apt / Unit / Suite / Bldg number. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">26,28</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">128,130</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4324604097954951929" datatype="html">
+        <source>Apt / Unit / Suite / Bldg</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">31</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">134</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8762443461180162231" datatype="html">
+        <source> We couldn&apos;t match that unit to a known address. Please check the unit number. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">37,39</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">143,145</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6938726823500014611" datatype="html">
+        <source>Verifying address…</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">44</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">150</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5867251410086141458" datatype="html">
+        <source> This address is not a valid residential address. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">47,49</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5302562619344705450" datatype="html">
+        <source> This address isn&apos;t eligible for online registration — please contact your library. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">51,53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8425364180993085406" datatype="html">
+        <source>This address is in our service area.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">58</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3503586750319049369" datatype="html">
+        <source> If you live in Tacoma, you must have a valid Tacoma Public Library card before you can get a reciprocal card from us. Do you have a Tacoma Public Library Card? </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">72,76</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3439636926170808856" datatype="html">
+        <source>Mailing Address</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">96</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5528145353195145882" datatype="html">
+        <source> Same as Residential Address </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">99,101</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2110639494055171912" datatype="html">
+        <source> This address can&apos;t be used as a mailing address. Please choose a different address. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/address-step.component.html</context>
+          <context context-type="linenumber">153,156</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4323750982276482394" datatype="html">
+        <source>Select your preferred library card design.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7216934050764618870" datatype="html">
+        <source>You&apos;ll receive one wallet-size and one keychain-size card.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">2</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="487847042698513832" datatype="html">
+        <source>Card Design</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">111</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8982486725171111398" datatype="html">
+        <source> Learn about the artists who created these new designs. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">19,21</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7651606245688195874" datatype="html">
+        <source>How would you like to receive your All-access Library Card?</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">24</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">27</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2776662923014452635" datatype="html">
+        <source>Pickup at my local library</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">36</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="973436784739282021" datatype="html">
+        <source>Available at any library location</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">38</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4652673026149704271" datatype="html">
+        <source>By mail</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5837295502809437203" datatype="html">
+        <source>Wait 1-2 weeks for your card to be mailed to your home address.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/card-step.component.html</context>
+          <context context-type="linenumber">54</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="9206208203055890030" datatype="html">
+        <source>Get a Library Card</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.ts</context>
+          <context context-type="linenumber">36</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5236769307780685681" datatype="html">
+        <source>Registration successful!</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1176721095909277050" datatype="html">
+        <source> You have chosen to have your library card mailed to you. It will arrive within 1-2 weeks. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">14,17</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3682542109252263313" datatype="html">
+        <source> You have chosen to pick up your library card at your local library. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">19,21</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7263453156785430931" datatype="html">
+        <source> You&apos;ll need to <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://kcls.org/faqs/what-documents-do-i-need-to-show-to-get-a-library-account/&quot;&gt;"/> bring proof of address and photo ID that shows your date of birth <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> to a library to activate your card. (Parents or guardians can help with this for applicants younger than age 18.) </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">25,32</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8343018391354753779" datatype="html">
+        <source> You&apos;ll need to bring proof of address and photo ID that shows your date of birth to a library to activate your card. (Parents or guardians can help with this for applicants younger than age 18.) </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">33,37</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4775179750922239975" datatype="html">
+        <source> Reasonable accommodation for individuals with disabilities is available upon request. Accommodations include modifications to policies, programs, appropriate equipment, and services. Contact your <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://kcls.org/accessibility/&quot;&gt;"/>community library or visit our accessibility page<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> to request accommodation. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">39,45</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2832642990491493016" datatype="html">
+        <source> Reasonable accommodation for individuals with disabilities is available upon request. Accommodations include modifications to policies, programs, appropriate equipment, and services. Contact your community library to request accommodation. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">46,51</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5960939337347974506" datatype="html">
+        <source>Verification Requirements</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">55</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1354362446266138028" datatype="html">
+        <source> 1. Photo identification with birth date (one piece required for adults). Acceptable examples are as follows and may be current or expired: </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">57,60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4851594616852936235" datatype="html">
+        <source>Driver&apos;s License</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">62</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4145401886320675784" datatype="html">
+        <source>Passport</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">63</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6074947299256371617" datatype="html">
+        <source>Washington ID Card</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">64</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">76</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3424500156141069005" datatype="html">
+        <source>U.S. Military ID</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">65</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="451566658821986362" datatype="html">
+        <source>Matricula Consular (issued by Mexican government)</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="9139371648543790296" datatype="html">
+        <source> 2. Address verification matching qualifying residential address and given name (one piece required for adults and minors). Acceptable examples—chosen document must be current: </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">69,73</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2184522971138330043" datatype="html">
+        <source>Washington Driver&apos;s License</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">75</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6942169594588475860" datatype="html">
+        <source>Printed Checks</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">77</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8571667038564259307" datatype="html">
+        <source>Utility Bill (printout of online bill acceptable)</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">78</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2351131144516929383" datatype="html">
+        <source>Apartment Lease</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">79</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7192878850911275098" datatype="html">
+        <source>Voter&apos;s Registration</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">80</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8458509449743272228" datatype="html">
+        <source>King County Tax Bill</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">81</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5032882988499473128" datatype="html">
+        <source>Other (Must be of a legal or permanent nature)</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">82</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2583673433841895719" datatype="html">
+        <source> If residence address differs from mailing address, the residence address determines patron eligibility. You may get a library card today without address verification, but you will be limited to checking out 2 items. If you do not bring address verification, the card will expire after 6 months. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">85,91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5550335449204007082" datatype="html">
+        <source> Your library card number is <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/><x id="INTERPOLATION" equiv-text="{{state.registerResult.barcode}}"/><x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">97,99</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7617031237825122531" datatype="html">
+        <source>Registration could not be completed</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">105</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2523525655512876044" datatype="html">
+        <source> An error occurred while processing your registration. Please try again or contact your local library for assistance. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.html</context>
+          <context context-type="linenumber">106,109</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7592595057355029376" datatype="html">
+        <source>Registration Complete</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/complete.component.ts</context>
+          <context context-type="linenumber">22</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="9210409088816189551" datatype="html">
+        <source> Please share your communication preferences. This will be your preferred method for staying connected with the library.
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">1,4</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4879517228803151475" datatype="html">
+        <source>Email Address</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4107257405291125319" datatype="html">
+        <source><x id="START_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;ng-container *ngIf=&quot;state.accountType === &apos;ecard&apos;&quot;&gt;"/> Email is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> to receive email notices. <x id="CLOSE_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;/ng-container&gt;"/><x id="START_TAG_NG_CONTAINER_3" ctype="x-ng_container_3" equiv-text="&lt;ng-container *ngIf=&quot;state.accountType !== &apos;ecard&apos;&quot;&gt;"/><x id="START_TAG_NG_CONTAINER_1" ctype="x-ng_container_1" equiv-text="&lt;ng-container *ngIf=&quot;state.wantsEmailNotices()&quot;&gt;"/> Email is <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>required<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> for email notices. <x id="CLOSE_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;/ng-container&gt;"/><x id="START_TAG_NG_CONTAINER_2" ctype="x-ng_container_2" equiv-text="&lt;ng-container *ngIf=&quot;!state.wantsEmailNotices()&quot;&gt;"/> Email is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;/ng-container&gt;"/><x id="CLOSE_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;/ng-container&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">13,23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="613677411311138075" datatype="html">
+        <source> Email format is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>not valid<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">25,26</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8194554728555410336" datatype="html">
+        <source>Phone Number</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5419187567399118052" datatype="html">
+        <source> Phone Number format is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>111-222-3333<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">34,35</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8856626744379580907" datatype="html">
+        <source><x id="START_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;ng-container *ngIf=&quot;state.wantsPhoneNotices()&quot;&gt;"/> Phone Number is <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>required<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> for phone notices. <x id="CLOSE_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;/ng-container&gt;"/><x id="START_TAG_NG_CONTAINER_1" ctype="x-ng_container_1" equiv-text="&lt;ng-container *ngIf=&quot;!state.wantsPhoneNotices()&quot;&gt;"/> Phone Number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_TAG_NG_CONTAINER" ctype="x-ng_container" equiv-text="&lt;/ng-container&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">38,43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2569363367791736212" datatype="html">
+        <source> My text/SMS number is the same as my phone number. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">49,51</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3755330114268836738" datatype="html">
+        <source>SMS/Text Number</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">56</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8583483399107967439" datatype="html">
+        <source> SMS/Text Number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> to receive text notices. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">59,61</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4163191452928923926" datatype="html">
+        <source> SMS/Text Number format is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>111-222-3333<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">62,63</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8413080242698351922" datatype="html">
+        <source>How would you like to receive library notices?</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">70</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4768749765465246664" datatype="html">
+        <source>Email</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">73</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">74</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6162693758764653365" datatype="html">
+        <source>Text</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">75</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3262236020277300799" datatype="html">
+        <source>Phone</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">77</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">78</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8355374391683530544" datatype="html">
+        <source>Which library location would you like to receive your holds at?</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">80</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1208579990949986804" datatype="html">
+        <source>Hold Pickup Library</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">83</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">145</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1973519021798988434" datatype="html">
+        <source> Not sure? Find your nearest library <x id="START_LINK" ctype="x-a" equiv-text="&lt;a target=&quot;_blank&quot; href=&quot;https://kcls.bibliocommons.com/v2/locations&quot;&gt;"/>here<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/contact-step.component.html</context>
+          <context context-type="linenumber">90,93</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8897203970477732526" datatype="html">
+        <source>Your Location</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">5</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">69</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1221208390441787006" datatype="html">
+        <source>Residential</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5980919517397428444" datatype="html">
+        <source>Mailing</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">18</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4411827072085178672" datatype="html">
+        <source>Same as residential</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">19</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4086606389696938932" datatype="html">
+        <source>Account</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">27</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2793853878286391320" datatype="html">
+        <source>Your Information</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">37</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">71</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8953033926734869941" datatype="html">
+        <source>Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7647133798807378669" datatype="html">
+        <source>Legal Name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7890419814061896884" datatype="html">
+        <source>Date of Birth</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">58</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8019828940130379814" datatype="html">
+        <source>Parent / Guardian</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">62</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="855304091331128044" datatype="html">
+        <source>Communication Preferences</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">69</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">72</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5396242892344457546" datatype="html">
+        <source>SMS/Text</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">82</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6724113826166102601" datatype="html">
+        <source>Notices</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">86</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6252070156626006029" datatype="html">
+        <source>None</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">88</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2944449439955980766" datatype="html">
+        <source>Email </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">89</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2362231796827501724" datatype="html">
+        <source>Text </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">90</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2872561745779576101" datatype="html">
+        <source>Pickup Library</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">95</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2857393135235831802" datatype="html">
+        <source>Your Library Card</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">102</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7372755454773589030" datatype="html">
+        <source>Delivery</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">107</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5023396316701405186" datatype="html">
+        <source>Let&apos;s stay in touch.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">127</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6854142144131873996" datatype="html">
+        <source> Library News and Events </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">129,131</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5519123658232103185" datatype="html">
+        <source> KCLS Foundation Information </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">132,134</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4894626527804395408" datatype="html">
+        <source> I assume full responsibility for the use of this card and all charges associated with its use. I will give immediate notice of loss of card or change of address. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/review-step.component.html</context>
+          <context context-type="linenumber">138,142</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5837846930952282419" datatype="html">
+        <source>Welcome to King County Library System!</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="396924621406242202" datatype="html">
+        <source> Your library card is key to unlocking your curiosity. Let&apos;s get started by finding the right card for you! </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">8,11</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7102075992666089988" datatype="html">
+        <source>Step <x id="INTERPOLATION" equiv-text="{{index + 1}}"/> of <x id="INTERPOLATION_1" equiv-text="{{steps.length}}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2729977806680201980" datatype="html">
+        <source> « Back </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">38,40</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3663345690188604487" datatype="html">
+        <source> Continue » </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">42,44</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4943998242904350511" datatype="html">
+        <source> Submit </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/shell.component.html</context>
+          <context context-type="linenumber">46,48</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2635863401285967841" datatype="html">
+        <source>Choose your access</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">70</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="335989763081241144" datatype="html">
+        <source>My Library Card</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">73</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4765331949804634730" datatype="html">
+        <source>Review Application</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">74</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5086906403200327143" datatype="html">
+        <source>A portrait of everyday Black life, illustrated by Barry Johnson.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">190</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7576613760698191618" datatype="html">
+        <source>Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">191</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3511337386492523716" datatype="html">
+        <source>A Pacific Northwest legend brought to life, illustrated by Don Clark.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">192</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8127161439938685253" datatype="html">
+        <source>An abstract multicultural flow, illustrated by Hernan Paganini.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">193</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4726714773007298750" datatype="html">
+        <source>Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">194</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2947638590404962060" datatype="html">
+        <source>A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">195</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7497607518386198216" datatype="html">
+        <source>Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/getacard/state.service.ts</context>
+          <context context-type="linenumber">196</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="6254712182003786007" datatype="html">
         <source>Credentials Verified</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/login.component.html</context>
           <context context-type="linenumber">6</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="5277685503220593332" datatype="html">
-        <source>Username or Barcode</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/login.component.html</context>
-          <context context-type="linenumber">14</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="1781353784603582009" datatype="html">
-        <source> Username or Barcode <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/login.component.html</context>
-          <context context-type="linenumber">16,17</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1492955468582029328" datatype="html">
@@ -51,247 +1117,539 @@
           <context context-type="linenumber">35,37</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3797778920049399855" datatype="html">
-        <source>Logout</source>
+      <trans-unit id="5113165610004622651" datatype="html">
+        <source>Log Out</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/login.component.html</context>
-          <context context-type="linenumber">42</context>
+          <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4882493102348010411" datatype="html">
-        <source><x id="START_TAG_DIV" ctype="x-div" equiv-text="&lt;div&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Text goes here for the patron...<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Text goes here for the patron...<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Text goes here for the patron...<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="CLOSE_TAG_DIV" ctype="x-div" equiv-text="&lt;/div&gt;"/></source>
+      <trans-unit id="5277685503220593332" datatype="html">
+        <source>Username or Barcode</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.ts</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3011112932753861347" datatype="html">
+        <source>Barcode</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/login.component.ts</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1976113827924476487" datatype="html">
+        <source>This account does not have permission to create new requests.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">3,7</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4222291945012461813" datatype="html">
+        <source>Patrons are allowed to have at most <x id="INTERPOLATION" equiv-text="{{requests.maxRequestCount}}"/> requests per 30 day period.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1352675156709083376" datatype="html">
+        <source>Currently at <x id="INTERPOLATION" equiv-text="{{requests.activeRequestCount}}"/> of <x id="INTERPOLATION_1" equiv-text="{{requests.maxRequestCount}}"/> requests.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">15</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7108131892939738569" datatype="html">
+        <source>ISBN, ISSN, UPC, OCLC Number</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1641782250274475318" datatype="html">
+        <source>Journal DOI</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">33</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3534886148486732746" datatype="html">
+        <source>Is it one of these items?</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">40</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1931424785228934360" datatype="html">
+        <source>Select title <x id="INTERPOLATION" equiv-text="{{record.display.title}}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3068238302184426182" datatype="html">
+        <source>This item is already available in the catalog. Holds may be placed <x id="START_LINK" ctype="x-a" equiv-text="&lt;a target=&quot;_blank&quot; [attr.href]=&quot;holdRequestUrl&quot;&gt;"/>here.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">56,57</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3227636144546462648" datatype="html">
+        <source>A request for this item is already active on this account.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">62</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">64,68</context>
+          <context context-type="linenumber">76</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5701618810648052610" datatype="html">
         <source>Title</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">13</context>
+          <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7377189366563682057" datatype="html">
         <source> Title <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">15,16</context>
+          <context context-type="linenumber">69,70</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7071470734400948493" datatype="html">
-        <source>Author</source>
+      <trans-unit id="3217355664611614507" datatype="html">
+        <source>Article Title</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">23</context>
+          <context context-type="linenumber">81</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8860567190320038063" datatype="html">
-        <source>ISBN</source>
+      <trans-unit id="4189172789106527193" datatype="html">
+        <source> Article Title <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">30</context>
+          <context context-type="linenumber">83,84</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="166818556527779945" datatype="html">
-        <source> ISBN <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>must be a 10 or 13 digit number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+      <trans-unit id="7774117373167670013" datatype="html">
+        <source>Author, Creator, Performer</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">32,33</context>
+          <context context-type="linenumber">91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8276272321719348455" datatype="html">
+        <source>Select an Audience</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">98</context>
         </context-group>
       </trans-unit>
       <trans-unit id="27494424370894008" datatype="html">
         <source>Publication Year</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">40</context>
+          <context context-type="linenumber">109</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2148262324518509477" datatype="html">
         <source> Publication Year <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>must be a 4 digit number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">42,43</context>
+          <context context-type="linenumber">111,112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7734042519638532672" datatype="html">
         <source>Publisher</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">50</context>
+          <context context-type="linenumber">119</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="387666953589231990" datatype="html">
-        <source>Other Notes &amp; Comments</source>
+      <trans-unit id="5190485844307255023" datatype="html">
+        <source>Select a Language</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">57</context>
+          <context context-type="linenumber">126</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7558913366513914554" datatype="html">
-        <source> Submit Request </source>
+      <trans-unit id="4171707151945577538" datatype="html">
+        <source>Other Notes and Comments</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">73,75</context>
+          <context context-type="linenumber">137</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3526056131155348368" datatype="html">
+        <source> Request Item </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/create.component.html</context>
+          <context context-type="linenumber">155,157</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3020005801864584697" datatype="html">
         <source> An error occurred submitting your request. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/create.component.html</context>
-          <context context-type="linenumber">79,81</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="1128746416604602240" datatype="html">
-        <source>Request an Item</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/create.component.ts</context>
-          <context context-type="linenumber">37</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
-          <context context-type="linenumber">6</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2841176699704477669" datatype="html">
-        <source>Request Submitted</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/create.component.ts</context>
-          <context context-type="linenumber">90</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="1120520575993707434" datatype="html">
-        <source>View My Requests</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/create.component.ts</context>
-          <context context-type="linenumber">91</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2259395705858047022" datatype="html">
-        <source>My Requests</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">3</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
-          <context context-type="linenumber">23</context>
+          <context context-type="linenumber">161,163</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5758976989282986600" datatype="html">
         <source> You Have No Requests </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">6,8</context>
+          <context context-type="linenumber">4,6</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3199073823575190201" datatype="html">
-        <source>Requested <x id="INTERPOLATION" equiv-text="{{request.create_date | date}}"/></source>
+      <trans-unit id="238576882811173175" datatype="html">
+        <source>Title: <x id="INTERPOLATION" equiv-text="{{request.title}}"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">16</context>
+          <context context-type="linenumber">12</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="187187500641108332" datatype="html">
+        <source><x id="INTERPOLATION" equiv-text="{{request.create_date | date}}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">14</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">55</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="18047891993289131" datatype="html">
+        <source>Article: <x id="INTERPOLATION" equiv-text="{{request.article}}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">17</context>
         </context-group>
       </trans-unit>
       <trans-unit id="305142716106924307" datatype="html">
         <source>Author:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">20</context>
+          <context context-type="linenumber">21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="224925897782274053" datatype="html">
-        <source>ISBN:</source>
+      <trans-unit id="4401423746285463392" datatype="html">
+        <source>Identifier:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">24</context>
+          <context context-type="linenumber">23</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1072657834185712664" datatype="html">
         <source>Publisher:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">28</context>
+          <context context-type="linenumber">27</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1944615016778726582" datatype="html">
         <source>Publication Year:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">32</context>
+          <context context-type="linenumber">29</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3579205080796663296" datatype="html">
+        <source>Language:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">33</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1534253075269092462" datatype="html">
+        <source>Format:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="176284322192820771" datatype="html">
         <source>Comments:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">36</context>
+          <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8766543515727166681" datatype="html">
-        <source>Status:</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">40</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="4416413576346763682" datatype="html">
-        <source>Pending</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">42</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="5906272961955453157" datatype="html">
-        <source>Approved</source>
+      <trans-unit id="1059997043104686828" datatype="html">
+        <source>Notes from Staff:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
           <context context-type="linenumber">43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3895820178491955040" datatype="html">
+        <source> Thank you for your suggestion. Unfortunately, we’re unable to purchase every request. We appreciate your understanding. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">67,70</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="6281679075739407854" datatype="html">
+        <source> Are you sure you want to cancel this request? </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">73,75</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1890490820911274612" datatype="html">
+        <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>To cancel an Interlibrary Loan request, please email <x id="START_LINK" ctype="x-a" equiv-text="&lt;a target=&quot;_blank&quot; href=&quot;mailto:illdept&amp;#64;kcls.org&quot;&gt;"/>illdept@kcls.org<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.html</context>
+          <context context-type="linenumber">84,86</context>
         </context-group>
       </trans-unit>
       <trans-unit id="426701527291002798" datatype="html">
         <source>Cancel Request</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">52</context>
+          <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2471355358504998369" datatype="html">
-        <source> Never Mind </source>
+      <trans-unit id="4075728024309667391" datatype="html">
+        <source> Go Back </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">55,57</context>
+          <context context-type="linenumber">92,94</context>
         </context-group>
       </trans-unit>
       <trans-unit id="614101743220272620" datatype="html">
         <source> Confirm Request Cancellation </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/list.component.html</context>
-          <context context-type="linenumber">59,61</context>
+          <context context-type="linenumber">96,98</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2841176699704477669" datatype="html">
+        <source>Request Submitted</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">44</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2041075231994078853" datatype="html">
+        <source>Pending Patron Response</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">45</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4437447809407819367" datatype="html">
+        <source>Under Consideration for Purchase</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">46</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7421515756177155963" datatype="html">
+        <source>Purchase Approved</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3720375352964255544" datatype="html">
+        <source>Unable to Purchase</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">48</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5123465296010826115" datatype="html">
+        <source>Transferred to Interlibrary Loan</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">49</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4174368049209044758" datatype="html">
+        <source>Interlibrary Loan Request Submitted</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4065533230648533206" datatype="html">
+        <source>Unable to Complete Interlibrary Loan</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7624303041209927221" datatype="html">
+        <source>Unable to Place Hold</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">52</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="850116687174975726" datatype="html">
+        <source>Hold Canceled</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8775903176640398132" datatype="html">
+        <source>Hold Placed</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">54</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8633938855161086603" datatype="html">
+        <source>Request Complete</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/list.component.ts</context>
+          <context context-type="linenumber">55</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1128746416604602240" datatype="html">
+        <source>Request an Item</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">6</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.ts</context>
+          <context context-type="linenumber">33</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.ts</context>
+          <context context-type="linenumber">53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3415867300695770810" datatype="html">
+        <source><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;material-icons mr-2&quot;&gt;"/>list<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> Check My Requests </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">11,13</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4548808570494704202" datatype="html">
+        <source><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;material-icons mr-2&quot;&gt;"/>list<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> New Request </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">18,20</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="4395985928507120427" datatype="html">
+        <source> We love hearing from our patrons! If you&apos;re interested in an item we don&apos;t currently have in our collection, complete the form below. There are two ways we can get items. Some items we can buy to add to our collection. Other items we can borrow for you from other libraries through Interlibrary Loan. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">25,31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2540016860083347725" datatype="html">
+        <source> Please note: You are able to request up to 20 items each month. You can always check the status of your request by clicking &apos;Check My Requests.&apos; If you need any help completing the form below, please contact <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://kcls.org/ask/&quot;&gt;"/>Ask KCLS<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> or visit your <x id="START_LINK_1" equiv-text="&lt;a href=&quot;https://kcls.bibliocommons.com/v2/locations&quot;&gt;"/>local library<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">32,39</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="532872085277870824" datatype="html">
+        <source> Interlibrary Loan Opt Out: Staff will only review this item to buy. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">41,43</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5350507109995283759" datatype="html">
+        <source> Interlibrary loan service is not available for accounts with overdue Interlibrary loan items. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">50,53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1570482768031005247" datatype="html">
+        <source> Interlibrary loan service is not available for this library card type. We are only able to offer interlibrary loan service to full access King County Library System cardholders in good standing. Need help? <x id="START_LINK" ctype="x-a" equiv-text="&lt;a target=&quot;_blank&quot; href=&quot;https://kcls.org/ask/&quot;&gt;"/>Contact ASK KCLS<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">56,62</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1468204077171530928" datatype="html">
+        <source>Select a Format</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">68</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1722722977342679470" datatype="html">
+        <source> Log in to <x id="START_LINK" ctype="x-a" equiv-text="&lt;a target=&quot;_blank&quot; href=&quot;https://libbyapp.com/library/kcls&quot;&gt;"/>Libby<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> to suggest an eBook downloadable audiobook purchase. Need help? <x id="START_LINK_1" equiv-text="&lt;a href=&quot;https://kcls.org/faqs/how-do-i-suggest-an-ebook-for-purchase/&quot;&gt;"/> Read our FAQ<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">79,85</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="510161089927984554" datatype="html">
+        <source> Magazine and newspaper subscription requests are reviewed yearly and may take some time to fill if approved. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">90,93</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3412701665956286602" datatype="html">
         <source>Start by Verifying Your Library Account</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/requests.component.html</context>
-          <context context-type="linenumber">11</context>
+          <context context-type="linenumber">99</context>
         </context-group>
       </trans-unit>
       <trans-unit id="98875018711101221" datatype="html">
         <source> Create a New Request </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/requests.component.html</context>
-          <context context-type="linenumber">18,20</context>
+          <context context-type="linenumber">110,112</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8084919590548678315" datatype="html">
-        <source> View My Requests </source>
+      <trans-unit id="8133242053926731217" datatype="html">
+        <source> Check My Requests </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/requests/requests.component.html</context>
-          <context context-type="linenumber">22,24</context>
+          <context context-type="linenumber">113,115</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5606428162486426748" datatype="html">
+        <source> Need help? <x id="START_LINK" ctype="x-a" equiv-text="&lt;a class=&quot;ml-2&quot; target=&quot;_blank&quot;
+        href=&quot;https://kcls.org/faq/interlibrary-loan-suggest-a-purchase/&quot;&gt;"/> Read our FAQ <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">125,131</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="3837809352451880349" datatype="html">
+        <source>Request successfully submitted.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">136</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7958075115019670411" datatype="html">
+        <source> Find your requests <x id="START_LINK" ctype="x-a" equiv-text="&lt;a routerLink=&quot;/requests/list&quot;&gt;"/>on the Check My Requests page<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>. </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.html</context>
+          <context context-type="linenumber">137,140</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5750582213216915852" datatype="html">
+        <source>Request an item you would like to borrow from our library or through interlibrary loan. Use a form to make requests or check request status.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.ts</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="2259395705858047022" datatype="html">
+        <source>My Requests</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/requests/requests.component.ts</context>
+          <context context-type="linenumber">51</context>
         </context-group>
       </trans-unit>
     </body>
