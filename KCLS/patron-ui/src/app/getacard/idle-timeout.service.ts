@@ -8,13 +8,13 @@ const REDIRECT_URL = 'https://kcls.org';
 export const IDLE_TIMEOUTS = {
     // The registration form steps.
     form: {
-        kiosk: 3 * 60 * 1000,
-        web: 20 * 60 * 1000,
+        kiosk: 300 * 1000,
+        web: 120 * 1000,
     },
     // The post-submit confirmation page.
     complete: {
-        kiosk: 60 * 1000,
-        web: 10 * 60 * 1000,
+        kiosk: 30 * 1000,
+        web: 30 * 1000,
     },
 };
 
