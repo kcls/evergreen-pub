@@ -552,6 +552,12 @@ export class GetacardState {
             const longitude = meta['longitude'];
             if (latitude == null || longitude == null) { return normalized; }
 
+            // Sometimes the city_name provided by the .lookup call is
+            // different than the city offered in the autocmplete.
+            // E.g. Bellevue => Yarrow Point
+            const components = (f['components'] || {}) as Hash;
+            addr.city = components['city_name'] as string || addr.city;
+
             return Promise.all([
                 this.requestOne('kcls.address', 'kcls.address.home-org',
                     latitude, longitude),
