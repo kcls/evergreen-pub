@@ -57,10 +57,23 @@
   color: var(--gac-muted, #5f6b76);
 }
 
+/* Link-styled button that reveals the next batch of suggestions. */
 .gac-more {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
   padding: 8px 12px;
   font-size: 0.85rem;
-  color: var(--gac-muted, #5f6b76);
+  color: var(--gac-blue, #003f6b);
+  text-decoration: underline;
+
+  &:hover,
+  &:focus {
+    background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+    outline: none;
+  }
 }
 
 .gac-async-row {
