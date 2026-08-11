@@ -32,6 +32,11 @@ export class AddressSearchComponent implements OnInit {
     loading = false;
     notFound = false;
 
+    // Suggestions shown before the "N more" link expands the list; each
+    // click reveals another batch.
+    static readonly PAGE_SIZE = 5;
+    displayLimit = AddressSearchComponent.PAGE_SIZE;
+
     constructor(
         private elm: ElementRef,
         private state: GetacardState,
@@ -70,8 +75,18 @@ export class AddressSearchComponent implements OnInit {
         ).subscribe(list => {
             this.loading = false;
             this.suggestions = list;
+            this.displayLimit = AddressSearchComponent.PAGE_SIZE;
             this.notFound = list.length === 0 && this.term().length >= 5;
         });
+    }
+
+    // Reveal the next batch of suggestions.
+    showMore() {
+        this.displayLimit += AddressSearchComponent.PAGE_SIZE;
+    }
+
+    get hiddenCount(): number {
+        return Math.max(0, this.suggestions.length - this.displayLimit);
     }
 
     term(): string {
