@@ -112,8 +112,9 @@ export class GetacardState {
     exceptionId: number | null = null;
 
     // Tacoma residents must confirm they already hold a Tacoma Public
-    // Library card before continuing.
-    tacomaConfirmed = false;
+    // Library card before continuing: null = unanswered, true = has a
+    // card (may continue), false = does not (blocked, with explanation).
+    hasTacomaCard: boolean | null = null;
 
     get requiresTacomaConfirmation(): boolean {
         return this.district === TACOMA_DISTRICT_OF_RESIDENCE;
@@ -348,7 +349,7 @@ export class GetacardState {
                     && (!this.mailingUnitRequired || this.mailingUnitValid === true));
 
             const tacomaOk =
-                !this.requiresTacomaConfirmation || this.tacomaConfirmed;
+                !this.requiresTacomaConfirmation || this.hasTacomaCard === true;
 
             return this.addressComplete && this.district != null
                 && tacomaOk && mailingOk;
@@ -488,7 +489,7 @@ export class GetacardState {
         this.district = null;
         this.accountTypeOption = null;
         this.exceptionId = null;
-        this.tacomaConfirmed = false;
+        this.hasTacomaCard = null;
         // A different address can change what's offered.
         this.setAccountType(null);
     }
