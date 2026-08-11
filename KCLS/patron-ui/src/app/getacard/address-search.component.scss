@@ -76,6 +76,14 @@
   }
 }
 
+/* Nudge shown once the list has been expanded. */
+.gac-refine-hint {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: var(--gac-muted, #5f6b76);
+  border-top: 1px solid var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+}
+
 .gac-async-row {
   display: flex;
   align-items: center;
