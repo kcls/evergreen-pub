@@ -103,10 +103,51 @@
 /* District-specific confirmation (e.g. Tacoma reciprocal cards). */
 .gac-confirm {
   margin-top: 12px;
-  padding: 8px 16px;
+  padding: 12px 16px;
   background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
   border: 1px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
   border-radius: var(--gac-radius, 8px);
+}
+
+.gac-confirm-text {
+  margin: 0 0 10px;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-confirm-options {
+  display: flex;
+  gap: 12px;
+}
+
+/* Small yes/no tiles echoing the flow's larger choice buttons. */
+.gac-confirm-option {
+  min-width: 72px;
+  padding: 6px 16px;
+  background: #fff;
+  border: 2px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  font: inherit;
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover,
+  &:focus {
+    border-color: var(--gac-tint-strong, rgba(0, 63, 107, 0.35));
+    outline: none;
+  }
+}
+
+.gac-confirm-option-selected,
+.gac-confirm-option-selected:hover,
+.gac-confirm-option-selected:focus {
+  border-color: var(--gac-blue, #003f6b);
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+}
+
+.gac-confirm .gac-error {
+  margin: 10px 0 0;
 }
 
 /* Mailing address section (below the confirmed residential address). */

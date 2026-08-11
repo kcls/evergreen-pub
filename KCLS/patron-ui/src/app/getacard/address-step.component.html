@@ -66,14 +66,36 @@
 
   <!-- Tacoma residents must hold a Tacoma Public Library card before
        registering for a reciprocal card; Continue stays disabled until
-       they confirm. -->
+       they answer Yes. -->
   <div class="gac-confirm" *ngIf="state.requiresTacomaConfirmation">
-    <mat-checkbox [checked]="state.tacomaConfirmed"
-        (change)="state.tacomaConfirmed = $event.checked" i18n>
+    <p class="gac-confirm-text" i18n>
       If you live in Tacoma, you must have a valid Tacoma Public Library
       card before you can get a reciprocal card from us. Do you have a
       Tacoma Public Library Card?
-    </mat-checkbox>
+    </p>
+
+    <div class="gac-confirm-options" role="radiogroup"
+        aria-label="Do you have a Tacoma Public Library Card?" i18n-aria-label>
+      <button type="button" class="gac-confirm-option" role="radio"
+          [attr.aria-checked]="state.hasTacomaCard === true"
+          [class.gac-confirm-option-selected]="state.hasTacomaCard === true"
+          (click)="state.hasTacomaCard = true" i18n>
+        Yes
+      </button>
+      <button type="button" class="gac-confirm-option" role="radio"
+          [attr.aria-checked]="state.hasTacomaCard === false"
+          [class.gac-confirm-option-selected]="state.hasTacomaCard === false"
+          (click)="state.hasTacomaCard = false" i18n>
+        No
+      </button>
+    </div>
+
+    <!-- TODO placeholder text pending final copy. -->
+    <p class="gac-error" *ngIf="state.hasTacomaCard === false" i18n>
+      A valid Tacoma Public Library card is required before we can issue
+      a reciprocal card. Please contact the Tacoma Public Library to get
+      a card, then return to complete this registration.
+    </p>
   </div>
 
   <!-- Out of the service area: a dead end, so say so here rather than on
