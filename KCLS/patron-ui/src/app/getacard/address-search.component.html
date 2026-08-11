@@ -28,6 +28,10 @@
         (click)="showMore()" i18n>
       Show {{hiddenCount}} more&#8230;
     </button>
+
+    <div class="gac-refine-hint" *ngIf="expanded" i18n>
+      Not seeing your address? Keep typing to refine the suggestions.
+    </div>
   </ng-container>
 </div>
 

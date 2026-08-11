@@ -76,13 +76,19 @@ export class AddressSearchComponent implements OnInit {
             this.loading = false;
             this.suggestions = list;
             this.displayLimit = AddressSearchComponent.PAGE_SIZE;
+            this.expanded = false;
             this.notFound = list.length === 0 && this.term().length >= 5;
         });
     }
 
+    // True once the user has revealed more suggestions for the current
+    // search; prompts a keep-typing-to-refine hint.
+    expanded = false;
+
     // Reveal the next batch of suggestions.
     showMore() {
         this.displayLimit += AddressSearchComponent.PAGE_SIZE;
+        this.expanded = true;
     }
 
     get hiddenCount(): number {
