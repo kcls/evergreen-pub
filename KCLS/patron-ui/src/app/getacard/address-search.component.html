@@ -14,7 +14,7 @@
 
   <ng-container *ngIf="!loading">
     <button type="button" class="gac-suggestion"
-        *ngFor="let addr of suggestions | slice:0:5"
+        *ngFor="let addr of suggestions | slice:0:displayLimit"
         (click)="select(addr)">
       <span class="material-icons gac-pin" aria-hidden="true">place</span>
       <span class="gac-sug-lines">
@@ -24,9 +24,10 @@
       </span>
     </button>
 
-    <div class="gac-more" *ngIf="suggestions.length > 5" i18n>
-      {{suggestions.length - 5}} more not shown &#8212; keep typing to narrow results.
-    </div>
+    <button type="button" class="gac-more" *ngIf="hiddenCount > 0"
+        (click)="showMore()" i18n>
+      Show {{hiddenCount}} more&#8230;
+    </button>
   </ng-container>
 </div>
 
