@@ -12,14 +12,13 @@
   <!-- In-district: the patron picks the card kind. -->
   <ng-container *ngSwitchCase="'either'">
     <p i18n>
-      Congratulations! You're eligible for both an all-access library
-      card and a digital library card!
+      Good news: you qualify for two kinds of cards.
     </p>
 
-    <h3 class="gac-subhead" i18n>Which card would you prefer?</h3>
+    <h3 class="gac-subhead" i18n>Which one fits how you'll use the library?</h3>
 
     <div class="gac-choices" role="radiogroup"
-        aria-label="Which card would you prefer?" i18n-aria-label>
+        aria-label="Which one fits how you'll use the library?" i18n-aria-label>
 
       <button type="button" class="gac-choice" role="radio"
           [attr.aria-checked]="state.accountType === 'full'"
@@ -27,9 +26,10 @@
           (click)="choose('full')">
         <span class="material-icons gac-choice-icon" aria-hidden="true">menu_book</span>
         <span class="gac-choice-lines">
-          <span class="gac-choice-label" i18n>All-access library card</span>
+          <span class="gac-choice-label" i18n>All-Access Card</span>
           <span class="gac-choice-sub" i18n>
-            Full access and borrowing of physical and digital library items.
+            Check out books, movies, and more at any library, plus
+            everything in our digital library.
           </span>
         </span>
         <span class="material-icons gac-choice-check" aria-hidden="true"
@@ -42,9 +42,11 @@
           (click)="choose('ecard')">
         <span class="material-icons gac-choice-icon" aria-hidden="true">devices</span>
         <span class="gac-choice-lines">
-          <span class="gac-choice-label" i18n>Digital library card</span>
+          <span class="gac-choice-label" i18n>Digital Card</span>
           <span class="gac-choice-sub" i18n>
-            Full access and borrowing from the digital library.
+            Instant access to e-books, audiobooks, movies, and music.
+            No trip to the library required, but no physical checkouts.
+            Most residents can upgrade to an All-Access Card later.
           </span>
         </span>
         <span class="material-icons gac-choice-check" aria-hidden="true"
@@ -54,9 +56,8 @@
     </div>
 
     <p class="gac-choice-note" *ngIf="state.accountType === 'full'" i18n>
-      To receive an all-access library card, you must complete the form
-      and choose to pick up your card at any KCLS location or have it
-      sent by mail.
+      Choose All-Access, and you'll pick a card design next and decide
+      how to pick it up: in person or by mail.
     </p>
   </ng-container>
 
