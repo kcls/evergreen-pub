@@ -69,13 +69,11 @@
        they answer Yes. -->
   <div class="gac-confirm" *ngIf="state.requiresTacomaConfirmation">
     <p class="gac-confirm-text" i18n>
-      If you live in Tacoma, you must have a valid Tacoma Public Library
-      card before you can get a reciprocal card from us. Do you have a
-      Tacoma Public Library Card?
+      Do you already have a Tacoma Public Library card?
     </p>
 
     <div class="gac-confirm-options" role="radiogroup"
-        aria-label="Do you have a Tacoma Public Library Card?" i18n-aria-label>
+        aria-label="Do you already have a Tacoma Public Library card?" i18n-aria-label>
       <button type="button" class="gac-confirm-option" role="radio"
           [attr.aria-checked]="state.hasTacomaCard === true"
           [class.gac-confirm-option-selected]="state.hasTacomaCard === true"
@@ -90,11 +88,21 @@
       </button>
     </div>
 
-    <!-- TODO placeholder text pending final copy. -->
-    <p class="gac-error" *ngIf="state.hasTacomaCard === false" i18n>
-      A valid Tacoma Public Library card is required before we can issue
-      a reciprocal card. Please contact the Tacoma Public Library to get
-      a card, then return to complete this registration.
+    <p class="gac-error" *ngIf="state.hasTacomaCard === false">
+      <ng-container i18n>
+        A Tacoma Public Library card is required before you can get a
+        reciprocal card from us.
+      </ng-container>
+      <!-- Kiosks show no links that navigate away from the app. -->
+      <ng-container *ngIf="!state.inKioskMode" i18n>
+        To get started, apply for a
+        <a href="https://tacomalibrary.org/library-card-application/">Tacoma
+        Public Library eCard</a>.
+      </ng-container>
+      <ng-container *ngIf="state.inKioskMode" i18n>
+        To get started, apply for a Tacoma Public Library eCard at
+        tacomalibrary.org.
+      </ng-container>
     </p>
   </div>
 
