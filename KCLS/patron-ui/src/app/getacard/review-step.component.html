@@ -124,21 +124,22 @@
 
 <form [formGroup]="state.reviewForm">
 
-  <h3 class="gac-subhead" i18n>Let's stay in touch.</h3>
+  <h3 class="gac-subhead" i18n>Let's stay in touch</h3>
   <div class="gac-check-col">
     <mat-checkbox formControlName="wantsLibNews" i18n>
-      Library News and Events
+      Library news and events
     </mat-checkbox>
     <mat-checkbox formControlName="wantsFoundationInfo" i18n>
-      KCLS Foundation Information
+      Updates from the KCLS Foundation
     </mat-checkbox>
   </div>
 
   <div class="gac-terms">
+    <p class="gac-terms-head" i18n>You're almost done. Here's what you're agreeing to:</p>
     <mat-checkbox formControlName="termsOfService" i18n>
-      I assume full responsibility for the use of this card and all
-      charges associated with its use. I will give immediate notice of
-      loss of card or change of address.
+      I'm responsible for anything checked out on this card, including
+      any replacement fees. I'll let the library know right away if my
+      card is lost or my address changes.
     </mat-checkbox>
   </div>
 

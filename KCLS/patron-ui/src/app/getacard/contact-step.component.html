@@ -1,6 +1,7 @@
 <p class="gac-help" i18n>
-  Please share your communication preferences. This will be your
-  preferred method for staying connected with the library.
+  How should we reach you?
+  We'll use this for things like hold pickups, due dates, news from your
+  local library, or topics that matter to you.
 </p>
 
 <form [formGroup]="state.contactForm">
@@ -77,7 +78,7 @@
           *ngIf="state.phoneSettings.length > 0" i18n>Phone</mat-checkbox>
     </div>
 
-    <h3 class="gac-subhead" i18n>Which library location would you like to receive your holds at?</h3>
+    <h3 class="gac-subhead" i18n>Which library would you like your holds sent to?</h3>
     <div class="gac-grid-2">
       <mat-form-field appearance="outline">
         <mat-label i18n>Hold Pickup Library</mat-label>

@@ -71,7 +71,7 @@ export const GAC_STEPS: GacStep[] = [
     {slug: 'about-you', label: $localize`Your Information`},
     {slug: 'contact', label: $localize`Communication Preferences`},
     {slug: 'card', label: $localize`My Library Card`},
-    {slug: 'review', label: $localize`Review Application`},
+    {slug: 'review', label: $localize`Review your application`},
 ];
 
 /**

@@ -1,6 +1,6 @@
 <ng-container *ngIf="!state.addressSelected; else selectedTpl">
 
-  <p class="gac-help" i18n>Let us know where you live or own property in King County:</p>
+  <p class="gac-help" i18n>Tell us where you own property or live in King County.</p>
 
   <gac-address-search #search kind="residential" (picked)="select($event)">
   </gac-address-search>
@@ -55,7 +55,7 @@
   <div class="gac-eligible" *ngIf="state.homeOrgId != null && state.district">
     <span class="material-icons" aria-hidden="true">check_circle</span>
     <span>
-      <span class="gac-eligible-head" i18n>This address is in our service area.</span>
+      <span class="gac-eligible-head" i18n>Good news, you're in our service area.</span>
       <!--
       <span class="gac-eligible-sub" *ngIf="state.homeOrgName" i18n>
         Home library: {{state.homeOrgName}}
@@ -115,11 +115,11 @@
        is in hand. -->
   <form [formGroup]="state.contactForm" *ngIf="state.addressComplete && state.district">
 
-    <h3 class="gac-subhead" i18n>Mailing Address</h3>
+    <h3 class="gac-subhead" i18n>Mailing address</h3>
 
     <div class="gac-check-row">
       <mat-checkbox formControlName="mailingIsSame" i18n>
-        Same as Residential Address
+        Same as home address
       </mat-checkbox>
     </div>
 
