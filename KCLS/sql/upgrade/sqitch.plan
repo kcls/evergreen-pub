@@ -34,3 +34,4 @@
 0029-per-hop-copy-transits [0028-collection-hq-aged-circs] 2026-07-01T20:32:44Z berick <berick@kcls24> # 0029-per-hop-copy-transits
 0030-aged-copy-transits [0029-per-hop-copy-transits] 2026-07-02T15:13:25Z berick <berick@kcls24> # aged-copy-transits
 0031-ang-patron-reg [0030-aged-copy-transits] 2024-11-26T22:21:55Z berick <berick@kcls24> # Patron Reg Angular
+0032-sms-opt-in-setting-group [0031-ang-patron-reg] 2026-08-17T15:46:50Z berick <berick@egkcls> # Migrate to sms text notice group
