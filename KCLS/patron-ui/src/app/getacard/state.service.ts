@@ -742,7 +742,7 @@ export class GetacardState {
                 this.emailSettings.push(set);
             } else if (grp.match(/phone/)) {
                 this.phoneSettings.push(set);
-            } else if (grp.match(/text/)) {
+            } else if (grp.match(/sms/)) {
                 this.textSettings.push(set);
             } else if (grp.match(/print/)) {
                 this.printSettings.push(set);
