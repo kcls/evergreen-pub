@@ -1,4 +1,5 @@
 import {Injectable, NgZone, OnDestroy} from '@angular/core';
+import {GetacardState} from './state.service';
 
 // Where inactive sessions are sent.
 const REDIRECT_URL = 'https://kcls.org';
@@ -8,8 +9,8 @@ const REDIRECT_URL = 'https://kcls.org';
 export const IDLE_TIMEOUTS = {
     // The registration form steps.
     form: {
-        kiosk: 300 * 1000,
-        web: 120 * 1000,
+        kiosk: 120 * 1000,
+        web: 300 * 1000,
     },
     // The post-submit confirmation page.
     complete: {
@@ -33,11 +34,26 @@ export class GacIdleTimeoutService implements OnDestroy {
     private durationMs = 0;
     private timeoutId: number | null = null;
     private listening = false;
+    private expired = false;
 
     private readonly events = ['keydown', 'mousedown', 'touchstart', 'input'];
     private readonly onActivity = () => this.restart();
 
-    constructor(private zone: NgZone) {}
+    // Pressing Back after the timeout redirect can restore this page from
+    // the browser's back/forward cache with the JS heap -- including all
+    // form state -- intact, bypassing the router.  When that happens after
+    // an expiry, force a reload: the app boots fresh (state cleared) and
+    // the shell's address guard lands the user on an empty first step.
+    private readonly onPageShow = (event: PageTransitionEvent) => {
+        if (event.persisted && this.expired) {
+            window.location.reload();
+        }
+    };
+
+    constructor(private zone: NgZone, private state: GetacardState) {
+        this.zone.runOutsideAngular(() =>
+            window.addEventListener('pageshow', this.onPageShow));
+    }
 
     /** Begin (or re-begin) watching with the provided idle duration. */
     watch(durationMs: number) {
@@ -67,6 +83,7 @@ export class GacIdleTimeoutService implements OnDestroy {
 
     ngOnDestroy() {
         this.stop();
+        window.removeEventListener('pageshow', this.onPageShow);
     }
 
     private restart() {
@@ -85,6 +102,12 @@ export class GacIdleTimeoutService implements OnDestroy {
 
     private expire() {
         this.stop();
+        this.expired = true;
+
+        // Clear the abandoned session's data before leaving so nothing
+        // lingers even if the reload-on-restore path doesn't run.
+        this.state.resetForm();
+
         window.location.href = REDIRECT_URL;
     }
 }
