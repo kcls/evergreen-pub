@@ -1,8 +1,6 @@
 import {Injectable, NgZone, OnDestroy} from '@angular/core';
 import {GetacardState} from './state.service';
-
-// Where inactive sessions are sent.
-const REDIRECT_URL = 'https://kcls.org';
+import {KioskService} from '../kiosk.service';
 
 // Idle timeout durations (ms).  Local defaults for now; kiosks time out
 // much sooner since walk-away sessions expose the previous patron's data.
@@ -50,7 +48,11 @@ export class GacIdleTimeoutService implements OnDestroy {
         }
     };
 
-    constructor(private zone: NgZone, private state: GetacardState) {
+    constructor(
+        private zone: NgZone,
+        private state: GetacardState,
+        private kiosk: KioskService,
+    ) {
         this.zone.runOutsideAngular(() =>
             window.addEventListener('pageshow', this.onPageShow));
     }
@@ -108,6 +110,8 @@ export class GacIdleTimeoutService implements OnDestroy {
         // lingers even if the reload-on-restore path doesn't run.
         this.state.resetForm();
 
-        window.location.href = REDIRECT_URL;
+        // kcls.org by default; kiosk landing pages may select a named
+        // return destination via ?return-to.
+        window.location.href = this.kiosk.returnUrl;
     }
 }
