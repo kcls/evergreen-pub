@@ -69,7 +69,9 @@
        they answer Yes. -->
   <div class="gac-confirm" *ngIf="state.requiresTacomaConfirmation">
     <p class="gac-confirm-text" i18n>
-      Do you already have a Tacoma Public Library card?
+      A Tacoma Public Library card is required for you to get a library 
+      card at the King County Library. Do you already have a Tacoma Public 
+      Library card?
     </p>
 
     <div class="gac-confirm-options" role="radiogroup"
@@ -90,8 +92,7 @@
 
     <p class="gac-error" *ngIf="state.hasTacomaCard === false">
       <ng-container i18n>
-        A Tacoma Public Library card is required before you can get a
-        reciprocal card from us.
+        We're sorry, a Tacoma Public Library card is required.
       </ng-container>
       <!-- Kiosks show no links that navigate away from the app. -->
       <ng-container *ngIf="!state.inKioskMode" i18n>
