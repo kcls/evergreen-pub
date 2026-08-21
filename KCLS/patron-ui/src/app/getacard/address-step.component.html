@@ -111,14 +111,12 @@
        the next step. -->
   <p class="gac-help" *ngIf="state.homeOrgId != null && !state.district">
     <ng-container i18n>
-      We are unable to find this address in our service area.
+      This location is not in our service area.  Unfortunately, we are
+      unable to provide library card access to this area.
     </ng-container>
     <!-- Kiosks show no links that navigate away from the app. -->
     <ng-container *ngIf="!state.inKioskMode" i18n>
-      Please <a href="https://kcls.bibliocommons.com/v2/locations">contact your library</a> for assistance.
-    </ng-container>
-    <ng-container *ngIf="state.inKioskMode" i18n>
-      Please see staff for assistance.
+      Find more information <a href="https://kcls.org/cards">here</a>.
     </ng-container>
   </p>
 
