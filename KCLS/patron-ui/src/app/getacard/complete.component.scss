@@ -71,3 +71,21 @@
   border-top: 1px solid var(--gac-tint-mid);
   margin: 20px 0;
 }
+
+/* "I'm Done" + auto-redirect note at the foot of the card. */
+.gac-done {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gac-tint-mid);
+}
+
+.gac-done-btn {
+  --mdc-filled-button-container-color: var(--gac-blue);
+  --mdc-filled-button-label-text-color: #fff;
+}
+
+.gac-done-note {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--gac-muted);
+}
