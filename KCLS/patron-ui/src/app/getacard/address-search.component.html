@@ -35,6 +35,14 @@
   </ng-container>
 </div>
 
-<div class="gac-error" *ngIf="!loading && notFound" i18n>
-  We couldn't find that address. Please check your entry.
+<div class="gac-error" *ngIf="!loading && notFound">
+  <ng-container i18n>                                                        
+    We are unable to find this address in our service area.                  
+  </ng-container>                                                            
+  <ng-container *ngIf="!state.inKioskMode" i18n>                             
+    Please <a href="https://kcls.bibliocommons.com/v2/locations">contact your library</a> for assistance.
+  </ng-container>                                                            
+  <ng-container *ngIf="state.inKioskMode" i18n>                              
+    Please see staff for assistance.                                         
+  </ng-container> 
 </div>

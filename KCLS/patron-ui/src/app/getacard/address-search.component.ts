@@ -39,7 +39,7 @@ export class AddressSearchComponent implements OnInit {
 
     constructor(
         private elm: ElementRef,
-        private state: GetacardState,
+        public state: GetacardState,
     ) {}
 
     // Clicking outside the search input / suggestion list dismisses the
