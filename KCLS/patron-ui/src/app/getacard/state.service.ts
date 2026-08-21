@@ -355,7 +355,9 @@ export class GetacardState {
                 && tacomaOk && mailingOk;
         }
         if (slug === 'account') { return this.accountType != null; }
-        if (slug === 'about-you') { return this.aboutForm.valid; }
+        if (slug === 'about-you') {
+          return this.aboutForm.valid && this.maybeDupeAccount !== true
+        }
         if (slug === 'contact') { return this.contactForm.valid; }
         if (slug === 'card') {
             return this.cardDesign != null && this.delivery != null;

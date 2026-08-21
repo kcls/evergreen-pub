@@ -95,13 +95,15 @@
   <span class="material-icons" aria-hidden="true">info</span>
   <span>
     <ng-container i18n>
-      Whoops! We noticed that you already have a library card on file.
+      This information may already be associated with an existing account. 
     </ng-container>
     <!-- Kiosks show no links that navigate away from the app. -->
     <ng-container *ngIf="!state.inKioskMode" i18n>
-      Please proceed to the
-      <a href="https://kcls.bibliocommons.com/user/login">login page</a>
-      to access everything the library has to offer.
+      <a href="https://kcls.bibliocommons.com/user/login">Log in</a> to continue,
+      or connect with us (link needed) to get help.
+    </ng-container>
+    <ng-container *ngIf="state.inKioskMode" i18n>
+      Please see staff for help.
     </ng-container>
   </span>
 </div>
