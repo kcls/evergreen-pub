@@ -30,6 +30,21 @@
   gap: 4px;
 }
 
+/* A notice opt-in checkbox with a de-emphasized detail line below it
+   (same look as the account step's gac-choice-sub). */
+.gac-notice-opt {
+  display: flex;
+  flex-direction: column;
+}
+
+.gac-notice-sub {
+  font-size: 0.9rem;
+  color: var(--gac-muted, #5f6b76);
+  /* Sit the detail text under the checkbox label, not the checkbox
+     graphic (40px mdc touch target + label padding). */
+  margin: -4px 0 4px 44px;
+}
+
 .gac-note {
   color: var(--gac-muted, #5f6b76);
   margin: 0 0 8px;

@@ -70,12 +70,26 @@
 
     <h3 class="gac-subhead" i18n>How would you like to receive library notices?</h3>
     <div class="gac-check-col">
-      <mat-checkbox formControlName="allEmailNotices"
-          *ngIf="state.emailSettings.length > 0" i18n>Email</mat-checkbox>
-      <mat-checkbox formControlName="allTextNotices"
-          *ngIf="state.textSettings.length > 0" i18n>Text</mat-checkbox>
-      <mat-checkbox formControlName="allPhoneNotices"
-          *ngIf="state.phoneSettings.length > 0" i18n>Phone</mat-checkbox>
+      <div class="gac-notice-opt" *ngIf="state.emailSettings.length > 0">
+        <mat-checkbox formControlName="allEmailNotices" i18n>Email</mat-checkbox>
+        <div class="gac-notice-sub" i18n>
+          Notices include: hold is ready for pickup, hold has expired,
+          checked out item is due in two days, checked out item overdue.
+        </div>
+      </div>
+      <div class="gac-notice-opt" *ngIf="state.textSettings.length > 0">
+        <mat-checkbox formControlName="allTextNotices" i18n>Text</mat-checkbox>
+        <div class="gac-notice-sub" i18n>
+          Notices include: hold is ready for pickup, checked out item due
+          in two days, checked out item overdue.
+        </div>
+      </div>
+      <div class="gac-notice-opt" *ngIf="state.phoneSettings.length > 0">
+        <mat-checkbox formControlName="allPhoneNotices" i18n>Phone</mat-checkbox>
+        <div class="gac-notice-sub" i18n>
+          Notices include: hold is ready for pickup, checked out item overdue.
+        </div>
+      </div>
     </div>
 
     <h3 class="gac-subhead" i18n>Which library would you like your holds sent to?</h3>
