@@ -1,6 +1,6 @@
 <ng-container *ngIf="!state.addressSelected; else selectedTpl">
 
-  <p class="gac-help" i18n>Tell us where you own property or live in King County.</p>
+  <p class="gac-help" i18n>Tell us where you live or own property.</p>
 
   <gac-address-search #search kind="residential" (picked)="select($event)">
   </gac-address-search>
