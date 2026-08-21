@@ -113,8 +113,8 @@ export class AddedContentComponent implements OnInit {
             });
         }
 
-        const url = 'https://syndetics.com/index.aspx?isbn=' +
-            `${encodeURIComponent(this.isbn)}/index.html&upc=${encodeURIComponent(this.upc)}&client=kclsp&type=rn12`;
+        const url = 'https://secure.syndetics.com/index.aspx?isbn=' +
+            `${encodeURIComponent(this.isbn || '')}/index.html&upc=${encodeURIComponent(this.upc || '')}&client=kclsp&type=unbound`;
 
         this.summaryUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }

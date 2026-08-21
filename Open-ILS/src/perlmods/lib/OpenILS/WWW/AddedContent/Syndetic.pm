@@ -36,19 +36,19 @@ sub expects_keyhash {
 sub jacket_small {
     my( $self, $keys ) = @_;
     return $self->send_img(
-        $self->fetch_response('sc.gif', $keys, 1));
+        $self->fetch_response('sc.gif', $keys));
 }
 
 sub jacket_medium {
     my( $self, $keys ) = @_;
     return $self->send_img(
-        $self->fetch_response('mc.gif', $keys, 1));
+        $self->fetch_response('mc.gif', $keys));
 
 }
 sub jacket_large {
     my( $self, $keys ) = @_;
     return $self->send_img(
-        $self->fetch_response('lc.gif', $keys, 1));
+        $self->fetch_response('lc.gif', $keys));
 }
 
 # --------------------------------------------------------------------------
@@ -297,7 +297,7 @@ sub fetch_response {
     $upc  = '' if !defined($upc);
     $issn = '' if !defined($issn);
 
-    my $url = $self->base_url . "?isbn=$isbn/$page&upc=$upc&issn=$issn&client=$uname" . (($notype) ? '' : "&type=rw12");
+    my $url = $self->base_url . "?isbn=$isbn/$page&upc=$upc&issn=$issn&client=$uname" . (($notype) ? '' : "&type=unbound");
     return $AC->get_url($url);
 }
 
