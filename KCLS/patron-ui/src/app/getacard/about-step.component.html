@@ -97,10 +97,9 @@
     <ng-container i18n>
       This information may already be associated with an existing account. 
     </ng-container>
-    <!-- Kiosks show no links that navigate away from the app. -->
     <ng-container *ngIf="!state.inKioskMode" i18n>
       <a href="https://kcls.bibliocommons.com/user/login">Log in</a> to continue,
-      or connect with us (link needed) to get help.
+      or <a href="https://kcls.org/contact-us/">connect with us</a> to get help.
     </ng-container>
     <ng-container *ngIf="state.inKioskMode" i18n>
       Please see the front desk for additional assistance.
