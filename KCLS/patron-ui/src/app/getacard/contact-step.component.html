@@ -69,27 +69,62 @@
   <ng-container *ngIf="state.accountType === 'full'">
 
     <h3 class="gac-subhead" i18n>How would you like to receive library notices?</h3>
-    <div class="gac-check-col">
-      <div class="gac-notice-opt" *ngIf="state.emailSettings.length > 0">
-        <mat-checkbox formControlName="allEmailNotices" i18n>Email</mat-checkbox>
-        <div class="gac-notice-sub" i18n>
-          Notices include: hold is ready for pickup, hold has expired,
-          checked out item is due in two days, checked out item overdue.
-        </div>
-      </div>
-      <div class="gac-notice-opt" *ngIf="state.textSettings.length > 0">
-        <mat-checkbox formControlName="allTextNotices" i18n>Text</mat-checkbox>
-        <div class="gac-notice-sub" i18n>
-          Notices include: hold is ready for pickup, checked out item due
-          in two days, checked out item overdue.
-        </div>
-      </div>
-      <div class="gac-notice-opt" *ngIf="state.phoneSettings.length > 0">
-        <mat-checkbox formControlName="allPhoneNotices" i18n>Phone</mat-checkbox>
-        <div class="gac-notice-sub" i18n>
-          Notices include: hold is ready for pickup, checked out item overdue.
-        </div>
-      </div>
+
+    <!-- Multi-select tiles (role=checkbox) styled like the account step's
+         choice tiles; toggling writes the all*Notices form controls. -->
+    <div class="gac-choices" role="group"
+        aria-label="How would you like to receive library notices?" i18n-aria-label>
+
+      <button type="button" class="gac-choice" role="checkbox"
+          *ngIf="state.emailSettings.length > 0"
+          [attr.aria-checked]="!!ctrl('allEmailNotices').value"
+          [class.gac-choice-selected]="ctrl('allEmailNotices').value"
+          (click)="toggleNotice('allEmailNotices')">
+        <span class="material-icons gac-choice-icon" aria-hidden="true">email</span>
+        <span class="gac-choice-lines">
+          <span class="gac-choice-label" i18n>Email</span>
+          <span class="gac-choice-sub" i18n>
+            Notices include: hold is ready for pickup, hold has expired,
+            checked out item is due in two days, checked out item overdue.
+          </span>
+        </span>
+        <span class="material-icons gac-choice-check" aria-hidden="true"
+            *ngIf="ctrl('allEmailNotices').value">check_circle</span>
+      </button>
+
+      <button type="button" class="gac-choice" role="checkbox"
+          *ngIf="state.textSettings.length > 0"
+          [attr.aria-checked]="!!ctrl('allTextNotices').value"
+          [class.gac-choice-selected]="ctrl('allTextNotices').value"
+          (click)="toggleNotice('allTextNotices')">
+        <span class="material-icons gac-choice-icon" aria-hidden="true">sms</span>
+        <span class="gac-choice-lines">
+          <span class="gac-choice-label" i18n>Text</span>
+          <span class="gac-choice-sub" i18n>
+            Notices include: hold is ready for pickup, checked out item due
+            in two days, checked out item overdue.
+          </span>
+        </span>
+        <span class="material-icons gac-choice-check" aria-hidden="true"
+            *ngIf="ctrl('allTextNotices').value">check_circle</span>
+      </button>
+
+      <button type="button" class="gac-choice" role="checkbox"
+          *ngIf="state.phoneSettings.length > 0"
+          [attr.aria-checked]="!!ctrl('allPhoneNotices').value"
+          [class.gac-choice-selected]="ctrl('allPhoneNotices').value"
+          (click)="toggleNotice('allPhoneNotices')">
+        <span class="material-icons gac-choice-icon" aria-hidden="true">call</span>
+        <span class="gac-choice-lines">
+          <span class="gac-choice-label" i18n>Phone</span>
+          <span class="gac-choice-sub" i18n>
+            Notices include: hold is ready for pickup, checked out item overdue.
+          </span>
+        </span>
+        <span class="material-icons gac-choice-check" aria-hidden="true"
+            *ngIf="ctrl('allPhoneNotices').value">check_circle</span>
+      </button>
+
     </div>
 
     <h3 class="gac-subhead" i18n>Which library would you like your holds sent to?</h3>

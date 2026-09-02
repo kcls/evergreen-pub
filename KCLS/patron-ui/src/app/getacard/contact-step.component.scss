@@ -24,25 +24,67 @@
   margin: 4px 0 16px;
 }
 
-.gac-check-col {
+/* Notice opt-in tiles: the account step's choice-tile recipe, but
+   multi-select (role=checkbox) rather than radios. */
+.gac-choices {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
 }
 
-/* A notice opt-in checkbox with a de-emphasized detail line below it
-   (same look as the account step's gac-choice-sub). */
-.gac-notice-opt {
+.gac-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: #fff;
+  border: 2px solid var(--gac-tint-mid, rgba(0, 63, 107, 0.15));
+  border-radius: var(--gac-radius, 8px);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus {
+    border-color: var(--gac-tint-strong, rgba(0, 63, 107, 0.35));
+    box-shadow: var(--gac-shadow, 0 2px 12px rgba(0, 63, 107, 0.12));
+    outline: none;
+  }
+}
+
+.gac-choice-selected,
+.gac-choice-selected:hover,
+.gac-choice-selected:focus {
+  border-color: var(--gac-blue, #003f6b);
+  background: var(--gac-tint-soft, rgba(0, 63, 107, 0.06));
+}
+
+.gac-choice-icon {
+  color: var(--gac-blue, #003f6b);
+}
+
+.gac-choice-lines {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
-.gac-notice-sub {
+.gac-choice-label {
+  font-weight: 600;
+  color: var(--gac-ink, #1a1a1a);
+}
+
+.gac-choice-sub {
   font-size: 0.9rem;
   color: var(--gac-muted, #5f6b76);
-  /* Sit the detail text under the checkbox label, not the checkbox
-     graphic (40px mdc touch target + label padding). */
-  margin: -4px 0 4px 44px;
+}
+
+.gac-choice-check {
+  color: var(--gac-blue, #003f6b);
 }
 
 .gac-note {

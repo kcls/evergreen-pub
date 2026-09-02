@@ -26,4 +26,11 @@ export class ContactStepComponent implements AfterViewInit {
     ctrl(name: string): AbstractControl {
         return this.state.contactForm.get(name)!;
     }
+
+    // Flip a notice opt-in tile; setValue fires the form's valueChanges
+    // subscriptions (contact requiredness rules) as a checkbox would.
+    toggleNotice(name: string) {
+        const c = this.ctrl(name);
+        c.setValue(!c.value);
+    }
 }
