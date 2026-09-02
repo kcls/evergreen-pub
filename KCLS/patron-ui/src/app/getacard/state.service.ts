@@ -295,6 +295,9 @@ export class GetacardState {
             } else {
                 sms.enable({emitEvent: false});
             }
+            // Mirroring makes the phone number stand in for the SMS number,
+            // which can change whether the phone is required.
+            this.applyContactRules();
         });
 
         ['allEmailNotices', 'allTextNotices', 'allPhoneNotices'].forEach(name =>
@@ -711,8 +714,12 @@ export class GetacardState {
             this.wantsEmailNotices() ||
             (this.accountType === 'full' && !phone.value);
 
+        // When the SMS number mirrors the phone number, text notices make
+        // the phone number the required contact point (the mirrored
+        // smsNumber control is disabled, so its own validator is inert).
         const phoneRequired =
             this.wantsPhoneNotices() ||
+            (this.wantsTextNotices() && !!cf.get('smsIsSame')!.value) ||
             (this.accountType === 'full' && !email.value);
 
         const smsRequired = this.wantsTextNotices();
