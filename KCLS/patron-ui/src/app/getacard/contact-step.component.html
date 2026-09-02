@@ -39,7 +39,10 @@
         <ng-container *ngIf="state.wantsPhoneNotices()">
           Phone Number is <b>required</b> for phone notices.
         </ng-container>
-        <ng-container *ngIf="!state.wantsPhoneNotices()">
+        <ng-container *ngIf="!state.wantsPhoneNotices() && state.wantsTextNotices() && ctrl('smsIsSame').value">
+          Phone Number is <b>required</b> for text notices.
+        </ng-container>
+        <ng-container *ngIf="!state.wantsPhoneNotices() && !(state.wantsTextNotices() && ctrl('smsIsSame').value)">
           Phone Number is <strong>required</strong>
         </ng-container>
       </mat-error>
