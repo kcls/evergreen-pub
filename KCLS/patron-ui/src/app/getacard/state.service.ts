@@ -108,7 +108,24 @@ export class GetacardState {
     homeOrgId: number | null = null;
     homeOrgName = '';
     district: string | null = null;
-    accountTypeOption: AccountTypeOption = null;
+    // What the residential address alone makes the patron eligible for.
+    private residentialOption: AccountTypeOption = null;
+
+    // The combined eligibility: an e-card is only offered when every
+    // entered address qualifies -- a different mailing address must be in
+    // the main district too, or the patron is all-access only.
+    get accountTypeOption(): AccountTypeOption {
+        if (this.residentialOption !== 'either') {
+            return this.residentialOption;
+        }
+
+        if (!this.contactForm.get('mailingIsSame')!.value
+            && this.mailingDistrict !== MAIN_DISTRICT_OF_RESIDENCE) {
+            return 'all-access';
+        }
+
+        return 'either';
+    }
     exceptionId: number | null = null;
 
     // Tacoma residents must confirm they already hold a Tacoma Public
@@ -169,6 +186,11 @@ export class GetacardState {
     // residential unitRequired / unitValid flow.
     mailingUnitRequired = false;
     mailingUnitValid: boolean | null = null;
+
+    // District of residence resolved for a different mailing address; a
+    // mailing address must also be in the main district for the patron to
+    // remain e-card eligible.  null = not resolved / doesn't qualify.
+    mailingDistrict: string | null = null;
 
     // --- My Library Card -------------------------------------------------------
 
@@ -378,6 +400,16 @@ export class GetacardState {
         this.applyContactRules();
     }
 
+    // When only one kind of card is offered there's no choice to make;
+    // also corrects a previously-chosen e-card when a later change (e.g.
+    // a non-qualifying mailing address) narrows eligibility.
+    private syncAccountType() {
+        if (this.accountTypeOption === 'all-access'
+            && this.accountType !== 'full') {
+            this.setAccountType('full');
+        }
+    }
+
     get addressComplete(): boolean {
         return this.homeOrgId != null
             && (!this.unitRequired || this.unitValid === true);
@@ -492,7 +524,7 @@ export class GetacardState {
         this.homeOrgId = null;
         this.homeOrgName = '';
         this.district = null;
-        this.accountTypeOption = null;
+        this.residentialOption = null;
         this.exceptionId = null;
         this.hasTacomaCard = null;
         // A different address can change what's offered.
@@ -595,13 +627,10 @@ export class GetacardState {
 
         if (district) {
             this.district = district;
-            this.accountTypeOption =
+            this.residentialOption =
                 district === MAIN_DISTRICT_OF_RESIDENCE ? 'either' : 'all-access';
 
-            // Only one kind offered: no choice to make.
-            if (this.accountTypeOption === 'all-access') {
-                this.setAccountType('full');
-            }
+            this.syncAccountType();
         }
 
         // Default the hold pickup library to the home library.
@@ -821,6 +850,7 @@ export class GetacardState {
 
         this.mailingNotViable = false;
         this.mailingUnitValid = null;
+        this.mailingDistrict = null;
         this.mailingVerifying = true;
 
         return this.requestOne('kcls.address', 'kcls.address.lookup', {
@@ -854,13 +884,30 @@ export class GetacardState {
             }
 
             // Reflect the service's normalized unit (e.g. "Apt 4").
+            let normalized: string | null = null;
             const comp = (f['components'] || {}) as Hash;
             if (hasValidSecondary && comp['secondary_number']) {
-                return [comp['secondary_designator'], comp['secondary_number']]
+                normalized = [comp['secondary_designator'], comp['secondary_number']]
                     .filter(Boolean).join(' ');
             }
 
-            return null;
+            // A different mailing address must also be in the main district
+            // for the patron to remain e-card eligible; resolve its district
+            // and re-derive the account-type option.
+            const meta = (f['metadata'] || {}) as Hash;
+            if (meta['latitude'] != null && meta['longitude'] != null) {
+                return this.requestOne(
+                    'kcls.address', 'kcls.address.district-of-residence',
+                    meta['latitude'], meta['longitude']
+                ).then(district => {
+                    this.mailingDistrict = (district as string) || null;
+                    this.syncAccountType();
+                    return normalized;
+                });
+            }
+
+            this.syncAccountType();
+            return normalized;
         }).catch(err => {
             this.mailingVerifying = false;
             console.error('Mailing address verification failed', err);
@@ -875,6 +922,7 @@ export class GetacardState {
         this.mailingVerifying = false;
         this.mailingUnitRequired = false;
         this.mailingUnitValid = null;
+        this.mailingDistrict = null;
         this.contactForm.get('mailingStreet2')!.setValue('', {emitEvent: false});
     }
 
