@@ -27,6 +27,8 @@ WORKSTATION="SV-Backstage-Merge"
 SCRIPT_DIR=$PWD
 CURL="curl --silent --show-error --user $BACKSTAGE_USER:$BACKSTAGE_PASSWORD";
 
+TNFTP_GET="tnftp ftp://$BACKSTAGE_USER:$BACKSTAGE_PASSWORD@ftp.bslw.com/out";
+
 CUR_MONTH=$(date +'%m')
 CUR_YEAR2=$(date +'%y')
 CUR_YEAR4=$(date +'%Y')
@@ -79,7 +81,10 @@ function bs_get_file {
     else
         echo "Fetching Backstage file $FILE_NAME"
 
-        $CURL -O "$URL"
+        # 2026-01 this stopped working :\
+        # $CURL -O "$URL"
+
+        "$TNFTP_GET/$FILE_NAME"
 
         [ "$?" != 0 ] && die "curl failed to retrieve file: $URL"
     fi;
