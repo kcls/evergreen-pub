@@ -186,13 +186,36 @@ sub verify_address_values {
     }
 
     # 5. Mailing address, when provided (i.e. different from residential),
-    # must be viable for mail delivery.
+    # must be viable for mail delivery.  For e-cards, every entered address
+    # must qualify, so a different mailing address must also resolve to the
+    # main district.  Mirrors the UI rule.
     my $mail = $values->{mailing_address} || {};
     if ($mail->{street1}) {
         my $mres = lookup_address($token, $mail);
         if (!$mres || !$U->is_true($mres->{is_viable_mailing})) {
             $logger->warn("Self-reg mailing address is not viable");
             return OpenILS::Event->new('BAD_PARAMS');
+        }
+
+        if (($values->{requested_account_type} // '') eq 'ecard') {
+
+            my $mlat  = $mres->{metadata} ? $mres->{metadata}->{latitude}  : undef;
+            my $mlong = $mres->{metadata} ? $mres->{metadata}->{longitude} : undef;
+
+            my $mdistrict;
+            if (defined $mlat && defined $mlong) {
+                $mdistrict = $U->simplereq(
+                    'kcls.address',
+                    'kcls.address.district-of-residence',
+                    $token, $mlat, $mlong
+                );
+            }
+
+            if (($mdistrict // '') ne $MAIN_DISTRICT) {
+                $logger->warn("Self-reg e-card requested with a mailing " .
+                    "address outside the main district");
+                return OpenILS::Event->new('BAD_PARAMS');
+            }
         }
     }
 
