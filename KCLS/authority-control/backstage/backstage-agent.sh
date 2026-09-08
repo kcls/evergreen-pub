@@ -27,7 +27,7 @@ WORKSTATION="SV-Backstage-Merge"
 SCRIPT_DIR=$PWD
 CURL="curl --silent --show-error --user $BACKSTAGE_USER:$BACKSTAGE_PASSWORD";
 
-TNFTP_GET="tnftp ftp://$BACKSTAGE_USER:$BACKSTAGE_PASSWORD@ftp.bslw.com/out";
+TNFTP_GET_URL="ftp://$BACKSTAGE_USER:$BACKSTAGE_PASSWORD@ftp.bslw.com/out";
 
 # Base date from which all other date values are derived.
 # Defaults to today.  Override with the BACKSTAGE_DATE environment
@@ -102,9 +102,9 @@ function bs_get_file {
         # 2026-01 this stopped working :\
         # $CURL -O "$URL"
 
-        "$TNFTP_GET/$FILE_NAME"
+        tnftp "$TNFTP_GET_URL/$FILE_NAME"
 
-        [ "$?" != 0 ] && die "curl failed to retrieve file: $URL"
+        [ "$?" != 0 ] && die "tnftp failed to retrieve file: $URL"
     fi;
 
     cd $SCRIPT_DIR;
