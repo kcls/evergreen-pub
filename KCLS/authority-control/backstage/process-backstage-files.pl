@@ -459,21 +459,24 @@ sub prepare_statements {
         DELETE FROM authority.record_entry WHERE id = ?
     SQL
 
+    # The protect_authority_rec_delete rule turns our DELETE into a
+    # soft-delete (SET deleted = TRUE) without touching edit_date, so
+    # this statement must match the record after it's marked deleted.
     $delmod_auth_sth = $KU->prepare_statement(<<"    SQL");
-        UPDATE authority.record_entry 
+        UPDATE authority.record_entry
         SET edit_date = NOW() WHERE id = ?
     SQL
 
     $mod_bibs_sth = $KU->prepare_statement(<<"    SQL");
         UPDATE biblio.record_entry 
         SET marc = ?, edit_date = NOW() 
-        WHERE id = ?
+        WHERE NOT deleted AND id = ?
     SQL
 
     $mod_auth_sth = $KU->prepare_statement(<<"    SQL");
         UPDATE authority.record_entry 
         SET marc = ?, edit_date = NOW() 
-        WHERE id = ?
+        WHERE NOT deleted AND id = ?
     SQL
 
     $new_auth_sth = $KU->prepare_statement(<<"    SQL");
