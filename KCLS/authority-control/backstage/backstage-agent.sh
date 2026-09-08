@@ -29,12 +29,30 @@ CURL="curl --silent --show-error --user $BACKSTAGE_USER:$BACKSTAGE_PASSWORD";
 
 TNFTP_GET="tnftp ftp://$BACKSTAGE_USER:$BACKSTAGE_PASSWORD@ftp.bslw.com/out";
 
-CUR_MONTH=$(date +'%m')
-CUR_YEAR2=$(date +'%y')
-CUR_YEAR4=$(date +'%Y')
-CUR_QTR=$(( ($(date +%-m)-1)/3+1 ))
+# Base date from which all other date values are derived.
+# Defaults to today.  Override with the BACKSTAGE_DATE environment
+# variable (YYYY-MM-DD) or the -D command line option.
+BS_DATE="${BACKSTAGE_DATE:-$(date +'%F')}"
+
+CUR_MONTH=""
+CUR_YEAR2=""
+CUR_YEAR4=""
+CUR_QTR=""
 PREV_QTR_START_DATE=""
 PREV_QTR_END_DATE=""
+
+# Derive the date values used throughout from BS_DATE.
+function bs_set_dates {
+    date -d "$BS_DATE" > /dev/null 2>&1 || die "Invalid date: $BS_DATE"
+
+    CUR_MONTH=$(date -d "$BS_DATE" +'%m')
+    CUR_YEAR2=$(date -d "$BS_DATE" +'%y')
+    CUR_YEAR4=$(date -d "$BS_DATE" +'%Y')
+    CUR_QTR=$(( ($(date -d "$BS_DATE" +'%-m')-1)/3+1 ))
+
+    echo "Using dates: base=$BS_DATE month=$CUR_MONTH" \
+        "year=$CUR_YEAR4 ($CUR_YEAR2) quarter=$CUR_QTR"
+}
 
 # TODO use environment variable instead of inline recipient.
 EMAIL_RECIP=opensrf@localhost
@@ -185,7 +203,7 @@ function bs_export_qtrly_bibs {
 
             # Put a file into the working directory with the export 
             # date so the importer can refer to it later.
-            echo "$(date +'%F')" > "$WORKING_DIR/EXPORT_DATE"
+            echo "$BS_DATE" > "$WORKING_DIR/EXPORT_DATE"
 
             # count the number of MARC record separator characters
             count=$(cat $EXPORT_FILE | perl -e '$/="\x1D";$c = 0;$c++ while (<>);print "$c";')
@@ -300,6 +318,11 @@ function usage {
             -d <db-host> - overrides global PGHOST for this script.
                 MAKE THIS THE FIRST SCRIPT PARAMETER IF SET.
 
+            -D <date> - base date (YYYY-MM-DD) from which all other
+                date values are derived.  Defaults to today.  May also
+                be set via the BACKSTAGE_DATE environment variable.
+                MAKE THIS APPEAR BEFORE ANY ACTION PARAMETERS (-a/-b/-q/-c).
+
             -a Import monthly authority update file.
 
             -b Create and upload quarterly bib export
@@ -311,9 +334,14 @@ USAGE
 }
 
 
-while getopts "abqhd:p:c" opt; do
+# Set the default (today-based) date values.  May be recalculated
+# via the -D option below.
+bs_set_dates
+
+while getopts "abqhd:D:p:c" opt; do
     case $opt in
         d) export PGHOST=$OPTARG;;
+        D) BS_DATE=$OPTARG; bs_set_dates;;
         a) bs_import_monthly_auths;;
         q) bs_import_qtrly_results;;
         b) bs_export_qtrly_bibs;;
