@@ -44,6 +44,7 @@ my @USER_FIELDS = (
 my @ALLOWED_STAT_CATS = (3, 4, 10, 12);
 
 my $PROVISIONAL_ECARD_GRP = 951;
+my $PROVISIONAL_ALL_ACCESS_GRP = 26; #  Online Registration
 my $ECARD_VERIFY_IDENT = 102;
 
 my @ecard_code_chars = ('C','D','F','H','J'..'N','P','R','T','V','W','X','3','4','7','9');
@@ -253,6 +254,26 @@ sub create_pending_account {
         $user->$field($val);
     }
 
+    $user->profile($PROVISIONAL_ALL_ACCESS_GRP);
+
+    my $dob = $values->{user}->{dob} || '';
+
+    # Patrons 17 or older get the "17 and Up" net access level, younger
+    # patrons "Under 17 Plus".  When the DOB is missing or malformed,
+    # fall back to the more restrictive level and let staff sort it out
+    # during pending-account review.
+    my $under_17 = 1;
+    if ($dob =~ /^(\d{4})-(\d{2})-(\d{2})$/) {
+        my $dob_dt = eval { DateTime->new(year => $1, month => $2, day => $3) };
+        if ($dob_dt) {
+            my $cutoff =
+                DateTime->now(time_zone => 'local')->subtract(years => 17);
+            $under_17 = ($dob_dt > $cutoff) ? 1 : 0;
+        }
+    }
+
+    $user->net_access_level($under_17 ? 102 : 1); # Under 17 Plus : 17 and Up
+
     my ($bill_addr, $mail_addr) = handle_addresses($values);
     my $stat_cats = handle_stat_cats($values);
 
@@ -444,7 +465,7 @@ sub create_ecard_account {
     my $au = Fieldmapper::actor::user->new;
     $au->isnew(1);
     $au->ident_type($ECARD_VERIFY_IDENT);
-    $au->net_access_level(101);
+    $au->net_access_level(101); # No Access
     $au->ident_value(generate_verify_code());
     $au->profile($PROVISIONAL_ECARD_GRP);
 
