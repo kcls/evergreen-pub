@@ -13,7 +13,7 @@ export const IDLE_TIMEOUTS = {
     // The post-submit confirmation page.
     complete: {
         kiosk: 30 * 1000,
-        web: 30 * 1000,
+        web: 90 * 1000,
     },
 };
 
