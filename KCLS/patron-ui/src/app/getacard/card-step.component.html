@@ -9,8 +9,8 @@
       (click)="chooseDesign(card)">
     <span class="material-icons gac-card-check" aria-hidden="true"
         *ngIf="state.cardDesign === card">check_circle</span>
-    <img [src]="state.cardOptionUrl(card)" [alt]="state.cardDescription(card)"/>
-    <span class="gac-card-desc">{{state.cardDescription(card)}}</span>
+    <img [src]="state.cardOptionUrl(card)" [alt]="card.description"/>
+    <span class="gac-card-desc">{{card.description}}</span>
   </button>
 </div>
 
