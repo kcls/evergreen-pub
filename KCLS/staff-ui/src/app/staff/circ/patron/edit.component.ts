@@ -403,6 +403,7 @@ export class EditComponent implements OnInit {
             const field = this.idl.classes.au.field_map[key];
             if (field && !field.virtual) {
                 let value = stageData.user[key]();
+                console.log('Loading staged value ', key, value);
                 if (value !== null) {
                     if (key === 'email') {
                         value = value.toLowerCase();
