@@ -44,7 +44,7 @@ export class CaptchaSessionService {
     private expiresAt = 0; // epoch ms; 0 = none
 
     private widgetId: string | null = null;
-    private container: HTMLElement | null = null;
+    private overlay: HTMLElement | null = null;
 
     private scriptLoaded: Promise<void> | null = null;
     private rendered: Promise<void> | null = null;
@@ -54,15 +54,6 @@ export class CaptchaSessionService {
     private minting = false;
 
     constructor(private gateway: Gateway, private config: ConfigService) {}
-
-    /**
-     * Designate where the Turnstile widget should render.  Optional: when a
-     * challenge requires interaction the widget appears here.  If never
-     * called, a fallback container is appended to the document body.
-     */
-    attach(container: HTMLElement) {
-        this.container = container;
-    }
 
     /** Return a valid session token, minting a new one if needed. */
     getToken(): Promise<string> {
@@ -155,31 +146,71 @@ export class CaptchaSessionService {
         return this.scriptLoaded;
     }
 
+    // Build a hidden, centered modal overlay hosting the widget.  It is
+    // revealed only while a challenge requires user interaction.  Returns
+    // the element the widget should render into.
+    private buildOverlay(): HTMLElement {
+        const overlay = document.createElement('div');
+        overlay.style.cssText =
+            'position: fixed; inset: 0; z-index: 2000;' +
+            'display: flex; align-items: center; justify-content: center;' +
+            'background: rgba(0, 0, 0, 0.5);' +
+            'visibility: hidden; opacity: 0; transition: opacity 150ms ease;';
+
+        const panel = document.createElement('div');
+        panel.style.cssText =
+            'background: #fff; color: #222; border-radius: 8px;' +
+            'padding: 1.5rem 2rem; max-width: 90vw; text-align: center;' +
+            'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);' +
+            'display: flex; flex-direction: column; align-items: center;' +
+            'gap: 1rem; font: 500 1rem/1.4 Roboto, sans-serif;';
+
+        const message = document.createElement('div');
+        message.textContent =
+            $localize`Please complete this quick security check to continue.`;
+
+        const widgetHost = document.createElement('div');
+
+        panel.appendChild(message);
+        panel.appendChild(widgetHost);
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+
+        this.overlay = overlay;
+        return widgetHost;
+    }
+
+    // Use visibility/opacity rather than display so the widget's iframe
+    // keeps its layout while hidden.
+    private setOverlayVisible(visible: boolean) {
+        if (!this.overlay) { return; }
+        this.overlay.style.visibility = visible ? 'visible' : 'hidden';
+        this.overlay.style.opacity = visible ? '1' : '0';
+    }
+
     private ensureRendered(): Promise<void> {
         if (this.rendered) { return this.rendered; }
 
         this.rendered = this.ensureScript().then(() => {
-            if (!this.container) {
-                // Fallback host for the widget (only visible if a challenge
-                // requires interaction).
-                const el = document.createElement('div');
-                el.style.position = 'fixed';
-                el.style.bottom = '1rem';
-                el.style.right = '1rem';
-                el.style.zIndex = '2000';
-                document.body.appendChild(el);
-                this.container = el;
-            }
+            const widgetHost = this.buildOverlay();
 
-            this.widgetId = window.turnstile!.render(this.container, {
+            this.widgetId = window.turnstile!.render(widgetHost, {
                 sitekey: this.config.turnstileSitekey,
                 // Only run the challenge when we call execute().
                 execution: 'execute',
                 // Stay invisible unless interaction is actually required.
                 appearance: 'interaction-only',
-                callback: (token: string) => this.onTurnstileToken(token),
-                'error-callback': () => this.failWaiters('Turnstile error'),
+                callback: (token: string) => {
+                    this.setOverlayVisible(false);
+                    this.onTurnstileToken(token);
+                },
+                'error-callback': () => {
+                    this.setOverlayVisible(false);
+                    this.failWaiters('Turnstile error');
+                },
                 'expired-callback': () => { this.sessionToken = null; this.expiresAt = 0; },
+                'before-interactive-callback': () => this.setOverlayVisible(true),
+                'after-interactive-callback': () => this.setOverlayVisible(false),
             });
         });
 
