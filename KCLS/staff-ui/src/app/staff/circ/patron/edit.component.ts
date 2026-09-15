@@ -488,10 +488,22 @@ export class EditComponent implements OnInit {
         }
 
         stageData.settings.forEach(setting => {
-            if (setting.setting() === 'opac.default_pickup_location') {
-                this.userSettings[setting.setting()] = Number(setting.value());
-            } else {
-                this.userSettings[setting.setting()] = Boolean(setting.value());
+            const sname = setting.setting();
+            let svalue = setting.value();
+
+            if (svalue === null || svalue === '' || svalue === undefined) {
+                return;
+            }
+
+            switch (sname) {
+                case 'opac.default_pickup_location':
+                    this.userSettings[sname] = Number(svalue);
+                    break;
+                case 'opac.default_sms_notify':
+                    this.userSettings[sname] = svalue;
+                    break;
+                default:
+                    this.userSettings[sname] = Boolean(svalue);
             }
         });
 
