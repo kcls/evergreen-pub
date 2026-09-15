@@ -107,14 +107,14 @@
       <span class="gac-label" i18n>Delivery</span>
       <span class="gac-value">{{state.delivery}}</span>
     </div>
-    <div class="gac-row" *ngIf="state.cardDesign">
+    <div class="gac-row" *ngIf="state.cardDesign as card">
       <span class="gac-label" i18n>Card Design</span>
       <span class="gac-value">
         <img class="gac-summary-card"
-             [src]="state.cardOptionUrl(state.cardDesign)"
-             [alt]="state.cardDescription(state.cardDesign)"/>
+             [src]="state.cardOptionUrl(card)"
+             [alt]="card.description"/>
         <!--
-        <span class="gac-summary-card-desc">{{state.cardDescription(state.cardDesign)}}</span>
+        <span class="gac-summary-card-desc">{{card.description}}</span>
         -->
       </span>
     </div>

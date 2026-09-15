@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {GetacardState} from './state.service';
+import {CardOption, GetacardState} from './state.service';
 
 /**
  * "My Library Card" — the card design gallery and how to receive the card.
@@ -24,7 +24,7 @@ export class CardStepComponent implements OnInit {
         }
     }
 
-    chooseDesign(card: string) {
+    chooseDesign(card: CardOption) {
         this.state.cardDesign = card;
     }
 

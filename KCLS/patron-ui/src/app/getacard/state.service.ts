@@ -36,6 +36,17 @@ export interface GacRegisterResult {
     homeOrgName: string;
 }
 
+// One card design the patron can choose from.
+export interface CardOption {
+    // Also the basis of the card's image URL.  See cardOptionUrl().
+    key: string;
+    // The value the API (staff) wants for the card-style stat cat.
+    // Not meant to be translated.
+    value: string;
+    // Patron-facing description; doubles as the image alt text.
+    description: string;
+}
+
 // What the address makes the patron eligible for.
 export type AccountTypeOption = 'either' | 'all-access' | null;
 
@@ -196,35 +207,43 @@ export class GetacardState {
 
     // Selected card design (all-access only) and how to receive the card.
     // Neither has a default; the patron must choose.
-    cardDesign: string | null = null;
+    cardDesign: CardOption | null = null;
     delivery: 'Pick up' | 'Mail' | null = null;
 
-    cardOptions = [
-        '2025-Barry-Johnson',
-        '2025-Bethany-Fackrell',
-        '2025-Invisible-Creature',
-        '2025-Hernan-Paganini',
-        '2025-Marisol-Ortega',
-        '2025-Stacy-Nguyen',
-        '2025-Stevie-Shao',
+    cardOptions: CardOption[] = [
+        {
+            key: '2025-Barry-Johnson',
+            value: 'Boy Reading (Barry Johnson)',
+            description: $localize`A portrait of everyday Black life, illustrated by Barry Johnson.`,
+        }, {
+            key: '2025-Bethany-Fackrell',
+            value: 'Five Salmon (Bethany Fackrell)',
+            description: $localize`Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell.`,
+        }, {
+            key: '2025-Invisible-Creature',
+            value: 'Sasquatch Reading (Don Clark/Invisible Creature)',
+            description: $localize`A Pacific Northwest legend brought to life, illustrated by Don Clark.`,
+        }, {
+            key: '2025-Hernan-Paganini',
+            value: 'Blue Abstract (Hernan Paganini)',
+            description: $localize`An abstract multicultural flow, illustrated by Hernan Paganini.`,
+        }, {
+            key: '2025-Marisol-Ortega',
+            value: 'Geometric Tiles (Marisol Ortega)',
+            description: $localize`Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega.`,
+        }, {
+            key: '2025-Stacy-Nguyen',
+            value: 'Dogs Camping (Stacy Nguyen)',
+            description: $localize`A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen.`,
+        }, {
+            key: '2025-Stevie-Shao',
+            value: 'Two Birds (Stevie Shao)',
+            description: $localize`Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao.`,
+        },
     ];
 
-    cardDescriptions: {[key: string]: string} = {
-        '2025-Barry-Johnson': $localize`A portrait of everyday Black life, illustrated by Barry Johnson.`,
-        '2025-Bethany-Fackrell': $localize`Salmon rendered in Coast Salish formline art, illustrated by Bethany Fackrell.`,
-        '2025-Invisible-Creature': $localize`A Pacific Northwest legend brought to life, illustrated by Don Clark.`,
-        '2025-Hernan-Paganini': $localize`An abstract multicultural flow, illustrated by Hernan Paganini.`,
-        '2025-Marisol-Ortega': $localize`Tile patterns inspired by Michoacán, Mexico, illustrated by Marisol Ortega.`,
-        '2025-Stacy-Nguyen': $localize`A joyful outdoor gathering of community (and dogs!), illustrated by Stacy Nguyen.`,
-        '2025-Stevie-Shao': $localize`Folk art wildlife nodding to environmental stewardship, illustrated by Stevie Shao.`,
-    };
-
-    cardOptionUrl(name: string): string {
-        return `/images/patron_cards/${name}.png`;
-    }
-
-    cardDescription(name: string): string {
-        return this.cardDescriptions[name] ?? '';
+    cardOptionUrl(card: CardOption): string {
+        return `/images/patron_cards/${card.key}.png`;
     }
 
     // --- Review & submit ---------------------------------------------------------
@@ -1017,7 +1036,7 @@ export class GetacardState {
                 value: review['wantsLibNews'] ? 'Y' : 'N'},
             {stat_cat: STAT_CAT_FOUNDATION_NEWS,
                 value: review['wantsFoundationInfo'] ? 'Y' : 'N'},
-            {stat_cat: STAT_CAT_CARD_STYLE, value: this.cardDesign ?? ''},
+            {stat_cat: STAT_CAT_CARD_STYLE, value: this.cardDesign?.value ?? ''},
         );
 
         if (this.district) {
