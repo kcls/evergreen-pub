@@ -536,7 +536,10 @@ export class EditComponent implements OnInit {
             this.userStatCatChange(stat.cat, cboxEntry);
         });
 
-        if (patron.billing_address()) {
+        // Avoid zip lookup for staged users wich already have a value
+        // for county, since that implies the addresses was reliably
+        // prepopulated by the address API service.
+        if (patron.billing_address() && !patron.billing_address().county()) {
             this.handlePostCodeChange(
                 patron.billing_address(), patron.billing_address().post_code());
         }
