@@ -57,6 +57,7 @@ export interface AddressSuggestion {
     street_line: string;
     secondary: string;
     city: string;
+    county: string;
     state: string;
     zipcode: string;
     entries: number;
@@ -614,6 +615,9 @@ export class GetacardState {
             // E.g. Bellevue => Yarrow Point
             const components = (f['components'] || {}) as Hash;
             addr.city = components['city_name'] as string || addr.city;
+            addr.county = meta['county_name'] as string;
+
+            // console.debug('Compiled address is ', addr);
 
             return Promise.all([
                 this.requestOne('kcls.address', 'kcls.address.home-org',
@@ -996,6 +1000,7 @@ export class GetacardState {
                 street1: addr?.street_line || '',
                 street2: this.street2,
                 city: addr?.city || '',
+                county: addr?.county || '',
                 state: addr?.state || '',
                 post_code: addr?.zipcode || '',
             },
@@ -1003,6 +1008,7 @@ export class GetacardState {
                 street1: mailingIsSame ? '' : (mailing?.street_line || ''),
                 street2: mailingIsSame ? '' : ('' + (cf.get('mailingStreet2')!.value ?? '')),
                 city: mailingIsSame ? '' : (mailing?.city || ''),
+                county: mailingIsSame ? '' : (mailing?.county || ''),
                 state: mailingIsSame ? '' : (mailing?.state || ''),
                 post_code: mailingIsSame ? '' : (mailing?.zipcode || ''),
             },
