@@ -525,6 +525,7 @@ sub create_ecard_account {
             $mail_addr->street1(normalize('street1', $ms1));
             $mail_addr->street2(normalize('street2', $ms2)) if $ms2;
             $mail_addr->city(normalize('city', $maddr_data->{city} || ''));
+            $mail_addr->county(normalize('county', $maddr_data->{county} || ''));
             $mail_addr->state(normalize('state', $maddr_data->{state} || ''));
             $mail_addr->post_code($maddr_data->{post_code} || '');
             $mail_addr->country(normalize('country', 'US'));
