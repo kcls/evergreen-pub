@@ -26,6 +26,8 @@ my $KU = 'OpenILS::Utils::KCLSScriptUtil';
 my $db_handle_reset = 500;
 my $log_mod = 500;  # log every 500th of each type of event (see verbose)
 
+my $editor_id = 4953211; # "utiladmin"
+
 my $marc_file;
 my $zip_file;
 my $export_date;
@@ -459,23 +461,20 @@ sub prepare_statements {
         DELETE FROM authority.record_entry WHERE id = ?
     SQL
 
-    # The protect_authority_rec_delete rule turns our DELETE into a
-    # soft-delete (SET deleted = TRUE) without touching edit_date, so
-    # this statement must match the record after it's marked deleted.
     $delmod_auth_sth = $KU->prepare_statement(<<"    SQL");
         UPDATE authority.record_entry
-        SET edit_date = NOW() WHERE id = ?
+        SET edit_date = NOW(), editor = $editor_id WHERE id = ?
     SQL
 
     $mod_bibs_sth = $KU->prepare_statement(<<"    SQL");
         UPDATE biblio.record_entry 
-        SET marc = ?, edit_date = NOW() 
+        SET marc = ?, edit_date = NOW(), editor = $editor_id
         WHERE NOT deleted AND id = ?
     SQL
 
     $mod_auth_sth = $KU->prepare_statement(<<"    SQL");
         UPDATE authority.record_entry 
-        SET marc = ?, edit_date = NOW() 
+        SET marc = ?, edit_date = NOW(), editor = $editor_id
         WHERE NOT deleted AND id = ?
     SQL
 
