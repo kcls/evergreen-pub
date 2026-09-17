@@ -4,6 +4,10 @@
   local library, or topics that matter to you.
 </p>
 
+<div *ngIf="state.accountType === 'full'" i18n class="gac-help">
+  All-Access Card accounts require either an email address or phone number.
+</div>
+
 <form [formGroup]="state.contactForm">
 
   <div class="gac-grid-2">
