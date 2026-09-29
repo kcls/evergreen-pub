@@ -7,6 +7,8 @@
       Complete your application to start enjoying all the library has
       to offer.
     </p>
+
+    <ng-container *ngTemplateOutlet="seattleNote"></ng-container>
   </ng-container>
 
   <!-- In-district: the patron picks the card kind. -->
@@ -59,6 +61,9 @@
       Choose All-Access, and you'll pick a card design next and decide
       how to pick it up: in person or by mail.
     </p>
+
+    <ng-container *ngIf="state.accountType === 'full'"
+      [ngTemplateOutlet]="seattleNote"></ng-container>
   </ng-container>
 
   <!-- No district resolved: outside the service area. -->
@@ -76,3 +81,21 @@
   </ng-container>
 
 </ng-container>
+
+<!-- Seattle Public Library district residents can get an all-access card,
+     but with hold restrictions worth knowing about up front. -->
+<ng-template #seattleNote>
+  <p class="gac-choice-note" *ngIf="state.isSeattleResident">
+    <!-- Kiosks show no links that navigate away from the app. -->
+    <ng-container *ngIf="!state.inKioskMode" i18n>
+      Some <a href="https://kcls.org/faq/library-cards/#seattle-residents"
+      target="_blank" rel="noopener">hold
+      restrictions apply</a> for patrons that live in the Seattle Public
+      Library district.
+    </ng-container>
+    <ng-container *ngIf="state.inKioskMode" i18n>
+      Some hold restrictions apply for patrons that live in the Seattle
+      Public Library district.
+    </ng-container>
+  </p>
+</ng-template>

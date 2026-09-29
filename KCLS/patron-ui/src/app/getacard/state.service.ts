@@ -13,6 +13,10 @@ const MAIN_DISTRICT_OF_RESIDENCE = ' KCLS'; // space is intentional
 // Tacoma residents must confirm they hold a Tacoma Public Library card
 // before registering for a reciprocal card.
 const TACOMA_DISTRICT_OF_RESIDENCE = 'Tacoma_Public_Library';
+
+// Seattle residents may get an all-access card, but with hold
+// restrictions that the account step calls out.
+const SEATTLE_DISTRICT_OF_RESIDENCE = 'Seattle_Public_Library';
 const JUV_AGE = 18; // years
 const PHONE_REGEX = /\d{3}-\d{3}-\d{4}/;
 
@@ -147,6 +151,12 @@ export class GetacardState {
 
     get requiresTacomaConfirmation(): boolean {
         return this.district === TACOMA_DISTRICT_OF_RESIDENCE;
+    }
+
+    // Seattle Public Library district residents face hold restrictions
+    // on an all-access card; the account step notes this.
+    get isSeattleResident(): boolean {
+        return this.district === SEATTLE_DISTRICT_OF_RESIDENCE;
     }
 
     // --- Choose your account -----------------------------------------------
