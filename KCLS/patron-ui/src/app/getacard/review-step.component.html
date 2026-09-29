@@ -129,8 +129,14 @@
     <mat-checkbox formControlName="wantsLibNews" i18n>
       Library news and events
     </mat-checkbox>
-    <mat-checkbox formControlName="wantsFoundationInfo" i18n>
-      Updates from the KCLS Foundation
+    <mat-checkbox formControlName="wantsFoundationInfo">
+      <ng-container *ngIf="!state.inKioskMode" i18n>
+        Updates from the 
+        <a href="https://www.kclsfoundation.org/what-we-do" target="_blank" rel="noopener">KCLS Foundation</a>
+      </ng-container>
+      <ng-container *ngIf="state.inKioskMode" i18n>
+        Updates from the KCLS Foundation
+      </ng-container>
     </mat-checkbox>
   </div>
 
