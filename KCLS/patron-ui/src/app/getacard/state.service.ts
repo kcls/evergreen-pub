@@ -701,6 +701,15 @@ export class GetacardState {
         guardian.updateValueAndValidity({emitEvent: false});
     }
 
+    // Format a DoB as a local YYYY-MM-DD string, dropping the time
+    // component (and avoiding the UTC day shift of Date.toISOString()).
+    private formatDob(value: Date | string): string {
+        const dob = value instanceof Date ? value : new Date(value);
+        return dob.getFullYear() + '-' +
+            ((dob.getMonth() + 1) + '').padStart(2, '0') + '-' +
+            (dob.getDate() + '').padStart(2, '0');
+    }
+
     // See if the provided identity values match an existing account so the
     // patron can be pointed at the login page instead.
     private checkForExistingAccount() {
@@ -712,10 +721,15 @@ export class GetacardState {
             return;
         }
 
+        // DoB is just a date.  Send YYYY-MM-DD (local) rather than letting
+        // the Date serialize to a UTC timestamp, which can shift the day
+        // and breaks the server's exact-DoB match.
+        const dob = this.formatDob(v['dob'] as Date);
+
         this.requestOne('open-ils.actor', 'open-ils.actor.register.has_account', {
             first_given_name: v['first'],
             family_name: v['last'],
-            dob: v['dob'],
+            dob: dob,
             street1: street1,
         }).then(resp => {
 
@@ -736,7 +750,7 @@ export class GetacardState {
             return this.requestOne('open-ils.actor', 'open-ils.actor.register.has_account', {
                 first_given_name: first,
                 family_name: last,
-                dob: v['dob'],
+                dob: dob,
                 street1: street1,
             }).then(resp2 => {
                 this.maybeDupeAccount = Number(resp2) === 1;
@@ -976,11 +990,7 @@ export class GetacardState {
         const addr = this.address;
 
         // DOB is just the date, but still needs to be in ISO format.
-        const dob = new Date(about['dob'] as string);
-        const dobstr =
-            dob.getFullYear() + '-' +
-            ((dob.getMonth() + 1) + '').padStart(2, '0') + '-' +
-            (dob.getDate() + '').padStart(2, '0');
+        const dobstr = this.formatDob(about['dob'] as Date | string);
 
         const mailingIsSame = !!cf.get('mailingIsSame')!.value;
         const mailing = this.mailingAddress;

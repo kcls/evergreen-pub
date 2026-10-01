@@ -656,6 +656,8 @@ sub has_account {
         && $dob_year
         && $street1;
 
+    $logger->info("Dupe checker on values $first_given_name $family_name $dob");
+
     my $search = {
         first_given_name => {value => $first_given_name, group => 0},
         family_name => {value => $family_name, group => 0},
@@ -692,7 +694,32 @@ sub has_account {
         return 1;
     }
 
-    return 0
+    # Matching on name, dob year, and address found no duplicates.
+    # Do a secondary match without the address (patron moved) and 
+    # their exact dob.
+
+    $search = {
+        first_given_name => {value => $first_given_name, group => 0},
+        family_name => {value => $family_name, group => 0},
+        dob => {value => $dob, group => 0} # full DoB
+    };
+
+    $ids = $U->storagereq(
+        'open-ils.storage.actor.user.crazy_search', 
+        $search,
+        1000,           # search limit
+        undef,          # sort
+        1,              # include inactive
+        $root_org->id,  # ws_ou
+        $root_org->id   # search_ou
+    );
+
+    if (@$ids) {
+        $logger->info("Match(s) found on name and exact DoB: @$ids");
+        return 1;
+    }
+
+    return 0;
 }
 
 
