@@ -12,12 +12,12 @@ INSERT INTO action_trigger.event_definition (
     263,
     TRUE,
     1,
-    'All-Access Registration Email',
-    'stgu.created',
+    'eCard Registration Email',
+    'au.create.ecard',
     'NOOP_True',
     'NOOP_True',
     '00:00:00',
-    'All-Access-Register-Email',
+    'Ecard-Register-Email',
     '1 year'
 );
 

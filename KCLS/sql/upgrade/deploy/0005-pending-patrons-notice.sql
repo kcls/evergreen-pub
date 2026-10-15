@@ -3,21 +3,24 @@
 
 BEGIN;
 
+-- old bug
+UPDATE action_trigger.hook SET passive = FALSE WHERE key = 'stgu.created';
+
 DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN                         
 
 INSERT INTO action_trigger.event_definition (
     id, active, owner, name, hook, validator, reactor, 
     delay, granularity, retention_interval 
 ) VALUES (
-    263,
+    262,
     TRUE,
     1,
-    'eCard Registration Email',
-    'au.create.ecard',
+    'All-Access Registration Email',
+    'stgu.created',
     'NOOP_True',
     'NOOP_True',
     '00:00:00',
-    'Ecard-Register-Email',
+    'All-Access-Register-Email',
     '1 year'
 );
 
