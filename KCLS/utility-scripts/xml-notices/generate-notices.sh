@@ -275,7 +275,7 @@ case $GRANULARITY in
     'Ecard-Register-Email')
         export FOR_EMAIL="--for-email"
         export EVENT_DEF=263
-        export NOTICE_TAG="ecard-welcome-email"
+        export NOTICE_TAG="ecard-register-email"
         export NOTICE_TYPE="ecard"
         ;;
 
