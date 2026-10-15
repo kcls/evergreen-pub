@@ -272,6 +272,13 @@ case $GRANULARITY in
         export NOTICE_TYPE="pending patron"
         ;;
 
+    'Ecard-Register-Email')
+        export FOR_EMAIL="--for-email"
+        export EVENT_DEF=263
+        export NOTICE_TAG="ecard-welcome-email"
+        export NOTICE_TYPE="ecard"
+        ;;
+
     'Daily-Export-Hold-Cancel')
         export FOR_EMAIL="--for-email"
         export EVENT_DEF=220
