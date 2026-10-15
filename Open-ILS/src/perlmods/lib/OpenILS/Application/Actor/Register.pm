@@ -37,6 +37,7 @@ my @USER_FIELDS = (
     'day_phone',
     'email',
     'home_ou',
+    'delivery_method',
     'ident_value2', # guardian
 );
 
