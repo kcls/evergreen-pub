@@ -9,12 +9,10 @@ use strict;
 use warnings;
 use DBI;
 use Getopt::Long;
-use MARC::Record;                                                              
-use MARC::File::XML (BinaryEncoding => 'UTF-8');         
-use Data::Dumper;
+use MARC::Record;
+use MARC::File::XML (BinaryEncoding => 'UTF-8');
 use OpenILS::Utils::KCLSScriptUtil;
 my $KU = 'OpenILS::Utils::KCLSScriptUtil';
-$Data::Dumper::Indent = 0;
 
 my $help = 0;
 my $verbose = 0;
@@ -22,14 +20,16 @@ my $created_since = '2010-01-01';
 my $out_file;
 
 my $BIBS_SQL = <<SQL;
-    SELECT id FROM biblio.record_entry WHERE NOT deleted AND create_date >= '$created_since';
+    SELECT id, marc FROM biblio.record_entry 
+    WHERE NOT deleted AND create_date >= ?
+    ORDER BY id
 SQL
 
 GetOptions(
-    'created-since' => \$created_since,
-    'out-file=s'    => \$out_file,
-    'verbose'       => \$verbose,
-    'help'          => \$help
+    'created-since=s' => \$created_since,
+    'out-file=s'      => \$out_file,
+    'verbose'         => \$verbose,
+    'help'            => \$help
 ) || help();
 
 sub help {
@@ -60,46 +60,48 @@ $KU->verbose($verbose);
 
 $KU->announce('ERR', "--out-file <filename> required", 1) unless $out_file;
 
-# Writes bib MARC to --out-file or STDOUT
+# Writes bib MARC to --out-file
 sub export_marc {
 
-    open(MARCFILE, ">$out_file") 
+    open(my $marcfile, '>', $out_file) 
         or die "Cannot open file for writing: $out_file\n";
 
-    binmode(MARCFILE, ':utf8');
+    binmode($marcfile, ':utf8');
 
     my $sth = $KU->prepare_statement($BIBS_SQL);
-    $sth->execute;
+    $sth->execute($created_since);
 
     my $count = 0;
+    my $exported = 0;
     while (my $bib = $sth->fetchrow_hashref) {
         $count++;
 
         my $bib_id = $bib->{id};
 
-        my $rec = $KU->db_handle->selectall_arrayref(
-            "SELECT marc FROM biblio.record_entry WHERE id = $bib_id");
-
         # Translate the in-db MARCXML to USMARC
-        my $marc = $rec->[0]->[0];                                             
-        my $marcdoc = MARC::Record->new_from_xml($marc, 'UTF-8', 'USMARC');    
-                                                                               
-        if (my @warnings = $marcdoc->warnings) {                               
-            $KU->announce('WARNING',                                           
-                "Skipping record $bib_id on warnings: @warnings");             
-        } else {                                                               
-            print MARCFILE $marcdoc->as_usmarc;                                
-        }   
+        my $marcdoc = eval {
+            MARC::Record->new_from_xml($bib->{marc}, 'UTF-8', 'USMARC');
+        };
 
-        $KU->announce('INFO', "$count records processed...") if ($count % 1000) == 0;
+        if ($@ || !$marcdoc) {
+            $KU->announce('WARNING', "Skipping record $bib_id on parse error: $@");
+        } elsif (my @warnings = $marcdoc->warnings) {
+            $KU->announce('WARNING',
+                "Skipping record $bib_id on warnings: @warnings");
+        } else {
+            print $marcfile $marcdoc->as_usmarc;
+            $exported++;
+        }
+
+        $KU->announce('INFO', "$count records processed...") if ($count % 10000) == 0;
     }
 
-    close(MARCFILE) if $out_file;
+    close($marcfile);
 
-    $KU->announce('INFO', "Exported $count records to $out_file");
+    $KU->announce('INFO', 
+        "Exported $exported of $count records created since $created_since to $out_file");
 }
 
 $KU->connect_db;
 export_marc();
 $KU->disconnect_db;
-
