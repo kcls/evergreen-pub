@@ -5,6 +5,9 @@
 # in the environment (e.g. via ~/.bashrc).
 #
 # Set SINCE_DATE (e.g. 2026-10-12) to override the default of one week ago.
+#
+# ASIDE: handy one-liner for counting the number of bib records in a file:
+# tr -cd '\035' < file.marc | wc -c
 source ~/.bashrc
 set -u
 
@@ -32,7 +35,9 @@ echo "Exporting bibs created since $SINCE_DATE as $OUT_FILE to $SYNDETICS_USERNA
 
 cd "$SCRIPT_DIR"
 
-if ! ./export-bibs-syndetics.pl --created-since "$SINCE_DATE" --verbose --out-file "$OUT_FILE"; then
+echo "Uploading $OUT_FILE..."
+
+if ! ./export-bibs-syndetics.pl --created-since "$SINCE_DATE" --out-file "$OUT_FILE"; then
     echo "MARC export failed; Not sending file" >&2
     exit 1
 fi
