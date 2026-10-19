@@ -17,7 +17,13 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 NOW_DATE=$(date +'%F')
 SINCE_DATE=$(date --date '-1 week' +'%F')
-OUT_FILE="syndetics-export-$NOW_DATE.marc"
+
+# Syndetics supports file name additions "update", "reindiex" and "delete"
+# "update" adds new/modified records to the dataset.
+# "reindex" wipes and rebuilds the dataset from the uploaded files.
+# "delete" removes individual records by ISBN, etc.
+OUT_FILE="syndetics-export-$NOW_DATE.update.mrc"
+
 FTP_URL="ftp://unbound-ftp.syndetics.com/"
 
 echo "Exporting bibs created since $SINCE_DATE as $OUT_FILE to $SYNDETICS_USERNAME@$FTP_URL"
