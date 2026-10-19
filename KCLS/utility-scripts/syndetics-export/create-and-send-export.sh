@@ -3,6 +3,8 @@
 #
 # Expects PGHOST / PGUSER / etc. and SYNDETICS_USERNAME / SYNDETICS_PASSWORD
 # in the environment (e.g. via ~/.bashrc).
+#
+# Set SINCE_DATE (e.g. 2026-10-12) to override the default of one week ago.
 source ~/.bashrc
 set -u
 
@@ -16,7 +18,7 @@ fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 NOW_DATE=$(date +'%F')
-SINCE_DATE=$(date --date '-1 week' +'%F')
+SINCE_DATE=${SINCE_DATE:-$(date --date '-1 week' +'%F')}
 
 # Syndetics supports file name additions "update", "reindiex" and "delete"
 # "update" adds new/modified records to the dataset.
