@@ -17,6 +17,7 @@ my $booking_status;
 my $opac_renewal_use_circ_lib;
 my $desk_renewal_use_circ_lib;
 
+
 sub determine_booking_status {
     unless (defined $booking_status) {
         my $ses = create OpenSRF::AppSession("router");
@@ -408,6 +409,8 @@ my $CC = "OpenILS::Application::Circ::CircCommon";
 my $holdcode    = "OpenILS::Application::Circ::Holds";
 my $transcode   = "OpenILS::Application::Circ::Transit";
 my %user_groups;
+
+use constant ILL_USER_PROFILE => 40;
 
 sub DESTROY { }
 
@@ -3478,6 +3481,14 @@ sub checkin_circ_is_lostpaid {
     return 0 unless my $circ = $self->circ;
     return 0 if $circ->stop_fines ne 'LOST';
     return 0 if $circ->checkin_time;
+
+    if ($self->patron->profile == ILL_USER_PROFILE) {
+        # Refunds for lostpaid ILL checkouts are manually resolved.
+        # Putting this here causes the item to be checked in without 
+        # any lostpaid processing, leaving any negative balances in place.
+        $logger->info("Skipping lostpaid process for ILL user");
+        return 0;
+    }
 
     my $sum = $self->editor->retrieve_money_billable_transaction_summary($circ->id);
     my $mrx = $self->editor->search_money_refundable_xact({xact => $circ->id})->[0];
