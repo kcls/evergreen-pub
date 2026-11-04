@@ -161,3 +161,9 @@ END
 $$;
 
 COMMIT;
+
+-- get rid of timezone('us/pacific'::text, xact_start)::date
+-- which is no longer valid.
+DROP INDEX action.circ_start_idx;
+CREATE INDEX CONCURRENTLY circ_start_idx ON action.circulation USING btree (((timezone('America/Los_Angeles'::text, xact_start))::date));
+
