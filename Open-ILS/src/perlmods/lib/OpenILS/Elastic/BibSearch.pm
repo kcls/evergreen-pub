@@ -74,6 +74,11 @@ use base qw/OpenILS::Elastic/;
 
 # default number of bibs to index per batch.
 my $DEFAULT_BIB_BATCH_SIZE = 500;
+
+# How many times to retry a failed index call for a single record
+# before giving up, and how long to wait between attempts.
+my $INDEX_RETRY_COUNT = 5;
+my $INDEX_RETRY_SLEEP = 10;
 my $INDEX_CLASS = 'bib-search';
 
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/ignore-above.html
@@ -767,7 +772,20 @@ sub populate_bib_index_batch {
             }
         }
 
-        return 0 unless $self->index_document($bib_id, $body);
+        # A failed index call must not look like "no more records";
+        # retry transient failures (e.g. ES 429 / timeouts) and die if
+        # the record still cannot be indexed so the caller exits non-zero.
+        my $attempt = 0;
+        while (!$self->index_document($bib_id, $body)) {
+            if (++$attempt >= $INDEX_RETRY_COUNT) {
+                die "ES indexing of bib $bib_id failed after $attempt attempts; " .
+                    "see error log for details.  Last indexed record was " .
+                    ($state->{start_record} ? $state->{start_record} - 1 : 'none') . "\n";
+            }
+            $logger->warn("ES index of bib $bib_id failed; " .
+                "retrying in ${INDEX_RETRY_SLEEP}s (attempt $attempt)");
+            sleep $INDEX_RETRY_SLEEP;
+        }
 
         $state->{start_record} = $bib_id + 1;
         $self->{total_indexed}++;
