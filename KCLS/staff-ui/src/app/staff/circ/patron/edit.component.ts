@@ -857,6 +857,20 @@ export class EditComponent implements OnInit {
         this.groupedOptInSettingTypes
             .filter(g => g[0].grp().name() === grpName)[0]
             .forEach(stype => this.userSettings[stype.name()] = value);
+
+        // Toggling a group may change which fields are required
+        // (e.g. SMS number when opting in to text notices).
+        this.adjustSaveState();
+    }
+
+    // Returns true if any opt-in setting in the named group is enabled.
+    optInGroupSelected(grpName: string): boolean {
+        const group = this.groupedOptInSettingTypes
+            .filter(g => g[0].grp().name() === grpName)[0];
+
+        if (!group) { return false; }
+
+        return group.some(stype => Boolean(this.userSettings[stype.name()]));
     }
 
     loadPatron(): Promise<any> {
@@ -1412,6 +1426,11 @@ export class EditComponent implements OnInit {
 
         switch (name) {
             case 'opac.default_sms_notify':
+                // If the patron opts in to any text/SMS notices,
+                // an SMS phone number is required.
+                return this.holdNotifyTypes.sms
+                    || this.optInGroupSelected('notify.sms');
+
             case 'opac.default_sms_carrier':
                 return this.holdNotifyTypes.sms;
         }
