@@ -37,3 +37,4 @@
 0032-sms-opt-in-setting-group [0031-ang-patron-reg] 2026-08-17T15:46:50Z berick <berick@egkcls> # Migrate to sms text notice group
 0033-ecard-welcome-emails [0032-sms-opt-in-setting-group] 2026-10-15T20:13:40Z berick <berick@egkcls> # ecard welcome emails
 0034-bib-915d-record-attr [0032-sms-opt-in-setting-group] 2026-11-09T21:04:28Z berick <berick@egkcls> # Add 915d Bib Attr
+0035-cataloged-headings-915d [0034-bib-915d-record-attr] 2026-11-10T22:24:09Z berick <berick@egkcls> # Use 915d date for cataloged headings
