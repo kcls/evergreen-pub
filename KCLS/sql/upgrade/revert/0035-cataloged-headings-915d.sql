@@ -3,7 +3,8 @@
 BEGIN;
 
 -- CREATE OR REPLACE VIEW cannot drop a column, so both views are
--- dropped and recreated with their original definitions.
+-- dropped and recreated with their original definitions, then the
+-- window helper function is put back to its original form.
 
 DROP VIEW reporter.cataloged_browse_entry_detail;
 DROP VIEW reporter.live_cataloged_browse_entry;
@@ -105,5 +106,59 @@ CREATE VIEW reporter.cataloged_browse_entry_detail AS
             WHEN 'subject'::text THEN 2
             ELSE 3
         END, entry.entry_sort_value;
+
+-- Restore the dynamic-SQL window helper.
+CREATE OR REPLACE FUNCTION reporter.metabib_browse_entry_window_part(browse_type text, pivot_sort_value text, is_next boolean) RETURNS TABLE(entry bigint, entry_value text, entry_sort_value text, entry_create_date timestamp with time zone, bib_record bigint, bib_editor integer, bib_edit_date timestamp with time zone, bib_create_date timestamp with time zone, bib_cataloging_date timestamp with time zone, field_def integer, field_label text, auth_tag character)
+    LANGUAGE plpgsql
+    AS $_$
+DECLARE
+    pivot_where TEXT;
+    pivot_sort TEXT;
+BEGIN
+
+    pivot_where := '<';
+    pivot_sort := 'DESC';
+
+    IF is_next THEN
+        pivot_where := '>';
+        pivot_sort := 'ASC';
+    END IF;
+
+    RETURN QUERY EXECUTE $$
+        WITH target_entry AS (
+            SELECT * FROM metabib.browse_entry mbe
+            WHERE metabib_fields_cache && (
+                SELECT ARRAY_AGG(id) 
+                FROM config.metabib_field 
+                WHERE field_class = $$ || QUOTE_LITERAL(browse_type) || $$
+            )
+            AND mbe.truncated_sort_value $$ || pivot_where || ' ' 
+                || QUOTE_LITERAL(pivot_sort_value) || $$
+            ORDER BY mbe.truncated_sort_value $$ || pivot_sort || $$
+            LIMIT 1
+        )
+        SELECT 
+            entry.id, entry.value, entry.sort_value, entry.create_date,
+            bre.id, bre.editor, bre.edit_date, bre.create_date,
+            bre.cataloging_date, map.def, cmf.label, field.tag
+            FROM target_entry entry
+                LEFT JOIN metabib.browse_entry_def_map map
+                    ON (map.entry = entry.id)
+                LEFT JOIN biblio.record_entry bre
+                    ON (bre.id = map.source AND NOT bre.deleted)
+                LEFT JOIN config.metabib_field cmf ON (cmf.id = map.def)
+                LEFT JOIN metabib.browse_entry_simple_heading_map hmap
+                    ON (map.source IS NULL AND hmap.entry = entry.id)
+                LEFT JOIN authority.simple_heading ash ON
+                    (ash.id = hmap.simple_heading)
+                LEFT JOIN authority.control_set_authority_field field
+                    ON (field.id = ash.atag)
+        -- The JOIN on metabib.browse_entry_def_map can return multiple rows, 
+        -- resulting in duplicates in the resulting output for the current entry.
+        LIMIT 1
+    $$;
+END;
+$_$;
+
 
 COMMIT;

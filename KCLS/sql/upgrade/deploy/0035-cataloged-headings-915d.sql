@@ -9,6 +9,62 @@ BEGIN;
 --
 -- marc_915d is appended as the last column of both views so they can be
 -- replaced in place without dropping the dependent detail view.
+--
+-- Also included, since the views are being touched anyway:
+--  * The attr vector joins use @> so the GIN index on vlist is usable.
+--    "= ANY (vlist)" has no index path and degrades to candidate rows
+--    times distinct attr values.
+--  * The prev/next window helper uses static SQL so plpgsql can cache
+--    the plan. The EXECUTE version replanned on every call, and planning
+--    cost roughly ten times the execution.
+--  * The detail view no longer carries its own ORDER BY. The reporter
+--    applies the report's ordering, so the sort was wasted work.
+
+CREATE OR REPLACE FUNCTION reporter.metabib_browse_entry_window_part(browse_type text, pivot_sort_value text, is_next boolean)
+RETURNS TABLE(entry bigint, entry_value text, entry_sort_value text, entry_create_date timestamp with time zone, bib_record bigint, bib_editor integer, bib_edit_date timestamp with time zone, bib_create_date timestamp with time zone, bib_cataloging_date timestamp with time zone, field_def integer, field_label text, auth_tag character)
+LANGUAGE plpgsql STABLE
+AS $function$
+DECLARE
+    field_ids INT[];
+    target metabib.browse_entry%ROWTYPE;
+BEGIN
+    SELECT ARRAY_AGG(id) INTO field_ids
+    FROM config.metabib_field WHERE field_class = browse_type;
+
+    IF is_next THEN
+        SELECT * INTO target FROM metabib.browse_entry mbe
+        WHERE mbe.metabib_fields_cache && field_ids
+            AND mbe.truncated_sort_value > pivot_sort_value
+        ORDER BY mbe.truncated_sort_value ASC LIMIT 1;
+    ELSE
+        SELECT * INTO target FROM metabib.browse_entry mbe
+        WHERE mbe.metabib_fields_cache && field_ids
+            AND mbe.truncated_sort_value < pivot_sort_value
+        ORDER BY mbe.truncated_sort_value DESC LIMIT 1;
+    END IF;
+
+    IF target.id IS NULL THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT target.id, target.value, target.sort_value, target.create_date,
+        bre.id, bre.editor, bre.edit_date, bre.create_date, bre.cataloging_date,
+        map.def, cmf.label, field.tag
+    FROM (SELECT target.id AS tid) t
+        LEFT JOIN metabib.browse_entry_def_map map ON (map.entry = t.tid)
+        LEFT JOIN biblio.record_entry bre ON (bre.id = map.source AND NOT bre.deleted)
+        LEFT JOIN config.metabib_field cmf ON (cmf.id = map.def)
+        LEFT JOIN metabib.browse_entry_simple_heading_map hmap
+            ON (map.source IS NULL AND hmap.entry = t.tid)
+        LEFT JOIN authority.simple_heading ash ON (ash.id = hmap.simple_heading)
+        LEFT JOIN authority.control_set_authority_field field ON (field.id = ash.atag)
+    -- The JOIN on metabib.browse_entry_def_map can return multiple rows
+    -- for the current entry; take the lowest map id so the result is stable.
+    ORDER BY map.id
+    LIMIT 1;
+END;
+$function$;
 
 CREATE OR REPLACE VIEW reporter.live_cataloged_browse_entry AS
  WITH cataloged_entries AS (
@@ -33,8 +89,8 @@ CREATE OR REPLACE VIEW reporter.live_cataloged_browse_entry AS
              JOIN config.metabib_field cmf ON cmf.id = map.def
              JOIN biblio.record_entry bre ON bre.id = map.source
              JOIN metabib.record_attr_vector_list vec ON vec.source = bre.id
-             JOIN config.coded_value_map ccvm ON ccvm.ctype = 'mattype' AND ccvm.id = ANY (vec.vlist)
-             JOIN metabib.uncontrolled_record_attr_value d915 ON d915.attr = 'marc_915d' AND d915.id = ANY (vec.vlist)
+             JOIN config.coded_value_map ccvm ON ccvm.ctype = 'mattype' AND vec.vlist @> intset(ccvm.id)
+             JOIN metabib.uncontrolled_record_attr_value d915 ON d915.attr = 'marc_915d' AND vec.vlist @> intset(d915.id::INT)
           WHERE cmf.field_class = ANY (ARRAY['author', 'subject', 'series'])
         )
  SELECT all_entries.entry,
@@ -104,12 +160,6 @@ CREATE OR REPLACE VIEW reporter.cataloged_browse_entry_detail AS
    FROM reporter.live_cataloged_browse_entry entry
      JOIN biblio.record_entry bre ON bre.id = entry.bib_record
      JOIN metabib.full_rec mfr ON bre.id = mfr.record AND mfr.tag = '001'
-     JOIN actor.usr usr ON usr.id = bre.editor
-  ORDER BY
-        CASE entry.browse_axis
-            WHEN 'author' THEN 1
-            WHEN 'subject' THEN 2
-            ELSE 3
-        END, entry.entry_sort_value;
+     JOIN actor.usr usr ON usr.id = bre.editor;
 
 COMMIT;
