@@ -159,6 +159,8 @@ export class EditComponent implements OnInit {
         private xactCollisionAlert: AlertDialogComponent;
     @ViewChild('smsRequiredAlert')
         private smsRequiredAlert: AlertDialogComponent;
+    @ViewChild('emailRequiredAlert')
+        private emailRequiredAlert: AlertDialogComponent;
     @ViewChild('limitedCkoDialog')
         private limitedCkoDialog: PatronPenaltyDialogComponent;
 
@@ -874,6 +876,12 @@ export class EditComponent implements OnInit {
             case 'notify.sms':
                 if (!this.userSettings['opac.default_sms_notify']) {
                     this.smsRequiredAlert.open();
+                }
+                break;
+
+            case 'notify.email':
+                if (!this.patron.email()) {
+                    this.emailRequiredAlert.open();
                 }
                 break;
         }
