@@ -157,6 +157,8 @@ export class EditComponent implements OnInit {
         private addrRequiredAlert: AlertDialogComponent;
     @ViewChild('xactCollisionAlert')
         private xactCollisionAlert: AlertDialogComponent;
+    @ViewChild('smsRequiredAlert')
+        private smsRequiredAlert: AlertDialogComponent;
     @ViewChild('limitedCkoDialog')
         private limitedCkoDialog: PatronPenaltyDialogComponent;
 
@@ -861,6 +863,20 @@ export class EditComponent implements OnInit {
         // Toggling a group may change which fields are required
         // (e.g. SMS number when opting in to text notices).
         this.adjustSaveState();
+
+        if (value) { this.alertMissingNotifyContact(grpName); }
+    }
+
+    // Tell staff which contact value is missing when a notice in the
+    // named opt-in group has just been enabled without one.
+    alertMissingNotifyContact(grpName: string) {
+        switch (grpName) {
+            case 'notify.sms':
+                if (!this.userSettings['opac.default_sms_notify']) {
+                    this.smsRequiredAlert.open();
+                }
+                break;
+        }
     }
 
     // Returns true if any opt-in setting in the named group is enabled.
@@ -1098,6 +1114,11 @@ export class EditComponent implements OnInit {
     userSettingChange(name: string, value: any) {
         this.userSettings[name] = value;
         this.adjustSaveState();
+
+        const optInType = this.optInSettingTypes[name];
+        if (value === true && optInType) {
+            this.alertMissingNotifyContact(optInType.grp().name());
+        }
     }
 
     applySurveyResponse(question: IdlObject, answer: ComboboxEntry) {
