@@ -1434,7 +1434,8 @@ export class EditComponent implements OnInit {
             case 'au.email':
                 // If the user ops in for email notices, require
                 // an email address
-                return this.holdNotifyTypes.email;
+                return this.holdNotifyTypes.email
+                    || this.optInGroupSelected('notify.email');
 
             case 'au.guardian':
                 return this.patron.juvenile() === 't';
