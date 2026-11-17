@@ -151,10 +151,10 @@ sub verify_address_values {
     }
 
     # Derive the authoritative home org and district from the coordinates.
-    my $home_ou = $U->simplereq(
+    my $home_ou = $U->request_one_stateless(
         'kcls.address', 'kcls.address.home-org', $token, $lat, $long);
 
-    my $district = $U->simplereq(
+    my $district = $U->request_one_stateless(
         'kcls.address', 'kcls.address.district-of-residence', $token, $lat, $long);
 
     # 2. Must fall within the service area (a district is required).
@@ -206,7 +206,7 @@ sub verify_address_values {
 
             my $mdistrict;
             if (defined $mlat && defined $mlong) {
-                $mdistrict = $U->simplereq(
+                $mdistrict = $U->request_one_stateless(
                     'kcls.address',
                     'kcls.address.district-of-residence',
                     $token, $mlat, $mlong
@@ -238,7 +238,7 @@ sub lookup_address {
         zipcode => $addr->{post_code},
     };
 
-    return $U->simplereq(
+    return $U->request_one_stateless(
         'kcls.address', 'kcls.address.lookup', $token, $search);
 }
 
