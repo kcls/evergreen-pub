@@ -609,7 +609,12 @@ sub create_ecard_account {
             "Ecard self-reg: Error applying settings: " . $resp->{textcode});
     }
 
+    # au.create.ecard is shared with the deprecated EGCatLoader/Ecard.pm
+    # form and drives the verification postcards.  The .getacard hook fires
+    # only here, for notices the old form must not produce (e.g. the
+    # registration email).
     $U->create_events_for_hook('au.create.ecard', $au, $au->home_ou);
+    $U->create_events_for_hook('au.create.ecard.getacard', $au, $au->home_ou);
 
     $response->{success} = 1;
     $response->{barcode} = $barcode;
