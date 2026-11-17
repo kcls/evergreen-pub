@@ -478,6 +478,9 @@ sub create_ecard_account {
     );
 
     for my $field (@USER_FIELDS) {
+        # Only present on staging.user_stage.
+        next if $field eq 'delivery_method';
+
         my $val = normalize($field, $values->{user}->{$field} || '');
         # actor.usr uses 'guardian'; the staging table uses 'ident_value2'
         my $col = $field eq 'ident_value2' ? 'guardian' : $field;
