@@ -207,6 +207,41 @@ sub simple_scalar_request {
     return $val;
 }
 
+# Same as simple_scalar_request(), but never sends a CONNECT.
+#
+# OpenSRF::AppSession implicitly CONNECTs before a request unless the
+# service has <stateless>1</stateless> in opensrf.xml.  Services with
+# no opensrf.xml entry (e.g. the Rust kcls.* services) would otherwise
+# be left in a connected session, tying up a worker until its
+# keepalive expires.
+sub request_one_stateless {
+    my($self, $service, $method, @params) = @_;
+
+    my $session = OpenSRF::AppSession->create( $service );
+    $session->stateless(1);
+
+    my $request = $session->request( $method, @params );
+
+    my $val;
+    my $err;
+    try  {
+
+        $val = $request->gather(1); 
+
+    } catch Error with {
+        $err = shift;
+    };
+
+    $session->kill_me;
+
+    if( $err ) {
+        warn "received error : service=$service : method=$method : params=".Dumper(\@params) . "\n $err";
+        throw $err ("Call to $service for method $method \n failed with exception: $err : " );
+    }
+
+    return $val;
+}
+
 sub build_org_tree {
     my( $self, $orglist ) = @_;
 
