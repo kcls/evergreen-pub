@@ -446,6 +446,16 @@ sub create_ecard_account {
 
     my $response = {success => 0};
 
+    # Ecard accounts require a phone number; its last 4 digits become
+    # the initial password.  Same format the getacard UI enforces.
+    my ($passwd) =
+        ($values->{user}->{day_phone} // '') =~ /\d{3}-\d{3}-(\d{4})/;
+
+    unless (defined $passwd) {
+        $logger->error("Ecard self-reg: missing or invalid phone number");
+        return $response;
+    }
+
     # Create an internal auth session for API calls that require one.
     my $auth = $U->simplereq(
         'open-ils.auth_internal',
@@ -486,6 +496,8 @@ sub create_ecard_account {
         my $col = $field eq 'ident_value2' ? 'guardian' : $field;
         $au->$col($val);
     }
+
+    $au->passwd($passwd);
 
     # --- Billing address ---
 
