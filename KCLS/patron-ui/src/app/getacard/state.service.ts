@@ -793,7 +793,9 @@ export class GetacardState {
         // When the SMS number mirrors the phone number, text notices make
         // the phone number the required contact point (the mirrored
         // smsNumber control is disabled, so its own validator is inert).
+        // E-cards always need one: its last 4 digits become the password.
         const phoneRequired =
+            this.accountType === 'ecard' ||
             this.wantsPhoneNotices() ||
             (this.wantsTextNotices() && !!cf.get('smsIsSame')!.value) ||
             (this.accountType === 'full' && !email.value);
