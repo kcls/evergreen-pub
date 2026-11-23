@@ -31370,28 +31370,6 @@ CREATE FUNCTION public.xml_encode_special_chars(text) RETURNS text
 ALTER FUNCTION public.xml_encode_special_chars(text) OWNER TO postgres;
 
 --
--- Name: xml_is_well_formed(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.xml_is_well_formed(text) RETURNS boolean
-    LANGUAGE c IMMUTABLE STRICT
-    AS '$libdir/pgxml', 'xml_is_well_formed';
-
-
-ALTER FUNCTION public.xml_is_well_formed(text) OWNER TO postgres;
-
---
--- Name: xml_valid(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.xml_valid(text) RETURNS boolean
-    LANGUAGE c IMMUTABLE STRICT
-    AS '$libdir/pgxml', 'xml_is_well_formed';
-
-
-ALTER FUNCTION public.xml_valid(text) OWNER TO postgres;
-
---
 -- Name: xpath_bool(text, text); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -81504,14 +81482,14 @@ CREATE UNIQUE INDEX record_label_unique_idx ON biblio.monograph_part USING btree
 -- Name: ccmm_once_per_paramset; Type: INDEX; Schema: config; Owner: evergreen
 --
 
-CREATE UNIQUE INDEX ccmm_once_per_paramset ON config.circ_matrix_matchpoint USING btree (org_unit, grp, COALESCE(circ_modifier, ''::text), COALESCE((copy_location)::text, ''::text), COALESCE(marc_type, ''::text), COALESCE(marc_form, ''::text), COALESCE(marc_bib_level, ''::text), COALESCE(marc_vr_format, ''::text), COALESCE((copy_circ_lib)::text, ''::text), COALESCE((copy_owning_lib)::text, ''::text), COALESCE((user_home_ou)::text, ''::text), COALESCE((ref_flag)::text, ''::text), COALESCE((juvenile_flag)::text, ''::text), COALESCE((is_renewal)::text, ''::text), COALESCE((usr_age_lower_bound)::text, ''::text), COALESCE((usr_age_upper_bound)::text, ''::text), COALESCE((item_age)::text, ''::text)) WHERE active;
+CREATE UNIQUE INDEX ccmm_once_per_paramset ON config.circ_matrix_matchpoint USING btree (org_unit, grp, COALESCE(circ_modifier, ''::text), COALESCE((copy_location)::text, ''::text), COALESCE(marc_type, ''::text), COALESCE(marc_form, ''::text), COALESCE(marc_bib_level, ''::text), COALESCE(marc_vr_format, ''::text), COALESCE((copy_circ_lib)::text, ''::text), COALESCE((copy_owning_lib)::text, ''::text), COALESCE((user_home_ou)::text, ''::text), COALESCE((ref_flag)::text, ''::text), COALESCE((juvenile_flag)::text, ''::text), COALESCE((is_renewal)::text, ''::text), COALESCE(usr_age_lower_bound, '00:00:00'::interval), COALESCE(usr_age_upper_bound, '00:00:00'::interval), COALESCE(item_age, '00:00:00'::interval)) WHERE active;
 
 
 --
 -- Name: chmm_once_per_paramset; Type: INDEX; Schema: config; Owner: evergreen
 --
 
-CREATE UNIQUE INDEX chmm_once_per_paramset ON config.hold_matrix_matchpoint USING btree (COALESCE((user_home_ou)::text, ''::text), COALESCE((request_ou)::text, ''::text), COALESCE((pickup_ou)::text, ''::text), COALESCE((item_owning_ou)::text, ''::text), COALESCE((item_circ_ou)::text, ''::text), COALESCE((usr_grp)::text, ''::text), COALESCE((requestor_grp)::text, ''::text), COALESCE(circ_modifier, ''::text), COALESCE(marc_type, ''::text), COALESCE(marc_form, ''::text), COALESCE(marc_bib_level, ''::text), COALESCE(marc_vr_format, ''::text), COALESCE((juvenile_flag)::text, ''::text), COALESCE((ref_flag)::text, ''::text), COALESCE((item_age)::text, ''::text)) WHERE active;
+CREATE UNIQUE INDEX chmm_once_per_paramset ON config.hold_matrix_matchpoint USING btree (COALESCE((user_home_ou)::text, ''::text), COALESCE((request_ou)::text, ''::text), COALESCE((pickup_ou)::text, ''::text), COALESCE((item_owning_ou)::text, ''::text), COALESCE((item_circ_ou)::text, ''::text), COALESCE((usr_grp)::text, ''::text), COALESCE((requestor_grp)::text, ''::text), COALESCE(circ_modifier, ''::text), COALESCE(marc_type, ''::text), COALESCE(marc_form, ''::text), COALESCE(marc_bib_level, ''::text), COALESCE(marc_vr_format, ''::text), COALESCE((juvenile_flag)::text, ''::text), COALESCE((ref_flag)::text, ''::text), COALESCE(item_age, '00:00:00'::interval)) WHERE active;
 
 
 --
