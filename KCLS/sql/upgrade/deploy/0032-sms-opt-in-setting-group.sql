@@ -3,6 +3,8 @@
 
 BEGIN;
 
+DO $INSERT$ BEGIN IF evergreen.insert_on_deploy() THEN
+
 INSERT INTO config.settings_group (name, label) VALUES ('notify.sms', 'Text Notices TMP');
 
 UPDATE config.usr_setting_type SET grp = 'notify.sms' WHERE grp = 'notify.text';
@@ -10,6 +12,8 @@ UPDATE config.usr_setting_type SET grp = 'notify.sms' WHERE grp = 'notify.text';
 DELETE FROM config.settings_group WHERE name = 'notify.text';
 
 UPDATE config.settings_group SET label = 'Text Notices' WHERE name = 'notify.sms';
+
+END IF; END $INSERT$;
 
 COMMIT;
 
