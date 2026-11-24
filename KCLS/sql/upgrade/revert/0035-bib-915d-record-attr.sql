@@ -1,4 +1,4 @@
--- Revert kcls-evergreen:0034-bib-915d-record-attr from pg
+-- Revert kcls-evergreen:0035-bib-915d-record-attr from pg
 
 BEGIN;
 

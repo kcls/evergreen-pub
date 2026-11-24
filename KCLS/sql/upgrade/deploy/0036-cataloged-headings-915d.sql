@@ -1,5 +1,5 @@
--- Deploy kcls-evergreen:0035-cataloged-headings-915d to pg
--- requires: 0034-bib-915d-record-attr
+-- Deploy kcls-evergreen:0036-cataloged-headings-915d to pg
+-- requires: 0035-bib-915d-record-attr
 
 BEGIN;
 
@@ -17,8 +17,6 @@ BEGIN;
 --  * The prev/next window helper uses static SQL so plpgsql can cache
 --    the plan. The EXECUTE version replanned on every call, and planning
 --    cost roughly ten times the execution.
---  * The detail view no longer carries its own ORDER BY. The reporter
---    applies the report's ordering, so the sort was wasted work.
 
 CREATE OR REPLACE FUNCTION reporter.metabib_browse_entry_window_part(browse_type text, pivot_sort_value text, is_next boolean)
 RETURNS TABLE(entry bigint, entry_value text, entry_sort_value text, entry_create_date timestamp with time zone, bib_record bigint, bib_editor integer, bib_edit_date timestamp with time zone, bib_create_date timestamp with time zone, bib_cataloging_date timestamp with time zone, field_def integer, field_label text, auth_tag character)
@@ -160,6 +158,14 @@ CREATE OR REPLACE VIEW reporter.cataloged_browse_entry_detail AS
    FROM reporter.live_cataloged_browse_entry entry
      JOIN biblio.record_entry bre ON bre.id = entry.bib_record
      JOIN metabib.full_rec mfr ON bre.id = mfr.record AND mfr.tag = '001'
-     JOIN actor.usr usr ON usr.id = bre.editor;
+     JOIN actor.usr usr ON usr.id = bre.editor
+  -- The New Headings UI pages through this view via pcrud with
+  -- limit/offset and no order_by, so it depends on this ordering.
+  ORDER BY
+        CASE entry.browse_axis
+            WHEN 'author' THEN 1
+            WHEN 'subject' THEN 2
+            ELSE 3
+        END, entry.entry_sort_value;
 
 COMMIT;

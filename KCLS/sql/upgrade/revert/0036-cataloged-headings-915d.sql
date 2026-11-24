@@ -1,4 +1,4 @@
--- Revert kcls-evergreen:0035-cataloged-headings-915d from pg
+-- Revert kcls-evergreen:0036-cataloged-headings-915d from pg
 
 BEGIN;
 

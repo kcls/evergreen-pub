@@ -1,5 +1,5 @@
--- Deploy kcls-evergreen:0034-bib-915d-record-attr to pg
--- requires: 0032-sms-opt-in-setting-group
+-- Deploy kcls-evergreen:0035-bib-915d-record-attr to pg
+-- requires: 0034-getacard-ecard-hook
 
 BEGIN;
 
