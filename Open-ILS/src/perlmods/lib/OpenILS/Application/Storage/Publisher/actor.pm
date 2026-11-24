@@ -925,13 +925,23 @@ sub patron_search {
 
     return undef if (!$select && !$card && !$phone_cte);
 
+    # Names sort by the value the user goes by: the preferred name
+    # part when there is one, otherwise the base name part.
+    my $sort_expr = sub {
+        my $col = shift; # @$sort values have been validated above
+        my $expr = "users.$col";
+        $expr = "COALESCE(NULLIF(users.pref_$col, ''), users.$col)"
+            if $col =~ /^(?:prefix|first_given_name|second_given_name|family_name|suffix)$/;
+        return "evergreen.lowercase(CAST($expr AS text))";
+    };
+
     my $order_by = join ', ',
         map {
-            'evergreen.lowercase(CAST(users.'. (split / /,$_)[0] . ' AS text)) ' # @$sort values have been validated above
+            $sort_expr->((split / /,$_)[0]) . ' '
                 . asc_or_desc((split / /,$_)[1]) # starts with lowercase 'd', DESC. otherwise, ASC.
         } @$sort;
 
-    my $distinct_list = join ', ', map { 'evergreen.lowercase(CAST(users.'. (split / /,$_)[0] . ' AS text))' } @$sort;
+    my $distinct_list = join ', ', map { $sort_expr->((split / /,$_)[0]) } @$sort;
     my $group_list = $distinct_list;
 
     if ($inactive) {

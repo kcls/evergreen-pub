@@ -150,9 +150,9 @@
 
         [% IF ctx.card %]
           <h3>
-            [% ctx.card.usr.family_name %],
-            [% ctx.card.usr.first_given_name %]
-            [% ctx.card.usr.second_given_name %]
+            [% ctx.card.usr.pref_family_name || ctx.card.usr.family_name %],
+            [% ctx.card.usr.pref_first_given_name || ctx.card.usr.first_given_name %]
+            [% ctx.card.usr.pref_second_given_name || ctx.card.usr.second_given_name %]
             ([% ctx.card.barcode %])
           </h3>
           <hr/>

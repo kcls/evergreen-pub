@@ -25,7 +25,7 @@
             </div>
             <div class="col-md-8">
                 <span ng-show="route.reader" ng-class="route.delete_me ? 'strike' : ''">
-                {{route.reader.family_name}}, {{route.reader.first_given_name}}
+                {{route.reader.pref_family_name || route.reader.family_name}}, {{route.reader.pref_first_given_name || route.reader.first_given_name}}
                 ({{route.reader.home_ou.shortname}})
                 </span>
                 <span ng-show="route.department" ng-class="route.delete_me ? 'strike' : ''">
@@ -69,7 +69,7 @@
                 ng-click="args.which_radio_button='reader'" focus-me="readerInFocus"
                 ng-model-options="{ debounce: 1000 }">
             </input>
-            <span ng-show="args.reader && !readerNotFound">{{reader_obj.family_name}}, {{reader_obj.first_given_name}}</span>
+            <span ng-show="args.reader && !readerNotFound">{{reader_obj.pref_family_name || reader_obj.family_name}}, {{reader_obj.pref_first_given_name || reader_obj.first_given_name}}</span>
             <span class="alert alert-warning" ng-show="readerNotFound">
                 [% l('Not Found') %]
             </span>

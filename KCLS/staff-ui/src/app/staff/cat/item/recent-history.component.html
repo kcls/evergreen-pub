@@ -12,9 +12,9 @@
           <ng-container *ngIf="circInfo.prevCircUser">
             <a i18n
               routerLink="/staff/circ/patron/{{circInfo.prevCircUser.id()}}">
-              {{circInfo.prevCircUser.family_name()}}, 
-              {{circInfo.prevCircUser.first_given_name()}}, 
-              {{circInfo.prevCircUser.second_given_name()}}
+              {{circInfo.prevCircUser | egUserName:'family_name'}}, 
+              {{circInfo.prevCircUser | egUserName:'first_given_name'}}, 
+              {{circInfo.prevCircUser | egUserName:'second_given_name'}}
             </a>
           </ng-container>
           <ng-container *ngIf="!circInfo.prevCircUser">
@@ -97,9 +97,9 @@
         <div class="well-value">
           <a i18n
             routerLink="/staff/circ/patron/{{circInfo.currentCirc.usr().id()}}">
-            {{circInfo.currentCirc.usr().family_name()}}, 
-            {{circInfo.currentCirc.usr().first_given_name()}}, 
-            {{circInfo.currentCirc.usr().second_given_name()}}
+            {{circInfo.currentCirc.usr() | egUserName:'family_name'}}, 
+            {{circInfo.currentCirc.usr() | egUserName:'first_given_name'}}, 
+            {{circInfo.currentCirc.usr() | egUserName:'second_given_name'}}
           </a>
         </div>
       </div>

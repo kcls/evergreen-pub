@@ -4,6 +4,7 @@ import {from, empty, range} from 'rxjs';
 import {concatMap, tap, takeLast} from 'rxjs/operators';
 import {NgbNav, NgbNavChangeEvent} from '@ng-bootstrap/ng-bootstrap';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {EventService} from '@eg/core/event.service';
 import {OrgService} from '@eg/core/org.service';
 import {NetService} from '@eg/core/net.service';
@@ -344,7 +345,7 @@ export class BillsComponent implements OnInit, AfterViewInit {
         })
         .then(resp => {
             this.worklog.record({
-                user: this.patron().family_name(),
+                user: userNamePart(this.patron(), 'family_name'),
                 patron_id: this.patron().id(),
                 amount: this.pendingPayment(),
                 action: 'paid_bill'

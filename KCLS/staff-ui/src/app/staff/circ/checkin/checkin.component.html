@@ -154,7 +154,7 @@
       {{r.patron.alias()}}
     </ng-container>
     <ng-container *ngIf="!r.patron.alias()">
-      {{r.patron.first_given_name()}} {{r.patron.family_name()}}
+      {{r.patron | egUserName:'first_given_name'}} {{r.patron | egUserName:'family_name'}}
     </ng-container>
     @ {{orgSn(r.hold.current_shelf_lib())}}
   </ng-container>

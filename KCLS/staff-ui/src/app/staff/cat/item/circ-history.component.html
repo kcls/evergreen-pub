@@ -11,9 +11,9 @@
         <ng-container *ngIf="circ.usr()">
           <a i18n
             routerLink="/staff/circ/patron/{{circ.usr().id()}}">
-            {{circ.usr().family_name()}}, 
-            {{circ.usr().first_given_name()}}, 
-            {{circ.usr().second_given_name()}} :
+            {{circ.usr() | egUserName:'family_name'}}, 
+            {{circ.usr() | egUserName:'first_given_name'}}, 
+            {{circ.usr() | egUserName:'second_given_name'}} :
             {{circ.usr().card().barcode()}}
           </a>
         </ng-container>

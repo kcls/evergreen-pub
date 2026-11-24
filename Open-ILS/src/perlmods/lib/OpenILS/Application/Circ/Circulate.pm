@@ -1160,7 +1160,9 @@ sub check_captured_holds {
         my $holdau = $hold->usr;
 
         if ($holdau) {
-            $payload->{patron_name} = $holdau->first_given_name . ' ' . $holdau->family_name;
+            $payload->{patron_name} =
+                $U->user_name_part($holdau, 'first_given_name') . ' ' .
+                $U->user_name_part($holdau, 'family_name');
             $payload->{patron_id} = $holdau->id;
         } else {
             $payload->{patron_name} = "???";

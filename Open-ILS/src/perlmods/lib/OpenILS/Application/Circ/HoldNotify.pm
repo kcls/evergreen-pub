@@ -234,7 +234,8 @@ sub extract_data {
 
     my $patron = $self->patron;
     my $o_name = $self->pickup_lib->name;
-    my $p_name = $patron->first_given_name .' '.$patron->family_name;
+    my $p_name = $U->user_name_part($patron, 'first_given_name') . ' ' .
+        $U->user_name_part($patron, 'family_name');
 
     # try to find a suitable address for the patron
     my $p_addr;

@@ -2656,6 +2656,8 @@ sub print_expired_holds_stream {
                 "acp" => ["barcode"],
                 "au" => [qw/
                     first_given_name second_given_name family_name alias
+                    pref_first_given_name pref_second_given_name
+                    pref_family_name
                 /],
                 "acn" => ["label"],
                 "bre" => ["marc"],
@@ -2682,6 +2684,8 @@ sub print_expired_holds_stream {
             },
             "where" => {"+ahr" => {"id" => \@hid_chunk}}
         }) or return $e->die_event;
+
+        $U->apply_pref_names_to_hash($_) for @$result_chunk;
         $client->respond($result_chunk);
     }
 
@@ -3945,8 +3949,8 @@ sub uber_hold_impl {
 
     unless($args->{suppress_patron_details}) {
         my $card = $e->retrieve_actor_card($user->card) or return $e->event;
-        $resp->{patron_first}   = $user->first_given_name,
-        $resp->{patron_last}    = $user->family_name,
+        $resp->{patron_first}   = $U->user_name_part($user, 'first_given_name'),
+        $resp->{patron_last}    = $U->user_name_part($user, 'family_name'),
         $resp->{patron_barcode} = $card->barcode,
         $resp->{patron_alias}   = $user->alias,
     };
@@ -4098,6 +4102,8 @@ sub clear_shelf_cache {
                     "ccs" => [{column => 'name', alias => 'cs_name'}],
                     "au" => [qw/
                         first_given_name second_given_name family_name alias
+                        pref_first_given_name pref_second_given_name
+                        pref_family_name
                     /],
                     "acn" => ["label"],
                     "acnp" => [{column => "label", alias => "prefix"}],
@@ -4138,6 +4144,7 @@ sub clear_shelf_cache {
 
             # Get the updated hold status for each hold
             for my $data (@$result_chunk) {
+                $U->apply_pref_names_to_hash($data);
                 my $hold = $e->retrieve_action_hold_request($data->{id});
                 $data->{hold_status} = _hold_status($e, $hold);
             }

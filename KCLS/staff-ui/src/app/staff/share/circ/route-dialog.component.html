@@ -10,18 +10,8 @@
     Hold for patron {{checkin.patron.alias()}}
   </div>
   <div *ngIf="!checkin.patron.alias()" i18n>
-    Hold for patron {{checkin.patron.family_name()}}, 
-    {{checkin.patron.first_given_name()}} {{checkin.patron.second_given_name()}}
-  </div>
-  <div *ngIf="!checkin.patron.alias()">
-    <div *ngIf="checkin.patron.pref_family_name() 
-      || checkin.patron.pref_first_given_name() 
-      || checkin.patron.pref_second_given_name()">
-      Chosen name: 
-        {{checkin.patron.pref_family_name() || checkin.patron.family_name()}},
-        {{checkin.patron.pref_first_given_name() || checkin.patron.first_given_name()}}
-        {{checkin.patron.pref_second_given_name()}}
-    </div>
+    Hold for patron {{checkin.patron | egUserName:'family_name'}}, 
+    {{checkin.patron | egUserName:'first_given_name'}} {{checkin.patron | egUserName:'second_given_name'}}
   </div>
   <div>
     <span class="me-2" i18n>Patron Barcode:</span>

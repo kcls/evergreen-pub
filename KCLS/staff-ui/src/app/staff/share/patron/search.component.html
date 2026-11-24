@@ -186,7 +186,7 @@
     routerLink="/staff/circ/patron/{{r.id()}}/checkout">{{r.card().barcode()}}</a>
 </ng-template>
 <ng-template #familyNameTemplate let-r="row">
-  <a routerLink="/staff/circ/patron/{{r.id()}}/checkout">{{r.family_name()}}</a>
+  <a routerLink="/staff/circ/patron/{{r.id()}}/checkout">{{r | egUserName:'family_name'}}</a>
 </ng-template>
 
 <div class="patron-search-grid mt-4">

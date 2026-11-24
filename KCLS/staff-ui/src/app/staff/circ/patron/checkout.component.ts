@@ -4,6 +4,7 @@ import {Subscription, Observable, empty, of, from} from 'rxjs';
 import {tap, switchMap} from 'rxjs/operators';
 import {NgbNav, NgbNavChangeEvent} from '@ng-bootstrap/ng-bootstrap';
 import {IdlObject} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {OrgService} from '@eg/core/org.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {NetService} from '@eg/core/net.service';
@@ -148,7 +149,7 @@ export class CheckoutComponent implements OnInit, AfterViewInit {
             patron_id: this.context.summary.id,
             _checkbarcode: this.strictBarcode,
             _worklog: {
-                user: this.context.summary.patron.family_name(),
+                user: userNamePart(this.context.summary.patron, 'family_name'),
                 patron_id: this.context.summary.id
             }
         };

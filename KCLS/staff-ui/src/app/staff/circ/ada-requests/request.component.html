@@ -15,9 +15,9 @@
     <div class="row mt-2">
       <div class="col-lg-4" i18n>Patron Name:</div>
       <div class="col-lg-8" i18n>
-        {{user().family_name()}},
-        {{user().first_given_name()}},
-        {{user().second_given_name()}},
+        {{user() | egUserName:'family_name'}},
+        {{user() | egUserName:'first_given_name'}},
+        {{user() | egUserName:'second_given_name'}},
       </div>
     </div>
     <div class="row mt-2">

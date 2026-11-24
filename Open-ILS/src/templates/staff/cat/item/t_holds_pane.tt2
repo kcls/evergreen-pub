@@ -15,9 +15,9 @@
       <a href="/eg2/staff/circ/patron/{{hold.usr().id()}}/checkout" 
         ng-if="hold">
         [% l('[_1], [_2] [_3] : [_4]', 
-          '{{hold.usr().family_name()}}'
-          '{{hold.usr().first_given_name()}}'
-          '{{hold.usr().second_given_name()}}'
+          '{{hold.usr().pref_family_name() || hold.usr().family_name()}}'
+          '{{hold.usr().pref_first_given_name() || hold.usr().first_given_name()}}'
+          '{{hold.usr().pref_second_given_name() || hold.usr().second_given_name()}}'
           '{{hold.usr().card().barcode()}}') %]
       </a>
     </div>
@@ -28,9 +28,9 @@
       <a href="/eg2/staff/circ/patron/{{hold.requestor().id()}}/checkout" 
         ng-if="hold">
         [% l('[_1], [_2] [_3] : [_4]', 
-          '{{hold.requestor().family_name()}}'
-          '{{hold.requestor().first_given_name()}}'
-          '{{hold.requestor().second_given_name()}}'
+          '{{hold.requestor().pref_family_name() || hold.requestor().family_name()}}'
+          '{{hold.requestor().pref_first_given_name() || hold.requestor().first_given_name()}}'
+          '{{hold.requestor().pref_second_given_name() || hold.requestor().second_given_name()}}'
           '{{hold.requestor().card().barcode()}}') %]
       </a>
     </div>

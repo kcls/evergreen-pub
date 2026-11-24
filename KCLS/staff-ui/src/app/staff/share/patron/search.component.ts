@@ -5,6 +5,7 @@ import {ActivatedRoute, ParamMap} from '@angular/router';
 import {Observable, of, from} from 'rxjs';
 import {map, concatMap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {NetService} from '@eg/core/net.service';
 import {AuthService} from '@eg/core/auth.service';
 import {OrgService} from '@eg/core/org.service';
@@ -131,7 +132,9 @@ export class PatronSearchComponent implements OnInit, AfterViewInit {
         // Text-ify function for cells that use display templates.
         this.cellTextGenerator = {
             patron_barcode: row => row.card() ? row.card().barcode() : '',
-            family_name: row => row.family_name(),
+            family_name: row => userNamePart(row, 'family_name'),
+            first_given_name: row => userNamePart(row, 'first_given_name'),
+            second_given_name: row => userNamePart(row, 'second_given_name'),
         };
     }
 

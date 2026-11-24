@@ -24,11 +24,17 @@ function($q,  $timeout,  egNet,  egAuth,  egOrg) {
     };
 
     service.format_name = function(patron_obj) {
-        var patron_name = ( patron_obj.prefix() ? patron_obj.prefix() + ' ' : '') +
-            patron_obj.family_name() + ', ' +
-            patron_obj.first_given_name() + ' ' +
-            ( patron_obj.second_given_name() ? patron_obj.second_given_name() + ' ' : '' ) +
-            ( patron_obj.suffix() ? patron_obj.suffix() : '');
+        // Use the name the patron goes by: the preferred name part
+        // when there is one, otherwise the base name part.
+        function part(name) {
+            return patron_obj['pref_' + name]() || patron_obj[name]();
+        }
+
+        var patron_name = ( part('prefix') ? part('prefix') + ' ' : '') +
+            part('family_name') + ', ' +
+            part('first_given_name') + ' ' +
+            ( part('second_given_name') ? part('second_given_name') + ' ' : '' ) +
+            ( part('suffix') ? part('suffix') : '');
         return patron_name;
     };
 

@@ -386,7 +386,8 @@ sub _get_openathens_session_initiator_url {
 
     # Optional attributes
     if ($U->is_true($openathens_config->{release_prefix})) {
-        $request_obj->{attributes}->{&OA_ATTR_PREFIX} = $user->prefix;
+        $request_obj->{attributes}->{&OA_ATTR_PREFIX} =
+            $user->pref_prefix || $user->prefix;
     }
 
     if ($U->is_true($openathens_config->{release_first_given_name})) {
@@ -405,7 +406,8 @@ sub _get_openathens_session_initiator_url {
     }
 
     if ($U->is_true($openathens_config->{release_suffix})) {
-        $request_obj->{attributes}->{&OA_ATTR_SUFFIX} = $user->suffix;
+        $request_obj->{attributes}->{&OA_ATTR_SUFFIX} =
+            $user->pref_suffix || $user->suffix;
     }
 
     if ($U->is_true($openathens_config->{release_email})) {

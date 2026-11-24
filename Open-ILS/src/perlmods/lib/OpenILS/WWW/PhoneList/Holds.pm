@@ -61,7 +61,8 @@ sub query {
 
     my $raw_query =<<"    QUERY";
 {
-"select": { "au": [ "first_given_name", "family_name", "email" ],
+"select": { "au": [ "first_given_name", "family_name", "email",
+                    "pref_first_given_name", "pref_family_name" ],
             "ac": [ "barcode" ],
             "ahr": [ "phone_notify", "id", "email_notify" ] },
 
@@ -94,6 +95,7 @@ sub query {
         $count = 0;
         $skipme = 1; # Assume we skip until we have a notice w/out email.
         foreach my $i (@$info) {
+            $U->apply_pref_names_to_hash($i);
             if ($i->{barcode} ne $bc || $i->{phone_notify} ne $pn) {
                 if ($count > 0 && $skipme == 0) {
                     my $phone = $pn;

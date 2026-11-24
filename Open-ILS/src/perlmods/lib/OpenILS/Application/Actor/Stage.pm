@@ -228,7 +228,10 @@ sub search_user_stage {
     my @term_groups;
     for my $term (split(/\s+/, $keywords)) {
         my @field_term_matches;
-        for my $field (qw/first_given_name second_given_name family_name day_phone email/) {
+        for my $field (qw/
+            first_given_name second_given_name family_name
+            pref_first_given_name pref_second_given_name pref_family_name
+            day_phone email/) {
             push(@field_term_matches, {$field => {ilike => "$term%"}});
         }
         push(@term_groups, {'-or' => \@field_term_matches});

@@ -7104,7 +7104,7 @@ SELECT  usr,
 			CASE WHEN au.alias IS NOT NULL THEN
 				au.alias
 			ELSE
-				au.first_given_name
+				COALESCE(NULLIF(au.pref_first_given_name, ''), au.first_given_name)
 			END AS usr_alias_or_first_given_name,
 			au.first_given_name AS usr_first_given_name,
 			au.second_given_name AS usr_second_given_name,
@@ -7116,21 +7116,21 @@ SELECT  usr,
 				au.alias
 			ELSE
 				REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY[
-					COALESCE(au.family_name, ''),
-					COALESCE(au.suffix, ''),
+					COALESCE(NULLIF(au.pref_family_name, ''), au.family_name, ''),
+					COALESCE(NULLIF(au.pref_suffix, ''), au.suffix, ''),
 					', ',
-					COALESCE(au.prefix, ''),
-					COALESCE(au.first_given_name, ''),
-					COALESCE(au.second_given_name, '')
+					COALESCE(NULLIF(au.pref_prefix, ''), au.prefix, ''),
+					COALESCE(NULLIF(au.pref_first_given_name, ''), au.first_given_name, ''),
+					COALESCE(NULLIF(au.pref_second_given_name, ''), au.second_given_name, '')
 				], ' '), E'\\s+,', ',')
 			END AS usr_alias_or_display_name,
 			REGEXP_REPLACE(ARRAY_TO_STRING(ARRAY[
-				COALESCE(au.family_name, ''),
-				COALESCE(au.suffix, ''),
+				COALESCE(NULLIF(au.pref_family_name, ''), au.family_name, ''),
+				COALESCE(NULLIF(au.pref_suffix, ''), au.suffix, ''),
 				', ',
-				COALESCE(au.prefix, ''),
-				COALESCE(au.first_given_name, ''),
-				COALESCE(au.second_given_name, '')
+				COALESCE(NULLIF(au.pref_prefix, ''), au.prefix, ''),
+				COALESCE(NULLIF(au.pref_first_given_name, ''), au.first_given_name, ''),
+				COALESCE(NULLIF(au.pref_second_given_name, ''), au.second_given_name, '')
 			], ' '), E'\\s+,', ',') AS usr_display_name,
 			TRIM(acnp.label || ' ' || acn.label || ' ' || acns.label)
 				AS call_number_label,

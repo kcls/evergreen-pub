@@ -18,9 +18,9 @@
         <div class="well-value">
           <a i18n
             routerLink="/staff/circ/patron/{{hold.usr().id()}}">
-            {{hold.usr().family_name()}}, 
-            {{hold.usr().first_given_name()}}, 
-            {{hold.usr().second_given_name()}} :
+            {{hold.usr() | egUserName:'family_name'}}, 
+            {{hold.usr() | egUserName:'first_given_name'}}, 
+            {{hold.usr() | egUserName:'second_given_name'}} :
             {{hold.usr().card().barcode()}}
           </a>
         </div>
@@ -30,9 +30,9 @@
         <div class="well-value">
           <a i18n
             routerLink="/staff/circ/patron/{{hold.requestor().id()}}">
-            {{hold.requestor().family_name()}}, 
-            {{hold.requestor().first_given_name()}}, 
-            {{hold.requestor().second_given_name()}} :
+            {{hold.requestor() | egUserName:'family_name'}}, 
+            {{hold.requestor() | egUserName:'first_given_name'}}, 
+            {{hold.requestor() | egUserName:'second_given_name'}} :
             {{hold.requestor().card().barcode()}}
           </a>
         </div>

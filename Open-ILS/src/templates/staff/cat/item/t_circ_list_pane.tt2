@@ -25,9 +25,9 @@
       <a ng-if="circ.usr()"
         href="/eg2/staff/circ/patron/{{circ.usr().id()}}/checkout">
         [% l('[_1], [_2] [_3] : [_4]', 
-          '{{circ.usr().family_name()}}'
-          '{{circ.usr().first_given_name()}}'
-          '{{circ.usr().second_given_name()}}'
+          '{{circ.usr().pref_family_name() || circ.usr().family_name()}}'
+          '{{circ.usr().pref_first_given_name() || circ.usr().first_given_name()}}'
+          '{{circ.usr().pref_second_given_name() || circ.usr().second_given_name()}}'
           '{{circ.usr().card().barcode()}}') %]
       </a>
       <span ng-if="!circ.usr()">[% l('<Aged Circulation>') | html %]</span>

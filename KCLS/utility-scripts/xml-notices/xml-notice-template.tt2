@@ -17,8 +17,8 @@ SET org_addr = context_org.mailing_address || context_org.billing_address;
       <delivery_method>[% escape_xml(staged_delivery_method) %]</delivery_method>
       [%- END %]
       <profile_id>[% user.profile %]</profile_id>
-      <first_given_name>[% escape_xml(user.first_given_name) %]</first_given_name>
-      <family_name>[% escape_xml(user.family_name) %]</family_name>
+      <first_given_name>[% escape_xml(user.pref_first_given_name || user.first_given_name) %]</first_given_name>
+      <family_name>[% escape_xml(user.pref_family_name || user.family_name) %]</family_name>
       [%- IF !for_email || notice_type == 'pending patron' -%]
       [%- IF !user_addr OR user_addr.valid == 'f' %]
       <addr_valid>false</addr_valid>

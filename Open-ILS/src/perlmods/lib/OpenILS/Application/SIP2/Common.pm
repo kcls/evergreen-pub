@@ -2,6 +2,8 @@ package OpenILS::Application::SIP2::Common;
 use strict; use warnings;
 use OpenILS::Utils::DateTime qw/:datetime/;
 use OpenSRF::Utils::Cache;
+use OpenILS::Application::AppUtils;
+my $U = 'OpenILS::Application::AppUtils';
 
 use constant SIP_DATE_FORMAT => "%Y%m%d    %H%M%S";
 
@@ -126,11 +128,11 @@ sub patron_summary_list_items {
 
 sub format_user_name {
     my ($class, $user) = @_;
-    return sprintf('%s%s%s', 
-        $user->first_given_name  ?       $user->first_given_name : '',
-        $user->second_given_name ? ' ' . $user->second_given_name : '',
-        $user->family_name       ? ' ' . $user->family_name : ''
-    );
+    my ($first, $second, $family) = map { $U->user_name_part($user, $_) }
+        qw/first_given_name second_given_name family_name/;
+
+    return sprintf('%s%s%s',
+        $first, ($second ? " $second" : ''), ($family ? " $family" : ''));
 }
 
 

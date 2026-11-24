@@ -2,6 +2,7 @@ import {Injectable} from '@angular/core';
 import {Observable, empty, from} from 'rxjs';
 import {map, concatMap, mergeMap} from 'rxjs/operators';
 import {IdlObject, IdlService} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
 import {PcrudService, PcrudQueryOps} from '@eg/core/pcrud.service';
@@ -1113,7 +1114,7 @@ export class CircService {
 
         if (patron) {
             entry.patron_id = patron.id();
-            entry.user = patron.family_name();
+            entry.user = userNamePart(patron, 'family_name');
         }
 
         if (result.hold) {

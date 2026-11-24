@@ -102,8 +102,12 @@ sub lookup_patron {
         return Apache2::Const::OK;
     }
 
-    if ($dob ne $card->usr->dob ||
-        $self->normalize($card->usr->family_name) ne $self->normalize($lastname)) {
+    # Patrons may enter the last name they go by or their legal last name.
+    my $name_matches = grep {
+        $_ && $self->normalize($_) eq $self->normalize($lastname)
+    } ($card->usr->family_name, $card->usr->pref_family_name);
+
+    if ($dob ne $card->usr->dob || !$name_matches) {
 
         $ctx->{account_not_found} = 1;
         $logger->info("ADA card $barcode does not match lastname= $lastname dob=$dob");

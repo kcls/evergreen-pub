@@ -7,6 +7,7 @@ import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
 import {AuthService} from '@eg/core/auth.service';
 import {FormatService} from '@eg/core/format.service';
 import {IdlObject} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
 import {PcrudService} from '@eg/core/pcrud.service';
@@ -148,9 +149,9 @@ export class CreateReservationDialogComponent
                                 return this.pcrud.retrieve('au', result[0]['id']).pipe(
                                     switchMap((au) => {
                                         return of({
-                                            first_given_name: au.first_given_name(),
-                                            second_given_name: au.second_given_name(),
-                                            family_name: au.family_name()});
+                                            first_given_name: userNamePart(au, 'first_given_name'),
+                                            second_given_name: userNamePart(au, 'second_given_name'),
+                                            family_name: userNamePart(au, 'family_name')});
                                     })
                                 );
                             })

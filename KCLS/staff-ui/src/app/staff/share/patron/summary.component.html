@@ -47,7 +47,7 @@
       <!-- hidden textare used only for copying the text -->
       <textarea id="patron-address-copy-{{addr.id()}}" rows="2"              
         style="display:none;visibility:hidden">
-{{p().first_given_name()}} {{p().second_given_name()}} {{p().family_name()}}
+{{p() | egUserName:'first_given_name'}} {{p() | egUserName:'second_given_name'}} {{p() | egUserName:'family_name'}}
 {{addr.street1()}} {{addr.street2()}}
 {{addr.city()}}, {{addr.state()}} {{addr.post_code()}}</textarea>
     </div>

@@ -11,8 +11,8 @@
   <div class="modal-header">
     <h4 class="modal-title" i18n>
       Bill Patron: 
-        {{patron.family_name()}}, 
-        {{patron.first_given_name()}} : 
+        {{patron | egUserName:'family_name'}}, 
+        {{patron | egUserName:'first_given_name'}} : 
         {{patron.card().barcode()}}
     </h4>
     <button type="button" class="btn-close btn-close-white"

@@ -2069,9 +2069,9 @@ sub user_opac_vitals {
 
     return {
         user => {
-            first_given_name  => $user->first_given_name,
-            second_given_name => $user->second_given_name,
-            family_name       => $user->family_name,
+            first_given_name  => $U->user_name_part($user, 'first_given_name'),
+            second_given_name => $U->user_name_part($user, 'second_given_name'),
+            family_name       => $U->user_name_part($user, 'family_name'),
             alias             => $user->alias,
             usrname           => $user->usrname
         },

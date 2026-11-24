@@ -4,6 +4,7 @@
 import {TemplateRef, EventEmitter, QueryList} from '@angular/core';
 import {Observable, Subscription, empty} from 'rxjs';
 import {IdlService, IdlObject} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {OrgService} from '@eg/core/org.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {FormatService} from '@eg/core/format.service';
@@ -11,6 +12,9 @@ import {Pager} from '@eg/share/util/pager';
 import {GridFilterControlComponent} from './grid-filter-control.component';
 
 const MAX_ALL_ROW_COUNT = 10000;
+
+// Classes with pref_* name fields that overlay their base name fields.
+const USER_NAME_CLASSES = ['au', 'stgu'];
 
 export class GridColumn {
     name: string;
@@ -988,6 +992,12 @@ export class GridContext {
     }
 
     getObjectFieldValue(obj: any, name: string): any {
+        if (USER_NAME_CLASSES.includes(obj.classname) &&
+            typeof obj['pref_' + name] === 'function') {
+            // Name columns show the name a user goes by.
+            return userNamePart(obj, name);
+        }
+
         if (typeof obj[name] === 'function') {
             return obj[name]();
         } else {

@@ -25,9 +25,9 @@
                         placeholder="[% l('Barcode...') %]"/>
                     <span ng-show="extra.barcode && request.usr">
                         [% l('[_1], [_2] [_3] : [_4]',
-                          '{{extra.user_obj.family_name}}'
-                          '{{extra.user_obj.first_given_name}}'
-                          '{{extra.user_obj.second_given_name}}'
+                          '{{extra.user_obj.pref_family_name || extra.user_obj.family_name}}'
+                          '{{extra.user_obj.pref_first_given_name || extra.user_obj.first_given_name}}'
+                          '{{extra.user_obj.pref_second_given_name || extra.user_obj.second_given_name}}'
                           '{{extra.user_obj.home_ou.shortname}}') %]
                     </span>
                 </div>

@@ -2281,13 +2281,14 @@ SELECT  h.id, h.request_time, h.capture_time, h.fulfillment_time, h.checkin_time
 
         COALESCE(
             NULLIF(u.alias, ''),
-            u.family_name || ', ' || u.first_given_name
+            COALESCE(NULLIF(u.pref_family_name, ''), u.family_name) || ', ' ||
+            COALESCE(NULLIF(u.pref_first_given_name, ''), u.first_given_name)
         ) AS usr_shelf_name,
 
         CASE WHEN u.alias IS NOT NULL THEN
             u.alias
         ELSE
-            u.first_given_name
+            COALESCE(NULLIF(u.pref_first_given_name, ''), u.first_given_name)
         END AS usr_alias_or_first_given_name,
 
         CASE WHEN NULLIF(u.alias,'') IS NOT NULL THEN

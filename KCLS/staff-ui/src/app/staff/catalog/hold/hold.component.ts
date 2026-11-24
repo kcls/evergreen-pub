@@ -7,6 +7,7 @@ import {AuthService} from '@eg/core/auth.service';
 import {PcrudService} from '@eg/core/pcrud.service';
 import {PermService} from '@eg/core/perm.service';
 import {IdlObject} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {OrgService} from '@eg/core/org.service';
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {BibRecordService, BibRecordSummary} from '@eg/share/catalog/bib-record.service';
@@ -669,7 +670,7 @@ export class HoldComponent implements OnInit {
                         action: 'requested_hold',
                         hold_id: request.result.holdId,
                         patron_id: this.user.id(),
-                        user: this.user.family_name()
+                        user: userNamePart(this.user, 'family_name')
                     });
 
                     // Overrides are processed one hold at a time, so

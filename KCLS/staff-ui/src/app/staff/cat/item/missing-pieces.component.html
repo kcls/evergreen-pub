@@ -66,7 +66,7 @@
       <p>
         <a target="_blank" 
           routerLink="/staff/circ/patron/{{expiredPatronAccount.id()}}/edit" i18n>
-          {{expiredPatronAccount.family_name()}} / {{expiredPatronAccount.card().barcode()}}
+          {{expiredPatronAccount | egUserName:'family_name'}} / {{expiredPatronAccount.card().barcode()}}
         </a>
       </p>
     </div>

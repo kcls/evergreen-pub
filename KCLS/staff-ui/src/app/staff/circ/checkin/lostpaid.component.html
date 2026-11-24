@@ -29,9 +29,9 @@
       </div>
       <div class="col-lg-8">
         <span id="patron-name">
-          {{checkinResult.patron.family_name()}},
-          {{checkinResult.patron.first_given_name()}}
-          {{checkinResult.patron.second_given_name()}}
+          {{checkinResult.patron | egUserName:'family_name'}},
+          {{checkinResult.patron | egUserName:'first_given_name'}}
+          {{checkinResult.patron | egUserName:'second_given_name'}}
         </span>
       </div>
       <div class="col-lg-3 d-flex">

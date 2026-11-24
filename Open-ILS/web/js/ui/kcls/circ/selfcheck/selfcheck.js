@@ -441,7 +441,8 @@ SelfCheckManager.prototype.loginPatron = function(barcode_or_usrname, passwd) {
 
         this.handleAlert('', true, 'login-success');
         dojo.byId('user_name').innerHTML = 
-            dojo.string.substitute(localeStrings.WELCOME_BANNER, [this.patron.first_given_name()]);
+            dojo.string.substitute(localeStrings.WELCOME_BANNER,
+                [this.patron.pref_first_given_name() || this.patron.first_given_name()]);
 		dojo.byId('oils-selfck-status-div').innerHTML = '';
 		dojo.byId('oils-selfck-status-div2').innerHTML = '';
         if(this.patron.email() && this.patron.email().match(/.+@.+/) != null){

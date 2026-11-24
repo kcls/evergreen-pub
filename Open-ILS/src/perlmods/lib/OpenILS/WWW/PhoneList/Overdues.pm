@@ -165,8 +165,8 @@ sub next {
 sub _get_usr_name {
     my $self = shift;
     my $circ = shift;
-    my $first_name = $circ->usr->first_given_name();
-    my $last_name = $circ->usr->family_name();
+    my $first_name = $U->user_name_part($circ->usr, 'first_given_name');
+    my $last_name = $U->user_name_part($circ->usr, 'family_name');
     return ($first_name eq 'N/A' || $first_name eq '') ? $last_name
         : $first_name . ' ' . $last_name;
 }

@@ -11,7 +11,10 @@ my $U = "OpenILS::Application::AppUtils";
 # ----------------------------------------------------------------
 
 # export these fields for friend display
-my @expose_user_fields = qw/id usrname first_given_name second_given_name family_name alias/;
+# The pref_* names are folded into the base names before display.
+my @expose_user_fields = qw/
+    id usrname first_given_name second_given_name family_name alias
+    pref_first_given_name pref_second_given_name pref_family_name/;
 
 my $out_links_query = {
     select => {cubi => ['target_user']}, 
@@ -125,7 +128,8 @@ sub load_linked_user_perms {
 
         $user_select->{where} = {id => $d_user};
         push(@$items, {
-                user => $e->json_query($user_select)->[0],
+                user => $U->apply_pref_names_to_hash(
+                    $e->json_query($user_select)->[0]),
                 perms_granted => $perms_granted,
                 perms_received => $perms_received
             }
