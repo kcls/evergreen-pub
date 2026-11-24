@@ -8,6 +8,7 @@ import {NgModule} from '@angular/core';
 import {CommonModule, DecimalPipe, DatePipe, CurrencyPipe} from '@angular/common';
 import {FormatService, FormatValuePipe, OrgDateInContextPipe,
     DueDatePipe, SimpleDatePipe, SimpleDateTimePipe} from './format.service';
+import {UserNamePipe} from './user-name.pipe';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import {FormatService, FormatValuePipe, OrgDateInContextPipe,
     OrgDateInContextPipe,
     DueDatePipe,
     SimpleDatePipe,
-    SimpleDateTimePipe
+    SimpleDateTimePipe,
+    UserNamePipe
   ],
   imports: [
     CommonModule
@@ -26,7 +28,8 @@ import {FormatService, FormatValuePipe, OrgDateInContextPipe,
     OrgDateInContextPipe,
     DueDatePipe,
     SimpleDatePipe,
-    SimpleDateTimePipe
+    SimpleDateTimePipe,
+    UserNamePipe
   ],
   providers: [
     DatePipe,

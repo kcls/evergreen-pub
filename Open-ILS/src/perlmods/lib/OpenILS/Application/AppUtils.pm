@@ -1228,6 +1228,64 @@ sub is_true {
     return 0;
 }
 
+my @USER_NAME_PARTS =
+    qw/prefix first_given_name second_given_name family_name suffix/;
+
+# Returns the name part (e.g. 'family_name') a user goes by: the
+# preferred value when there is one, otherwise the base (legal) value.
+# $user may be an au or stgu object.
+sub user_name_part {
+    my ($self, $user, $part) = @_;
+    my $pref = "pref_$part";
+    return ($user->can($pref) && $user->$pref()) || $user->$part() || '';
+}
+
+# Same as user_name_part(), for a hash of au columns, e.g. a json_query
+# row.  Each name part in the hash is replaced with the value the user
+# goes by and the pref_* keys are removed, so the hash must contain
+# the pref_* column for every base name column it contains.
+sub apply_pref_names_to_hash {
+    my ($self, $hash) = @_;
+    return $hash unless $hash;
+
+    for my $part (@USER_NAME_PARTS) {
+        my $pref = delete $hash->{"pref_$part"};
+        $hash->{$part} = $pref if $pref;
+    }
+
+    return $hash;
+}
+
+# KCLS registration forms collect a required name plus an optional
+# legal name, and submit them as the base and pref_* fields
+# respectively.  They are stored the other way around: base fields
+# hold the legal name and pref_* fields hold the chosen name parts
+# that differ from it.  Call this once on a user (au or stgu) built
+# from such a form to put each value in the field where it is stored.
+sub store_legal_names_in_base {
+    my ($self, $user) = @_;
+
+    for my $part (@USER_NAME_PARTS) {
+        my $pref = "pref_$part";
+        next unless $user->can($pref);
+
+        my $legal = $user->$pref();
+        my $chosen = $user->$part();
+
+        if (defined $legal && $legal ne '') {
+            $user->$part($legal);
+            $user->$pref(
+                defined $chosen && $chosen ne '' && $chosen ne $legal ?
+                $chosen : undef
+            );
+        } else {
+            $user->$pref(undef);
+        }
+    }
+
+    return $user;
+}
+
 
 sub patientreq {
     my ($self, $client, $service, $method, @params) = @_;
