@@ -742,10 +742,11 @@ export class GetacardState {
 
             // If the user has legal name values, do a secondary lookup
             // on the legal names.
+            if (v['legalIsSame']) { return; }
             if (!v['legalFirst'] && !v['legalLast']) { return; }
 
-            const first = v['first'] || v['legalFirst'];
-            const last = v['last'] || v['legalLast'];
+            const first = v['legalFirst'] || v['first'];
+            const last = v['legalLast'] || v['last'];
 
             return this.requestOne('open-ils.actor', 'open-ils.actor.register.has_account', {
                 first_given_name: first,
@@ -997,8 +998,11 @@ export class GetacardState {
         const mailingIsSame = !!cf.get('mailingIsSame')!.value;
         const mailing = this.mailingAddress;
 
-        // Reminder that KCLS uses pref_* fields for the legal name
-        // when it differs from chosen name.
+        // The register API takes the legal name, when it differs from
+        // the name above it on the form, in the pref_* fields and
+        // stores each value where it belongs.  Legal name inputs keep
+        // their values while hidden, so only send them when shown.
+        const hasLegal = !about['legalIsSame'];
         const payload: Hash = {
             requested_account_type: this.accountType,
             address_exception_id: this.exceptionId,
@@ -1009,9 +1013,9 @@ export class GetacardState {
                 first_given_name: about['first'],
                 second_given_name: about['middle'],
                 family_name: about['last'],
-                pref_first_given_name: about['legalFirst'],
-                pref_second_given_name: about['legalMiddle'],
-                pref_family_name: about['legalLast'],
+                pref_first_given_name: hasLegal ? about['legalFirst'] : '',
+                pref_second_given_name: hasLegal ? about['legalMiddle'] : '',
+                pref_family_name: hasLegal ? about['legalLast'] : '',
                 dob: dobstr,
                 day_phone: cf.get('phone')!.value,
                 email: cf.get('email')!.value,

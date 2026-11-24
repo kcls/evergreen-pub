@@ -4200,11 +4200,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 			<field reporter:label="Holds Alias" name="alias"  reporter:datatype="text"/>
 			<field reporter:label="Juvenile" name="juvenile"  reporter:datatype="bool"/>
 			<field reporter:label="Record Last Update Time" name="last_update_time" reporter:datatype="timestamp"/>
-			<field reporter:label="Legal Prefix" name="pref_prefix" reporter:datatype="text"/>
-			<field reporter:label="Legal First Name" name="pref_first_given_name" reporter:datatype="text"/>
-			<field reporter:label="Legal Middle Name" name="pref_second_given_name" reporter:datatype="text"/>
-			<field reporter:label="Legal Last Name" name="pref_family_name"  reporter:datatype="text"/>
-			<field reporter:label="Legal Suffix" name="pref_suffix" reporter:datatype="text"/>
+			<field reporter:label="Preferred Prefix" name="pref_prefix" reporter:datatype="text"/>
+			<field reporter:label="Preferred First Name" name="pref_first_given_name" reporter:datatype="text"/>
+			<field reporter:label="Preferred Middle Name" name="pref_second_given_name" reporter:datatype="text"/>
+			<field reporter:label="Preferred Last Name" name="pref_family_name"  reporter:datatype="text"/>
+			<field reporter:label="Preferred Suffix" name="pref_suffix" reporter:datatype="text"/>
 			<field reporter:label="Parent/Guardian" name="guardian" reporter:datatype="text"/>
 			<field reporter:label="Name Keywords" name="name_keywords" reporter:datatype="text"/>
 			<field reporter:label="Name Keyword internal tsvector" name="name_kw_tsvector" reporter:datatype="text"/>

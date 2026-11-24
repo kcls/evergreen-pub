@@ -255,6 +255,9 @@ sub create_pending_account {
         $user->$field($val);
     }
 
+    # The form submits the legal name, when it differs, in pref_*.
+    $U->store_legal_names_in_base($user);
+
     $user->profile($PROVISIONAL_ALL_ACCESS_GRP);
 
     my $dob = $values->{user}->{dob} || '';
@@ -496,6 +499,9 @@ sub create_ecard_account {
         my $col = $field eq 'ident_value2' ? 'guardian' : $field;
         $au->$col($val);
     }
+
+    # The form submits the legal name, when it differs, in pref_*.
+    $U->store_legal_names_in_base($au);
 
     $au->passwd($passwd);
 

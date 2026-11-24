@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {tap} from 'rxjs/operators';
 import {IdlObject} from '@eg/core/idl.service';
+import {userNamePart} from '@eg/core/user-name.pipe';
 import {NetService} from '@eg/core/net.service';
 import {OrgService} from '@eg/core/org.service';
 import {EventService} from '@eg/core/event.service';
@@ -11,6 +12,9 @@ import {BarcodeSelectComponent} from '@eg/staff/share/barcodes/barcode-select.co
 import {ServerStoreService} from '@eg/core/server-store.service';
 import {PrintService} from '@eg/share/print/print.service';
 import {Location} from '@angular/common';
+
+const NAME_PARTS =
+    ['prefix', 'first_given_name', 'second_given_name', 'family_name', 'suffix'];
 
 export class PatronStats {
     fines = {
@@ -154,10 +158,29 @@ export class PatronService {
     // Returns a name part (e.g. family_name) with preference for
     // preferred name value where available.
     namePart(patron: IdlObject, part: string): string {
-        if (!patron) { return ''; }
-        //return patron['pref_' + part]() || patron[part]();
-        // Move to  using the base name as the preferred name.
-        return patron[part]();
+        return userNamePart(patron, part);
+    }
+
+    // KCLS forms present a required name plus an optional legal name,
+    // using the base and pref_* fields respectively.  They are stored
+    // the other way around: base fields hold the legal name and pref_*
+    // fields hold the chosen name parts that differ from it.
+    //
+    // This exchanges the values in place, one name part at a time.
+    // It converts in both directions, so call it once on a patron
+    // after loading it into such a form and once more before saving.
+    swapLegalNames(patron: IdlObject) {
+        NAME_PARTS.forEach(part => {
+            const base = patron[part]();
+            const pref = patron['pref_' + part]();
+
+            if (pref) {
+                patron[part](pref);
+                patron['pref_' + part](base && base !== pref ? base : null);
+            } else {
+                patron['pref_' + part](null);
+            }
+        });
     }
 
 

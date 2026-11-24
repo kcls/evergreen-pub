@@ -37,3 +37,4 @@
 0032-sms-opt-in-setting-group [0031-ang-patron-reg] 2026-08-17T15:46:50Z berick <berick@egkcls> # Migrate to sms text notice group
 0033-ecard-welcome-emails [0032-sms-opt-in-setting-group] 2026-10-15T20:13:40Z berick <berick@egkcls> # ecard welcome emails
 0034-getacard-ecard-hook [0033-ecard-welcome-emails] 2026-11-17T16:26:49Z berick <berick@egkcls> # separate au.create.ecard.getacard hook for getacard registrations
+0035-swap-legal-pref-names [0034-getacard-ecard-hook] 2026-11-24T16:13:40Z berick <berick@egkcls> # Base names are legal names; pref names are chosen names

@@ -363,6 +363,9 @@ sub make_user {
         $au->$field($self->upperclense($field, $val));
     }
 
+    # The API accepts the legal name, when it differs, in pref_*.
+    $U->store_legal_names_in_base($au);
+
     # Usename defaults to the user barcode
     return undef if $ctx->{response}->{status}; 
     return $ctx->{user} = $au;

@@ -97,6 +97,14 @@ export class PendingPatronsComponent implements OnInit {
                     data.id = user.row_id();
                     user.home_ou(this.org.get(user.home_ou()));
 
+                    // The name columns show the name the patron goes
+                    // by.  A legal name is listed only when it differs.
+                    ['family_name', 'first_given_name', 'second_given_name']
+                    .forEach(part => {
+                        data['legal_' + part] =
+                            user['pref_' + part]() ? user[part]() : '';
+                    });
+
                     data.mailing_address =
                         data.billing_addresses[0] || data.mailing_addresses[0];
 

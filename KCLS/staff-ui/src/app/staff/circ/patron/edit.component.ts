@@ -420,6 +420,9 @@ export class EditComponent implements OnInit {
             }
         });
 
+        // Staged names arrive as they are stored.
+        this.patronService.swapLegalNames(patron);
+
         // Self-register form collects guardian data in the ident_value2 field.
         if (patron.ident_value2() && !patron.guardian()) {
             patron.guardian(patron.ident_value2());
@@ -901,6 +904,10 @@ export class EditComponent implements OnInit {
         if (this.patronId) {
             return this.patronService.getFleshedById(this.patronId, PATRON_FLESH_FIELDS)
             .then(patron => {
+                // The form shows the name the patron goes by in the
+                // base name fields and any legal name in the pref
+                // fields.  See also saveUser().
+                this.patronService.swapLegalNames(patron);
                 this.patron = patron;
                 this.origUsername = patron.usrname();
                 this.absorbPatronData();
@@ -1796,7 +1803,7 @@ export class EditComponent implements OnInit {
     postSaveRedirect(clone: boolean) {
 
         this.worklog.record({
-            user: this.modifiedPatron.family_name(),
+            user: this.patronService.namePart(this.modifiedPatron, 'family_name'),
             patron_id: this.modifiedPatron.id(),
             action: this.patron.isnew() ? 'registered_patron' : 'edited_patron'
         });
@@ -1837,6 +1844,8 @@ export class EditComponent implements OnInit {
         this.patron.waiver_entries(
             this.patron.waiver_entries().filter(e => !e.isnew() || e.name()));
 
+        this.patronService.swapLegalNames(this.patron);
+
         return this.net.request(
             'open-ils.actor',
             'open-ils.actor.patron.update',
@@ -1863,6 +1872,9 @@ export class EditComponent implements OnInit {
 
                 alert('Patron update failed:' + result);
             }
+
+            // The form stays open.  Put the names back how it shows them.
+            this.patronService.swapLegalNames(this.patron);
 
             return Promise.reject('Save Failed');
         });
@@ -1990,9 +2002,13 @@ export class EditComponent implements OnInit {
     }
 
     printPatron() {
+        // Print templates expect names as they are stored.
+        const patron = this.idl.clone(this.patron);
+        this.patronService.swapLegalNames(patron);
+
         this.printer.print({
             templateName: 'patron_data',
-            contextData: {patron: this.patron},
+            contextData: {patron: patron},
             printContext: 'default'
         });
     }

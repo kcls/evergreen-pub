@@ -45,6 +45,9 @@ sub load_patron_reg {
         $user->$_($val);
     }
 
+    # The form submits the legal name, when it differs, in pref_*.
+    $U->store_legal_names_in_base($user);
+
     # requestor is logged in, capture who is making this request
     $user->requesting_usr($ctx->{user}->id) if $ctx->{user};
 

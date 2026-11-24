@@ -243,13 +243,16 @@
       <a ngbNavLink i18n>Legal Name</a>
       <ng-template ngbNavContent>
         <ng-container *ngTemplateOutlet="fieldRow; context: 
-          {args: {template: fieldInput, field: 'pref_family_name'}}">
+          {args: {template: fieldInput, field: 'pref_family_name',
+            overrideLabel: 'Legal Last Name'}}">
         </ng-container>
         <ng-container *ngTemplateOutlet="fieldRow; context: 
-          {args: {template: fieldInput, field: 'pref_first_given_name'}}">
+          {args: {template: fieldInput, field: 'pref_first_given_name',
+            overrideLabel: 'Legal First Name'}}">
         </ng-container>
         <ng-container *ngTemplateOutlet="fieldRow; context: 
-          {args: {template: fieldInput, field: 'pref_second_given_name'}}">
+          {args: {template: fieldInput, field: 'pref_second_given_name',
+            overrideLabel: 'Legal Middle Name'}}">
         </ng-container>
         <ng-container *ngTemplateOutlet="fieldRow; context: 
           {args: {template: fieldInput, field: 'pref_suffix', 
